@@ -34,7 +34,7 @@ if(NOT pybind11_FOUND)
     endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -63,7 +63,7 @@ install(
 
 # Install the compiled extension
 install(
-    TARGETS mmgpy_core
+    TARGETS mmgpy
     LIBRARY DESTINATION "${Python_SITEARCH}/mmgpy"
 )
 

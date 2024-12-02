@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Create the core binding module
-pybind11_add_module(mmgpy_core 
-    bindings/common.cpp
+pybind11_add_module(mmgpy 
+    bindings/mmgs.cpp
+    bindings/mmg3d.cpp
+    bindings/mmg2d.cpp
+    bindings/bindings.cpp
 )
 
 # Set include directories
-target_include_directories(mmgpy_core
+target_include_directories(mmgpy
     PRIVATE
         ${MMG_INCLUDE_DIRS}
         ${mmg_BINARY_DIR}/include
@@ -14,36 +17,45 @@ target_include_directories(mmgpy_core
 )
 
 # Link against MMG libraries
-target_link_libraries(mmgpy_core
+target_link_libraries(mmgpy
     PRIVATE
         ${MMG_LIBRARIES}
 )
 
 # Handle compiler warnings
 if(MSVC)
-    target_compile_options(mmgpy_core PRIVATE /W4)
+    target_compile_options(mmgpy PRIVATE /W4)
 else()
-    target_compile_options(mmgpy_core PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(mmgpy PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 # Set the output name
-set_target_properties(mmgpy_core PROPERTIES 
-    OUTPUT_NAME "_core"
+set_target_properties(mmgpy PROPERTIES 
+    OUTPUT_NAME "_mmgpy"
     PREFIX ""
     SUFFIX "${PYTHON_MODULE_EXTENSION}"
 )
 
 # Install the module
-install(TARGETS mmgpy_core DESTINATION mmgpy)
+install(TARGETS mmgpy DESTINATION mmgpy)
 
 if(WIN32)
-    # Install shared libraries with both the module and executables
+    # Determine build type dependent path for executables
+    if(CMAKE_BUILD_TYPE)
+        set(MMG_EXE_DIR "${mmg_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}")
+    else()
+        set(MMG_EXE_DIR "${mmg_BINARY_DIR}/bin/Release")
+    endif()
+
+    # Install shared libraries with the module
     install(FILES 
         $<TARGET_FILE:libmmg2d_so>
         $<TARGET_FILE:libmmg3d_so>
         $<TARGET_FILE:libmmgs_so>
         DESTINATION mmgpy
     )
+    
+    # Install shared libraries alongside executables
     install(FILES 
         $<TARGET_FILE:libmmg2d_so>
         $<TARGET_FILE:libmmg3d_so>
@@ -51,19 +63,19 @@ if(WIN32)
         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
     )
     
-    # Install executables to scripts directory
+    # Install executables
     install(FILES 
-        "${mmg_BINARY_DIR}/bin/Release/mmg2d.exe"
-        "${mmg_BINARY_DIR}/bin/Release/mmg3d.exe"
-        "${mmg_BINARY_DIR}/bin/Release/mmgs.exe"
+        "${MMG_EXE_DIR}/mmg2d.exe"
+        "${MMG_EXE_DIR}/mmg3d.exe"
+        "${MMG_EXE_DIR}/mmgs.exe"
         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
     )
 else()
-    # Install executables to bin directory on Unix
+    # Install executables on Unix with appropriate permissions
     install(FILES 
-        ${mmg_BINARY_DIR}/bin/mmg2d
-        ${mmg_BINARY_DIR}/bin/mmg3d
-        ${mmg_BINARY_DIR}/bin/mmgs
+        "${mmg_BINARY_DIR}/bin/mmg2d"
+        "${mmg_BINARY_DIR}/bin/mmg3d"
+        "${mmg_BINARY_DIR}/bin/mmgs"
         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                    GROUP_READ GROUP_EXECUTE

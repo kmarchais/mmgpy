@@ -1,19 +1,13 @@
-import mmgpy
+from mmgpy import mmg3d
 
-# Create a mesh object
-mesh = mmgpy.Mesh()
+result = mmg3d.remesh(
+    input_mesh="tests/Mesh.mesh",
+    output_mesh="tests/output.mesh",
+    # options={
+    #     "ls": 0,
+    #     "hsiz": 0.03,
+    #     "imprim": -1,
+    # },
+)
 
-# Load input files
-mesh.load_mesh("input.mesh")
-mesh.load_solution("input.sol")
-
-# Set some options
-mesh.set_option("hmin", 0.1)
-mesh.set_option("hmax", 2.0)
-mesh.set_option("hausd", 0.01)
-
-# Perform remeshing
-if mesh.remesh():
-    # Save results
-    mesh.save_mesh("output.mesh")
-    mesh.save_solution("output.sol")
+print(f"Remeshing {'succeeded' if result else 'failed'}")

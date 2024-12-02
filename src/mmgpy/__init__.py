@@ -1,7 +1,3 @@
-from mmgpy._core import *
+from ._mmgpy import MMG_VERSION, mmg2d, mmg3d, mmgs
 
-from .mesh import Mesh
-
-__version__ = "0.1.0"
-
-__all__ = ["Mesh", "version"]
+__all__ = ["mmg2d", "mmg3d", "mmgs", "MMG_VERSION"]

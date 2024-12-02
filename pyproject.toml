@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "mmgpy"
 version = "0.1.0"
-description = "Add your description here"
+description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
@@ -19,3 +19,6 @@ wheel.packages = ["src/mmgpy"]
 [tool.scikit-build.cmake.define]
 BUILD_TESTING = "OFF"
 BUILD_SHARED_LIBS = "ON"
+
+[dependency-groups]
+dev = ["pytest>=8.3.4"]
