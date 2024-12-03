@@ -58,67 +58,68 @@ else()
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     SET(CMAKE_INSTALL_RPATH "$ORIGIN")
 
-    # Install executables and create symlinks
     foreach(EXE_NAME mmg2d_O3 mmg3d_O3 mmgs_O3)
-        # Install the executable
+        string(REPLACE "_O3" "" BASE_NAME ${EXE_NAME})
+        
+        # Install the executable to mmgpy/bin
         install(PROGRAMS ${mmg_BINARY_DIR}/bin/${EXE_NAME}
                 DESTINATION mmgpy/bin)
 
-        # Copy the corresponding library to bin directory
         if(APPLE)
-            string(REPLACE "_O3" "" BASE_NAME ${EXE_NAME})
+            # Install libraries to mmgpy/bin
             install(FILES 
                 "${mmg_BINARY_DIR}/lib/lib${BASE_NAME}.dylib"
                 "${mmg_BINARY_DIR}/lib/lib${BASE_NAME}.5.dylib"
                 DESTINATION mmgpy/bin)
 
-            # Create symlinks for both executable and libraries
+            # Set install name using install_name_tool
             install(CODE "
-                file(MAKE_DIRECTORY \"${SKBUILD_SCRIPTS_DIR}\")
-                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                    \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}\"
-                    \"${SKBUILD_SCRIPTS_DIR}/${EXE_NAME}\"
-                )
-                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                    \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/lib${BASE_NAME}.dylib\"
-                    \"${SKBUILD_SCRIPTS_DIR}/lib${BASE_NAME}.dylib\"
-                )
-                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                    \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/lib${BASE_NAME}.5.dylib\"
-                    \"${SKBUILD_SCRIPTS_DIR}/lib${BASE_NAME}.5.dylib\"
-                )
                 execute_process(
                     COMMAND install_name_tool -change 
                         \"@rpath/lib${BASE_NAME}.5.dylib\"
                         \"@loader_path/lib${BASE_NAME}.5.dylib\"
                         \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}\"
-                )
-            ")
-        else()
-            # For Linux, just create the executable symlink
-            install(CODE "
-                file(MAKE_DIRECTORY \"${SKBUILD_SCRIPTS_DIR}\")
-                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                    \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}\"
-                    \"${SKBUILD_SCRIPTS_DIR}/${EXE_NAME}\"
                 )")
         endif()
+
+        # Create symlinks in .venv/bin
+        install(CODE "
+            file(MAKE_DIRECTORY \"${SKBUILD_SCRIPTS_DIR}\")
+            
+            # Symlink for executable
+            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
+                \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}\"
+                \"${SKBUILD_SCRIPTS_DIR}/${EXE_NAME}\"
+            )
+
+            if(APPLE)
+                # Symlinks for libraries
+                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
+                    \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/lib${BASE_NAME}.dylib\"
+                    \"${SKBUILD_SCRIPTS_DIR}/lib${BASE_NAME}.dylib\"
+                )
+                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
+                    \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/lib${BASE_NAME}.5.dylib\"
+                    \"${SKBUILD_SCRIPTS_DIR}/lib${BASE_NAME}.5.dylib\"
+                )
+            endif()
+        ")
     endforeach()
 
-    # Also install and symlink libmmg
     if(APPLE)
+        # Install and symlink libmmg
         install(FILES 
             "${mmg_BINARY_DIR}/lib/libmmg.dylib"
             "${mmg_BINARY_DIR}/lib/libmmg.5.dylib"
             DESTINATION mmgpy/bin)
-            
+
         install(CODE "
             execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/libmmg.dylib\"
+                \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/libmmg.dylib\"
                 \"${SKBUILD_SCRIPTS_DIR}/libmmg.dylib\"
             )
             execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/libmmg.5.dylib\"
+                \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/libmmg.5.dylib\"
                 \"${SKBUILD_SCRIPTS_DIR}/libmmg.5.dylib\"
             )
         ")
