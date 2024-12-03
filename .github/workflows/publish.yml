@@ -1,123 +1,95 @@
-name: Publish to PyPI
-
+name: Build and Publish to PyPI
 on:
   push:
     tags:
       - "v*"
+  pull_request: # Added to test builds before tagging
 
 jobs:
-  build-and-publish:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Linux builds using dockcross
-          - os: ubuntu-latest
-            python-version: "3.10"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          - os: ubuntu-latest
-            python-version: "3.11"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          - os: ubuntu-latest
-            python-version: "3.12"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          - os: ubuntu-latest
-            python-version: "3.13"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          # Windows builds
-          - os: windows-latest
-            python-version: "3.10"
-            platform: windows
-          - os: windows-latest
-            python-version: "3.11"
-            platform: windows
-          - os: windows-latest
-            python-version: "3.12"
-            platform: windows
-          - os: windows-latest
-            python-version: "3.13"
-            platform: windows
-          # macOS builds
-          - os: macos-latest
-            python-version: "3.10"
-            platform: macos
-          - os: macos-latest
-            python-version: "3.11"
-            platform: macos
-          - os: macos-latest
-            python-version: "3.12"
-            platform: macos
-          - os: macos-latest
-            python-version: "3.13"
-            platform: macos
+        os: [ubuntu-latest, windows-latest, macos-13, macos-latest]
 
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for version determination
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.22.0
+
+      - name: Build wheels
+        env:
+          CIBW_BUILD: cp310-* cp311-* cp312-* cp313-* # Build for Python 3.10-3.13
+          CIBW_ARCHS_LINUX: x86_64
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          # Skip unnecessary builds and tests to speed up the process
+          CIBW_SKIP: pp* *-musllinux*
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Store wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist
+        run: |
+          python -m pip install build
+          python -m build --sdist
+
+      - name: Store sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  upload_pypi:
+    name: Upload to PyPI
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
-        if: ${{ !matrix.container }}
-
-      # Special checkout for container jobs
-      - uses: actions/checkout@v4
-        if: ${{ matrix.container }}
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
 
-      # Regular uv setup for non-container jobs
-      - uses: astral-sh/setup-uv@v4
-        if: ${{ !matrix.container }}
+      - name: Download sdist
+        uses: actions/download-artifact@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          name: sdist
+          path: dist
 
-      # Install uv in container
-      - name: Install uv in container
-        if: ${{ matrix.container }}
-        shell: bash
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          uv python install ${{ matrix.python-version }}
-          yum install -y clang
+      - name: List distributions
+        run: ls -R dist/
 
-      - name: Build package
-        run: uv build --no-sources --python ${{ matrix.python-version }}
-
-      # Install and run auditwheel for Linux builds
-      - name: Process Linux wheels with auditwheel
-        if: ${{ matrix.container }}
-        shell: bash
-        run: |
-          # Install auditwheel
-          uv pip install auditwheel --system
-          # Move original wheels to a different directory
-          mkdir -p dist/original
-          mv dist/*.whl dist/original/
-          # Process each wheel with auditwheel
-          for wheel in dist/original/*.whl; do
-            auditwheel repair "$wheel" --plat manylinux_2_28_x86_64 -w dist/
-          done
-          # Clean up
-          rm -rf dist/original
-
-      - name: List built distributions
-        run: ls -l dist/
-        shell: bash
-
-      - name: Publish wheel
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: uv publish dist/*.whl --verbose
-
-      - name: Publish source distribution
-        if: runner.os == 'Linux' && matrix.python-version == '3.13'
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: uv publish dist/*.tar.gz --verbose
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
