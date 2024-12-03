@@ -96,7 +96,7 @@ jobs:
         shell: bash
         run: |
           # Install auditwheel
-          uv pip install auditwheel
+          uv pip install auditwheel --system
           # Move original wheels to a different directory
           mkdir -p dist/original
           mv dist/*.whl dist/original/
