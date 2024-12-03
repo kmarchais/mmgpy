@@ -75,4 +75,4 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
-        run: uv publish dist/* --repository https://test.pypi.org/legacy/ --verbose
+        run: uv publish dist/* --publish-url https://test.pypi.org/legacy/ --verbose
