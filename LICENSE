@@ -1,0 +1,19 @@
+# Project License
+
+This project is licensed under the GNU General Public License v3.0 or later (GPL-3.0+).
+
+## Dependencies
+
+mmg (https://www.mmgtools.org/)
+
+- Licensed under GNU Lesser General Public License v3.0 or later (LGPL-3.0+)
+- Copyright (c) Bx INP/Inria/UBordeaux/UPMC, 2004-
+
+Full license texts can be found in:
+
+- COPYING: GNU General Public License v3.0
+- COPYING.LESSER: GNU Lesser General Public License v3.0
+
+This project is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
