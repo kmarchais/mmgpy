@@ -56,20 +56,20 @@ jobs:
         run: |
           COMMIT_HASH=$(git rev-parse --short HEAD)
           for wheel in dist/*.whl; do
-            # Extract version from wheel filename
-            CURRENT_VERSION=$(echo "$wheel" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*)-.*\.whl/\1/')
-            NEW_VERSION="${CURRENT_VERSION}.dev+git.${COMMIT_HASH}"
-            # Replace version in filename
-            NEW_NAME=$(echo "$wheel" | sed "s/$CURRENT_VERSION/$NEW_VERSION/")
-            mv "$wheel" "$NEW_NAME"
+              # Extract version from wheel filename
+              CURRENT_VERSION=$(echo "$wheel" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*)-.*\.whl/\1/')
+              NEW_VERSION="${CURRENT_VERSION}.dev+git.${COMMIT_HASH}"
+              # Replace version in filename
+              NEW_NAME=$(echo "$wheel" | sed "s/$CURRENT_VERSION/$NEW_VERSION/")
+              mv "$wheel" "$NEW_NAME"
           done
           for sdist in dist/*.tar.gz; do
-            if [ -f "$sdist" ]; then
-              CURRENT_VERSION=$(echo "$sdist" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*).tar.gz/\1/')
-              NEW_VERSION="${CURRENT_VERSION}.dev+git.${COMMIT_HASH}"
-              NEW_NAME=$(echo "$sdist" | sed "s/$CURRENT_VERSION/$NEW_VERSION/")
-              mv "$sdist" "$NEW_NAME"
-            fi
+              if [ -f "$sdist" ]; then
+                  CURRENT_VERSION=$(echo "$sdist" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*).tar.gz/\1/')
+                  # Create new name in desired format: mmgpy.dev+git.hash-version.tar.gz
+                  NEW_NAME="dist/mmgpy.dev+git.${COMMIT_HASH}-${CURRENT_VERSION}.tar.gz"
+                  mv "$sdist" "$NEW_NAME"
+              fi
           done
       - name: Publish to TestPyPI
         if: github.event_name == 'pull_request'
