@@ -15,19 +15,19 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.10"
             platform: linux
-            container: dockcross/manylinux-x64
+            container: quay.io/pypa/manylinux_2_28_x86_64
           - os: ubuntu-latest
             python-version: "3.11"
             platform: linux
-            container: dockcross/manylinux-x64
+            container: quay.io/pypa/manylinux_2_28_x86_64
           - os: ubuntu-latest
             python-version: "3.12"
             platform: linux
-            container: dockcross/manylinux-x64
+            container: quay.io/pypa/manylinux_2_28_x86_64
           - os: ubuntu-latest
             python-version: "3.13"
             platform: linux
-            container: dockcross/manylinux-x64
+            container: quay.io/pypa/manylinux_2_28_x86_64
           # Windows builds
           - os: windows-latest
             python-version: "3.10"
