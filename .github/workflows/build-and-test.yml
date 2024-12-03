@@ -34,6 +34,6 @@ jobs:
       - if: runner.os == 'Windows'
         run: .\.venv\Scripts\mmg3d.exe -in tests/Mesh.mesh -out tests/output_exe.mesh
       - if: runner.os != 'Windows'
-        run: .venv/bin/mmg3d -in tests/Mesh.mesh -out tests/output_exe.mesh
+        run: .venv/bin/mmg3d_O3 -in tests/Mesh.mesh -out tests/output_exe.mesh
 
       - run: uv run pytest
