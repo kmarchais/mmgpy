@@ -85,9 +85,10 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           uv python install ${{ matrix.python-version }}
+          sudo apt install build-essential
 
       - name: Build package
-        run: uv build --no-sources
+        run: uv build --no-sources --python ${{ matrix.python-version }}
 
       - name: List built distributions
         run: ls -l dist/
