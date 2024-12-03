@@ -60,7 +60,7 @@ else()
     SET(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 
     # Install executables
-    foreach(EXE_NAME mmg2d mmg3d mmgs)
+    foreach(EXE_NAME mmg2d_O3 mmg3d_O3 mmgs_O3)
         # Install the actual executable to site-packages/bin
         install(PROGRAMS ${mmg_BINARY_DIR}/bin/${EXE_NAME}
                 DESTINATION mmgpy/bin)
