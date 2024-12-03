@@ -62,22 +62,35 @@ else()
     # Install executables
     foreach(EXE_NAME mmg2d mmg3d mmgs)
         # Install the actual executable to site-packages/bin
-        install(PROGRAMS ${mmg_BINARY_DIR}/bin/${EXE_NAME}_O3
+        install(PROGRAMS ${mmg_BINARY_DIR}/bin/${EXE_NAME}
                 DESTINATION mmgpy/bin)
 
         # Create symlink after installation
         install(CODE "
-            message(STATUS \"Creating symlink for ${EXE_NAME}_O3\")
+            message(STATUS \"Creating symlink for ${EXE_NAME}\")
             execute_process(
                 COMMAND \"${CMAKE_COMMAND}\" -E create_symlink 
-                    \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}_O3\"
-                    \"${SKBUILD_SCRIPTS_DIR}/${EXE_NAME}_O3\"
+                    \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}\"
+                    \"${SKBUILD_SCRIPTS_DIR}/${EXE_NAME}\"
                 RESULT_VARIABLE result
                 ERROR_VARIABLE error
             )
             if(result)
-                message(STATUS \"Failed to create symlink for ${EXE_NAME}_O3: \${error}\")
+                message(STATUS \"Failed to create symlink for ${EXE_NAME}: \${error}\")
             endif()
         ")
     endforeach()
+
+
+    # For macOS, set install name for libraries
+    if(APPLE)
+        install(CODE "
+            execute_process(COMMAND install_name_tool -add_rpath \"@loader_path/../lib\" 
+                          \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/mmg2d\")
+            execute_process(COMMAND install_name_tool -add_rpath \"@loader_path/../lib\" 
+                          \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/mmg3d\")
+            execute_process(COMMAND install_name_tool -add_rpath \"@loader_path/../lib\" 
+                          \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/mmgs\")
+        ")
+    endif()
 endif()
