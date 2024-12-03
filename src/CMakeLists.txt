@@ -31,15 +31,6 @@ set_target_properties(mmgpy PROPERTIES
     SUFFIX "${PYTHON_MODULE_EXTENSION}"
 )
 
-if(UNIX)
-    # Set RPATH settings
-    set_target_properties(mmgpy PROPERTIES
-        INSTALL_RPATH "$ORIGIN"
-        BUILD_WITH_INSTALL_RPATH TRUE
-        SKIP_BUILD_RPATH FALSE
-    )
-endif()
-
 # Install the Python module
 install(TARGETS mmgpy DESTINATION mmgpy)
 
@@ -62,62 +53,31 @@ if(WIN32)
         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
     )
 else()
-    # Set RPATH settings for Python module
-    set_target_properties(mmgpy PROPERTIES
-        INSTALL_RPATH "$ORIGIN"
-        BUILD_WITH_INSTALL_RPATH TRUE
-        SKIP_BUILD_RPATH FALSE
-    )
+    # Enable RPATH
+    SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    SET(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 
-    # Install libraries
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-            DESTINATION mmgpy)
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}")
+    # Install executables
+    foreach(EXE_NAME mmg2d mmg3d mmgs)
+        # Install the actual executable to site-packages/bin
+        install(PROGRAMS ${mmg_BINARY_DIR}/bin/${EXE_NAME}_O3
+                DESTINATION mmgpy/bin)
 
-    # Install executables with RPATH set
-    install(FILES
-        "${mmg_BINARY_DIR}/bin/mmg2d_O3"
-        DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-        RENAME "mmg2d"
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                   GROUP_READ GROUP_EXECUTE
-                   WORLD_READ WORLD_EXECUTE
-    )
-    install(CODE "
-        execute_process(
-            COMMAND patchelf --set-rpath \"$ORIGIN\"
-            \"\${CMAKE_INSTALL_PREFIX}/${SKBUILD_SCRIPTS_DIR}/mmg2d\"
-        )
-    ")
-
-    install(FILES
-        "${mmg_BINARY_DIR}/bin/mmg3d_O3"
-        DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-        RENAME "mmg3d"
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                   GROUP_READ GROUP_EXECUTE
-                   WORLD_READ WORLD_EXECUTE
-    )
-    install(CODE "
-        execute_process(
-            COMMAND patchelf --set-rpath \"$ORIGIN\"
-            \"\${CMAKE_INSTALL_PREFIX}/${SKBUILD_SCRIPTS_DIR}/mmg3d\"
-        )
-    ")
-
-    install(FILES
-        "${mmg_BINARY_DIR}/bin/mmgs_O3"
-        DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-        RENAME "mmgs"
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                   GROUP_READ GROUP_EXECUTE
-                   WORLD_READ WORLD_EXECUTE
-    )
-    install(CODE "
-        execute_process(
-            COMMAND patchelf --set-rpath \"$ORIGIN\"
-            \"\${CMAKE_INSTALL_PREFIX}/${SKBUILD_SCRIPTS_DIR}/mmgs\"
-        )
-    ")
+        # Create symlink after installation
+        install(CODE "
+            message(STATUS \"Creating symlink for ${EXE_NAME}_O3\")
+            execute_process(
+                COMMAND \"${CMAKE_COMMAND}\" -E create_symlink 
+                    \"${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}_O3\"
+                    \"${SKBUILD_SCRIPTS_DIR}/${EXE_NAME}_O3\"
+                RESULT_VARIABLE result
+                ERROR_VARIABLE error
+            )
+            if(result)
+                message(STATUS \"Failed to create symlink for ${EXE_NAME}_O3: \${error}\")
+            endif()
+        ")
+    endforeach()
 endif()
