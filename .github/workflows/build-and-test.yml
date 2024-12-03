@@ -30,6 +30,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       # - run: uv sync
+      - run: uv venv
+      - if: runner.os == 'Windows'
+        run: .\.venv\Scripts\activate
+      - if: runner.os != 'Windows'
+        run: source .venv/bin/activate
       - run: uv pip install pip
       - run: pip install . -v
 
