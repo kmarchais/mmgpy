@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-publish:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
@@ -27,7 +28,11 @@ jobs:
       - name: Build package
         run: uv build --no-sources
 
+      - name: List built distributions
+        run: ls -l dist/
+        shell: bash
+
       - name: Publish to PyPI
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: uv publish
+        run: uv publish --verbose
