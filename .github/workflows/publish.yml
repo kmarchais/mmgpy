@@ -90,17 +90,34 @@ jobs:
       - name: Build package
         run: uv build --no-sources --python ${{ matrix.python-version }}
 
+      # Install and run auditwheel for Linux builds
+      - name: Process Linux wheels with auditwheel
+        if: ${{ matrix.container }}
+        shell: bash
+        run: |
+          # Install auditwheel
+          uv pip install auditwheel
+          # Move original wheels to a different directory
+          mkdir -p dist/original
+          mv dist/*.whl dist/original/
+          # Process each wheel with auditwheel
+          for wheel in dist/original/*.whl; do
+            auditwheel repair "$wheel" --plat manylinux_2_28_x86_64 -w dist/
+          done
+          # Clean up
+          rm -rf dist/original
+
       - name: List built distributions
         run: ls -l dist/
         shell: bash
+
+      - name: Publish wheel
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish dist/*.whl --verbose
 
       - name: Publish source distribution
         if: runner.os == 'Linux' && matrix.python-version == '3.13'
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: uv publish dist/*.tar.gz --verbose
-
-      - name: Publish wheel
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: uv publish dist/*.whl --verbose
