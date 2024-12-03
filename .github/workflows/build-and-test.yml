@@ -36,6 +36,7 @@ jobs:
       - if: runner.os != 'Windows'
         run: source .venv/bin/activate
       - run: uv pip install pip
+      - run: uv pip install ninja
       - run: pip install . -v
 
       - if: runner.os == 'Windows'
