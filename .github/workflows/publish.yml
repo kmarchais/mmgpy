@@ -34,12 +34,11 @@ jobs:
           CIBW_ARCHS_LINUX: x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_SKIP: pp* *-musllinux*
+          # Install only the essential build dependencies
           CIBW_BEFORE_ALL_LINUX: |
-            yum install -y gcc gcc-c++ make cmake python3-devel \
-            && yum install -y dnf-plugins-core \
-            && yum config-manager --set-enabled powertools \
-            && dnf module enable python38 python39 -y \
-            && dnf module install python311/devel python312/devel -y
+            yum install -y gcc gcc-c++ make cmake python3-devel
+          # Use cibuildwheel's built-in Python installations
+          CIBW_ENVIRONMENT: "PATH=/opt/python/cp{py_version}/bin:$PATH PYTHON=/opt/python/cp{py_version}/bin/python"
         run: python -m cibuildwheel --output-dir wheelhouse
       - name: Store wheels
         uses: actions/upload-artifact@v4
