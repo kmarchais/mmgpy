@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: uv sync -v
+      - run: uv sync -v --no-cache
 
       # - if: runner.os == 'Windows'
       #   run: .\.venv\Scripts\mmg3d.exe -in tests/Mesh.mesh -out tests/output_exe.mesh
