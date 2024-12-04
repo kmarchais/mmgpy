@@ -55,64 +55,63 @@ if(WIN32)
 else()
     # Unix-specific installation
     # Set RPATH for Python module
-    if (APPLE)
-        set_target_properties(mmgpy PROPERTIES
-            INSTALL_RPATH "@loader_path/lib"
+    # Define the rpath prefix based on platform
+    if(APPLE)
+        set(RPATH_PREFIX "@loader_path")
+    else()
+        set(RPATH_PREFIX "$ORIGIN")
+    endif()
+    
+    set_target_properties(mmgpy PROPERTIES
+        INSTALL_RPATH "${RPATH_PREFIX}/lib"
+        BUILD_WITH_INSTALL_RPATH TRUE
+        SKIP_BUILD_RPATH FALSE
+    )
+
+    # Set RPATH for executables
+    foreach(exe mmg2d mmg3d mmgs)
+        set_target_properties(${exe} PROPERTIES
+            INSTALL_RPATH "${RPATH_PREFIX}/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
             BUILD_WITH_INSTALL_RPATH TRUE
             SKIP_BUILD_RPATH FALSE
         )
 
-        # Set RPATH for executables
-        foreach(exe mmg2d mmg3d mmgs)
-            set_target_properties(${exe} PROPERTIES
-                INSTALL_RPATH "@loader_path/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
-                BUILD_WITH_INSTALL_RPATH TRUE
-                SKIP_BUILD_RPATH FALSE
-            )
-        endforeach()
-    else()
-        set_target_properties(mmgpy PROPERTIES
-            INSTALL_RPATH "$ORIGIN/lib"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            SKIP_BUILD_RPATH FALSE
+        # Install executable
+        install(TARGETS ${exe}
+            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+            RENAME "${exe}_O3"
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE
+                    WORLD_READ WORLD_EXECUTE
         )
-        
-        # Set RPATH for executables
-        foreach(exe mmg2d mmg3d mmgs)
-            set_target_properties(${exe} PROPERTIES
-                INSTALL_RPATH "$ORIGIN/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
-                BUILD_WITH_INSTALL_RPATH TRUE
-                SKIP_BUILD_RPATH FALSE
-            )
-        endforeach()
-    endif()
+    endforeach()
 
     # Install shared libraries
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
             DESTINATION mmgpy/lib)
             
-    # Install each executable separately to handle the renaming
-    install(TARGETS mmg2d
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-            RENAME mmg2d_O3
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-                      GROUP_READ GROUP_EXECUTE 
-                      WORLD_READ WORLD_EXECUTE
-    )
-    install(TARGETS mmg3d
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-            RENAME mmg3d_O3
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-                      GROUP_READ GROUP_EXECUTE 
-                      WORLD_READ WORLD_EXECUTE
-    )
-    install(TARGETS mmgs
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-            RENAME mmgs_O3
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-                      GROUP_READ GROUP_EXECUTE 
-                      WORLD_READ WORLD_EXECUTE
-    )
+    # # Install each executable separately to handle the renaming
+    # install(TARGETS mmg2d
+    #         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+    #         RENAME mmg2d_O3
+    #         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+    #                   GROUP_READ GROUP_EXECUTE 
+    #                   WORLD_READ WORLD_EXECUTE
+    # )
+    # install(TARGETS mmg3d
+    #         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+    #         RENAME mmg3d_O3
+    #         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+    #                   GROUP_READ GROUP_EXECUTE 
+    #                   WORLD_READ WORLD_EXECUTE
+    # )
+    # install(TARGETS mmgs
+    #         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+    #         RENAME mmgs_O3
+    #         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+    #                   GROUP_READ GROUP_EXECUTE 
+    #                   WORLD_READ WORLD_EXECUTE
+    # )
     
     message(STATUS "SKBUILD_SCRIPTS_DIR ${SKBUILD_SCRIPTS_DIR}")
     message(STATUS "SKBUILD_PLATLIB_DIR ${SKBUILD_PLATLIB_DIR}")

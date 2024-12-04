@@ -17,7 +17,6 @@ def test_mmg3d():
         output_mesh="tests/test_output.mesh",
     )
 
-    print(platform.system())
     exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
     subprocess.call([exe, "-in", "tests/Mesh.mesh", "-out", "tests/output_exe.mesh"])
 
