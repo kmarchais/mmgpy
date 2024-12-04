@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
-# Create the core binding module
+
 pybind11_add_module(mmgpy
     bindings/mmgs.cpp
     bindings/mmg3d.cpp
     bindings/mmg2d.cpp
     bindings/bindings.cpp
 )
+
 # Set include directories
 target_include_directories(mmgpy
     PRIVATE
@@ -13,17 +14,20 @@ target_include_directories(mmgpy
         ${mmg_BINARY_DIR}/include
         ${mmg_SOURCE_DIR}/include
 )
+
 # Link against MMG libraries
 target_link_libraries(mmgpy
     PRIVATE
         ${MMG_LIBRARIES}
 )
+
 # Handle compiler warnings
 if(MSVC)
     target_compile_options(mmgpy PRIVATE /W4)
 else()
     target_compile_options(mmgpy PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
 # Set the output name
 set_target_properties(mmgpy PROPERTIES
     OUTPUT_NAME "_mmgpy"
@@ -31,17 +35,14 @@ set_target_properties(mmgpy PROPERTIES
     SUFFIX "${PYTHON_MODULE_EXTENSION}"
 )
 
-if(UNIX)
-    # Set RPATH settings
-    set_target_properties(mmgpy PROPERTIES
-        INSTALL_RPATH "$ORIGIN"
-        BUILD_WITH_INSTALL_RPATH TRUE
-        SKIP_BUILD_RPATH FALSE
-    )
-endif()
-
 # Install the Python module
 install(TARGETS mmgpy DESTINATION mmgpy)
+
+# SKBUILD_SCRIPTS_DIR is defined by scikit-build
+# But if we run cmake directly, we need to define it
+if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
+    set(SKBUILD_SCRIPTS_DIR "${CMAKE_INSTALL_PREFIX}/bin")
+endif()
 
 if(WIN32)
     # Windows-specific installation
@@ -62,62 +63,41 @@ if(WIN32)
         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
     )
 else()
-    # Set RPATH settings for Python module
+    # Unix-specific installation
+
+    # Define the rpath prefix based on platform
+    if(APPLE)
+        set(RPATH_PREFIX "@loader_path")
+    else()
+        set(RPATH_PREFIX "$ORIGIN")
+    endif()
+    
+    # Set RPATH for Python module
     set_target_properties(mmgpy PROPERTIES
-        INSTALL_RPATH "$ORIGIN"
+        INSTALL_RPATH "${RPATH_PREFIX}/lib"
         BUILD_WITH_INSTALL_RPATH TRUE
         SKIP_BUILD_RPATH FALSE
     )
 
-    # Install libraries
+    foreach(exe mmg2d mmg3d mmgs)
+        # Set RPATH for executables
+        set_target_properties(${exe} PROPERTIES
+            INSTALL_RPATH "${RPATH_PREFIX}/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            SKIP_BUILD_RPATH FALSE
+        )
+
+        # Install executable
+        install(TARGETS ${exe}
+            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+            RENAME "${exe}_O3"
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE
+                    WORLD_READ WORLD_EXECUTE
+        )
+    endforeach()
+
+    # Install shared libraries
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-            DESTINATION mmgpy)
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}")
-
-    # Install executables with RPATH set
-    install(FILES
-        "${mmg_BINARY_DIR}/bin/mmg2d_O3"
-        DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-        RENAME "mmg2d"
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                   GROUP_READ GROUP_EXECUTE
-                   WORLD_READ WORLD_EXECUTE
-    )
-    install(CODE "
-        execute_process(
-            COMMAND patchelf --set-rpath \"$ORIGIN\"
-            \"\${CMAKE_INSTALL_PREFIX}/${SKBUILD_SCRIPTS_DIR}/mmg2d\"
-        )
-    ")
-
-    install(FILES
-        "${mmg_BINARY_DIR}/bin/mmg3d_O3"
-        DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-        RENAME "mmg3d"
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                   GROUP_READ GROUP_EXECUTE
-                   WORLD_READ WORLD_EXECUTE
-    )
-    install(CODE "
-        execute_process(
-            COMMAND patchelf --set-rpath \"$ORIGIN\"
-            \"\${CMAKE_INSTALL_PREFIX}/${SKBUILD_SCRIPTS_DIR}/mmg3d\"
-        )
-    ")
-
-    install(FILES
-        "${mmg_BINARY_DIR}/bin/mmgs_O3"
-        DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-        RENAME "mmgs"
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                   GROUP_READ GROUP_EXECUTE
-                   WORLD_READ WORLD_EXECUTE
-    )
-    install(CODE "
-        execute_process(
-            COMMAND patchelf --set-rpath \"$ORIGIN\"
-            \"\${CMAKE_INSTALL_PREFIX}/${SKBUILD_SCRIPTS_DIR}/mmgs\"
-        )
-    ")
+            DESTINATION mmgpy/lib)
 endif()
