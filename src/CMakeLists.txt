@@ -6,6 +6,7 @@ pybind11_add_module(mmgpy
     bindings/mmg2d.cpp
     bindings/bindings.cpp
 )
+
 # Set include directories
 target_include_directories(mmgpy
     PRIVATE
@@ -13,17 +14,20 @@ target_include_directories(mmgpy
         ${mmg_BINARY_DIR}/include
         ${mmg_SOURCE_DIR}/include
 )
+
 # Link against MMG libraries
 target_link_libraries(mmgpy
     PRIVATE
         ${MMG_LIBRARIES}
 )
+
 # Handle compiler warnings
 if(MSVC)
     target_compile_options(mmgpy PRIVATE /W4)
 else()
     target_compile_options(mmgpy PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
 # Set the output name
 set_target_properties(mmgpy PROPERTIES
     OUTPUT_NAME "_mmgpy"
@@ -33,6 +37,12 @@ set_target_properties(mmgpy PROPERTIES
 
 # Install the Python module
 install(TARGETS mmgpy DESTINATION mmgpy)
+
+# SKBUILD_SCRIPTS_DIR is defined by scikit-build
+# But if we run cmake directly, we need to define it
+if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
+    set(SKBUILD_SCRIPTS_DIR "${CMAKE_INSTALL_PREFIX}/bin")
+endif()
 
 if(WIN32)
     # Windows-specific installation
@@ -54,7 +64,7 @@ if(WIN32)
     )
 else()
     # Unix-specific installation
-    # Set RPATH for Python module
+
     # Define the rpath prefix based on platform
     if(APPLE)
         set(RPATH_PREFIX "@loader_path")
@@ -62,14 +72,15 @@ else()
         set(RPATH_PREFIX "$ORIGIN")
     endif()
     
+    # Set RPATH for Python module
     set_target_properties(mmgpy PROPERTIES
         INSTALL_RPATH "${RPATH_PREFIX}/lib"
         BUILD_WITH_INSTALL_RPATH TRUE
         SKIP_BUILD_RPATH FALSE
     )
 
-    # Set RPATH for executables
     foreach(exe mmg2d mmg3d mmgs)
+        # Set RPATH for executables
         set_target_properties(${exe} PROPERTIES
             INSTALL_RPATH "${RPATH_PREFIX}/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
             BUILD_WITH_INSTALL_RPATH TRUE
@@ -89,27 +100,4 @@ else()
     # Install shared libraries
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
             DESTINATION mmgpy/lib)
-            
-    # # Install each executable separately to handle the renaming
-    # install(TARGETS mmg2d
-    #         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-    #         RENAME mmg2d_O3
-    #         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-    #                   GROUP_READ GROUP_EXECUTE 
-    #                   WORLD_READ WORLD_EXECUTE
-    # )
-    # install(TARGETS mmg3d
-    #         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-    #         RENAME mmg3d_O3
-    #         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-    #                   GROUP_READ GROUP_EXECUTE 
-    #                   WORLD_READ WORLD_EXECUTE
-    # )
-    # install(TARGETS mmgs
-    #         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-    #         RENAME mmgs_O3
-    #         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-    #                   GROUP_READ GROUP_EXECUTE 
-    #                   WORLD_READ WORLD_EXECUTE
-    # )
 endif()
