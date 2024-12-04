@@ -66,38 +66,22 @@ else()
             DESTINATION mmgpy/lib)
             
     # Install each executable separately to handle the renaming
-    install(TARGETS mmg2d
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-            RENAME mmg2d_O3
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-                      GROUP_READ GROUP_EXECUTE 
-                      WORLD_READ WORLD_EXECUTE
-    )
-    install(TARGETS mmg3d
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-            RENAME mmg3d_O3
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-                      GROUP_READ GROUP_EXECUTE 
-                      WORLD_READ WORLD_EXECUTE
-    )
-    install(TARGETS mmgs
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-            RENAME mmgs_O3
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
-                      GROUP_READ GROUP_EXECUTE 
-                      WORLD_READ WORLD_EXECUTE
-    )
-    
-    # Set RPATH for executables
     foreach(exe mmg2d mmg3d mmgs)
+        install(TARGETS ${exe}
+                DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+                RENAME "${exe}_O3"
+                PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+                          GROUP_READ GROUP_EXECUTE 
+                          WORLD_READ WORLD_EXECUTE
+        )
+        # Set RPATH for each executable
         set_target_properties(${exe} PROPERTIES
-            INSTALL_RPATH "$ORIGIN/../lib/python3.13/site-packages/mmgpy/lib"
+            INSTALL_RPATH "$ORIGIN/../${PYTHON_SITE_PACKAGES}/mmgpy/lib"
             BUILD_WITH_INSTALL_RPATH TRUE
             SKIP_BUILD_RPATH FALSE
         )
     endforeach()
     
     message(STATUS "SKBUILD_SCRIPTS_DIR ${SKBUILD_SCRIPTS_DIR}")
-    message(STATUS "mmg_BINARY_DIR ${mmg_BINARY_DIR}")
-    message(STATUS "mmg_SOURCE_DIR ${mmg_SOURCE_DIR}")
+    message(STATUS "PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES}")
 endif()
