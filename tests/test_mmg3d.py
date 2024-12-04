@@ -1,5 +1,9 @@
 from pathlib import Path
 
+import platform
+
+import subprocess
+
 from mmgpy import MMG_VERSION, mmg3d
 
 
@@ -12,6 +16,9 @@ def test_mmg3d():
         input_mesh="tests/Mesh.mesh",
         output_mesh="tests/test_output.mesh",
     )
+
+    exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
+    subprocess.call([exe, "-in", "tests/Mesh.mesh", "-out", "tests/output_exe.mesh"])
 
     folder = Path(__file__).parent
     test_path = folder / "test_output.mesh"

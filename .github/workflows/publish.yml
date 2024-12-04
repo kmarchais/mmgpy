@@ -1,123 +1,78 @@
 name: Publish to PyPI
-
 on:
   push:
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-and-publish:
+  build:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Linux builds using dockcross
-          - os: ubuntu-latest
-            python-version: "3.10"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          - os: ubuntu-latest
-            python-version: "3.11"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          - os: ubuntu-latest
-            python-version: "3.12"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          - os: ubuntu-latest
-            python-version: "3.13"
-            platform: linux
-            container: quay.io/pypa/manylinux2014_x86_64
-          # Windows builds
-          - os: windows-latest
-            python-version: "3.10"
-            platform: windows
-          - os: windows-latest
-            python-version: "3.11"
-            platform: windows
-          - os: windows-latest
-            python-version: "3.12"
-            platform: windows
-          - os: windows-latest
-            python-version: "3.13"
-            platform: windows
-          # macOS builds
-          - os: macos-latest
-            python-version: "3.10"
-            platform: macos
-          - os: macos-latest
-            python-version: "3.11"
-            platform: macos
-          - os: macos-latest
-            python-version: "3.12"
-            platform: macos
-          - os: macos-latest
-            python-version: "3.13"
-            platform: macos
-
+        os: [windows-latest, macos-latest, macos-13] #, ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
-
-    permissions:
-      id-token: write
-
     steps:
       - uses: actions/checkout@v4
-        if: ${{ !matrix.container }}
-
-      # Special checkout for container jobs
-      - uses: actions/checkout@v4
-        if: ${{ matrix.container }}
-        with:
-          fetch-depth: 0
-
-      # Regular uv setup for non-container jobs
       - uses: astral-sh/setup-uv@v4
-        if: ${{ !matrix.container }}
         with:
           python-version: ${{ matrix.python-version }}
-
-      # Install uv in container
-      - name: Install uv in container
-        if: ${{ matrix.container }}
-        shell: bash
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          uv python install ${{ matrix.python-version }}
-          yum install -y clang
-
       - name: Build package
-        run: uv build --no-sources --python ${{ matrix.python-version }}
+        run: uv build --no-sources
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/*
 
-      # Install and run auditwheel for Linux builds
-      - name: Process Linux wheels with auditwheel
-        if: ${{ matrix.container }}
-        shell: bash
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: List distributions
+        run: ls -R dist/
+      - name: Publish to PyPI
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish dist/* --verbose
+      - name: Rename wheels for TestPyPI
+        if: github.event_name == 'pull_request'
         run: |
-          # Install auditwheel
-          uv pip install auditwheel --system
-          # Move original wheels to a different directory
-          mkdir -p dist/original
-          mv dist/*.whl dist/original/
-          # Process each wheel with auditwheel
-          for wheel in dist/original/*.whl; do
-            auditwheel repair "$wheel" --plat manylinux_2_28_x86_64 -w dist/
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          for wheel in dist/*.whl; do
+              # Extract version from wheel filename
+              CURRENT_VERSION=$(echo "$wheel" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*)-.*\.whl/\1/')
+              NEW_VERSION="${CURRENT_VERSION}.dev+git.${COMMIT_HASH}"
+              # Replace version in filename
+              NEW_NAME=$(echo "$wheel" | sed "s/$CURRENT_VERSION/$NEW_VERSION/")
+              mv "$wheel" "$NEW_NAME"
           done
-          # Clean up
-          rm -rf dist/original
-
-      - name: List built distributions
-        run: ls -l dist/
-        shell: bash
-
-      - name: Publish wheel
+          for sdist in dist/*.tar.gz; do
+              if [ -f "$sdist" ]; then
+                  CURRENT_VERSION=$(echo "$sdist" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*).tar.gz/\1/')
+                  # Create new name in desired format: mmgpy.dev+git.hash-version.tar.gz
+                  NEW_NAME="dist/mmgpy.dev+git.${COMMIT_HASH}-${CURRENT_VERSION}.tar.gz"
+                  mv "$sdist" "$NEW_NAME"
+              fi
+          done
+      - name: Publish to TestPyPI
+        if: github.event_name == 'pull_request'
         env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: uv publish dist/*.whl --verbose
-
-      - name: Publish source distribution
-        if: runner.os == 'Linux' && matrix.python-version == '3.13'
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: uv publish dist/*.tar.gz --verbose
+          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+        run: uv publish dist/* --publish-url https://test.pypi.org/legacy/ --verbose

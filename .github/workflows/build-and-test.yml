@@ -29,11 +29,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: uv sync
-
-      - if: runner.os == 'Windows'
-        run: .\.venv\Scripts\mmg3d.exe -in tests/Mesh.mesh -out tests/output_exe.mesh
-      - if: runner.os != 'Windows'
-        run: .venv/bin/mmg3d -in tests/Mesh.mesh -out tests/output_exe.mesh
+      - run: uv sync -v
 
       - run: uv run pytest
