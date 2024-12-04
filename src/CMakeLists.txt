@@ -59,19 +59,21 @@ else()
             DESTINATION mmgpy/lib)
             
     # Install executables with their correct target names
-    install(TARGETS mmg2d_O3 mmg3d_O3 mmgs_O3
+    install(TARGETS mmg2d mmg3d mmgs
             DESTINATION "${SKBUILD_SCRIPTS_DIR}"
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
                       GROUP_READ GROUP_EXECUTE 
                       WORLD_READ WORLD_EXECUTE
+            RENAME mmg2d_O3 mmg3d_O3 mmgs_O3  # This won't work, we'll fix it below
     )
     
     # Set RPATH for executables
-    foreach(exe mmg2d_O3 mmg3d_O3 mmgs_O3)
+    foreach(exe mmg2d mmg3d mmgs)
         set_target_properties(${exe} PROPERTIES
             INSTALL_RPATH "$ORIGIN/../lib/python3.13/site-packages/mmgpy/lib"
             BUILD_WITH_INSTALL_RPATH TRUE
             SKIP_BUILD_RPATH FALSE
+            OUTPUT_NAME "${exe}_O3"  # This is how we rename the executables
         )
     endforeach()
     
