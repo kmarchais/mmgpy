@@ -76,7 +76,7 @@ else()
         )
         # Set RPATH for each executable
         set_target_properties(${exe} PROPERTIES
-            INSTALL_RPATH "$ORIGIN/${SKBUILD_PLATLIB_DIR}/mmgpy/lib"
+            INSTALL_RPATH "$ORIGIN/../lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/mmgpy/lib"
             BUILD_WITH_INSTALL_RPATH TRUE
             SKIP_BUILD_RPATH FALSE
         )
