@@ -69,6 +69,7 @@ else()
                 BUILD_WITH_INSTALL_RPATH TRUE
                 SKIP_BUILD_RPATH FALSE
             )
+        endforeach()
     else()
         set_target_properties(mmgpy PROPERTIES
             INSTALL_RPATH "$ORIGIN/lib"
