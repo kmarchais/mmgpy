@@ -76,12 +76,12 @@ else()
         )
         # Set RPATH for each executable
         set_target_properties(${exe} PROPERTIES
-            INSTALL_RPATH "$ORIGIN/../${PYTHON_SITE_PACKAGES}/mmgpy/lib"
+            INSTALL_RPATH "$ORIGIN/${SKBUILD_PLATLIB_DIR}/mmgpy/lib"
             BUILD_WITH_INSTALL_RPATH TRUE
             SKIP_BUILD_RPATH FALSE
         )
     endforeach()
     
     message(STATUS "SKBUILD_SCRIPTS_DIR ${SKBUILD_SCRIPTS_DIR}")
-    message(STATUS "PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES}")
+    message(STATUS "SKBUILD_PLATLIB_DIR ${SKBUILD_PLATLIB_DIR}")
 endif()
