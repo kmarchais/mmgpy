@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-# Create the core binding module
+
 pybind11_add_module(mmgpy
     bindings/mmgs.cpp
     bindings/mmg3d.cpp
@@ -53,75 +53,27 @@ if(WIN32)
         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
     )
 else()
-    # Enable RPATH
-    SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    SET(CMAKE_INSTALL_RPATH "$ORIGIN")
-
-    foreach(EXE_NAME mmg2d_O3 mmg3d_O3 mmgs_O3)
-        string(REPLACE "_O3" "" BASE_NAME ${EXE_NAME})
-        
-        # Install the executable to mmgpy/bin
-        install(PROGRAMS ${mmg_BINARY_DIR}/bin/${EXE_NAME}
-                DESTINATION mmgpy/bin)
-
-        if(APPLE)
-            # Install libraries to mmgpy/bin
-            install(FILES 
-                "${mmg_BINARY_DIR}/lib/lib${BASE_NAME}.dylib"
-                "${mmg_BINARY_DIR}/lib/lib${BASE_NAME}.5.dylib"
-                DESTINATION mmgpy/bin)
-
-            # Set install name using install_name_tool
-            install(CODE "
-                execute_process(
-                    COMMAND install_name_tool -change 
-                        \"@rpath/lib${BASE_NAME}.5.dylib\"
-                        \"@loader_path/lib${BASE_NAME}.5.dylib\"
-                        \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}\"
-                )")
-        endif()
-
-        # Create symlinks in .venv/bin
-        install(CODE "
-            file(MAKE_DIRECTORY \"${SKBUILD_SCRIPTS_DIR}\")
+    # Unix-specific installation
+    # Install shared libraries
+    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            DESTINATION mmgpy/lib)
             
-            # Symlink for executable
-            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/${EXE_NAME}\"
-                \"${SKBUILD_SCRIPTS_DIR}/${EXE_NAME}\"
-            )
-
-            if(APPLE)
-                # Symlinks for libraries
-                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                    \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/lib${BASE_NAME}.dylib\"
-                    \"${SKBUILD_SCRIPTS_DIR}/lib${BASE_NAME}.dylib\"
-                )
-                execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                    \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/lib${BASE_NAME}.5.dylib\"
-                    \"${SKBUILD_SCRIPTS_DIR}/lib${BASE_NAME}.5.dylib\"
-                )
-            endif()
-        ")
-    endforeach()
-
-    if(APPLE)
-        # Install and symlink libmmg
-        install(FILES 
-            "${mmg_BINARY_DIR}/lib/libmmg.dylib"
-            "${mmg_BINARY_DIR}/lib/libmmg.5.dylib"
-            DESTINATION mmgpy/bin)
-
-        install(CODE "
-            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/libmmg.dylib\"
-                \"${SKBUILD_SCRIPTS_DIR}/libmmg.dylib\"
-            )
-            execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                \"\${CMAKE_INSTALL_PREFIX}/mmgpy/bin/libmmg.5.dylib\"
-                \"${SKBUILD_SCRIPTS_DIR}/libmmg.5.dylib\"
-            )
-        ")
-    endif()
+    # Install executables with their correct target names directly to scripts directory
+    install(TARGETS mmg2d mmg3d mmgs
+            DESTINATION "${SKBUILD_SCRIPTS_DIR}"  # Removed /bin subdirectory
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+                      GROUP_READ GROUP_EXECUTE 
+                      WORLD_READ WORLD_EXECUTE
+    )
+    
+    # Set RPATH for executables to find shared libraries
+    set_target_properties(mmgpy PROPERTIES
+        INSTALL_RPATH "$ORIGIN/../mmgpy/lib"  # Updated RPATH to reflect new relative path
+        BUILD_WITH_INSTALL_RPATH TRUE
+        SKIP_BUILD_RPATH FALSE
+    )
+    
+    message(STATUS "SKBUILD_SCRIPTS_DIR ${SKBUILD_SCRIPTS_DIR}")
+    message(STATUS "mmg_BINARY_DIR ${mmg_BINARY_DIR}")
+    message(STATUS "mmg_SOURCE_DIR ${mmg_SOURCE_DIR}")
 endif()

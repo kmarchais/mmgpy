@@ -7,17 +7,13 @@ endif()
 
 project(mmgpy VERSION 0.1.0)
 
-# Find Python first
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
-# Try to find system pybind11
 find_package(pybind11 QUIET)
 
-# If pybind11 was not found, try to find it via Python
 if(NOT pybind11_FOUND)
     message(STATUS "pybind11 not found in system, trying to locate it via Python...")
     
-    # Execute Python to find pybind11
     execute_process(
         COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
         OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
@@ -41,33 +37,27 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Build external dependencies (MMG)
 add_subdirectory(extern)
 
-# Add project source
 add_subdirectory(src)
 
-# Enable testing
 option(BUILD_TESTING "Build tests" ON)
 if(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif()
 
-# Installation settings
 include(GNUInstallDirs)
 
-# Install the Python package
 install(
     DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/mmgpy/"
     DESTINATION "${Python_SITEARCH}/mmgpy"
     FILES_MATCHING PATTERN "*.py"
 )
 
-# Install the compiled extension
 install(
     TARGETS mmgpy
     LIBRARY DESTINATION "${Python_SITEARCH}/mmgpy"
 )
 
-# Print status
 message(STATUS "")
 message(STATUS "MMGpy configuration summary:")
 message(STATUS "  Python executable: ${Python_EXECUTABLE}")
