@@ -31,14 +31,4 @@ jobs:
 
       - run: uv sync -v
 
-      # - if: runner.os == 'Windows'
-      #   run: .\.venv\Scripts\mmg3d.exe -in tests/Mesh.mesh -out tests/output_exe.mesh
-      # - if: runner.os != 'Windows'
-      #   run: .venv/bin/mmg3d_O3 -in tests/Mesh.mesh -out tests/output_exe.mesh
-
-      - if: runner.os == 'Linux'
-        run: ldd .venv/bin/mmg3d_O3
-      - if: runner.os == 'macOS'
-        run: otool -L .venv/bin/mmg3d_O3
-
       - run: uv run pytest

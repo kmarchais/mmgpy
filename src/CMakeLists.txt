@@ -112,7 +112,4 @@ else()
     #                   GROUP_READ GROUP_EXECUTE 
     #                   WORLD_READ WORLD_EXECUTE
     # )
-    
-    message(STATUS "SKBUILD_SCRIPTS_DIR ${SKBUILD_SCRIPTS_DIR}")
-    message(STATUS "SKBUILD_PLATLIB_DIR ${SKBUILD_PLATLIB_DIR}")
 endif()
