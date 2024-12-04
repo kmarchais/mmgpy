@@ -36,7 +36,7 @@ jobs:
       # - if: runner.os != 'Windows'
       #   run: .venv/bin/mmg3d_O3 -in tests/Mesh.mesh -out tests/output_exe.mesh
 
-      - if: runner.os == 'Linux'
+      - if: runner.os != 'Windows'
         run: ldd .venv/bin/mmg3d_O3
 
       - run: uv run pytest

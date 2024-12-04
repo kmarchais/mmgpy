@@ -55,11 +55,36 @@ if(WIN32)
 else()
     # Unix-specific installation
     # Set RPATH for Python module
-    set_target_properties(mmgpy PROPERTIES
-        INSTALL_RPATH "$ORIGIN/lib"
-        BUILD_WITH_INSTALL_RPATH TRUE
-        SKIP_BUILD_RPATH FALSE
-    )
+    if (APPLE)
+        set_target_properties(mmgpy PROPERTIES
+            INSTALL_RPATH "@loader_path/lib"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            SKIP_BUILD_RPATH FALSE
+        )
+
+        # Set RPATH for executables
+        foreach(exe mmg2d mmg3d mmgs)
+            set_target_properties(${exe} PROPERTIES
+                INSTALL_RPATH "@loader_path/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
+                BUILD_WITH_INSTALL_RPATH TRUE
+                SKIP_BUILD_RPATH FALSE
+            )
+    else()
+        set_target_properties(mmgpy PROPERTIES
+            INSTALL_RPATH "$ORIGIN/lib"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            SKIP_BUILD_RPATH FALSE
+        )
+        
+        # Set RPATH for executables
+        foreach(exe mmg2d mmg3d mmgs)
+            set_target_properties(${exe} PROPERTIES
+                INSTALL_RPATH "$ORIGIN/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
+                BUILD_WITH_INSTALL_RPATH TRUE
+                SKIP_BUILD_RPATH FALSE
+            )
+        endforeach()
+    endif()
 
     # Install shared libraries
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
@@ -87,15 +112,6 @@ else()
                       GROUP_READ GROUP_EXECUTE 
                       WORLD_READ WORLD_EXECUTE
     )
-    
-    # Set RPATH for executables
-    foreach(exe mmg2d mmg3d mmgs)
-        set_target_properties(${exe} PROPERTIES
-            INSTALL_RPATH "$ORIGIN/../lib/python3.${Python_VERSION_MINOR}/site-packages/mmgpy/lib"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            SKIP_BUILD_RPATH FALSE
-        )
-    endforeach()
     
     message(STATUS "SKBUILD_SCRIPTS_DIR ${SKBUILD_SCRIPTS_DIR}")
     message(STATUS "SKBUILD_PLATLIB_DIR ${SKBUILD_PLATLIB_DIR}")
