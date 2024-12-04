@@ -54,6 +54,13 @@ if(WIN32)
     )
 else()
     # Unix-specific installation
+    # Set RPATH for Python module
+    set_target_properties(mmgpy PROPERTIES
+        INSTALL_RPATH "$ORIGIN/lib"
+        BUILD_WITH_INSTALL_RPATH TRUE
+        SKIP_BUILD_RPATH FALSE
+    )
+
     # Install shared libraries
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
             DESTINATION mmgpy/lib)
