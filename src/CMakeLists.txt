@@ -58,20 +58,22 @@ else()
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
             DESTINATION mmgpy/lib)
             
-    # Install executables with their correct target names directly to scripts directory
-    install(TARGETS mmg2d mmg3d mmgs
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"  # Removed /bin subdirectory
+    # Install executables with their correct target names
+    install(TARGETS mmg2d_O3 mmg3d_O3 mmgs_O3
+            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE 
                       GROUP_READ GROUP_EXECUTE 
                       WORLD_READ WORLD_EXECUTE
     )
     
-    # Set RPATH for executables to find shared libraries
-    set_target_properties(mmgpy PROPERTIES
-        INSTALL_RPATH "$ORIGIN/../mmgpy/lib"  # Updated RPATH to reflect new relative path
-        BUILD_WITH_INSTALL_RPATH TRUE
-        SKIP_BUILD_RPATH FALSE
-    )
+    # Set RPATH for executables
+    foreach(exe mmg2d_O3 mmg3d_O3 mmgs_O3)
+        set_target_properties(${exe} PROPERTIES
+            INSTALL_RPATH "$ORIGIN/../lib/python3.13/site-packages/mmgpy/lib"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            SKIP_BUILD_RPATH FALSE
+        )
+    endforeach()
     
     message(STATUS "SKBUILD_SCRIPTS_DIR ${SKBUILD_SCRIPTS_DIR}")
     message(STATUS "mmg_BINARY_DIR ${mmg_BINARY_DIR}")
