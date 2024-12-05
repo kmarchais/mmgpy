@@ -2,9 +2,6 @@
 
 #include "mmg/common/mmgversion.h"
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 PYBIND11_MODULE(_mmgpy, m) {
   py::class_<mmg3d>(m, "mmg3d")
       .def_static("remesh", remesh_3d, py::arg("input_mesh"),
