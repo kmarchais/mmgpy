@@ -13,14 +13,14 @@ find_package(pybind11 QUIET)
 
 if(NOT pybind11_FOUND)
     message(STATUS "pybind11 not found in system, trying to locate it via Python...")
-    
+
     execute_process(
         COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
         OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
         OUTPUT_STRIP_TRAILING_WHITESPACE
         RESULT_VARIABLE PYBIND11_RESULT
     )
-    
+
     if(PYBIND11_RESULT EQUAL 0)
         message(STATUS "Found pybind11 via Python at: ${PYBIND11_CMAKE_DIR}")
         list(APPEND CMAKE_PREFIX_PATH "${PYBIND11_CMAKE_DIR}")

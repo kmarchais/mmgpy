@@ -1,6 +1,4 @@
-"""Type stubs for mmgpy"""
-
-class mmg3d:
+class mmg3d:  # noqa: N801
     @staticmethod
     def remesh(
         input_mesh: str,
@@ -10,7 +8,7 @@ class mmg3d:
         options: dict[str, float | int] = ...,
     ) -> bool: ...
 
-class mmg2d:
+class mmg2d:  # noqa: N801
     @staticmethod
     def remesh(
         input_mesh: str,
@@ -20,7 +18,7 @@ class mmg2d:
         options: dict[str, float | int] = ...,
     ) -> bool: ...
 
-class mmgs:
+class mmgs:  # noqa: N801
     @staticmethod
     def remesh(
         input_mesh: str,
