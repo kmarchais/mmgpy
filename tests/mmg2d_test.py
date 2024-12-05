@@ -37,26 +37,3 @@ def test_mmg2d() -> None:
     )
 
     compare_files(wrapper_output, exe_output)
-
-
-# def test_options_mmg2d() -> None:
-#     """Test that the Python wrapper can handle both int and double options."""
-#     wrapper_output = OUTPUT / "2D_wrapper.mesh"
-#     exe_output = OUTPUT / "2D_exe_2.mesh"
-
-#     ar = 10
-#     hmax = 10
-
-#     mmg2d.remesh(
-#         input_mesh=MESH_FILE,
-#         output_mesh=wrapper_output,
-#         options={"ar": ar, "hmax": hmax},
-#     )
-
-#     exe = f"{EXE}.exe" if platform.system() == "Windows" else f"{EXE}_O3"
-#     subprocess.run(  # noqa: S603
-#         [exe, "-ar", str(ar), "-hmax", str(hmax), MESH_FILE, "-out", exe_output],
-#         check=True,
-#     )
-
-#     assert compare_files(wrapper_output, exe_output)

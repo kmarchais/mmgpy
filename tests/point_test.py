@@ -1,8 +1,12 @@
+"""Tests for the Point class."""
+
 import numpy as np
+
 from mmgpy import Point
 
 
-def test_basic_usage():
+def test_basic_usage() -> None:
+    """Test basic usage of the Point class."""
     # Create a point
     p = Point()
 
@@ -12,13 +16,9 @@ def test_basic_usage():
     assert np.allclose(p.c, coords)
 
     # Test string representation
-    print(p)  # Should print coordinates
+    assert repr(p) == f"<MMG5_Point at ({coords})>"
 
     # Test reference setting
-    p.ref = 42
-    assert p.ref == 42
-
-
-if __name__ == "__main__":
-    test_basic_usage()
-    print("Test passed!")
+    ref = 42
+    p.ref = ref
+    assert p.ref == ref

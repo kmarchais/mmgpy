@@ -8,9 +8,9 @@ __version__ = _version.__version__
 
 __all__ = [
     "MMG_VERSION",
+    "Point",
     "__version__",
     "mmg2d",
     "mmg3d",
     "mmgs",
-    "Point",
 ]
