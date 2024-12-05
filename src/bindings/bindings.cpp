@@ -23,10 +23,13 @@ PYBIND11_MODULE(_mmgpy, m) {
       // Coordinates as a numpy array
       .def_property(
           "c",
-          [](MMG5_Point &p) -> py::array_t<double> {
-            py::array_t<double> result(3);
-            auto buf = result.mutable_unchecked<1>();
-            std::memcpy(buf.mutable_data(0), p.c, 3 * sizeof(double));
+          [](const MMG5_Point &p) -> py::array_t<double> {
+            auto result = py::array_t<double>(3);
+            py::buffer_info buf = result.request();
+            double *ptr = static_cast<double *>(buf.ptr);
+            ptr[0] = p.c[0];
+            ptr[1] = p.c[1];
+            ptr[2] = p.c[2];
             return result;
           },
           [](MMG5_Point &p, py::array_t<double> arr) {
