@@ -3,6 +3,7 @@
 #ifndef MMG_COMMON_HPP
 #define MMG_COMMON_HPP
 
+#include <iostream>
 #include <string>
 #include <tuple>
 
@@ -24,6 +25,7 @@ inline void set_mesh_options(MMG5_pMesh mesh, MMG5_pSol met,
                              const py::dict &options) {
   for (auto item : options) {
     std::string key = py::str(item.first);
+    std::cout << key << "\t" << item.second << std::endl;
     if (key == "hmin") {
       mesh->info.hmin = item.second.cast<double>();
     } else if (key == "hmax") {
