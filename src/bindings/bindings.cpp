@@ -24,7 +24,10 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def_property(
           "c",
           [](MMG5_Point &p) -> py::array_t<double> {
-            return py::array_t<double>({3}, {sizeof(double)}, p.c);
+            py::array_t<double> result(3);
+            auto buf = result.mutable_unchecked<1>();
+            std::memcpy(buf.mutable_data(0), p.c, 3 * sizeof(double));
+            return result;
           },
           [](MMG5_Point &p, py::array_t<double> arr) {
             auto r = arr.unchecked<1>();
