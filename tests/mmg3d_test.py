@@ -8,7 +8,9 @@ from mmgpy import mmg3d
 
 DIRECTORY = Path(__file__).parent
 
-MESH_FILE = DIRECTORY / "Mesh.mesh"
+MESH_FILE = DIRECTORY / "data" / "3D_MESH.mesh"
+OUTPUT = DIRECTORY / "output"
+EXE = "mmg3d"
 
 
 def compare_files(file1: Path, file2: Path) -> bool:
@@ -19,36 +21,38 @@ def compare_files(file1: Path, file2: Path) -> bool:
 
 def test_mmg3d() -> None:
     """Test that the Python wrapper produces the same output as the executable."""
+    wrapper_output = OUTPUT / "test.mesh"
+    exe_output = OUTPUT / "exe.mesh"
+
     mmg3d.remesh(
         input_mesh=MESH_FILE,
-        output_mesh=DIRECTORY / "test_output.mesh",
+        output_mesh=wrapper_output,
         options={"imprim": 0},
     )
 
-    exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
+    exe = f"{EXE}.exe" if platform.system() == "Windows" else f"{EXE}_O3"
     subprocess.run(  # noqa: S603
-        [exe, "-in", MESH_FILE, "-out", DIRECTORY / "output_exe.mesh"],
+        [exe, "-in", MESH_FILE, "-out", exe_output],
         check=True,
     )
 
-    test_path = DIRECTORY / "test_output.mesh"
-    ref_path = DIRECTORY / "output_exe.mesh"
-    compare_files(test_path, ref_path)
+    compare_files(wrapper_output, exe_output)
 
 
 def test_int_double_options() -> None:
     """Test that the Python wrapper can handle both int and double options."""
+    int_output = OUTPUT / "int.mesh"
+    double_output = OUTPUT / "double.mesh"
+
     mmg3d.remesh(
-        input_mesh=str(MESH_FILE),
-        output_mesh=str(DIRECTORY / "test_output_int.mesh"),
+        input_mesh=MESH_FILE,
+        output_mesh=int_output,
         options={"ls": 0, "imprim": 0},
     )
     mmg3d.remesh(
         input_mesh=MESH_FILE,
-        output_mesh=DIRECTORY / "test_output_double.mesh",
+        output_mesh=double_output,
         options={"ls": 0.0, "imprim": 0},
     )
 
-    test_path = DIRECTORY / "test_output_int.mesh"
-    ref_path = DIRECTORY / "test_output_double.mesh"
-    assert compare_files(test_path, ref_path)
+    assert compare_files(int_output, double_output)

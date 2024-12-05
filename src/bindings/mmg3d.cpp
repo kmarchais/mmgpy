@@ -57,13 +57,9 @@ bool remesh_3d(const std::string &input_mesh, const std::string &input_sol,
   // Initialize structures
   auto [mesh, met, disp, ls] = init_mmg3d_structures();
 
-  std::cout << "remesh_3d" << std::endl;
-
   // Set mesh names
   MMG3D_Set_inputMeshName(mesh, input_mesh.c_str());
   MMG3D_Set_outputMeshName(mesh, output_mesh.c_str());
-
-  std::cout << "remesh_3d" << std::endl;
 
   if (!input_sol.empty()) {
     MMG3D_Set_inputSolName(mesh, met, input_sol.c_str());
@@ -71,8 +67,6 @@ bool remesh_3d(const std::string &input_mesh, const std::string &input_sol,
   if (!output_sol.empty()) {
     MMG3D_Set_outputSolName(mesh, met, output_sol.c_str());
   }
-
-  std::cout << "remesh_3d" << std::endl;
 
   try {
     // Load mesh
@@ -89,12 +83,8 @@ bool remesh_3d(const std::string &input_mesh, const std::string &input_sol,
       }
     }
 
-    std::cout << "OOOOOOOOOO" << std::endl;
-
     // Set all mesh options
     set_mesh_options(mesh, met, options);
-
-    std::cout << "OOOOOOOOOO" << std::endl;
 
     // Process mesh
     int ret;
