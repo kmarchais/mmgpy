@@ -33,9 +33,9 @@ set(USE_VTK OFF CACHE BOOL "Do not use VTK" FORCE)
 FetchContent_MakeAvailable(mmg)
 
 # Set the correct library targets
-set(MMG_LIBRARIES 
-    libmmg2d_so 
-    libmmg3d_so 
+set(MMG_LIBRARIES
+    libmmg2d_so
+    libmmg3d_so
     libmmgs_so
     CACHE INTERNAL ""
 )
