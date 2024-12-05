@@ -1,4 +1,3 @@
 """Version information."""
 
 __version__ = "@PROJECT_VERSION@"
-version = __version__

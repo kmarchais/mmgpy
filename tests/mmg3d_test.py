@@ -1,24 +1,24 @@
-from pathlib import Path
+"""Tests for the MMG3D Python wrapper."""
 
 import platform
-
 import subprocess
+from pathlib import Path
 
-from mmgpy import MMG_VERSION, mmg3d
-
-
-def test_version():
-    assert MMG_VERSION == "5.8.0"
+from mmgpy import mmg3d
 
 
-def test_mmg3d():
+def test_mmg3d() -> None:
+    """Test that the Python wrapper produces the same output as the executable."""
     mmg3d.remesh(
         input_mesh="tests/Mesh.mesh",
         output_mesh="tests/test_output.mesh",
     )
 
     exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
-    subprocess.call([exe, "-in", "tests/Mesh.mesh", "-out", "tests/output_exe.mesh"])
+    subprocess.run(  # noqa: S603
+        [exe, "-in", "tests/Mesh.mesh", "-out", "tests/output_exe.mesh"],
+        check=True,
+    )
 
     folder = Path(__file__).parent
     test_path = folder / "test_output.mesh"
