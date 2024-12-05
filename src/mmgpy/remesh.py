@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 from ._mmgpy import (  # type: ignore[attr-defined]
     _remesh_2d,
-    _remesh_3d,  # type: ignore[attr-defined]
+    _remesh_3d,
     _remesh_s,
 )
 
