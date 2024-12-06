@@ -34,18 +34,18 @@ PYBIND11_MODULE(_mmgpy, m) {
       //         p.c[i] = r(i);
       //     })
       // Normal as a numpy array
-      .def_property(
-          "n",
-          [](MMG5_Point &p) -> py::array_t<double> {
-            return py::array_t<double>({3}, {sizeof(double)}, p.n);
-          },
-          [](MMG5_Point &p, py::array_t<double> arr) {
-            auto r = arr.unchecked<1>();
-            if (r.shape(0) != 3)
-              throw std::runtime_error("Normal must be length 3");
-            for (size_t i = 0; i < 3; i++)
-              p.n[i] = r(i);
-          })
+      // .def_property(
+      //     "n",
+      //     [](MMG5_Point &p) -> py::array_t<double> {
+      //       return py::array_t<double>({3}, {sizeof(double)}, p.n);
+      //     },
+      //     [](MMG5_Point &p, py::array_t<double> arr) {
+      //       auto r = arr.unchecked<1>();
+      //       if (r.shape(0) != 3)
+      //         throw std::runtime_error("Normal must be length 3");
+      //       for (size_t i = 0; i < 3; i++)
+      //         p.n[i] = r(i);
+      //     })
       // Integer properties
       .def_readwrite("ref", &MMG5_Point::ref)
       .def_readwrite("xp", &MMG5_Point::xp)
