@@ -47,15 +47,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       //         p.n[i] = r(i);
       //     })
       // Integer properties
-      .def_readwrite("ref", &MMG5_Point::ref)
-      .def_readwrite("xp", &MMG5_Point::xp)
-      .def_readwrite("tmp", &MMG5_Point::tmp)
-      .def_readwrite("flag", &MMG5_Point::flag)
-      .def_readwrite("s", &MMG5_Point::s)
-      // Tag as uint16_t
-      .def_readwrite("tag", &MMG5_Point::tag)
-      // Tagdel as int8_t
-      .def_readwrite("tagdel", &MMG5_Point::tagdel)
+      // .def_readwrite("ref", &MMG5_Point::ref)
+      // .def_readwrite("xp", &MMG5_Point::xp)
+      // .def_readwrite("tmp", &MMG5_Point::tmp)
+      // .def_readwrite("flag", &MMG5_Point::flag)
+      // .def_readwrite("s", &MMG5_Point::s)
+      // // Tag as uint16_t
+      // .def_readwrite("tag", &MMG5_Point::tag)
+      // // Tagdel as int8_t
+      // .def_readwrite("tagdel", &MMG5_Point::tagdel)
       // Constructor
       .def(py::init<>());
   // String representation
