@@ -1,8 +1,6 @@
 #pragma once
 
-#ifndef MMG_COMMON_HPP
-#define MMG_COMMON_HPP
-
+#include <iostream>
 #include <string>
 #include <tuple>
 
@@ -53,5 +51,3 @@ inline void set_mesh_options(MMG5_pMesh mesh, MMG5_pSol met,
     }
   }
 }
-
-#endif // MMG_COMMON_HPP
