@@ -8,9 +8,7 @@ version = "0.1.0"
 description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = [
-    "numpy>=2.0.2",
-]
+dependencies = ["numpy>=2.0.2"]
 
 [tool.scikit-build]
 build.verbose = true
@@ -25,8 +23,8 @@ BUILD_SHARED_LIBS = "ON"
 [dependency-groups]
 dev = ["pytest>=8.3.4"]
 
-[tool.ruff.lint]
-select = ["ALL"]
+# [tool.ruff.lint]
+# select = ["ALL"]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "tests/**/*.py" = [

@@ -21,18 +21,18 @@ PYBIND11_MODULE(_mmgpy, m) {
   // Bind the MMG5_Point structure
   py::class_<MMG5_Point>(m, "Point")
       // Coordinates as a numpy array
-      .def_property(
-          "c",
-          [](MMG5_Point &p) -> py::array_t<double> {
-            return py::array_t<double>({3}, {sizeof(double)}, p.c);
-          },
-          [](MMG5_Point &p, py::array_t<double> arr) {
-            auto r = arr.unchecked<1>();
-            if (r.shape(0) != 3)
-              throw std::runtime_error("Coordinates must be length 3");
-            for (size_t i = 0; i < 3; i++)
-              p.c[i] = r(i);
-          })
+      // .def_property(
+      //     "c",
+      //     [](MMG5_Point &p) -> py::array_t<double> {
+      //       return py::array_t<double>({3}, {sizeof(double)}, p.c);
+      //     },
+      //     [](MMG5_Point &p, py::array_t<double> arr) {
+      //       auto r = arr.unchecked<1>();
+      //       if (r.shape(0) != 3)
+      //         throw std::runtime_error("Coordinates must be length 3");
+      //       for (size_t i = 0; i < 3; i++)
+      //         p.c[i] = r(i);
+      //     })
       // Normal as a numpy array
       .def_property(
           "n",
