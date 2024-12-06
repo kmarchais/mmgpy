@@ -64,44 +64,46 @@ PYBIND11_MODULE(_mmgpy, m) {
   //               std::to_string(p.c[1]) + "," + std::to_string(p.c[2]) + ")>";
   //               });
 
-  // py::class_<MMG5_Tetra>(m, "Tetra")
-  //     // Quality
-  //     .def_readwrite("qual", &MMG5_Tetra::qual)
+  py::class_<MMG5_Tetra>(m, "Tetra")
+      // Quality
+      .def_readwrite("qual", &MMG5_Tetra::qual)
 
-  //     // Vertices as numpy array
-  //     .def_property(
-  //         "v",
-  //         [](MMG5_Tetra &t) -> py::array_t<MMG5_int> {
-  //           return py::array_t<MMG5_int>({4}, {sizeof(MMG5_int)}, t.v);
-  //         },
-  //         [](MMG5_Tetra &t, py::array_t<MMG5_int> arr) {
-  //           auto r = arr.unchecked<1>();
-  //           if (r.shape(0) != 4)
-  //             throw std::runtime_error("Vertices array must have length 4");
-  //           for (int i = 0; i < 4; i++)
-  //             t.v[i] = r(i);
-  //         })
+      // Vertices as numpy array
+      // .def_property(
+      //     "v",
+      //     [](MMG5_Tetra &t) -> py::array_t<MMG5_int>
+      //     {
+      //       return py::array_t<MMG5_int>({4}, {sizeof(MMG5_int)}, t.v);
+      //     },
+      //     [](MMG5_Tetra &t, py::array_t<MMG5_int> arr)
+      //     {
+      //       auto r = arr.unchecked<1>();
+      //       if (r.shape(0) != 4)
+      //         throw std::runtime_error("Vertices array must have length 4");
+      //       for (int i = 0; i < 4; i++)
+      //         t.v[i] = r(i);
+      //     })
 
-  //     // Integer properties
-  //     .def_readwrite("ref", &MMG5_Tetra::ref)
-  //     .def_readwrite("base", &MMG5_Tetra::base)
-  //     .def_readwrite("mark", &MMG5_Tetra::mark)
-  //     .def_readwrite("xt", &MMG5_Tetra::xt)
-  //     .def_readwrite("flag", &MMG5_Tetra::flag)
+      // Integer properties
+      .def_readwrite("ref", &MMG5_Tetra::ref)
+      .def_readwrite("base", &MMG5_Tetra::base)
+      .def_readwrite("mark", &MMG5_Tetra::mark)
+      .def_readwrite("xt", &MMG5_Tetra::xt)
+      .def_readwrite("flag", &MMG5_Tetra::flag)
 
-  //     // Tag as uint16_t
-  //     .def_readwrite("tag", &MMG5_Tetra::tag)
+      // Tag as uint16_t
+      .def_readwrite("tag", &MMG5_Tetra::tag)
 
-  //     // Constructor
-  //     .def(py::init<>())
+      // Constructor
+      .def(py::init<>());
 
-  //     // String representation
-  //     .def("__repr__", [](const MMG5_Tetra &t) {
-  //       return "<MMG5_Tetra with vertices (" + std::to_string(t.v[0]) + "," +
-  //              std::to_string(t.v[1]) + "," + std::to_string(t.v[2]) + "," +
-  //              std::to_string(t.v[3]) + "), ref=" + std::to_string(t.ref) +
-  //              ", qual=" + std::to_string(t.qual) + ">";
-  //     });
+  // String representation
+  // .def("__repr__", [](const MMG5_Tetra &t)
+  //      { return "<MMG5_Tetra with vertices (" + std::to_string(t.v[0]) + ","
+  //      +
+  //               std::to_string(t.v[1]) + "," + std::to_string(t.v[2]) + "," +
+  //               std::to_string(t.v[3]) + "), ref=" + std::to_string(t.ref) +
+  //               ", qual=" + std::to_string(t.qual) + ">"; });
 
   // py::class_<MMG5_Mesh>(m, "Mesh")
   //     // Memory info
