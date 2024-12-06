@@ -57,12 +57,12 @@ PYBIND11_MODULE(_mmgpy, m) {
       // Tagdel as int8_t
       .def_readwrite("tagdel", &MMG5_Point::tagdel)
       // Constructor
-      .def(py::init<>())
-      // String representation
-      .def("__repr__", [](const MMG5_Point &p) {
-        return "<MMG5_Point at (" + std::to_string(p.c[0]) + "," +
-               std::to_string(p.c[1]) + "," + std::to_string(p.c[2]) + ")>";
-      });
+      .def(py::init<>());
+  // String representation
+  // .def("__repr__", [](const MMG5_Point &p)
+  //      { return "<MMG5_Point at (" + std::to_string(p.c[0]) + "," +
+  //               std::to_string(p.c[1]) + "," + std::to_string(p.c[2]) + ")>";
+  //               });
 
   py::class_<MMG5_Tetra>(m, "Tetra")
       // Quality
