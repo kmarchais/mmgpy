@@ -80,4 +80,4 @@ jobs:
 
       - run: uv sync -v
       - run: uv run python -c "import mmgpy"
-      - run: uv run pytest -s
+      - run: uv run pytest -s -v
