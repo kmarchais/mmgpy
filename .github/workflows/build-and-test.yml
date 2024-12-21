@@ -29,6 +29,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: uv sync -v
+      # Install VTK using system package manager
+      - name: Install VTK (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvtk9-dev
 
+      - name: Install VTK (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install vtk
+
+      - name: Install VTK (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg install vtk:x64-windows
+
+      - run: uv sync -v
       - run: uv run pytest
