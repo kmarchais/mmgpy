@@ -21,16 +21,12 @@ jobs:
       vtk_patch: "1"
 
   build-and-test:
+    needs: install-vtk # Add this line to wait for install-vtk
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
-        python-version:
-          - "3.9"
-          - "3.13"
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.13"]
 
     runs-on: ${{ matrix.os }}
 
@@ -42,9 +38,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Set CMake path
-        run: echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs.cmake_prefix_path }}" >> $GITHUB_ENV
+        run: |
+          # Map the matrix OS to the corresponding install-vtk output
+          echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs[matrix.os].cmake_prefix_path }}" >> $GITHUB_ENV
 
-      - run: echo ${{ needs.install-vtk.outputs.cmake_prefix_path }}
+      # Debug output
+      - name: Debug output
+        run: |
+          echo "Available outputs: ${{ toJSON(needs.install-vtk.outputs) }}"
+          echo "Current OS: ${{ matrix.os }}"
+          echo "CMAKE_PREFIX_PATH: ${{ env.CMAKE_PREFIX_PATH }}"
 
       - run: uv sync -v
       - run: uv run python -c "import mmgpy"
