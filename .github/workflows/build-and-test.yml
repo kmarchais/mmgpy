@@ -44,7 +44,7 @@ jobs:
         run: |
           brew install vtk
 
-      # Download and extract pre-built VTK 9.2.5 for Windows
+      # Download and extract pre-built VTK 9.3.1 for Windows
       - name: Download pre-built VTK (Windows)
         if: runner.os == 'Windows'
         uses: suisei-cn/actions-download-file@v1.0.1
@@ -55,8 +55,8 @@ jobs:
       - name: Extract VTK (Windows)
         if: runner.os == 'Windows'
         run: |
-          mkdir -p ${{github.workspace}}/vtk
-          tar -xvzf vtk-${{runner.os}}-x86_64.tar.gz -C vtk/
+          mkdir -p "${{github.workspace}}/vtk"
+          tar -xvzf "${{github.workspace}}/vtk-Windows-x86_64.tar.gz" -C "${{github.workspace}}/vtk"
           echo "VTK_DIR=${{github.workspace}}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}" >> $GITHUB_ENV
         shell: bash
 
