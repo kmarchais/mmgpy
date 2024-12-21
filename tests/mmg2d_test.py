@@ -22,31 +22,32 @@ def test_mmg2d() -> None:
     hmax = 10
     verbose = -1
 
-    mmg2d.remesh(
-        input_mesh=str(input_mesh),
-        output_mesh=str(test_path),
-        options={
-            "ar": ar,
-            "hmax": hmax,
-            "verbose": verbose,
-        },
-    )
+    # mmg2d.remesh(
+    #     input_mesh=str(input_mesh),
+    #     output_mesh=str(test_path),
+    #     options={
+    #         "ar": ar,
+    #         "hmax": hmax,
+    #         "verbose": verbose,
+    #     },
+    # )
+
+    command = [
+        exe,
+        "-ar",
+        str(ar),
+        "-hmax",
+        str(hmax),
+        "-in",
+        str(input_mesh),
+        "-out",
+        str(ref_path),
+        "-verbose",
+        str(verbose),
+    ]
+    subprocess.check_call(command)  # noqa: S603
 
 
-#     command = [
-#         exe,
-#         "-ar",
-#         str(ar),
-#         "-hmax",
-#         str(hmax),
-#         "-in",
-#         str(input_mesh),
-#         "-out",
-#         str(ref_path),
-#         "-verbose",
-#         str(verbose),
-#     ]
-#     subprocess.check_call(command)  # noqa: S603
 #     # with test_path.open("r") as test, ref_path.open("r") as ref:
 #     #     test_content = test.read()
 #     #     ref_content = ref.read()
