@@ -71,3 +71,4 @@ jobs:
 
       - run: uv sync -v
       - run: uv run pytest
+      - run: diff tests/acdcBdy_remeshed.vtk tests/acdcBdy.o.vtk
