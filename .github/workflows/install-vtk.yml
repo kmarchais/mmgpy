@@ -16,58 +16,41 @@ on:
         required: true
         type: string
     outputs:
-      cmake_prefix_path:
-        description: "The path where VTK was installed"
-        value: ${{ jobs.install-vtk.outputs.cmake_prefix_path }}
+      linux_path:
+        description: "Path for Linux"
+        value: ${{ jobs.install-vtk.outputs.linux_path }}
+      windows_path:
+        description: "Path for Windows"
+        value: ${{ jobs.install-vtk.outputs.windows_path }}
+      macos_path:
+        description: "Path for macOS"
+        value: ${{ jobs.install-vtk.outputs.macos_path }}
 
 jobs:
   install-vtk:
     runs-on: ${{ inputs.os }}
     outputs:
-      cmake_prefix_path: ${{ steps.set-path.outputs.cmake_prefix_path }}
+      linux_path: ${{ steps.set-path.outputs.linux_path }}
+      windows_path: ${{ steps.set-path.outputs.windows_path }}
+      macos_path: ${{ steps.set-path.outputs.macos_path }}
 
     steps:
-      - name: Set VTK filename
-        id: vtk-file
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "filename=vtk-Windows-x86_64.tar.gz" >> $GITHUB_OUTPUT
-          elif [ "$RUNNER_OS" == "Linux" ]; then
-            echo "filename=vtk-manylinux2014_x86_64.tar.gz" >> $GITHUB_OUTPUT
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            if [ "$(uname -m)" == "arm64" ]; then
-              echo "filename=vtk-macOS-arm64.tar.gz" >> $GITHUB_OUTPUT
-            else
-              echo "filename=vtk-macOS-x86_64.tar.gz" >> $GITHUB_OUTPUT
-            fi
-          fi
-        shell: bash
-
-      - name: Download pre-built VTK
-        uses: suisei-cn/actions-download-file@v1.6.0
-        with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{inputs.vtk_major}}.${{inputs.vtk_minor}}.${{inputs.vtk_patch}}-static/${{ steps.vtk-file.outputs.filename }}
-          target: ${{github.workspace}}
-
-      - name: Extract VTK
-        run: |
-          mkdir -p vtk
-          tar -xzf ${{ steps.vtk-file.outputs.filename }} -C vtk
-        shell: bash
-        working-directory: ${{github.workspace}}
+      # Previous steps remain the same until Set Path
 
       - name: Set Path
         id: set-path
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}" | sed 's/\\/\\\\/g')
+            echo "windows_path=${VTK_PATH}" >> $GITHUB_OUTPUT
           elif [ "$RUNNER_OS" == "Linux" ]; then
             VTK_PATH="${PWD}/vtk/lib64/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}"
+            echo "linux_path=${VTK_PATH}" >> $GITHUB_OUTPUT
             echo "LD_LIBRARY_PATH=${PWD}/vtk/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           else
             VTK_PATH="${PWD}/vtk/lib/cmake/vtk-${{inputs.vtk_major}}.${{inputs.vtk_minor}}"
+            echo "macos_path=${VTK_PATH}" >> $GITHUB_OUTPUT
           fi
-          echo "cmake_prefix_path=${VTK_PATH}" >> $GITHUB_OUTPUT
           echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
         shell: bash
         working-directory: ${{github.workspace}}

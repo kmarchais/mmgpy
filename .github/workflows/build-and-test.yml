@@ -39,8 +39,14 @@ jobs:
 
       - name: Set CMake path
         run: |
-          # Map the matrix OS to the corresponding install-vtk output
-          echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs[matrix.os].cmake_prefix_path }}" >> $GITHUB_ENV
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs.windows_path }}" >> $GITHUB_ENV
+          elif [ "$RUNNER_OS" == "Linux" ]; then
+            echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs.linux_path }}" >> $GITHUB_ENV
+          else
+            echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs.macos_path }}" >> $GITHUB_ENV
+          fi
+        shell: bash
 
       # Debug output
       - name: Debug output
