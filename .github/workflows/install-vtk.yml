@@ -3,6 +3,9 @@ name: Install VTK
 on:
   workflow_call:
     inputs:
+      os:
+        required: true
+        type: string
       vtk_major:
         required: true
         type: string

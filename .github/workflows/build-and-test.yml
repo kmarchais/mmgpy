@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/workflows/install-vtk.yml
+      - uses: ./.github/workflows/install-vtk
         with:
           os: ${{ matrix.os }}
           vtk_major: ${{ env.VTK_VERSION_MAJOR }}
