@@ -28,8 +28,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    continue-on-error: true
-
     steps:
       - uses: actions/checkout@v4
 
@@ -61,8 +59,6 @@ jobs:
           tar -xzf vtk-Windows-x86_64.tar.gz -C vtk
           # Convert Windows path to CMake format and escape backslashes
           VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}" | sed 's/\\/\\\\/g')
-          # echo "VTK_DIR=${VTK_PATH}" >> $GITHUB_ENV
-          # Also set CMAKE_PREFIX_PATH
           echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
         shell: bash
         working-directory: ${{github.workspace}}

@@ -95,27 +95,6 @@ bool remesh_2d(const std::string &input_mesh, const std::string &input_sol,
     MMG2D_Set_inputSolName(mesh, met, input_sol.c_str());
   }
 
-  // if (output_sol.empty()) {
-  //   // First get the filename without path
-  //   size_t last_slash = input_mesh.find_last_of("/\\"); // Handle both Unix
-  //   and Windows paths std::string filename = (last_slash !=
-  //   std::string::npos) ?
-  //                         input_mesh.substr(last_slash + 1) :
-  //                         input_mesh;
-
-  //   // Now handle the extension
-  //   size_t dot_pos = filename.find_last_of(".");
-
-  //   std::string base_name;
-  //   if (dot_pos != std::string::npos) {
-  //       base_name = filename.substr(0, dot_pos);
-  //   } else {
-  //       base_name = filename;  // No extension found, use the whole string
-  //   }
-
-  //   output_sol = base_name + ".sol";
-  // }
-  // MMG2D_Set_outputSolName(mesh, met, output_sol.c_str());
   if (!output_sol.empty()) {
     MMG2D_Set_outputSolName(mesh, met, output_sol.c_str());
   }
