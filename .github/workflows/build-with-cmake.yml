@@ -6,12 +6,15 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  VTK_VERSION_MAJOR: 9
-  VTK_VERSION_MINOR: 3
-  VTK_VERSION_PATCH: 1
-
 jobs:
+  install-vtk:
+    uses: ./.github/workflows/install-vtk.yml
+    with:
+      os: ${{ matrix.os }}
+      vtk_major: "9"
+      vtk_minor: "3"
+      vtk_patch: "1"
+
   build:
     strategy:
       fail-fast: false
@@ -43,13 +46,6 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           pip install ninja pybind11
-
-      - uses: ./.github/workflows/install-vtk
-        with:
-          os: ${{ matrix.os }}
-          vtk_major: ${{ env.VTK_VERSION_MAJOR }}
-          vtk_minor: ${{ env.VTK_VERSION_MINOR }}
-          vtk_patch: ${{ env.VTK_VERSION_PATCH }}
 
       - name: Configure CMake
         run: cmake -B build -S . -D VTK_DIR=${{ steps.install-vtk.outputs.cmake_prefix_path }}
