@@ -28,6 +28,8 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    continue-on-error: true
+
     steps:
       - uses: actions/checkout@v4
 
@@ -71,11 +73,8 @@ jobs:
 
       - run: uv sync -v
       - run: uv run pytest
-        continue-on-error: true
-        id: pytest
 
       - name: Show VTK diff on failure (Windows)
-        if: ${{ failure() && runner.os == 'Windows' && steps.pytest.outcome == 'failure' }}
-        run: |
-          diff tests/acdcBdy_remeshed.vtk tests/acdcBdy.o.vtk
+        if: runner.os == 'Windows'
+        run: diff tests/acdcBdy_remeshed.vtk tests/acdcBdy.o.vtk
         shell: bash
