@@ -35,8 +35,6 @@ jobs:
       macos_path: ${{ steps.set-path.outputs.macos_path }}
 
     steps:
-      # Previous steps remain the same until Set Path
-
       - name: Set Path
         id: set-path
         run: |
