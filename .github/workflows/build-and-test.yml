@@ -74,7 +74,14 @@ jobs:
       - name: Set CMake path (Unix)
         if: runner.os != 'Windows'
         run: |
-          echo "CMAKE_PREFIX_PATH=${PWD}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}" >> $GITHUB_ENV
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            # Linux uses lib64 directory
+            echo "CMAKE_PREFIX_PATH=${PWD}/vtk/lib64/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}" >> $GITHUB_ENV
+            echo "LD_LIBRARY_PATH=${PWD}/vtk/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          else
+            # macOS uses lib directory
+            echo "CMAKE_PREFIX_PATH=${PWD}/vtk/lib/cmake/vtk-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}" >> $GITHUB_ENV
+          fi
         shell: bash
         working-directory: ${{github.workspace}}
 
