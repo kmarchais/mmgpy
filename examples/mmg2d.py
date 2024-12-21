@@ -6,7 +6,7 @@
 # ]
 #
 # [tool.uv.sources]
-# mmgpy = { path = "../../" }
+# mmgpy = { path = ".." }
 # ///
 """MMG2D meshing tutorial."""
 
