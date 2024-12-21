@@ -31,13 +31,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Install VTK for Linux using apt
+      - name: Install VTK (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvtk-dev
+
+      # Download and install VTK for Windows and macOS
       - name: Set VTK filename
         id: vtk-file
+        if: runner.os != 'Linux'
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             echo "filename=vtk-Windows-x86_64.tar.gz" >> $GITHUB_OUTPUT
-          elif [ "$RUNNER_OS" == "Linux" ]; then
-            echo "filename=vtk-manylinux2014_x86_64.tar.gz" >> $GITHUB_OUTPUT
           elif [ "$RUNNER_OS" == "macOS" ]; then
             if [ "$(uname -m)" == "arm64" ]; then
               echo "filename=vtk-macOS-arm64.tar.gz" >> $GITHUB_OUTPUT
@@ -48,12 +55,14 @@ jobs:
         shell: bash
 
       - name: Download pre-built VTK
+        if: runner.os != 'Linux'
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
           url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/${{ steps.vtk-file.outputs.filename }}
           target: ${{github.workspace}}
 
       - name: Extract VTK
+        if: runner.os != 'Linux'
         run: |
           mkdir -p vtk
           tar -xzf ${{ steps.vtk-file.outputs.filename }} -C vtk
@@ -64,13 +73,13 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}" | sed 's/\\/\\\\/g')
+            echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
           elif [ "$RUNNER_OS" == "Linux" ]; then
-            VTK_PATH="${PWD}/vtk/lib64/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}"
-            echo "LD_LIBRARY_PATH=${PWD}/vtk/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+            echo "CMAKE_PREFIX_PATH=/usr/lib/cmake/vtk" >> $GITHUB_ENV
           else
             VTK_PATH="${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}"
+            echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
           fi
-          echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
         shell: bash
         working-directory: ${{github.workspace}}
 

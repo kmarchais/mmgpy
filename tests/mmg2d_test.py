@@ -1,7 +1,5 @@
 """Tests for the MMG2D Python wrapper."""
 
-# ruff: noqa: ERA001, RUF100, F401, F841
-
 import platform
 import subprocess
 from pathlib import Path
@@ -22,15 +20,15 @@ def test_mmg2d() -> None:
     hmax = 10
     verbose = -1
 
-    # mmg2d.remesh(
-    #     input_mesh=str(input_mesh),
-    #     output_mesh=str(test_path),
-    #     options={
-    #         "ar": ar,
-    #         "hmax": hmax,
-    #         "verbose": verbose,
-    #     },
-    # )
+    mmg2d.remesh(
+        input_mesh=str(input_mesh),
+        output_mesh=str(test_path),
+        options={
+            "ar": ar,
+            "hmax": hmax,
+            "verbose": verbose,
+        },
+    )
 
     command = [
         exe,
@@ -47,14 +45,13 @@ def test_mmg2d() -> None:
     ]
     subprocess.check_call(command)  # noqa: S603
 
-
-#     # with test_path.open("r") as test, ref_path.open("r") as ref:
-#     #     test_content = test.read()
-#     #     ref_content = ref.read()
-#     #     to_replace = (
-#     #         str(input_mesh).replace("mesh", "sol")
-#     #         if platform.system() == "Windows"
-#     #         else "acdcBdy.sol"
-#     #     )
-#     #     test_content = test_content.replace("mesh.sol", to_replace)
-#     #     assert test_content == ref_content
+    with test_path.open("r") as test, ref_path.open("r") as ref:
+        test_content = test.read()
+        ref_content = ref.read()
+        to_replace = (
+            str(input_mesh).replace("mesh", "sol")
+            if platform.system() == "Windows"
+            else "acdcBdy.sol"
+        )
+        test_content = test_content.replace("mesh.sol", to_replace)
+        assert test_content == ref_content
