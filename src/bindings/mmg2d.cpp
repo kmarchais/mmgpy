@@ -4,6 +4,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <iostream>
+
 namespace py = pybind11;
 
 // Helper function to initialize MMG2D structures
@@ -56,18 +58,64 @@ int mmg2d_save_mesh(MMG5_pMesh mesh, MMG5_pSol met,
 }
 
 bool remesh_2d(const std::string &input_mesh, const std::string &input_sol,
-               const std::string &output_mesh, const std::string &output_sol,
+               std::string &output_mesh, const std::string &output_sol,
                py::dict options) {
   // Initialize structures
   auto [mesh, met, disp, ls] = init_mmg2d_structures();
 
   // Set mesh names
   MMG2D_Set_inputMeshName(mesh, input_mesh.c_str());
+  if (output_mesh.empty()) {
+    // First get the filename without path
+    size_t last_slash =
+        input_mesh.find_last_of("/\\"); // Handle both Unix and Windows paths
+    std::string filename = (last_slash != std::string::npos)
+                               ? input_mesh.substr(last_slash + 1)
+                               : input_mesh;
+
+    // Now handle the extension
+    size_t dot_pos = filename.find_last_of(".");
+
+    std::string base_name;
+    std::string extension;
+
+    if (dot_pos != std::string::npos) {
+      base_name = filename.substr(0, dot_pos);
+      extension = filename.substr(dot_pos); // Includes the dot
+    } else {
+      base_name = filename; // No extension found, use the whole string
+      extension = "";
+    }
+
+    output_mesh = base_name + ".o" + extension;
+  }
   MMG2D_Set_outputMeshName(mesh, output_mesh.c_str());
 
   if (!input_sol.empty()) {
     MMG2D_Set_inputSolName(mesh, met, input_sol.c_str());
   }
+
+  // if (output_sol.empty()) {
+  //   // First get the filename without path
+  //   size_t last_slash = input_mesh.find_last_of("/\\"); // Handle both Unix
+  //   and Windows paths std::string filename = (last_slash !=
+  //   std::string::npos) ?
+  //                         input_mesh.substr(last_slash + 1) :
+  //                         input_mesh;
+
+  //   // Now handle the extension
+  //   size_t dot_pos = filename.find_last_of(".");
+
+  //   std::string base_name;
+  //   if (dot_pos != std::string::npos) {
+  //       base_name = filename.substr(0, dot_pos);
+  //   } else {
+  //       base_name = filename;  // No extension found, use the whole string
+  //   }
+
+  //   output_sol = base_name + ".sol";
+  // }
+  // MMG2D_Set_outputSolName(mesh, met, output_sol.c_str());
   if (!output_sol.empty()) {
     MMG2D_Set_outputSolName(mesh, met, output_sol.c_str());
   }
