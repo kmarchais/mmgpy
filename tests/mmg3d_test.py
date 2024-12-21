@@ -9,14 +9,28 @@ from mmgpy import mmg3d
 
 def test_mmg3d() -> None:
     """Test that the Python wrapper produces the same output as the executable."""
+    verbose = -1
+    input_file = Path(__file__).parent / "Mesh.mesh"
+
     mmg3d.remesh(
-        input_mesh="tests/Mesh.mesh",
+        input_mesh=str(input_file),
         output_mesh="tests/test_output.mesh",
+        options={
+            "verbose": verbose,
+        },
     )
 
     exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
     subprocess.run(  # noqa: S603
-        [exe, "-in", "tests/Mesh.mesh", "-out", "tests/output_exe.mesh"],
+        [
+            exe,
+            "-in",
+            str(input_file),
+            "-out",
+            "tests/output_exe.mesh",
+            "-v",
+            str(verbose),
+        ],
         check=True,
     )
 
