@@ -38,6 +38,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set CMake path
+        run: echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs.cmake_prefix_path }}" >> $GITHUB_ENV
+
       - run: uv sync -v
       - run: uv run python -c "import mmgpy"
       - run: uv run pytest -s

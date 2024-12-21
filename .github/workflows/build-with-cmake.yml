@@ -47,8 +47,11 @@ jobs:
         run: |
           pip install ninja pybind11
 
+      - name: Set CMake path
+        run: echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs.cmake_prefix_path }}" >> $GITHUB_ENV
+
       - name: Configure CMake
-        run: cmake -B build -S . -D VTK_DIR=${{ steps.install-vtk.outputs.cmake_prefix_path }}
+        run: cmake -B build -S .
 
       - name: Build
         run: cmake --build build --config Release
