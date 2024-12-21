@@ -12,11 +12,22 @@ def test_mmg3d() -> None:
     mmg3d.remesh(
         input_mesh="tests/Mesh.mesh",
         output_mesh="tests/test_output.mesh",
+        options={
+            "verbose": -1,
+        },
     )
 
     exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
     subprocess.run(  # noqa: S603
-        [exe, "-in", "tests/Mesh.mesh", "-out", "tests/output_exe.mesh"],
+        [
+            exe,
+            "-in",
+            "tests/Mesh.mesh",
+            "-out",
+            "tests/output_exe.mesh",
+            "-verbose",
+            "-1",
+        ],
         check=True,
     )
 

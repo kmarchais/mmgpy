@@ -72,7 +72,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - run: uv sync -v
-      - run: uv run pytest
+      - run: uv run pytest -s
 
       - name: Check diff
         run: diff tests/acdcBdy_remeshed.vtk tests/acdcBdy.o.vtk
