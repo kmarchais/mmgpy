@@ -1,12 +1,12 @@
 """Tests for the MMG2D Python wrapper."""
 
-# ruff: noqa: ERA001, RUF100
+# ruff: noqa: ERA001, RUF100, F401
 
-# import platform
-# import subprocess
-# from pathlib import Path
+import platform
+import subprocess
+from pathlib import Path
 
-# from mmgpy import mmg2d
+from mmgpy import mmg2d
 
 
 # def test_mmg2d() -> None:
