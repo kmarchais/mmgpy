@@ -7,6 +7,11 @@ on:
     branches:
       - main
 
+env:
+  VTK_VERSION_MAJOR: 9
+  VTK_VERSION_MINOR: 3
+  VTK_VERSION_PATCH: 1
+
 jobs:
   build:
     strategy:
