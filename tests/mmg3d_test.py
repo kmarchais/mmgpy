@@ -13,7 +13,7 @@ def test_mmg3d() -> None:
         input_mesh="tests/Mesh.mesh",
         output_mesh="tests/test_output.mesh",
         options={
-            "verbose": -1,
+            "v": -1,
         },
     )
 
@@ -25,7 +25,7 @@ def test_mmg3d() -> None:
             "tests/Mesh.mesh",
             "-out",
             "tests/output_exe.mesh",
-            "-verbose",
+            "-v",
             "-1",
         ],
         check=True,
