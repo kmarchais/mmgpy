@@ -1,6 +1,5 @@
 """Tests for the MMG2D Python wrapper."""
 
-import difflib
 import platform
 import subprocess
 from pathlib import Path
@@ -49,15 +48,10 @@ def test_mmg2d() -> None:
     with test_path.open("r") as test, ref_path.open("r") as ref:
         test_content = test.read()
         ref_content = ref.read()
-        test_content = test_content.replace(
-            "mesh.sol",
-            str(input_mesh).replace("mesh", "sol"),
+        to_replace = (
+            str(input_mesh).replace("mesh", "sol")
+            if platform.system() == "Windows"
+            else "acdcBdy.sol"
         )
-        diff = difflib.unified_diff(
-            test.readlines(),
-            ref.readlines(),
-            fromfile=str(test_path),
-            tofile=str(ref_path),
-        )
-        print("".join(diff))  # noqa: T201
+        test_content = test_content.replace("mesh.sol", to_replace)
         assert test_content == ref_content
