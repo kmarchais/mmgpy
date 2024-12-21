@@ -90,4 +90,5 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - run: uv sync -v
+      - run: uv run python -c "import mmgpy"
       - run: uv run pytest
