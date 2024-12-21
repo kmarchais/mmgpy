@@ -10,6 +10,9 @@ on:
 
 jobs:
   install-vtk:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/install-vtk.yml
     with:
       os: ${{ matrix.os }}
@@ -40,6 +43,8 @@ jobs:
 
       - name: Set CMake path
         run: echo "CMAKE_PREFIX_PATH=${{ needs.install-vtk.outputs.cmake_prefix_path }}" >> $GITHUB_ENV
+
+      - run: echo ${{ needs.install-vtk.outputs.cmake_prefix_path }}
 
       - run: uv sync -v
       - run: uv run python -c "import mmgpy"
