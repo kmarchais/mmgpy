@@ -50,7 +50,7 @@ jobs:
       - name: Download pre-built VTK
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-shared/${{ steps.vtk-file.outputs.filename }}
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/${{ steps.vtk-file.outputs.filename }}
           target: ${{github.workspace}}
 
       - name: Extract VTK
