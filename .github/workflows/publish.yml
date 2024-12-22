@@ -12,11 +12,6 @@ env:
   VTK_VERSION_MAJOR: 9
   VTK_VERSION_MINOR: 3
   VTK_VERSION_PATCH: 1
-  CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
-  CIBW_SKIP: "*-musllinux*" # Skip musllinux builds if not needed
-  CIBW_ENVIRONMENT: >
-    CMAKE_PREFIX_PATH="/project/vtk/lib64/cmake/vtk-9.3"
-    LD_LIBRARY_PATH="/project/vtk/lib64:$LD_LIBRARY_PATH"
 
 jobs:
   build_wheels:
@@ -45,139 +40,117 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:
-          CIBW_BEFORE_BUILD: |
-            pip install --upgrade pip
-            pip install -U scikit-build-core build "uv>=0.5.11"
-            uv venv -p 3.13
-            . .venv/bin/activate
-          CIBW_REPAIR_WHEEL_COMMAND: >
-            repair_command() {
-              wheel="$1"
-              dest_dir="$2"
-
-              # First, run auditwheel
-              auditwheel repair "$wheel" -w "$dest_dir"
-
-              # Then, if needed, manually copy VTK libraries
-              vtk_libs=$(find /project/vtk/lib64 -name "libvtk*.so*")
-              if [ -n "$vtk_libs" ]; then
-                repaired_wheel=$(ls "$dest_dir"/*.whl)
-                mkdir -p wheel_fix && cd wheel_fix
-                unzip "$repaired_wheel"
-                mkdir -p $(find . -type d -name "*.libs")
-                cp $vtk_libs $(find . -type d -name "*.libs")
-                zip -r "$repaired_wheel" .
-                cd .. && rm -rf wheel_fix
-              fi
-            }
-            repair_command "$1" "$2"
+          CIBW_BUILD: cp312-manylinux_x86_64
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_ARCHS: x86_64
 
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
 
-  build_nonlinux:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, macos-13]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+  # build_nonlinux:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: [windows-latest, macos-latest, macos-13]
+  #       python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: astral-sh/setup-uv@v4
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
 
-      # VTK Installation steps
-      - name: Set VTK filename
-        id: vtk-file
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "filename=vtk-Windows-x86_64.tar.gz" >> $GITHUB_OUTPUT
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            if [ "$(uname -m)" == "arm64" ]; then
-              echo "filename=vtk-macOS-arm64.tar.gz" >> $GITHUB_OUTPUT
-            else
-              echo "filename=vtk-macOS-x86_64.tar.gz" >> $GITHUB_OUTPUT
-            fi
-          fi
-        shell: bash
+  #     # VTK Installation steps
+  #     - name: Set VTK filename
+  #       id: vtk-file
+  #       run: |
+  #         if [ "$RUNNER_OS" == "Windows" ]; then
+  #           echo "filename=vtk-Windows-x86_64.tar.gz" >> $GITHUB_OUTPUT
+  #         elif [ "$RUNNER_OS" == "macOS" ]; then
+  #           if [ "$(uname -m)" == "arm64" ]; then
+  #             echo "filename=vtk-macOS-arm64.tar.gz" >> $GITHUB_OUTPUT
+  #           else
+  #             echo "filename=vtk-macOS-x86_64.tar.gz" >> $GITHUB_OUTPUT
+  #           fi
+  #         fi
+  #       shell: bash
 
-      - name: Download pre-built VTK
-        uses: suisei-cn/actions-download-file@v1.6.0
-        with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/${{ steps.vtk-file.outputs.filename }}
-          target: ${{github.workspace}}
+  #     - name: Download pre-built VTK
+  #       uses: suisei-cn/actions-download-file@v1.6.0
+  #       with:
+  #         url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/${{ steps.vtk-file.outputs.filename }}
+  #         target: ${{github.workspace}}
 
-      - name: Extract VTK
-        run: |
-          mkdir -p vtk
-          tar -xzf ${{ steps.vtk-file.outputs.filename }} -C vtk
-        shell: bash
-        working-directory: ${{github.workspace}}
+  #     - name: Extract VTK
+  #       run: |
+  #         mkdir -p vtk
+  #         tar -xzf ${{ steps.vtk-file.outputs.filename }} -C vtk
+  #       shell: bash
+  #       working-directory: ${{github.workspace}}
 
-      - name: Set CMake path
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}" | sed 's/\\/\\\\/g')
-          else
-            VTK_PATH="${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}"
-          fi
-          echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
-        shell: bash
-        working-directory: ${{github.workspace}}
+  #     - name: Set CMake path
+  #       run: |
+  #         if [ "$RUNNER_OS" == "Windows" ]; then
+  #           VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}" | sed 's/\\/\\\\/g')
+  #         else
+  #           VTK_PATH="${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}"
+  #         fi
+  #         echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
+  #       shell: bash
+  #       working-directory: ${{github.workspace}}
 
-      - name: Build package
-        run: uv build --no-sources
-      - name: Store artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: dist/*
+  #     - name: Build package
+  #       run: uv build --no-sources
+  #     - name: Store artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
+  #         path: dist/*
 
-  upload:
-    needs: [build_wheels, build_nonlinux]
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          python-version: "3.12"
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: dist-*
-          path: dist
-          merge-multiple: true
-      - name: Download cibuildwheel artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: cibw-wheels-*
-          path: dist
-          merge-multiple: true
-      - name: List distributions
-        run: ls -R dist/
-      - name: Publish to PyPI
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: uv publish dist/* --verbose
-      - name: Rename wheels for TestPyPI
-        if: github.event_name == 'pull_request'
-        run: |
-          COMMIT_HASH=$(git rev-parse --short HEAD)
-          for wheel in dist/*.whl; do
-              CURRENT_VERSION=$(echo "$wheel" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*)-.*\.whl/\1/')
-              NEW_VERSION="${CURRENT_VERSION}.dev+git.${COMMIT_HASH}"
-              NEW_NAME=$(echo "$wheel" | sed "s/$CURRENT_VERSION/$NEW_VERSION/")
-              mv "$wheel" "$NEW_NAME"
-          done
-      - name: Publish to TestPyPI
-        if: github.event_name == 'pull_request'
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
-        run: uv publish dist/* --publish-url https://test.pypi.org/legacy/ --verbose
+  # upload:
+  #   needs: [build_wheels, build_nonlinux]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: astral-sh/setup-uv@v4
+  #       with:
+  #         python-version: "3.12"
+  #     - name: Download all artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: dist-*
+  #         path: dist
+  #         merge-multiple: true
+  #     - name: Download cibuildwheel artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: cibw-wheels-*
+  #         path: dist
+  #         merge-multiple: true
+  #     - name: List distributions
+  #       run: ls -R dist/
+  #     - name: Publish to PyPI
+  #       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+  #       env:
+  #         UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+  #       run: uv publish dist/* --verbose
+  #     - name: Rename wheels for TestPyPI
+  #       if: github.event_name == 'pull_request'
+  #       run: |
+  #         COMMIT_HASH=$(git rev-parse --short HEAD)
+  #         for wheel in dist/*.whl; do
+  #             CURRENT_VERSION=$(echo "$wheel" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*)-.*\.whl/\1/')
+  #             NEW_VERSION="${CURRENT_VERSION}.dev+git.${COMMIT_HASH}"
+  #             NEW_NAME=$(echo "$wheel" | sed "s/$CURRENT_VERSION/$NEW_VERSION/")
+  #             mv "$wheel" "$NEW_NAME"
+  #         done
+  #     - name: Publish to TestPyPI
+  #       if: github.event_name == 'pull_request'
+  #       env:
+  #         UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+  #       run: uv publish dist/* --publish-url https://test.pypi.org/legacy/ --verbose
