@@ -3,7 +3,7 @@
 This is a Python package that provides bindings for the [MMG software](https://www.mmgtools.org) for mesh generation and optimization.
 
 Example from `examples/mmgs/mechanical_piece_remeshing.py` ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-mechanical-piece-remeshing)):
-![Mechanical piece remeshing](image.png)
+![Mechanical piece remeshing](assets/mechanical_piece_remeshing.png)
 
 ## Installation
 
