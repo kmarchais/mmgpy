@@ -2,6 +2,11 @@ name: Build
 
 on: [push, pull_request]
 
+env:
+  VTK_VERSION_MAJOR: 9
+  VTK_VERSION_MINOR: 3
+  VTK_VERSION_PATCH: 1
+
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
