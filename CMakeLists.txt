@@ -7,19 +7,9 @@ endif()
 
 project(mmgpy VERSION 0.1.2.0)
 
-if(DEFINED Python_EXECUTABLE)
-    message(STATUS "Using provided Python executable: ${Python_EXECUTABLE}")
-    get_filename_component(Python_ROOT_DIR "${Python_EXECUTABLE}" DIRECTORY)
-    get_filename_component(Python_ROOT_DIR "${Python_ROOT_DIR}" DIRECTORY)
-endif()
+# find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
-find_package(Python 3.12
-    COMPONENTS Interpreter Development Development.Module Development.Embed
-    REQUIRED)
-
-message(STATUS "Found Python executable: ${Python_EXECUTABLE}")
-message(STATUS "Found Python libraries: ${Python_LIBRARIES}")
-message(STATUS "Found Python include dirs: ${Python_INCLUDE_DIRS}")
+include(cmake/FindPythonManual.cmake)
 
 find_package(pybind11 QUIET)
 
