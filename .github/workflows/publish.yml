@@ -46,14 +46,21 @@ jobs:
         env:
           CIBW_BUILD: cp312-manylinux_x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_BUILD_VERBOSITY: 1
           CIBW_ARCHS: x86_64
+          CIBW_BEFORE_ALL: |
+            yum install -y python3-devel
           CIBW_ENVIRONMENT: >
-            PYTHON_EXECUTABLE="/opt/python/cp312-cp312/bin/python"
             CMAKE_PREFIX_PATH="/project/vtk/lib64/cmake/vtk-9.3"
             LD_LIBRARY_PATH="/project/vtk/lib64:$LD_LIBRARY_PATH"
-            PYTHON_INCLUDE_DIR="/opt/python/cp312-cp312/include/python3.12"
-            PYTHON_LIBRARY="/opt/python/cp312-cp312/lib/python3.12/config-3.12-x86_64-linux-gnu/libpython3.12.a"
+            Python_ROOT_DIR="/opt/python/cp312-cp312"
+            Python_EXECUTABLE="/opt/python/cp312-cp312/bin/python"
+            Python_INCLUDE_DIR="/opt/python/cp312-cp312/include/python3.12"
+            Python_LIBRARY="/opt/python/cp312-cp312/lib/libpython3.12.a"
+            CMAKE_ARGS="-DPython_EXECUTABLE=/opt/python/cp312-cp312/bin/python -DPython_ROOT_DIR=/opt/python/cp312-cp312 -DPython_INCLUDE_DIR=/opt/python/cp312-cp312/include/python3.12 -DPython_LIBRARY=/opt/python/cp312-cp312/lib/libpython3.12.a"
+          CIBW_BEFORE_BUILD: |
+            pip install --upgrade pip
+            pip install scikit-build-core build "uv>=0.1.9"
+            python -c "import sys; print('Python location:', sys.executable); print('Python version:', sys.version)"
 
       - uses: actions/upload-artifact@v4
         with:
