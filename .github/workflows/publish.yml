@@ -48,6 +48,12 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 1
           CIBW_ARCHS: x86_64
+          CIBW_ENVIRONMENT: >
+            PYTHON_EXECUTABLE="/opt/python/cp312-cp312/bin/python"
+            CMAKE_PREFIX_PATH="/project/vtk/lib64/cmake/vtk-9.3"
+            LD_LIBRARY_PATH="/project/vtk/lib64:$LD_LIBRARY_PATH"
+            PYTHON_INCLUDE_DIR="/opt/python/cp312-cp312/include/python3.12"
+            PYTHON_LIBRARY="/opt/python/cp312-cp312/lib/python3.12/config-3.12-x86_64-linux-gnu/libpython3.12.a"
 
       - uses: actions/upload-artifact@v4
         with:
