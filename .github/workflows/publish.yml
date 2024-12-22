@@ -39,26 +39,25 @@ jobs:
 
       - uses: astral-sh/setup-uv@v4
         with:
-          python-version: 3.12
+          python-version: "3.12"
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:
           CIBW_BUILD: cp312-manylinux_x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_BUILD_VERBOSITY: 1
           CIBW_ARCHS: x86_64
-          CIBW_BEFORE_ALL: |
-            yum install -y python3-devel
+          # We don't need CIBW_BEFORE_ALL since cibuildwheel provides Python with dev files
           CIBW_ENVIRONMENT: >
             CMAKE_PREFIX_PATH="/project/vtk/lib64/cmake/vtk-9.3"
             LD_LIBRARY_PATH="/project/vtk/lib64:$LD_LIBRARY_PATH"
-            Python_ROOT_DIR="/opt/python/cp312-cp312"
-            Python_EXECUTABLE="/opt/python/cp312-cp312/bin/python"
-            Python_INCLUDE_DIR="/opt/python/cp312-cp312/include/python3.12"
-            Python_LIBRARY="/opt/python/cp312-cp312/lib/libpython3.12.a"
-            CMAKE_ARGS="-DPython_EXECUTABLE=/opt/python/cp312-cp312/bin/python -DPython_ROOT_DIR=/opt/python/cp312-cp312 -DPython_INCLUDE_DIR=/opt/python/cp312-cp312/include/python3.12 -DPython_LIBRARY=/opt/python/cp312-cp312/lib/libpython3.12.a"
+            SKBUILD_CMAKE_ARGS="-DPython_EXECUTABLE=/opt/python/cp312-cp312/bin/python;-DPython_ROOT_DIR=/opt/python/cp312-cp312;-DPython_INCLUDE_DIR=/opt/python/cp312-cp312/include/python3.12;-DPython_LIBRARY=/opt/python/cp312-cp312/lib/python3.12/config-3.12-x86_64-linux-gnu/libpython3.12.so"
           CIBW_BEFORE_BUILD: |
-            python -c "import sys; print('Python location:', sys.executable); print('Python version:', sys.version)"
+            pip install --upgrade pip
+            pip install scikit-build-core build "uv>=0.5.11"
+            python -c "import sys, os; print('Python location:', sys.executable); print('Python version:', sys.version); print('Library location:', os.path.dirname(sys.executable) + '/../lib/python' + '.'.join(map(str, sys.version_info[:2])))"
+            ls -la /opt/python/cp312-cp312/lib/python3.12/config-3.12-x86_64-linux-gnu/
 
       - uses: actions/upload-artifact@v4
         with:
