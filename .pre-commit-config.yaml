@@ -3,6 +3,7 @@ repos:
     rev: "v5.0.0"
     hooks:
       - id: check-added-large-files
+        args: ["--maxkb=5000"]
       - id: check-ast
       - id: check-builtin-literals
       - id: check-case-conflict
