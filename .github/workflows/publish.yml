@@ -1,4 +1,5 @@
 name: Publish to PyPI
+
 on:
   push:
     tags:
@@ -11,13 +12,74 @@ env:
   VTK_VERSION_MAJOR: 9
   VTK_VERSION_MINOR: 3
   VTK_VERSION_PATCH: 1
+  CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
+  CIBW_SKIP: "*-musllinux*" # Skip musllinux builds if not needed
+  CIBW_ENVIRONMENT: >
+    CMAKE_PREFIX_PATH="/project/vtk/lib64/cmake/vtk-9.3"
+    LD_LIBRARY_PATH="/project/vtk/lib64:$LD_LIBRARY_PATH"
 
 jobs:
-  build:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, macos-13] #, ubuntu-latest]
+        os: [ubuntu-latest] # Linux builds using cibuildwheel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download pre-built VTK
+        uses: suisei-cn/actions-download-file@v1.6.0
+        with:
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/vtk-manylinux2014_x86_64.tar.gz
+          target: ${{github.workspace}}
+
+      - name: Extract VTK
+        run: |
+          mkdir -p vtk
+          tar -xzf vtk-manylinux2014_x86_64.tar.gz -C vtk
+        shell: bash
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.5
+        env:
+          CIBW_BEFORE_BUILD: |
+            pip install --upgrade pip
+            pip install -U scikit-build-core
+          CIBW_REPAIR_WHEEL_COMMAND: >
+            repair_command() {
+              wheel="$1"
+              dest_dir="$2"
+
+              # First, run auditwheel
+              auditwheel repair "$wheel" -w "$dest_dir"
+
+              # Then, if needed, manually copy VTK libraries
+              vtk_libs=$(find /project/vtk/lib64 -name "libvtk*.so*")
+              if [ -n "$vtk_libs" ]; then
+                repaired_wheel=$(ls "$dest_dir"/*.whl)
+                mkdir -p wheel_fix && cd wheel_fix
+                unzip "$repaired_wheel"
+                mkdir -p $(find . -type d -name "*.libs")
+                cp $vtk_libs $(find . -type d -name "*.libs")
+                zip -r "$repaired_wheel" .
+                cd .. && rm -rf wheel_fix
+              fi
+            }
+            repair_command "$1" "$2"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  build_nonlinux:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, macos-13]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -32,8 +94,6 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             echo "filename=vtk-Windows-x86_64.tar.gz" >> $GITHUB_OUTPUT
-          elif [ "$RUNNER_OS" == "Linux" ]; then
-            echo "filename=vtk-manylinux2014_x86_64.tar.gz" >> $GITHUB_OUTPUT
           elif [ "$RUNNER_OS" == "macOS" ]; then
             if [ "$(uname -m)" == "arm64" ]; then
               echo "filename=vtk-macOS-arm64.tar.gz" >> $GITHUB_OUTPUT
@@ -60,9 +120,6 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}" | sed 's/\\/\\\\/g')
-          elif [ "$RUNNER_OS" == "Linux" ]; then
-            VTK_PATH="${PWD}/vtk/lib64/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}"
-            echo "LD_LIBRARY_PATH=${PWD}/vtk/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           else
             VTK_PATH="${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}"
           fi
@@ -79,7 +136,7 @@ jobs:
           path: dist/*
 
   upload:
-    needs: build
+    needs: [build_wheels, build_nonlinux]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -94,6 +151,12 @@ jobs:
           pattern: dist-*
           path: dist
           merge-multiple: true
+      - name: Download cibuildwheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cibw-wheels-*
+          path: dist
+          merge-multiple: true
       - name: List distributions
         run: ls -R dist/
       - name: Publish to PyPI
@@ -106,21 +169,11 @@ jobs:
         run: |
           COMMIT_HASH=$(git rev-parse --short HEAD)
           for wheel in dist/*.whl; do
-              # Extract version from wheel filename
               CURRENT_VERSION=$(echo "$wheel" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*)-.*\.whl/\1/')
               NEW_VERSION="${CURRENT_VERSION}.dev+git.${COMMIT_HASH}"
-              # Replace version in filename
               NEW_NAME=$(echo "$wheel" | sed "s/$CURRENT_VERSION/$NEW_VERSION/")
               mv "$wheel" "$NEW_NAME"
           done
-          # for sdist in dist/*.tar.gz; do
-          #     if [ -f "$sdist" ]; then
-          #         CURRENT_VERSION=$(echo "$sdist" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+.*).tar.gz/\1/')
-          #         # Create new name in desired format: mmgpy.dev+git.hash-version.tar.gz
-          #         NEW_NAME="dist/mmgpy.dev+git.${COMMIT_HASH}-${CURRENT_VERSION}.tar.gz"
-          #         mv "$sdist" "$NEW_NAME"
-          #     fi
-          # done
       - name: Publish to TestPyPI
         if: github.event_name == 'pull_request'
         env:
