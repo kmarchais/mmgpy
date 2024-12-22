@@ -58,8 +58,6 @@ jobs:
             Python_LIBRARY="/opt/python/cp312-cp312/lib/libpython3.12.a"
             CMAKE_ARGS="-DPython_EXECUTABLE=/opt/python/cp312-cp312/bin/python -DPython_ROOT_DIR=/opt/python/cp312-cp312 -DPython_INCLUDE_DIR=/opt/python/cp312-cp312/include/python3.12 -DPython_LIBRARY=/opt/python/cp312-cp312/lib/libpython3.12.a"
           CIBW_BEFORE_BUILD: |
-            pip install --upgrade pip
-            pip install scikit-build-core build "uv>=0.1.9"
             python -c "import sys; print('Python location:', sys.executable); print('Python version:', sys.version)"
 
       - uses: actions/upload-artifact@v4

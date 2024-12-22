@@ -18,6 +18,7 @@ build.verbose = true
 cmake.version = ">=3.15"
 sdist.include = ["CMakeLists.txt", "src/*", "extern/*"]
 wheel.packages = ["src/mmgpy"]
+cmake.args = ["-DPython_FIND_VIRTUALENV=ONLY"]
 
 [tool.scikit-build.cmake.define]
 BUILD_TESTING = "OFF"
@@ -26,6 +27,8 @@ BUILD_SHARED_LIBS = "ON"
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 build-verbosity = 1
+test-requires = ["pytest"]
+test-command = "pytest {project}/tests"
 
 [dependency-groups]
 dev = ["pytest>=8.3.4"]
