@@ -17,6 +17,8 @@ env:
   CIBW_ENVIRONMENT: >
     CMAKE_PREFIX_PATH="/project/vtk/lib64/cmake/vtk-9.3"
     LD_LIBRARY_PATH="/project/vtk/lib64:$LD_LIBRARY_PATH"
+    PYTHON_EXECUTABLE="$(which python)"
+    PYTHON_ROOT="$(dirname $(dirname $(which python)))"
 
 jobs:
   build_wheels:
@@ -47,7 +49,9 @@ jobs:
         env:
           CIBW_BEFORE_BUILD: |
             pip install --upgrade pip
-            pip install -U scikit-build-core
+            pip install -U scikit-build-core build "uv>=0.1.9"
+            python -m uv venv .venv
+            . .venv/bin/activate
           CIBW_REPAIR_WHEEL_COMMAND: >
             repair_command() {
               wheel="$1"
