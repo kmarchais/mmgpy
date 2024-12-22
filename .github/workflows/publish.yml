@@ -47,11 +47,6 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:
-          CIBW_BEFORE_BUILD: |
-            pip install --upgrade pip
-            pip install -U scikit-build-core build "uv>=0.1.9"
-            python -m uv venv .venv
-            . .venv/bin/activate
           CIBW_REPAIR_WHEEL_COMMAND: >
             repair_command() {
               wheel="$1"

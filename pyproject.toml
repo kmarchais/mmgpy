@@ -24,7 +24,7 @@ BUILD_TESTING = "OFF"
 BUILD_SHARED_LIBS = "ON"
 
 [tool.cibuildwheel]
-build-frontend = { name = "build[uv]", args = ["--no-isolation"] }
+build-frontend = "build[uv]"
 build-verbosity = 1
 
 [dependency-groups]
