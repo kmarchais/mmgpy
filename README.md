@@ -1,13 +1,14 @@
 # mmgpy
 
 This is a Python package that provides bindings for the [MMG software](https://www.mmgtools.org) for mesh generation and optimization.
+The goal in the end is to provide a pythonic interface to mmg's capabilities.
 
 Example from `examples/mmgs/mechanical_piece_remeshing.py` ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-mechanical-piece-remeshing)):
 ![Mechanical piece remeshing](assets/mechanical_piece_remeshing.png)
 
 ## Installation
 
-To install the package, run the following command:
+To install the package, run the following command (from Windows or MacOS), the Linux package is not available on PyPI yet and needs the next command to be installed:
 
 ```bash
 pip install mmgpy
