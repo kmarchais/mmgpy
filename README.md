@@ -3,9 +3,10 @@
 This is a Python package that provides bindings for the [MMG software](https://www.mmgtools.org) for mesh generation and optimization.
 The goal in the end is to provide a pythonic interface to mmg's capabilities.
 
-Example from `examples/mmgs/mechanical_piece_remeshing.py` ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-mechanical-piece-remeshing)):
+Example from [`examples/mmgs/mechanical_piece_remeshing.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/mechanical_piece_remeshing.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-mechanical-piece-remeshing)):
 ![Mechanical piece remeshing](assets/mechanical_piece_remeshing.png)
 
+Example from [`examples/mmgs/smooth_surface_remeshing.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/smooth_surface_remeshing.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-smooth-surface-remeshing)):
 ![Smooth surface remeshing](assets/rodin.png)
 
 ## Installation
