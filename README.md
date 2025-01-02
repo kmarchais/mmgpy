@@ -9,6 +9,9 @@ Example from [`examples/mmgs/mechanical_piece_remeshing.py`](https://github.com/
 Example from [`examples/mmgs/smooth_surface_remeshing.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/smooth_surface_remeshing.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-smooth-surface-remeshing)):
 ![Smooth surface remeshing](assets/rodin.png)
 
+Example from [`examples/mmg3d/mesh_quality_improvement.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/mesh_quality_improvement.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmg3d/mesh-quality-improvement-with-mean-edge-lengths-preservation)):
+![Mesh quality improvement with mean edge lengths preservation](assets/3d_mesh.png)
+
 ## Installation
 
 To install the package, run the following command (from Windows or MacOS), the Linux package is not available on PyPI yet and needs the next command to be installed:
