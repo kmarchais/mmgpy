@@ -32,9 +32,7 @@ mesh = pv.read(OUTPUT_FILE)
 
 center = (0.5, 0.5, 0.5)
 
-# pl = pv.Plotter()
-# pv.global_theme.transparent_background = True
-pl = pv.Plotter(off_screen=True)
+pl = pv.Plotter()
 pl.add_mesh(
     mesh.extract_cells(mesh.cell_centers().points[:, 0] < center[0]),
     show_edges=True,
@@ -42,5 +40,4 @@ pl.add_mesh(
 )
 pl.add_mesh(pv.Cube(center), opacity=0.2)
 pl.camera.elevation = -35
-# pl.show()
-pl.screenshot("output.png")
+pl.show()
