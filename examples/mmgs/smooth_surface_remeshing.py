@@ -20,6 +20,8 @@ from mmgpy import mmgs
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "rodin.mesh"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
+SCREENSHOT = True
+
 mmgs.remesh(
     input_mesh=str(INPUT_FILE),
     output_mesh=str(OUTPUT_FILE),
@@ -32,6 +34,16 @@ mmgs.remesh(
 
 mesh = pv.read(OUTPUT_FILE)
 
-pl = pv.Plotter()
-pl.add_mesh(mesh, show_edges=True, scalars="medit:ref")
-pl.show()
+pl = pv.Plotter(off_screen=SCREENSHOT)
+pl.add_mesh(
+    mesh,
+    show_edges=True,
+    scalars="medit:ref",
+    cmap="tab10",
+    show_scalar_bar=False,
+)
+pl.camera.elevation = -30
+if SCREENSHOT:
+    pl.show(screenshot="smooth_surface_remeshing.png")
+else:
+    pl.show()
