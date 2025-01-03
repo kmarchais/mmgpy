@@ -2,9 +2,56 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-# Set MMG version
+set(Commons_GIT_TAG "master" CACHE STRING "Commons version to build")
+set(Commons_REPOSITORY "https://github.com/ISCDtoolbox/Commons" CACHE STRING "Commons repository URL")
+
+set(LinearElasticity_GIT_TAG "v1.0.0" CACHE STRING "LinearElasticity version to build")
+set(LinearElasticity_REPOSITORY "https://github.com/ISCDtoolbox/LinearElasticity" CACHE STRING "LinearElasticity repository URL")
+
 set(MMG_GIT_TAG "v5.8.0" CACHE STRING "MMG version to build")
 set(MMG_REPOSITORY "https://github.com/MmgTools/mmg.git" CACHE STRING "MMG repository URL")
+
+# First fetch and build Commons
+FetchContent_Declare(
+    Commons
+    GIT_REPOSITORY ${Commons_REPOSITORY}
+    GIT_TAG ${Commons_GIT_TAG}
+)
+
+# Configure Commons build options
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Position independent code" FORCE)
+
+# Make Commons available and get properties
+FetchContent_MakeAvailable(Commons)
+FetchContent_GetProperties(Commons)
+
+# Set the Commons paths for other dependencies
+set(Commons_BINARY_DIR ${commons_BINARY_DIR} CACHE PATH "Path to Commons binary directory")
+set(Commons_SOURCE_DIR ${commons_SOURCE_DIR} CACHE PATH "Path to Commons source directory")
+set(Commons_LIBRARIES Commons CACHE INTERNAL "")
+
+FetchContent_Declare(
+    LinearElasticity
+    GIT_REPOSITORY ${LinearElasticity_REPOSITORY}
+    GIT_TAG ${LinearElasticity_GIT_TAG}
+)
+
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Position independent code" FORCE)
+
+FetchContent_MakeAvailable(LinearElasticity)
+FetchContent_GetProperties(LinearElasticity)
+
+set(LinearElasticity_BINARY_DIR ${linearelasticity_BINARY_DIR} CACHE PATH "Path to LinearElasticity binary directory")
+set(LinearElasticity_LIBRARIES
+    Elas
+    CACHE INTERNAL ""
+)
+set(LinearElasticity_INCLUDE_DIRS
+    ${LinearElasticity_SOURCE_DIR}/sources
+    CACHE INTERNAL ""
+)
 
 # Fetch MMG
 FetchContent_Declare(

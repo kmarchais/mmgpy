@@ -20,12 +20,15 @@ target_include_directories(${PROJECT_NAME}
         ${MMG_INCLUDE_DIRS}
         ${mmg_BINARY_DIR}/include
         ${mmg_SOURCE_DIR}/include
+        ${LinearElasticity_INCLUDE_DIRS}
 )
 
 # Link against MMG libraries
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         ${MMG_LIBRARIES}
+        ${LinearElasticity_LIBRARIES}
+        ${Commons_LIBRARIES}
 )
 
 # Handle compiler warnings
@@ -76,6 +79,12 @@ else()  # Unix-specific installation
     else() # Linux
         set(RPATH_PREFIX "$ORIGIN")
     endif()
+
+    # Install ELAS shared library
+    install(FILES
+        "${LinearElasticity_BINARY_DIR}/libElas.so"
+        "${Commons_BINARY_DIR}/libCommons.so"
+        DESTINATION ${PROJECT_NAME}/lib)
 
     # Set RPATH for Python module
     set_target_properties(${PROJECT_NAME} PROPERTIES
