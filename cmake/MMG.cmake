@@ -24,8 +24,11 @@ set(LIBMMG2D_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 set(LIBMMG3D_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 set(LIBMMGS_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 
-set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
 set(USE_ELAS ON CACHE BOOL "Use ELAS" FORCE)
+set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
+
+# Make sure MMG can find ELAS
+list(APPEND CMAKE_PREFIX_PATH ${ELAS_DIR})
 
 # Set Elas directory for MMG to find it
 set(ELAS_DIR ${LinearElasticity_BINARY_DIR} CACHE PATH "Path to Elas installation")
@@ -38,7 +41,9 @@ FetchContent_MakeAvailable(mmg)
 # Add dependencies and linking
 foreach(lib libmmg2d_so libmmg3d_so libmmgs_so)
     if(TARGET ${lib})
-        target_link_libraries(${lib} PUBLIC Elas Commons)
+        set_property(TARGET ${lib} APPEND PROPERTY
+            INTERFACE_LINK_LIBRARIES "${ELAS_LIBRARY}")
+        target_include_directories(${lib} PRIVATE ${ELAS_INCLUDE_DIR})
     endif()
 endforeach()
 
