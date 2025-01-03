@@ -25,11 +25,12 @@ mmg2d.remesh(
     input_mesh=str(INPUT_FILE),
     input_sol=str(SOL_FILE),
     output_mesh=str(OUTPUT_FILE),
+    options={"verbose": -1},
 )
 
 mesh = pv.read(OUTPUT_FILE)
 
 pl = pv.Plotter()
-pl.add_mesh(mesh, show_edges=True, scalars="hole.sol:metric")
-pl.link_views()
+pl.add_mesh(mesh, show_edges=True, scalars=mesh.array_names[1])
+pl.view_xy()
 pl.show()
