@@ -34,7 +34,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build external dependencies (MMG)
-add_subdirectory(extern)
+include(cmake/Commons.cmake)
+include(cmake/LinearElasticity.cmake)
+include(cmake/MMG.cmake)
 
 add_subdirectory(src)
 

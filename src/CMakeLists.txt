@@ -80,7 +80,7 @@ else()  # Unix-specific installation
         set(RPATH_PREFIX "$ORIGIN")
     endif()
 
-    # Install ELAS shared library
+    # Install ELAS and Commons shared libraries
     install(FILES
         "${LinearElasticity_BINARY_DIR}/libElas.so"
         "${Commons_BINARY_DIR}/libCommons.so"
@@ -96,10 +96,13 @@ else()  # Unix-specific installation
     foreach(exe mmg2d mmg3d mmgs)
         # Set RPATH for executables
         set_target_properties(${exe} PROPERTIES
-            INSTALL_RPATH "${RPATH_PREFIX}/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/${PROJECT_NAME}/lib"
+            INSTALL_RPATH "${RPATH_PREFIX}:${RPATH_PREFIX}/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/${PROJECT_NAME}/lib"
             BUILD_WITH_INSTALL_RPATH TRUE
             SKIP_BUILD_RPATH FALSE
         )
+
+        # Add ELAS library to executable link dependencies
+        target_link_libraries(${exe} PRIVATE ${LinearElasticity_LIBRARIES} ${Commons_LIBRARIES})
 
         # Install executable
         install(TARGETS ${exe}
