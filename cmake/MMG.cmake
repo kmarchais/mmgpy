@@ -27,8 +27,10 @@ set(LIBMMGS_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
 set(USE_ELAS ON CACHE BOOL "Use ELAS" FORCE)
 
-# Add library directories
-link_directories(${LinearElasticity_BINARY_DIR} ${Commons_BINARY_DIR})
+# Set Elas directory for MMG to find it
+set(ELAS_DIR ${LinearElasticity_BINARY_DIR} CACHE PATH "Path to Elas installation")
+set(ELAS_INCLUDE_DIR ${LinearElasticity_SOURCE_DIR}/sources CACHE PATH "Path to Elas headers")
+set(ELAS_LIBRARY ${LinearElasticity_BINARY_DIR}/libElas.so CACHE FILEPATH "Path to Elas library")
 
 # Make MMG available
 FetchContent_MakeAvailable(mmg)
@@ -36,10 +38,7 @@ FetchContent_MakeAvailable(mmg)
 # Add dependencies and linking
 foreach(lib libmmg2d_so libmmg3d_so libmmgs_so)
     if(TARGET ${lib})
-        target_link_libraries(${lib} PRIVATE
-            $<TARGET_FILE:Elas>  # Use file path instead of target
-            $<TARGET_FILE:Commons>
-        )
+        target_link_libraries(${lib} PUBLIC Elas Commons)
     endif()
 endforeach()
 
@@ -77,7 +76,7 @@ set(MMG_INCLUDE_DIRS
     CACHE INTERNAL ""
 )
 
-# Add dependencies to ensure proper build order
+# Add dependencies
 add_dependencies(libmmg2d_so Elas Commons)
 add_dependencies(libmmg3d_so Elas Commons)
 add_dependencies(libmmgs_so Elas Commons)
