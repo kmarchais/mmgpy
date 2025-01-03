@@ -7,7 +7,9 @@ endif()
 
 project(mmgpy VERSION 0.1.2.0)
 
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
+# find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+include(cmake/FindPythonManual.cmake)
 
 find_package(pybind11 QUIET)
 
