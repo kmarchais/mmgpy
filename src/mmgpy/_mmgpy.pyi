@@ -1,3 +1,7 @@
+from typing import overload
+
+import numpy as np
+
 class mmg3d:  # noqa: N801
     @staticmethod
     def remesh(
@@ -28,4 +32,17 @@ class mmgs:  # noqa: N801
         options: dict[str, float | int] = ...,
     ) -> bool: ...
 
-class MmgMesh: ...
+class MmgMesh:
+    @overload
+    def __init__(self) -> None: ...
+    @overload
+    def __init__(
+        self,
+        vertices: np.ndarray[np.float64],
+        elements: np.ndarray[np.int32],
+    ) -> None: ...
+    def set_vertices_and_elements(
+        self,
+        vertices: np.ndarray[np.float64],
+        elements: np.ndarray[np.int32],
+    ) -> None: ...

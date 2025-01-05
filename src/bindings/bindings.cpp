@@ -4,7 +4,10 @@
 
 PYBIND11_MODULE(_mmgpy, m) {
   // Add the new MmgMesh class
-  py::class_<MmgMesh>(m, "MmgMesh").def(py::init<>());
+  py::class_<MmgMesh>(m, "MmgMesh")
+      .def(py::init<>())
+      .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
+      .def("set_vertices_and_elements", &MmgMesh::set_vertices_and_elements);
 
   // Keep existing bindings
   py::class_<mmg3d>(m, "mmg3d")
