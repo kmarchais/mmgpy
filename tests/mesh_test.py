@@ -2,7 +2,6 @@
 
 import numpy as np
 import numpy.testing as npt
-import pyvista as pv
 
 from mmgpy import MmgMesh
 
@@ -76,6 +75,8 @@ def test_solution_fields() -> None:
 
 def visualize_mmg_mesh() -> None:
     """Visualize a simple MmgMesh using PyVista."""
+    import pyvista as pv
+
     vertices, elements = create_test_mesh()
     mesh = MmgMesh(vertices, elements)
 
