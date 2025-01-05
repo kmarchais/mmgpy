@@ -29,6 +29,8 @@ set(LIBMMGS_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 
 set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
 
+find_package(VTK 9.4 REQUIRED)
+
 # Make MMG available
 FetchContent_MakeAvailable(mmg)
 
