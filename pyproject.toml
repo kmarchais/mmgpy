@@ -26,7 +26,10 @@ BUILD_TESTING = "OFF"
 BUILD_SHARED_LIBS = "ON"
 
 [dependency-groups]
-dev = ["pytest>=8.3.4"]
+dev = [
+    "pre-commit>=4.0.1",
+    "pytest>=8.3.4",
+]
 
 [tool.ruff.lint]
 select = ["ALL"]

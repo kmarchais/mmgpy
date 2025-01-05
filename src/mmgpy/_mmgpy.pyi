@@ -1,6 +1,7 @@
 from typing import overload
 
 import numpy as np
+from numpy.typing import NDArray
 
 class mmg3d:  # noqa: N801
     @staticmethod
@@ -38,11 +39,13 @@ class MmgMesh:
     @overload
     def __init__(
         self,
-        vertices: np.ndarray[np.float64],
-        elements: np.ndarray[np.int32],
+        vertices: NDArray[np.float64],
+        elements: NDArray[np.int32],
     ) -> None: ...
     def set_vertices_and_elements(
         self,
-        vertices: np.ndarray[np.float64],
-        elements: np.ndarray[np.int32],
+        vertices: NDArray[np.float64],
+        elements: NDArray[np.int32],
     ) -> None: ...
+    def get_vertices(self) -> NDArray[np.float64]: ...
+    def get_elements(self) -> NDArray[np.int32]: ...

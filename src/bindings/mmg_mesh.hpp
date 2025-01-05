@@ -79,6 +79,58 @@ public:
     }
   }
 
+  py::array_t<double> get_vertices() const {
+    MMG5_int np = mesh->np;
+    py::array_t<double> vertices({np, 3});
+    auto buf = vertices.request();
+    double *ptr = static_cast<double *>(buf.ptr);
+
+    // Reset internal counter by setting npi = np (it will be reset in first
+    // Get_vertex call)
+    mesh->npi = mesh->np;
+
+    for (MMG5_int i = 0; i < np; i++) {
+      double x, y, z;
+      MMG5_int ref;
+      int corner, required;
+
+      if (!MMG3D_Get_vertex(mesh, &x, &y, &z, &ref, &corner, &required)) {
+        throw std::runtime_error("Failed to get vertex");
+      }
+
+      ptr[i * 3] = x;
+      ptr[i * 3 + 1] = y;
+      ptr[i * 3 + 2] = z;
+    }
+    return vertices;
+  }
+
+  py::array_t<int> get_elements() const {
+    MMG5_int ne = mesh->ne;
+    py::array_t<int> elements({ne, 4});
+    auto buf = elements.request();
+    int *ptr = static_cast<int *>(buf.ptr);
+
+    // Reset internal counter
+    mesh->nti = mesh->nt;
+
+    for (MMG5_int i = 0; i < ne; i++) {
+      int v1, v2, v3, v4;
+      MMG5_int ref;
+      int required;
+
+      if (!MMG3D_Get_tetrahedron(mesh, &v1, &v2, &v3, &v4, &ref, &required)) {
+        throw std::runtime_error("Failed to get tetrahedron");
+      }
+
+      ptr[i * 4] = v1 - 1; // Convert to 0-based indexing for Python
+      ptr[i * 4 + 1] = v2 - 1;
+      ptr[i * 4 + 2] = v3 - 1;
+      ptr[i * 4 + 3] = v4 - 1;
+    }
+    return elements;
+  }
+
   // Delete copy constructor and assignment operator
   MmgMesh(const MmgMesh &) = delete;
   MmgMesh &operator=(const MmgMesh &) = delete;

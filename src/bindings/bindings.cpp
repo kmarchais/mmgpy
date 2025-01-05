@@ -7,7 +7,9 @@ PYBIND11_MODULE(_mmgpy, m) {
   py::class_<MmgMesh>(m, "MmgMesh")
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
-      .def("set_vertices_and_elements", &MmgMesh::set_vertices_and_elements);
+      .def("set_vertices_and_elements", &MmgMesh::set_vertices_and_elements)
+      .def("get_vertices", &MmgMesh::get_vertices)
+      .def("get_elements", &MmgMesh::get_elements);
 
   // Keep existing bindings
   py::class_<mmg3d>(m, "mmg3d")
