@@ -37,7 +37,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libvtk9-dev
-
       # Download and install VTK for Windows and macOS
       - name: Set VTK filename
         id: vtk-file
