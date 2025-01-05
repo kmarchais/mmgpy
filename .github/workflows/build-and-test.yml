@@ -36,7 +36,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libvtk9-dev
+          sudo apt-get install -y libvtk9-dev qtbase5-dev qt5-qmake
       # Download and install VTK for Windows and macOS
       - name: Set VTK filename
         id: vtk-file
