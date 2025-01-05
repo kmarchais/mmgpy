@@ -32,6 +32,13 @@ for `uv` users:
 uv pip install mmgpy
 ```
 
+On Linux:
+
+```bash
+sudo apt install build-essential libvtk9-dev
+pip install git+https://github.com/kmarchais/mmgpy.git
+```
+
 ## Build dependencies
 
 - pybind11: Used for Python bindings

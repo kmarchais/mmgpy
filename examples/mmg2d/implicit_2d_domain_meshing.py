@@ -18,7 +18,7 @@ import pyvista as pv
 from mmgpy import mmg2d
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "multi-mat.mesh"
-SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "multi-mat.sol"
+SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "multi-mat-rmc.sol"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
 mmg2d.remesh(
@@ -28,7 +28,13 @@ mmg2d.remesh(
     options={"ls": 0},
 )
 
+mesh = pv.read(OUTPUT_FILE)
+
 pl = pv.Plotter()
-pl.add_mesh(pv.read(OUTPUT_FILE), show_edges=True)
+pl.add_mesh(
+    mesh,
+    show_edges=True,
+    scalars="medit:ref",
+)
 pl.link_views()
 pl.show()

@@ -20,7 +20,7 @@ from mmgpy import mmgs
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "rodin.mesh"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
-SCREENSHOT = True
+SCREENSHOT = False
 
 mmgs.remesh(
     input_mesh=str(INPUT_FILE),

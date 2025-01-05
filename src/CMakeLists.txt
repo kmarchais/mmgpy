@@ -53,6 +53,10 @@ if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
 endif()
 
 if(WIN32)  # Windows-specific installation
+    # Get list of VTK modules from MMG's dependencies
+    get_property(vtk_libs TARGET mmgs PROPERTY INTERFACE_LINK_LIBRARIES)
+    message(STATUS "VTK libs: ${vtk_libs}")
+
     if(CMAKE_BUILD_TYPE)
         set(MMG_EXE_DIR "${mmg_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}")
     else()
@@ -69,6 +73,23 @@ if(WIN32)  # Windows-specific installation
         "${MMG_EXE_DIR}/mmgs.exe"
         DESTINATION "${SKBUILD_SCRIPTS_DIR}"
     )
+
+    if(TARGET VTK::vtkIOParallel-9.4)
+        install(IMPORTED_RUNTIME_ARTIFACTS
+            "VTK::vtkIOParallel-9.4"
+            "VTK::vtkIOParallelXML-9.4"
+            "VTK::vtkIOXML-9.4"
+            "VTK::vtkIOLegacy-9.4"
+            "VTK::vtkIOCore-9.4"
+            "VTK::vtkCommonDataModel-9.4"
+            "VTK::vtkCommonCore-9.4"
+            "VTK::vtksys-9.4"
+            DESTINATION ${PROJECT_NAME}
+            RUNTIME
+        )
+    else()
+        message(WARNING "VTK targets not found with expected names. Please check VTK installation.")
+    endif()
 else()  # Unix-specific installation
     # Define the rpath prefix based on platform
     if(APPLE)
