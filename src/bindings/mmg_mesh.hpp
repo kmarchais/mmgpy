@@ -131,6 +131,115 @@ public:
     return elements;
   }
 
+  void set_metric_field(const py::array_t<double> &metric) {
+    py::buffer_info buf = metric.request();
+
+    if (buf.ndim != 2 || buf.shape[1] != 1) {
+      throw std::runtime_error(
+          "Metric must be an Nx1 array for isotropic metric");
+    }
+
+    MMG5_int np = mesh->np;
+    if (buf.shape[0] != np) {
+      throw std::runtime_error(
+          "Metric array size must match number of vertices");
+    }
+
+    // Set solution field type as scalar
+    if (!MMG3D_Set_solSize(mesh, met, MMG5_Vertex, np, MMG5_Scalar)) {
+      throw std::runtime_error("Failed to set metric solution size");
+    }
+
+    const double *ptr = static_cast<double *>(buf.ptr);
+    if (!MMG3D_Set_scalarSols(met, const_cast<double *>(ptr))) {
+      throw std::runtime_error("Failed to set metric values");
+    }
+  }
+
+  void set_displacement_field(const py::array_t<double> &displacement) {
+    py::buffer_info buf = displacement.request();
+
+    if (buf.ndim != 2 || buf.shape[1] != 3) {
+      throw std::runtime_error("Displacement must be an Nx3 array");
+    }
+
+    MMG5_int np = mesh->np;
+    if (buf.shape[0] != np) {
+      throw std::runtime_error(
+          "Displacement array size must match number of vertices");
+    }
+
+    // Set solution field type as vector
+    if (!MMG3D_Set_solSize(mesh, disp, MMG5_Vertex, np, MMG5_Vector)) {
+      throw std::runtime_error("Failed to set displacement solution size");
+    }
+
+    const double *ptr = static_cast<double *>(buf.ptr);
+    if (!MMG3D_Set_vectorSols(disp, const_cast<double *>(ptr))) {
+      throw std::runtime_error("Failed to set displacement values");
+    }
+  }
+
+  void set_levelset_field(const py::array_t<double> &levelset) {
+    py::buffer_info buf = levelset.request();
+
+    if (buf.ndim != 2 || buf.shape[1] != 1) {
+      throw std::runtime_error("Level set must be an Nx1 array");
+    }
+
+    MMG5_int np = mesh->np;
+    if (buf.shape[0] != np) {
+      throw std::runtime_error(
+          "Level set array size must match number of vertices");
+    }
+
+    // Set solution field type as scalar
+    if (!MMG3D_Set_solSize(mesh, ls, MMG5_Vertex, np, MMG5_Scalar)) {
+      throw std::runtime_error("Failed to set level set solution size");
+    }
+
+    const double *ptr = static_cast<double *>(buf.ptr);
+    if (!MMG3D_Set_scalarSols(ls, const_cast<double *>(ptr))) {
+      throw std::runtime_error("Failed to set level set values");
+    }
+  }
+
+  py::array_t<double> get_metric_field() const {
+    MMG5_int np = mesh->np;
+    py::array_t<double> metric({np, 1});
+    auto buf = metric.request();
+    double *ptr = static_cast<double *>(buf.ptr);
+
+    if (!MMG3D_Get_scalarSols(met, ptr)) {
+      throw std::runtime_error("Failed to get metric values");
+    }
+    return metric;
+  }
+
+  py::array_t<double> get_displacement_field() const {
+    MMG5_int np = mesh->np;
+    py::array_t<double> displacement({np, 3});
+    auto buf = displacement.request();
+    double *ptr = static_cast<double *>(buf.ptr);
+
+    if (!MMG3D_Get_vectorSols(disp, ptr)) {
+      throw std::runtime_error("Failed to get displacement values");
+    }
+    return displacement;
+  }
+
+  py::array_t<double> get_levelset_field() const {
+    MMG5_int np = mesh->np;
+    py::array_t<double> levelset({np, 1});
+    auto buf = levelset.request();
+    double *ptr = static_cast<double *>(buf.ptr);
+
+    if (!MMG3D_Get_scalarSols(ls, ptr)) {
+      throw std::runtime_error("Failed to get level set values");
+    }
+    return levelset;
+  }
+
   // Delete copy constructor and assignment operator
   MmgMesh(const MmgMesh &) = delete;
   MmgMesh &operator=(const MmgMesh &) = delete;
