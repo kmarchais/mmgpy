@@ -8,3 +8,17 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Ignore these file types everywhere
+*.vtk
+*.mesh
+*.sol
+*.stp
+*.png
+
+# But allow them in the assets folder
+!assets/**/*.vtk
+!assets/**/*.mesh
+!assets/**/*.sol
+!assets/**/*.stp
+!assets/**/*.png
