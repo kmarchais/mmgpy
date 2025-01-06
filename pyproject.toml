@@ -1,8 +1,5 @@
 [build-system]
-requires = [
-    "scikit-build-core>=0.8.0",
-    "pybind11>=2.13.6",
-]
+requires = ["scikit-build-core>=0.8.0", "pybind11>=2.13.6"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -19,6 +16,15 @@ dependencies = [
 build.verbose = true
 cmake.version = ">=3.15"
 sdist.include = ["CMakeLists.txt", "src/*", "extern/*"]
+sdist.exclude = [
+    # Exclude VTK source code that appears in the CI
+    "vtk*/**",
+    "vtk*.tar.gz",
+    # Exclude asset files
+    "*.mesh",
+    "*.sol",
+    "*.vtk",
+]
 wheel.packages = ["src/mmgpy"]
 
 [tool.scikit-build.cmake.define]
