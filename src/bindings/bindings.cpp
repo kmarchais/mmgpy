@@ -7,15 +7,37 @@ PYBIND11_MODULE(_mmgpy, m) {
   py::class_<MmgMesh>(m, "MmgMesh")
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
+      .def(py::init([](const py::object &path) {
+        // Handle both str and Path objects
+        if (py::isinstance<py::str>(path)) {
+          return new MmgMesh(std::variant<std::string, std::filesystem::path>(
+              path.cast<std::string>()));
+        } else {
+          // Assume it's a Path object
+          return new MmgMesh(std::variant<std::string, std::filesystem::path>(
+              std::filesystem::path(
+                  path.attr("__str__")().cast<std::string>())));
+        }
+      }))
       .def("set_vertices_and_elements", &MmgMesh::set_vertices_and_elements)
       .def("get_vertices", &MmgMesh::get_vertices)
       .def("get_elements", &MmgMesh::get_elements)
-      .def("set_metric_field", &MmgMesh::set_metric_field)
-      .def("get_metric_field", &MmgMesh::get_metric_field)
-      .def("set_displacement_field", &MmgMesh::set_displacement_field)
-      .def("get_displacement_field", &MmgMesh::get_displacement_field)
-      .def("set_levelset_field", &MmgMesh::set_levelset_field)
-      .def("get_levelset_field", &MmgMesh::get_levelset_field);
+      .def("set_field", &MmgMesh::set_field)
+      .def("get_field", &MmgMesh::get_field)
+      .def("__getitem__", &MmgMesh::getitem)
+      .def("__setitem__", &MmgMesh::setitem)
+      .def("save", [](const MmgMesh &self, const py::object &path) {
+        // Handle both str and Path objects
+        if (py::isinstance<py::str>(path)) {
+          self.save(std::variant<std::string, std::filesystem::path>(
+              path.cast<std::string>()));
+        } else {
+          // Assume it's a Path object
+          self.save(std::variant<std::string, std::filesystem::path>(
+              std::filesystem::path(
+                  path.attr("__str__")().cast<std::string>())));
+        }
+      });
 
   // Keep existing bindings
   py::class_<mmg3d>(m, "mmg3d")
