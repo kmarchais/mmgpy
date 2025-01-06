@@ -7,30 +7,30 @@ from numpy.typing import NDArray
 class mmg3d:  # noqa: N801
     @staticmethod
     def remesh(
-        input_mesh: str,
-        input_sol: str = "",
-        output_mesh: str = "",
-        output_sol: str = "",
+        input_mesh: str | Path,
+        input_sol: str | Path | None = None,
+        output_mesh: str | Path | None = None,
+        output_sol: str | Path | None = None,
         options: dict[str, float | int] = ...,
     ) -> bool: ...
 
 class mmg2d:  # noqa: N801
     @staticmethod
     def remesh(
-        input_mesh: str,
-        input_sol: str = "",
-        output_mesh: str = "",
-        output_sol: str = "",
+        input_mesh: str | Path,
+        input_sol: str | Path | None = None,
+        output_mesh: str | Path | None = None,
+        output_sol: str | Path | None = None,
         options: dict[str, float | int] = ...,
     ) -> bool: ...
 
 class mmgs:  # noqa: N801
     @staticmethod
     def remesh(
-        input_mesh: str,
-        input_sol: str = "",
-        output_mesh: str = "",
-        output_sol: str = "",
+        input_mesh: str | Path,
+        input_sol: str | Path | None = None,
+        output_mesh: str | Path | None = None,
+        output_sol: str | Path | None = None,
         options: dict[str, float | int] = ...,
     ) -> bool: ...
 

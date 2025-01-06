@@ -11,14 +11,17 @@ class mmg3d {};
 class mmg2d {};
 class mmgs {};
 
-bool remesh_2d(const std::string &input_mesh, const std::string &input_sol,
-               std::string &output_mesh, const std::string &output_sol,
+// MMG3D functions
+bool remesh_3d(const py::object &input_mesh, const py::object &input_sol,
+               const py::object &output_mesh, const py::object &output_sol,
                py::dict options);
 
-bool remesh_3d(const std::string &input_mesh, const std::string &input_sol,
-               const std::string &output_mesh, const std::string &output_sol,
+// MMG2D functions
+bool remesh_2d(const py::object &input_mesh, const py::object &input_sol,
+               const py::object &output_mesh, const py::object &output_sol,
                py::dict options);
 
-bool remesh_s(const std::string &input_mesh, const std::string &input_sol,
-              const std::string &output_mesh, const std::string &output_sol,
+// MMGS functions
+bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
+              const py::object &output_mesh, const py::object &output_sol,
               py::dict options);

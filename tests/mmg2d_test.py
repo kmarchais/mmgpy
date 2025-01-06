@@ -21,8 +21,8 @@ def test_mmg2d() -> None:
     verbose = -1
 
     mmg2d.remesh(
-        input_mesh=str(input_mesh),
-        output_mesh=str(test_path),
+        input_mesh=input_mesh,
+        output_mesh=test_path,
         options={
             "ar": ar,
             "hmax": hmax,

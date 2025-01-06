@@ -7,6 +7,7 @@ configure_file(
 )
 
 pybind11_add_module(${PROJECT_NAME}
+    bindings/mmg_common.cpp
     bindings/mmgs.cpp
     bindings/mmg3d.cpp
     bindings/mmg2d.cpp
