@@ -4,13 +4,11 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mmgpy"
-version = "0.1.2.0"
+version = "0.1.2.1"
 description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = [
-    "numpy>=2.0.2",
-]
+dependencies = ["numpy>=2.0.2"]
 
 [tool.scikit-build]
 build.verbose = true
@@ -32,10 +30,7 @@ BUILD_TESTING = "OFF"
 BUILD_SHARED_LIBS = "ON"
 
 [dependency-groups]
-dev = [
-    "pre-commit>=4.0.1",
-    "pytest>=8.3.4",
-]
+dev = ["pre-commit>=4.0.1", "pytest>=8.3.4"]
 
 [tool.ruff.lint]
 select = ["ALL"]

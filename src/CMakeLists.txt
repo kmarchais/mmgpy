@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.15)
-project(mmgpy VERSION 0.1.2.0)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}/_version.py.in"
