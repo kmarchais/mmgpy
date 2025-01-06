@@ -53,34 +53,44 @@ int mmgs_save_mesh(MMG5_pMesh mesh, MMG5_pSol met,
   }
 }
 
-bool remesh_s(const std::string &input_mesh, const std::string &input_sol,
-              const std::string &output_mesh, const std::string &output_sol,
+bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
+              const py::object &output_mesh, const py::object &output_sol,
               py::dict options) {
+  // Convert paths to strings
+  std::string input_mesh_str = path_to_string(input_mesh);
+  std::string input_sol_str =
+      input_sol.is_none() ? "" : path_to_string(input_sol);
+  std::string output_mesh_str =
+      output_mesh.is_none() ? "" : path_to_string(output_mesh);
+  std::string output_sol_str =
+      output_sol.is_none() ? "" : path_to_string(output_sol);
+
   // Initialize structures
   auto [mesh, met, ls] = init_mmgs_structures();
 
   // Set mesh names
-  MMGS_Set_inputMeshName(mesh, input_mesh.c_str());
-  MMGS_Set_outputMeshName(mesh, output_mesh.c_str());
+  MMGS_Set_inputMeshName(mesh, input_mesh_str.c_str());
+  MMGS_Set_outputMeshName(mesh, output_mesh_str.c_str());
 
-  if (!input_sol.empty()) {
-    MMGS_Set_inputSolName(mesh, met, input_sol.c_str());
+  if (!input_sol_str.empty()) {
+    MMGS_Set_inputSolName(mesh, met, input_sol_str.c_str());
   }
-  if (!output_sol.empty()) {
-    MMGS_Set_outputSolName(mesh, met, output_sol.c_str());
+  if (!output_sol_str.empty()) {
+    MMGS_Set_outputSolName(mesh, met, output_sol_str.c_str());
   }
 
   try {
     // Load mesh
-    if (mmgs_load_mesh(mesh, met, mesh->info.iso ? ls : met, input_mesh) != 1) {
+    if (mmgs_load_mesh(mesh, met, mesh->info.iso ? ls : met, input_mesh_str) !=
+        1) {
       throw std::runtime_error("Failed to load input mesh");
     }
 
     // Load solution if provided
-    if (!input_sol.empty()) {
+    if (!input_sol_str.empty()) {
       // In iso mode, solution goes to ls structure
       if (mesh->info.iso) {
-        if (MMGS_loadSol(mesh, ls, input_sol.c_str()) != 1) {
+        if (MMGS_loadSol(mesh, ls, input_sol_str.c_str()) != 1) {
           throw std::runtime_error("Failed to load level-set");
         }
         // Load optional metric if provided
@@ -90,7 +100,7 @@ bool remesh_s(const std::string &input_mesh, const std::string &input_sol,
           }
         }
       } else {
-        if (MMGS_loadSol(mesh, met, input_sol.c_str()) != 1) {
+        if (MMGS_loadSol(mesh, met, input_sol_str.c_str()) != 1) {
           throw std::runtime_error("Failed to load solution");
         }
       }
@@ -112,13 +122,13 @@ bool remesh_s(const std::string &input_mesh, const std::string &input_sol,
     }
 
     // Save mesh
-    if (mmgs_save_mesh(mesh, met, output_mesh) != 1) {
+    if (mmgs_save_mesh(mesh, met, output_mesh_str) != 1) {
       throw std::runtime_error("Failed to save output mesh");
     }
 
     // Save solution if requested
-    if (!output_sol.empty()) {
-      if (MMGS_saveSol(mesh, met, output_sol.c_str()) != 1) {
+    if (!output_sol_str.empty()) {
+      if (MMGS_saveSol(mesh, met, output_sol_str.c_str()) != 1) {
         throw std::runtime_error("Failed to save output solution");
       }
     }
