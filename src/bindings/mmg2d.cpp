@@ -162,149 +162,71 @@ bool remesh_2d(const py::object &input_mesh, const py::object &input_sol,
 
 void set_mesh_options_2D(MMG5_pMesh mesh, MMG5_pSol met,
                          const py::dict &options) {
+  const std::unordered_map<std::string, ParamInfo> param_map = {
+      // Double parameters
+      {"hmin", {MMG2D_DPARAM_hmin, ParamType::Double}},
+      {"hmax", {MMG2D_DPARAM_hmax, ParamType::Double}},
+      {"hsiz", {MMG2D_DPARAM_hsiz, ParamType::Double}},
+      {"hausd", {MMG2D_DPARAM_hausd, ParamType::Double}},
+      {"hgrad", {MMG2D_DPARAM_hgrad, ParamType::Double}},
+      {"hgradreq", {MMG2D_DPARAM_hgradreq, ParamType::Double}},
+      {"ls", {MMG2D_DPARAM_ls, ParamType::Double}},
+      {"xreg_val", {MMG2D_DPARAM_xreg, ParamType::Double}},
+      {"rmc", {MMG2D_DPARAM_rmc, ParamType::Double}},
+      {"ar", {MMG2D_DPARAM_angleDetection, ParamType::Double}},
+
+      // Integer parameters
+      {"verbose", {MMG2D_IPARAM_verbose, ParamType::Integer}},
+      {"mem", {MMG2D_IPARAM_mem, ParamType::Integer}},
+      {"debug", {MMG2D_IPARAM_debug, ParamType::Integer}},
+      {"angle", {MMG2D_IPARAM_angle, ParamType::Integer}},
+      {"iso", {MMG2D_IPARAM_iso, ParamType::Integer}},
+      {"isosurf", {MMG2D_IPARAM_isosurf, ParamType::Integer}},
+      {"opnbdy", {MMG2D_IPARAM_opnbdy, ParamType::Integer}},
+      {"lag", {MMG2D_IPARAM_lag, ParamType::Integer}},
+      {"3dmedit", {MMG2D_IPARAM_3dMedit, ParamType::Integer}},
+      {"optim", {MMG2D_IPARAM_optim, ParamType::Integer}},
+      {"noinsert", {MMG2D_IPARAM_noinsert, ParamType::Integer}},
+      {"noswap", {MMG2D_IPARAM_noswap, ParamType::Integer}},
+      {"nomove", {MMG2D_IPARAM_nomove, ParamType::Integer}},
+      {"nosurf", {MMG2D_IPARAM_nosurf, ParamType::Integer}},
+      {"nreg", {MMG2D_IPARAM_nreg, ParamType::Integer}},
+      {"xreg", {MMG2D_IPARAM_xreg, ParamType::Integer}},
+      {"numsubdomain", {MMG2D_IPARAM_numsubdomain, ParamType::Integer}},
+      {"numberOfLocalParam",
+       {MMG2D_IPARAM_numberOfLocalParam, ParamType::Integer}},
+      {"numberOfLSBaseReferences",
+       {MMG2D_IPARAM_numberOfLSBaseReferences, ParamType::Integer}},
+      {"numberOfMat", {MMG2D_IPARAM_numberOfMat, ParamType::Integer}},
+      {"anisosize", {MMG2D_IPARAM_anisosize, ParamType::Integer}},
+      {"nosizreq", {MMG2D_IPARAM_nosizreq, ParamType::Integer}},
+      {"nofem", {MMG2D_IPARAM_nofem, ParamType::Integer}},
+      {"isoref", {MMG2D_IPARAM_isoref, ParamType::Integer}}};
+
   for (auto item : options) {
     std::string key = py::str(item.first);
 
-    if (key == "hmin") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hmin,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hmin parameter");
-    } else if (key == "hmax") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hmax,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hmax parameter");
-    } else if (key == "hsiz") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hsiz,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hsiz parameter");
-    } else if (key == "hausd") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hausd,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hausd parameter");
-    } else if (key == "hgrad") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hgrad,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hgrad parameter");
-    } else if (key == "hgradreq") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hgradreq,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hgradreq parameter");
-    } else if (key == "ls") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_ls,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set ls parameter");
-    } else if (key == "xreg_val") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_xreg,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set xreg value parameter");
-    } else if (key == "rmc") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_rmc,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set rmc parameter");
-    } else if (key == "ar") {
-      if (!MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_angleDetection,
-                                item.second.cast<double>()))
-        throw std::runtime_error("Failed to set angle detection parameter");
-    } else if (key == "verbose") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_verbose,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set verbose parameter");
-    } else if (key == "mem") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_mem,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set memory parameter");
-    } else if (key == "debug") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_debug,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set debug parameter");
-    } else if (key == "angle") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_angle,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set angle parameter");
-    } else if (key == "iso") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_iso,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set iso parameter");
-    } else if (key == "isosurf") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_isosurf,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set isosurf parameter");
-    } else if (key == "opnbdy") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_opnbdy,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set opnbdy parameter");
-    } else if (key == "lag") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_lag,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set lag parameter");
-    } else if (key == "3dmedit") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_3dMedit,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set 3dMedit parameter");
-    } else if (key == "optim") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_optim,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set optim parameter");
-    } else if (key == "noinsert") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_noinsert,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set noinsert parameter");
-    } else if (key == "noswap") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_noswap,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set noswap parameter");
-    } else if (key == "nomove") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nomove,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nomove parameter");
-    } else if (key == "nosurf") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nosurf,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nosurf parameter");
-    } else if (key == "nreg") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nreg,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nreg parameter");
-    } else if (key == "xreg") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_xreg,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set xreg parameter");
-    } else if (key == "numsubdomain") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_numsubdomain,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set numsubdomain parameter");
-    } else if (key == "numberOfLocalParam") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_numberOfLocalParam,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set numberOfLocalParam parameter");
-    } else if (key == "numberOfLSBaseReferences") {
-      if (!MMG2D_Set_iparameter(mesh, met,
-                                MMG2D_IPARAM_numberOfLSBaseReferences,
-                                item.second.cast<int>()))
-        throw std::runtime_error(
-            "Failed to set numberOfLSBaseReferences parameter");
-    } else if (key == "numberOfMat") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_numberOfMat,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set numberOfMat parameter");
-    } else if (key == "anisosize") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_anisosize,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set anisosize parameter");
-    } else if (key == "nosizreq") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nosizreq,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nosizreq parameter");
-    } else if (key == "nofem") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nofem,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nofem parameter");
-    } else if (key == "isoref") {
-      if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_isoref,
-                                item.second.cast<int>()))
-        throw std::runtime_error("Failed to set isoref parameter");
-    } else {
+    auto it = param_map.find(key);
+    if (it == param_map.end()) {
       throw std::runtime_error("Unknown option: " + key);
+    }
+
+    const ParamInfo &info = it->second;
+    bool success;
+
+    switch (info.type) {
+    case ParamType::Double:
+      success = MMG2D_Set_dparameter(mesh, met, info.param_type,
+                                     item.second.cast<double>());
+      break;
+    case ParamType::Integer:
+      success = MMG2D_Set_iparameter(mesh, met, info.param_type,
+                                     item.second.cast<int>());
+      break;
+    }
+
+    if (!success) {
+      throw std::runtime_error("Failed to set " + key + " parameter");
     }
   }
 }

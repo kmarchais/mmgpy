@@ -12,6 +12,13 @@
 
 namespace py = pybind11;
 
+enum class ParamType { Double, Integer };
+
+struct ParamInfo {
+  int param_type;
+  ParamType type;
+};
+
 std::string get_file_extension(const std::string &filename);
 
 void set_mesh_options_2D(MMG5_pMesh mesh, MMG5_pSol met,
