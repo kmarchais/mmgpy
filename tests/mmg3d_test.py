@@ -13,7 +13,7 @@ def test_mmg3d() -> None:
     input_file = Path(__file__).parent / "Mesh.mesh"
 
     mmg3d.remesh(
-        input_mesh=str(input_file),
+        input_mesh=input_file,
         output_mesh="tests/test_output.mesh",
         options={
             "verbose": verbose,
