@@ -143,136 +143,68 @@ bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
 
 void set_mesh_options_surface(MMG5_pMesh mesh, MMG5_pSol met,
                               const py::dict &options) {
+  const std::unordered_map<std::string, ParamInfo> param_map = {
+      // Double parameters
+      {"hmin", {MMGS_DPARAM_hmin, ParamType::Double}},
+      {"hmax", {MMGS_DPARAM_hmax, ParamType::Double}},
+      {"hsiz", {MMGS_DPARAM_hsiz, ParamType::Double}},
+      {"hausd", {MMGS_DPARAM_hausd, ParamType::Double}},
+      {"hgrad", {MMGS_DPARAM_hgrad, ParamType::Double}},
+      {"hgradreq", {MMGS_DPARAM_hgradreq, ParamType::Double}},
+      {"ls", {MMGS_DPARAM_ls, ParamType::Double}},
+      {"xreg_val", {MMGS_DPARAM_xreg, ParamType::Double}},
+      {"rmc", {MMGS_DPARAM_rmc, ParamType::Double}},
+      {"ar", {MMGS_DPARAM_angleDetection, ParamType::Double}},
+
+      // Integer parameters
+      {"debug", {MMGS_IPARAM_debug, ParamType::Integer}},
+      {"angle", {MMGS_IPARAM_angle, ParamType::Integer}},
+      {"iso", {MMGS_IPARAM_iso, ParamType::Integer}},
+      {"isosurf", {MMGS_IPARAM_isosurf, ParamType::Integer}},
+      {"keepRef", {MMGS_IPARAM_keepRef, ParamType::Integer}},
+      {"optim", {MMGS_IPARAM_optim, ParamType::Integer}},
+      {"noinsert", {MMGS_IPARAM_noinsert, ParamType::Integer}},
+      {"noswap", {MMGS_IPARAM_noswap, ParamType::Integer}},
+      {"nomove", {MMGS_IPARAM_nomove, ParamType::Integer}},
+      {"nreg", {MMGS_IPARAM_nreg, ParamType::Integer}},
+      {"xreg", {MMGS_IPARAM_xreg, ParamType::Integer}},
+      {"renum", {MMGS_IPARAM_renum, ParamType::Integer}},
+      {"anisosize", {MMGS_IPARAM_anisosize, ParamType::Integer}},
+      {"nosizreq", {MMGS_IPARAM_nosizreq, ParamType::Integer}},
+      {"verbose", {MMGS_IPARAM_verbose, ParamType::Integer}},
+      {"mem", {MMGS_IPARAM_mem, ParamType::Integer}},
+      {"numberOfLocalParam",
+       {MMGS_IPARAM_numberOfLocalParam, ParamType::Integer}},
+      {"numberOfLSBaseReferences",
+       {MMGS_IPARAM_numberOfLSBaseReferences, ParamType::Integer}},
+      {"numberOfMat", {MMGS_IPARAM_numberOfMat, ParamType::Integer}},
+      {"numsubdomain", {MMGS_IPARAM_numsubdomain, ParamType::Integer}},
+      {"isoref", {MMGS_IPARAM_isoref, ParamType::Integer}}};
+
   for (auto item : options) {
     std::string key = py::str(item.first);
 
-    if (key == "hmin") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_hmin,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hmin parameter");
-    } else if (key == "hmax") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_hmax,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hmax parameter");
-    } else if (key == "hsiz") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_hsiz,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hsiz parameter");
-    } else if (key == "hausd") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_hausd,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hausd parameter");
-    } else if (key == "hgrad") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_hgrad,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hgrad parameter");
-    } else if (key == "hgradreq") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_hgradreq,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set hgradreq parameter");
-    } else if (key == "ls") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_ls,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set ls parameter");
-    } else if (key == "xreg_val") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_xreg,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set xreg value parameter");
-    } else if (key == "rmc") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_rmc,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set rmc parameter");
-    } else if (key == "ar") {
-      if (!MMGS_Set_dparameter(mesh, met, MMGS_DPARAM_angleDetection,
-                               item.second.cast<double>()))
-        throw std::runtime_error("Failed to set angle detection parameter");
-    } else if (key == "debug") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_debug,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set debug parameter");
-    } else if (key == "angle") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_angle,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set angle parameter");
-    } else if (key == "iso") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_iso,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set iso parameter");
-    } else if (key == "isosurf") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_isosurf,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set isosurf parameter");
-    } else if (key == "keepRef") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_keepRef,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set keepRef parameter");
-    } else if (key == "optim") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_optim,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set optim parameter");
-    } else if (key == "noinsert") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_noinsert,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set noinsert parameter");
-    } else if (key == "noswap") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_noswap,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set noswap parameter");
-    } else if (key == "nomove") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_nomove,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nomove parameter");
-    } else if (key == "nreg") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_nreg,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nreg parameter");
-    } else if (key == "xreg") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_xreg,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set xreg parameter");
-    } else if (key == "renum") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_renum,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set renum parameter");
-    } else if (key == "anisosize") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_anisosize,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set anisosize parameter");
-    } else if (key == "nosizreq") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_nosizreq,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set nosizreq parameter");
-    } else if (key == "verbose") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_verbose,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set verbose parameter");
-    } else if (key == "mem") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_mem,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set memory parameter");
-    } else if (key == "numberOfLocalParam") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLocalParam,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set numberOfLocalParam parameter");
-    } else if (key == "numberOfLSBaseReferences") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLSBaseReferences,
-                               item.second.cast<int>()))
-        throw std::runtime_error(
-            "Failed to set numberOfLSBaseReferences parameter");
-    } else if (key == "numberOfMat") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfMat,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set numberOfMat parameter");
-    } else if (key == "numsubdomain") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numsubdomain,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set numsubdomain parameter");
-    } else if (key == "isoref") {
-      if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_isoref,
-                               item.second.cast<int>()))
-        throw std::runtime_error("Failed to set isoref parameter");
-    } else {
+    auto it = param_map.find(key);
+    if (it == param_map.end()) {
       throw std::runtime_error("Unknown option: " + key);
+    }
+
+    const ParamInfo &info = it->second;
+    bool success;
+
+    switch (info.type) {
+    case ParamType::Double:
+      success = MMGS_Set_dparameter(mesh, met, info.param_type,
+                                    item.second.cast<double>());
+      break;
+    case ParamType::Integer:
+      success = MMGS_Set_iparameter(mesh, met, info.param_type,
+                                    item.second.cast<int>());
+      break;
+    }
+
+    if (!success) {
+      throw std::runtime_error("Failed to set " + key + " parameter");
     }
   }
 }
