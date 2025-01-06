@@ -5,7 +5,16 @@ if(POLICY CMP0177)
     cmake_policy(SET CMP0177 NEW)
 endif()
 
-project(mmgpy VERSION 0.1.2.0)
+# Read version from pyproject.toml
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml" PYPROJECT_CONTENT)
+string(REGEX MATCH "version = \"([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?)\"" _ ${PYPROJECT_CONTENT})
+
+if(NOT CMAKE_MATCH_1)
+    message(FATAL_ERROR "Could not find version in pyproject.toml")
+endif()
+
+set(MMGPY_VERSION ${CMAKE_MATCH_1})
+project(mmgpy VERSION ${MMGPY_VERSION})
 
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
