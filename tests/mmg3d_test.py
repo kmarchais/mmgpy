@@ -12,9 +12,13 @@ def test_mmg3d() -> None:
     verbose = -1
     input_file = Path(__file__).parent / "Mesh.mesh"
 
+    folder = Path(__file__).parent
+    test_path = folder / "test_output.mesh"
+    ref_path = folder / "output_exe.mesh"
+
     mmg3d.remesh(
         input_mesh=input_file,
-        output_mesh="tests/test_output.mesh",
+        output_mesh=test_path,
         options={
             "verbose": verbose,
         },
@@ -27,15 +31,12 @@ def test_mmg3d() -> None:
             "-in",
             str(input_file),
             "-out",
-            "tests/output_exe.mesh",
+            str(ref_path),
             "-v",
             str(verbose),
         ],
         check=True,
     )
 
-    folder = Path(__file__).parent
-    test_path = folder / "test_output.mesh"
-    ref_path = folder / "output_exe.mesh"
     with test_path.open("r") as test, ref_path.open("r") as ref:
         assert test.read() == ref.read()

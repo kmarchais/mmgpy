@@ -22,17 +22,15 @@ SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "multi-mat-rmc.sol"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
 mmg2d.remesh(
-    input_mesh=str(INPUT_FILE),
-    input_sol=str(SOL_FILE),
-    output_mesh=str(OUTPUT_FILE),
+    input_mesh=INPUT_FILE,
+    input_sol=SOL_FILE,
+    output_mesh=OUTPUT_FILE,
     options={"ls": 0},
 )
 
-mesh = pv.read(OUTPUT_FILE)
-
 pl = pv.Plotter()
 pl.add_mesh(
-    mesh,
+    pv.read(OUTPUT_FILE),
     show_edges=True,
     scalars="medit:ref",
 )

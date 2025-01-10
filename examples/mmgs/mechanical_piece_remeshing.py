@@ -29,7 +29,7 @@ for i, hausd in enumerate(hausorff_parameters):
 
     out_file = f"{OUTPUT_DIR!r}/hausd_{hausd}.vtk"
     mmgs.remesh(
-        input_mesh=str(INPUT_FILE),
+        input_mesh=INPUT_FILE,
         output_mesh=out_file,
         options={"hausd": hausd},
     )
@@ -42,7 +42,7 @@ for i, hmax in enumerate(hmax_parameters):
 
     out_file = f"{OUTPUT_DIR!r}/hmax_{hmax}.vtk"
     mmgs.remesh(
-        input_mesh=str(INPUT_FILE),
+        input_mesh=INPUT_FILE,
         output_mesh=out_file,
         options={"hmax": hmax},
     )
