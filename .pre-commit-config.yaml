@@ -21,7 +21,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.9.10"
+    rev: "v0.11.0"
     hooks:
       - id: ruff # linter
         args: [--fix, --select, ALL, --ignore, INP001]
@@ -56,7 +56,7 @@ repos:
       - id: mypy
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: "v19.1.7"
+    rev: "v20.1.0"
     hooks:
       - id: clang-format
         types_or: [c++, c, cuda]
@@ -68,7 +68,7 @@ repos:
         types_or: [yaml, markdown]
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: "v0.23"
+    rev: "v0.24"
     hooks:
       - id: validate-pyproject
         additional_dependencies: ["validate-pyproject-schema-store[all]"]
