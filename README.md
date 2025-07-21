@@ -42,21 +42,17 @@ pip install git+https://github.com/kmarchais/mmgpy.git
 ## Build dependencies
 
 - pybind11: Used for Python bindings
-
   - BSD 3-Clause License
   - Copyright (c) 2016 Wenzel Jakob <wenzel.jakob@epfl.ch>
 
 - CMake (>= 3.0): Build system
-
   - BSD 3-Clause License
   - Copyright 2000-2024 Kitware, Inc. and Contributors
 
 - scikit-build: Python build system integration
-
   - MIT License
   - Copyright (c) 2014 Mike Sarahan
 
 - pytest: Testing framework
-
   - MIT License
   - Copyright (c) 2004 Holger Krekel and others
