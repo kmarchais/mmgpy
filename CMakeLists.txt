@@ -16,7 +16,13 @@ endif()
 set(MMGPY_VERSION ${CMAKE_MATCH_1})
 project(mmgpy VERSION ${MMGPY_VERSION})
 
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
+# Find Python - let scikit-build-core handle it in wheel builds
+if(DEFINED SKBUILD)
+    # scikit-build-core provides Python info automatically
+    find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+else()
+    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+endif()
 
 find_package(pybind11 QUIET)
 
