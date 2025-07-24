@@ -27,6 +27,13 @@ set(LIBMMG2D_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 set(LIBMMG3D_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 set(LIBMMGS_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 
+# Conditionally disable executables if requested
+if(MMGPY_SKIP_EXECUTABLES)
+    set(BUILD_MMG2D_EXE OFF CACHE BOOL "Skip MMG2D executable" FORCE)
+    set(BUILD_MMG3D_EXE OFF CACHE BOOL "Skip MMG3D executable" FORCE)
+    set(BUILD_MMGS_EXE OFF CACHE BOOL "Skip MMGS executable" FORCE)
+endif()
+
 set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
 set(USE_ELAS OFF CACHE BOOL "Do not use ELAS" FORCE)
 
