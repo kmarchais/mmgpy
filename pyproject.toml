@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.8.0", "pybind11>=2.13.6"]
+requires = ["scikit-build-core>=0.11.5", "pybind11>=3.0.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -28,6 +28,7 @@ wheel.packages = ["src/mmgpy"]
 [tool.scikit-build.cmake.define]
 BUILD_TESTING = "OFF"
 BUILD_SHARED_LIBS = "ON"
+MMGPY_SKIP_EXECUTABLES = "ON"
 
 [dependency-groups]
 dev = ["pre-commit>=4.0.1", "pytest>=8.3.4"]
@@ -39,3 +40,44 @@ select = ["ALL"]
 "tests/**/*.py" = [
     "S101", # asserts allowed in tests
 ]
+
+[tool.cibuildwheel]
+build-frontend = "build[uv]"
+# Build for Python 3.9-3.13 on all platforms
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+
+# Skip 32-bit builds and PyPy
+skip = "pp* *-win32 *-manylinux_i686 *-musllinux_i686 *-musllinux*"
+
+# Test the built wheels
+test-command = 'python -c "import mmgpy"'
+
+# Build verbosity
+build-verbosity = 1
+
+
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx_x86_64"
+environment = { MACOSX_DEPLOYMENT_TARGET = "13.0" }
+
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx_arm64"
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"] #, "aarch64"]
+before-all = [
+    "yum update -y",
+    "yum install -y epel-release",
+    "yum install -y vtk-devel cmake3 gcc-c++",
+]
+
+[tool.cibuildwheel.macos]
+archs = ["auto"]
+before-all = ["brew install vtk"]
+repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel} --ignore-missing-dependencies"
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+before-all = "vcpkg install vtk:x64-windows"
+environment = { VCPKG_ROOT = "C:/vcpkg", CMAKE_TOOLCHAIN_FILE = "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" }
