@@ -1,0 +1,25 @@
+name: Build Wheels
+
+on:
+  push:
+    branches: [main]
+  pull_request: # Any pull request
+  workflow_dispatch: # Allow manual triggering of the workflow
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+          - macos-13
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: pypa/cibuildwheel@v3.0
