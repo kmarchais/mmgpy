@@ -89,23 +89,34 @@ else()  # Unix-specific installation
         SKIP_BUILD_RPATH FALSE
     )
 
-    foreach(exe mmg2d mmg3d mmgs)
-        # Set RPATH for executables
-        set_target_properties(${exe} PROPERTIES
-            INSTALL_RPATH "${RPATH_PREFIX}/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/${PROJECT_NAME}/lib"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            SKIP_BUILD_RPATH FALSE
-        )
+    # Skip installing executables if requested (e.g., for wheel builds)
+    if(NOT MMGPY_SKIP_EXECUTABLES)
+        foreach(exe mmg2d mmg3d mmgs)
+            # Set RPATH for executables - use a simpler relative path
+            if(APPLE)
+                set_target_properties(${exe} PROPERTIES
+                    INSTALL_RPATH "@executable_path/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/${PROJECT_NAME}/lib;@executable_path/../${PROJECT_NAME}/lib"
+                    BUILD_WITH_INSTALL_RPATH TRUE
+                    SKIP_BUILD_RPATH FALSE
+                )
+            else()
+                set_target_properties(${exe} PROPERTIES
+                    INSTALL_RPATH "${RPATH_PREFIX}/../lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/${PROJECT_NAME}/lib"
+                    BUILD_WITH_INSTALL_RPATH TRUE
+                    SKIP_BUILD_RPATH FALSE
+                )
+            endif()
 
-        # Install executable
-        install(TARGETS ${exe}
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-            RENAME "${exe}_O3"
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                    GROUP_READ GROUP_EXECUTE
-                    WORLD_READ WORLD_EXECUTE
-        )
-    endforeach()
+            # Install executable
+            install(TARGETS ${exe}
+                DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+                RENAME "${exe}_O3"
+                PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                        GROUP_READ GROUP_EXECUTE
+                        WORLD_READ WORLD_EXECUTE
+            )
+        endforeach()
+    endif()
 
     # Install shared libraries
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
