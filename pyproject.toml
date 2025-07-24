@@ -72,7 +72,7 @@ before-all = [
     "yum install -y vtk-devel cmake3 gcc-c++",
 ]
 environment = { CMAKE_ARGS = "-DPython_FIND_STRATEGY=LOCATION" }
-repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel} --only-plat-tag"
+repair-wheel-command = "auditwheel show {wheel} && auditwheel repair -w {dest_dir} {wheel} || cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
