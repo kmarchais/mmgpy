@@ -1,5 +1,10 @@
 [build-system]
-requires = ["scikit-build-core>=0.11.5", "pybind11>=3.0.0"]
+requires = [
+    "scikit-build-core>=0.11.5",
+    "pybind11>=3.0.0",
+    # Add numpy to build requirements for headers
+    "numpy>=2.0.2",
+]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -9,26 +14,34 @@ description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["numpy>=2.0.2"]
+authors = [{ name = "Your Name", email = "your.email@example.com" }]
+license = { text = "MIT" } # or whatever license you're using
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 
 [tool.scikit-build]
+# Build configuration
 build.verbose = true
 cmake.version = ">=3.15"
-sdist.include = ["CMakeLists.txt", "src/*", "extern/*"]
-sdist.exclude = [
-    # Exclude VTK source code that appears in the CI
-    "vtk*/**",
-    "vtk*.tar.gz",
-    # Exclude asset files
-    "*.mesh",
-    "*.sol",
-    "*.vtk",
-]
-wheel.packages = ["src/mmgpy"]
+cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
+cmake.define = { BUILD_TESTING = "OFF", BUILD_SHARED_LIBS = "ON", MMGPY_SKIP_EXECUTABLES = "ON" }
 
-[tool.scikit-build.cmake.define]
-BUILD_TESTING = "OFF"
-BUILD_SHARED_LIBS = "ON"
-MMGPY_SKIP_EXECUTABLES = "ON"
+# Wheel configuration
+wheel.packages = ["src/mmgpy"]
+wheel.py-api = "cp38"          # or the minimum Python version you support
+
+# Source distribution
+sdist.include = ["CMakeLists.txt", "src/*", "extern/*"]
+sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 
 [dependency-groups]
 dev = ["pre-commit>=4.0.1", "pytest>=8.3.4"]
@@ -81,6 +94,17 @@ repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
 before-all = "vcpkg install vtk:x64-windows"
-before-build = "if exist build rmdir /s /q build"
-environment = { VCPKG_ROOT = "C:/vcpkg", CMAKE_TOOLCHAIN_FILE = "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" }
-repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/vcpkg/installed/x64-windows/bin"
+before-build = [
+    "set VTK_DIR=",
+    "set VTK_ROOT=",
+    "set CMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows",
+    "set PATH=C:/vcpkg/installed/x64-windows/bin;%SystemRoot%/system32;%SystemRoot%",
+    "if exist build rmdir /s /q build",
+]
+environment = { VCPKG_ROOT = "C:/vcpkg", CMAKE_TOOLCHAIN_FILE = "C:/vcpkg/scripts/buildsystems/vcpkg.cmake", VTK_DIR = "C:/vcpkg/installed/x64-windows/share/vtk" }
+repair-wheel-command = [
+    "echo Debugging DLL locations before repair:",
+    "dir C:\\vcpkg\\installed\\x64-windows\\bin\\*.dll | findstr /i vtk",
+    "dir {project}\\build\\src\\dlls\\*.dll 2>nul || echo No DLLs found in dlls directory",
+    "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/vcpkg/installed/x64-windows/bin --add-path {project}/build/src/dlls",
+]
