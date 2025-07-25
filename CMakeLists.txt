@@ -49,9 +49,43 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build external dependencies (MMG)
-add_subdirectory(extern)
+# Add EXCLUDE_FROM_ALL to prevent MMG's install rules from running automatically.
+add_subdirectory(extern EXCLUDE_FROM_ALL)
 
 add_subdirectory(src)
+
+# Install the MMG libraries to the correct location for each platform
+if(WIN32)
+    # On Windows, install DLLs and LIBs right next to the .pyd module
+    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+        RUNTIME DESTINATION mmgpy  # This is for DLLs
+        LIBRARY DESTINATION mmgpy  # This is for module libraries
+        ARCHIVE DESTINATION mmgpy  # This is for .lib import libraries
+    )
+else() # UNIX
+    # On Unix, install .so files to a 'lib' subdirectory inside the package
+    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+        LIBRARY DESTINATION mmgpy/lib
+    )
+endif()
+
+# Handle installation of executables if not skipped
+if(NOT MMGPY_SKIP_EXECUTABLES)
+    # SKBUILD_SCRIPTS_DIR is defined by scikit-build
+    if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
+        set(SKBUILD_SCRIPTS_DIR "${CMAKE_INSTALL_PREFIX}/bin")
+    endif()
+
+    install(TARGETS mmg2d mmg3d mmgs
+        RUNTIME DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+    )
+    # On Windows, also copy the DLLs to the scripts dir for the executables
+    if(WIN32)
+        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            RUNTIME DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+        )
+    endif()
+endif()
 
 option(BUILD_TESTING "Build tests" ON)
 if(BUILD_TESTING)
