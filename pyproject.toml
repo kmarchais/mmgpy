@@ -39,7 +39,6 @@ build-dir = "build"
 
 # Wheel configuration
 wheel.packages = ["src/mmgpy"]
-wheel.py-api = "cp39"
 
 # Source distribution
 sdist.include = ["CMakeLists.txt", "src/*", "extern/*"]
@@ -65,10 +64,8 @@ build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
 skip = "pp* *-win32 *-manylinux_i686 *-musllinux_i686 *-musllinux*"
 
 # Test the built wheels
-# test-command = 'python -c "import mmgpy"'
 test-command = [
-    'python -c "import os, sys; init_file = os.path.join(sys.prefix, \"Lib\", \"site-packages\", \"mmgpy\", \"__init__.py\"); print(f\"Init file exists: {os.path.exists(init_file)}\"); print(open(init_file).read() if os.path.exists(init_file) else \"Not found\")"',
-    'python -c "import os, sys; print(os.listdir(os.path.join(sys.prefix, \"Lib\", \"site-packages\", \"mmgpy\")))"',
+    'python -c "import os, sys; sp = os.path.join(sys.prefix, \"Lib\", \"site-packages\"); print(\"Site-packages:\", os.listdir(sp) if os.path.exists(sp) else \"Not found\"); libs_dir = os.path.join(sp, \"mmgpy.libs\"); print(\"mmgpy.libs exists:\", os.path.exists(libs_dir)); print(\"mmgpy.libs contents:\", os.listdir(libs_dir) if os.path.exists(libs_dir) else \"Not found\")"',
     'python -c "import mmgpy"',
 ]
 
