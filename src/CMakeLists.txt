@@ -64,16 +64,23 @@ if(WIN32)  # Windows-specific installation
         set(MMG_EXE_DIR "${mmg_BINARY_DIR}/bin/Release")
     endif()
 
+    # Install MMG shared libraries to the package directory
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
             DESTINATION ${PROJECT_NAME})
+
+    # Install MMG shared libraries to scripts directory for executables
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
             DESTINATION "${SKBUILD_SCRIPTS_DIR}")
-    install(FILES
-        "${MMG_EXE_DIR}/mmg2d.exe"
-        "${MMG_EXE_DIR}/mmg3d.exe"
-        "${MMG_EXE_DIR}/mmgs.exe"
-        DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-    )
+
+    # Install executables if not skipped
+    if(NOT MMGPY_SKIP_EXECUTABLES)
+        install(FILES
+            "${MMG_EXE_DIR}/mmg2d.exe"
+            "${MMG_EXE_DIR}/mmg3d.exe"
+            "${MMG_EXE_DIR}/mmgs.exe"
+            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+        )
+    endif()
 else()  # Unix-specific installation
     # Define the rpath prefix based on platform
     if(APPLE)
