@@ -220,3 +220,46 @@ __all__ = [
     "mmg3d",
     "mmgs",
 ]
+
+
+# Auto-fix RPATH on import if needed (macOS only)
+def _auto_fix_rpath_on_import() -> None:
+    """Automatically fix RPATH on import if executables need it."""
+    import platform
+
+    if platform.system() != "Darwin":
+        return
+
+    try:
+        import site
+        from pathlib import Path
+
+        # Quick check if RPATH fix is needed
+        site_packages = Path(site.getsitepackages()[0])
+        bin_dir = site_packages / "bin"
+
+        if not bin_dir.exists():
+            return
+
+        executables = list(bin_dir.glob("mmg*_O3"))
+        if not executables:
+            return
+
+        # Check if any executable needs RPATH fix
+        needs_fix = False
+        for exe in executables:
+            if not _has_correct_rpath(exe, "@loader_path/../mmgpy/lib"):
+                needs_fix = True
+                break
+
+        if needs_fix:
+            print("Auto-fixing RPATH for MMG executables...", file=sys.stderr)
+            _fix_rpath()
+
+    except Exception:
+        # Don't let RPATH fixing break package import
+        pass
+
+
+# Run RPATH auto-fix on import
+_auto_fix_rpath_on_import()

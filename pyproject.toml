@@ -60,10 +60,15 @@ select = ["ALL"]
 [tool.ruff.lint.extend-per-file-ignores]
 "tests/**/*.py" = [
     "S101", # asserts allowed in tests
+    "T201", # print statements allowed in tests for debugging
+    "SLF001", # accessing private members allowed in tests
+    "BLE001", # broad exception catching allowed in tests
 ]
 "src/mmgpy/__init__.py" = [
     "S603", # subprocess calls with absolute paths to system tools are safe
     "T201", # print statements used for debugging MMG executable issues
+    "S110", # try-except-pass is acceptable for non-critical RPATH fixing
+    "BLE001", # broad exception catching is acceptable for non-critical RPATH fixing
 ]
 
 [tool.cibuildwheel]
