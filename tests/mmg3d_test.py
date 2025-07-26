@@ -21,6 +21,17 @@ def test_mmg3d() -> None:
     )
 
     exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
+
+    # Add debugging for CI - run RPATH fix before executing
+    if platform.system() == "Darwin":
+        print("=== Running RPATH fix before test ===")
+        try:
+            import mmgpy
+
+            mmgpy._fix_rpath()
+        except Exception as e:
+            print(f"RPATH fix failed: {e}")
+
     subprocess.run(  # noqa: S603
         [
             exe,
