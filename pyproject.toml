@@ -44,6 +44,13 @@ wheel.packages = ["src/mmgpy"]
 sdist.include = ["CMakeLists.txt", "src/*", "extern/*"]
 sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 
+# Scripts entry points for development installs
+[project.scripts]
+mmg2d_O3 = "mmgpy:_run_mmg2d"
+mmg3d_O3 = "mmgpy:_run_mmg3d"
+mmgs_O3 = "mmgpy:_run_mmgs"
+fix-mmg-rpath = "mmgpy:_fix_rpath"
+
 [dependency-groups]
 dev = ["pre-commit>=4.0.1", "pytest>=8.3.4"]
 
@@ -53,6 +60,10 @@ select = ["ALL"]
 [tool.ruff.lint.extend-per-file-ignores]
 "tests/**/*.py" = [
     "S101", # asserts allowed in tests
+]
+"src/mmgpy/__init__.py" = [
+    "S603", # subprocess calls with absolute paths to system tools are safe
+    "T201", # print statements used for debugging MMG executable issues
 ]
 
 [tool.cibuildwheel]
