@@ -53,7 +53,7 @@ if(UNIX)
         set(RPATH_PREFIX "$ORIGIN")
     endif()
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        INSTALL_RPATH "${RPATH_PREFIX}/../lib"
+        INSTALL_RPATH "${RPATH_PREFIX}/lib"
     )
 endif()
 
