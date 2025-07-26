@@ -49,8 +49,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build external dependencies (MMG)
-# Add EXCLUDE_FROM_ALL to prevent MMG's install rules from running automatically.
-add_subdirectory(extern EXCLUDE_FROM_ALL)
+# Don't use EXCLUDE_FROM_ALL if we want executables to be built
+if(MMGPY_SKIP_EXECUTABLES)
+    add_subdirectory(extern EXCLUDE_FROM_ALL)
+else()
+    add_subdirectory(extern)
+endif()
 
 add_subdirectory(src)
 
@@ -76,9 +80,30 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
         set(SKBUILD_SCRIPTS_DIR "${CMAKE_INSTALL_PREFIX}/bin")
     endif()
 
-    install(TARGETS mmg2d mmg3d mmgs
-        RUNTIME DESTINATION "${SKBUILD_SCRIPTS_DIR}"
-    )
+    # Check if executables exist and install them
+    # Use file-based installation since target existence varies
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(MMG_EXE_SUFFIX "_O3")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(MMG_EXE_SUFFIX "_debug")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        set(MMG_EXE_SUFFIX "_O3d")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+        set(MMG_EXE_SUFFIX "_Os")
+    else()
+        set(MMG_EXE_SUFFIX "")
+    endif()
+
+    # Install executables if they are built (files in build directory)
+    if(EXISTS "${mmg_BINARY_DIR}/bin")
+        install(DIRECTORY "${mmg_BINARY_DIR}/bin/"
+            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+            USE_SOURCE_PERMISSIONS
+            FILES_MATCHING PATTERN "mmg*"
+            PATTERN "genheader" EXCLUDE
+        )
+    endif()
+    
     # On Windows, also copy the DLLs to the scripts dir for the executables
     if(WIN32)
         install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
