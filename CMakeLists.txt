@@ -75,10 +75,9 @@ endif()
 
 # Handle installation of executables if not skipped
 if(NOT MMGPY_SKIP_EXECUTABLES)
-    # SKBUILD_SCRIPTS_DIR is defined by scikit-build
-    if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
-        set(SKBUILD_SCRIPTS_DIR "${CMAKE_INSTALL_PREFIX}/bin")
-    endif()
+    # For development installs, install to site-packages/bin and create symlinks
+    # For wheel builds, install to site-packages/bin
+    set(SCRIPTS_DIR "bin")
 
     # Check if executables exist and install them
     # Use file-based installation since target existence varies
@@ -97,17 +96,122 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
     # Install executables if they are built (files in build directory)
     if(EXISTS "${mmg_BINARY_DIR}/bin")
         install(DIRECTORY "${mmg_BINARY_DIR}/bin/"
-            DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+            DESTINATION "${SCRIPTS_DIR}"
             USE_SOURCE_PERMISSIONS
             FILES_MATCHING PATTERN "mmg*"
             PATTERN "genheader" EXCLUDE
         )
+
+        # Set the correct RPATH for MMG executables after installation
+        if(UNIX)
+            if(APPLE)
+                set(RPATH_PREFIX "@loader_path")
+            else() # Linux
+                set(RPATH_PREFIX "$ORIGIN")
+            endif()
+
+            # Use install CODE to fix RPATH after the executables are installed
+            install(CODE "
+                message(STATUS \"Fixing RPATH for MMG executables...\")
+
+                # Define the executable install directory
+                set(EXEC_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
+
+                # Find all MMG executables
+                file(GLOB EXECS \"\${EXEC_DIR}/mmg*\")
+
+                foreach(exec \${EXECS})
+                    if(EXISTS \"\${exec}\")
+                        get_filename_component(exec_name \"\${exec}\" NAME)
+                        message(STATUS \"Setting RPATH for \${exec_name}\")
+
+                        # Executables are in site-packages/bin/, libraries in site-packages/mmgpy/lib/
+                        set(LIB_RPATH \"${RPATH_PREFIX}/../mmgpy/lib\")
+
+                        if(APPLE)
+                            # First, try to remove any existing incorrect RPATH entries
+                            execute_process(
+                                COMMAND otool -l \"\${exec}\"
+                                OUTPUT_VARIABLE OTOOL_OUTPUT
+                                ERROR_QUIET
+                            )
+
+                            # Clear existing RPATH and add the correct one
+                            execute_process(
+                                COMMAND install_name_tool -delete_rpath \"@rpath\" \"\${exec}\"
+                                ERROR_QUIET
+                            )
+                            execute_process(
+                                COMMAND install_name_tool -add_rpath \"\${LIB_RPATH}\" \"\${exec}\"
+                                RESULT_VARIABLE result
+                                ERROR_QUIET
+                            )
+                        else()
+                            execute_process(
+                                COMMAND patchelf --set-rpath \"\${LIB_RPATH}\" \"\${exec}\"
+                                RESULT_VARIABLE result
+                                ERROR_QUIET
+                            )
+                        endif()
+
+                        if(result)
+                            message(WARNING \"Failed to set RPATH for \${exec_name}: \${result}\")
+                        else()
+                            message(STATUS \"Successfully set RPATH for \${exec_name}\")
+                        endif()
+                    endif()
+                endforeach()
+            ")
+        endif()
     endif()
-    
+
+    # For development installs, create symlinks in the virtual environment
+    # We always create symlinks for easier access during development
+    install(CODE "
+            # Find the Python site-packages directory where executables are installed
+            execute_process(
+                COMMAND \"\${Python_EXECUTABLE}\" -c \"import site; print(site.getsitepackages()[0])\"
+                OUTPUT_VARIABLE SITE_PACKAGES_DIR
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
+            # Find virtual environment bin directory
+            execute_process(
+                COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; print(os.path.join(sys.prefix, 'bin'))\"
+                OUTPUT_VARIABLE VENV_BIN_DIR
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
+            if(EXISTS \"\${SITE_PACKAGES_DIR}/bin\" AND EXISTS \"\${VENV_BIN_DIR}\")
+                file(GLOB SITE_EXECS \"\${SITE_PACKAGES_DIR}/bin/mmg*\")
+                foreach(exec \${SITE_EXECS})
+                    get_filename_component(exec_name \"\${exec}\" NAME)
+                    set(symlink_path \"\${VENV_BIN_DIR}/\${exec_name}\")
+
+                    # Remove existing symlink if it exists
+                    if(EXISTS \"\${symlink_path}\")
+                        file(REMOVE \"\${symlink_path}\")
+                    endif()
+
+                    # Create symlink
+                    execute_process(
+                        COMMAND ln -sf \"\${exec}\" \"\${symlink_path}\"
+                        RESULT_VARIABLE symlink_result
+                    )
+
+                    if(symlink_result EQUAL 0)
+                        message(STATUS \"Created symlink: \${symlink_path} -> \${exec}\")
+                    else()
+                        message(WARNING \"Failed to create symlink: \${symlink_path}\")
+                    endif()
+                endforeach()
+            endif()
+        ")
+
     # On Windows, also copy the DLLs to the scripts dir for the executables
     if(WIN32)
         install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-            RUNTIME DESTINATION "${SKBUILD_SCRIPTS_DIR}"
+            RUNTIME DESTINATION "${SCRIPTS_DIR}"
         )
     endif()
 endif()
