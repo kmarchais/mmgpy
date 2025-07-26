@@ -30,6 +30,16 @@ def test_mmg2d() -> None:
         },
     )
 
+    # Add debugging for CI - run RPATH fix before executing
+    if platform.system() == "Darwin":
+        print("=== Running RPATH fix before test ===")
+        try:
+            import mmgpy
+
+            mmgpy._fix_rpath()
+        except Exception as e:
+            print(f"RPATH fix failed: {e}")
+
     command = [
         exe,
         "-ar",
