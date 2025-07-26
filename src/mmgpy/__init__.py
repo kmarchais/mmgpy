@@ -90,73 +90,126 @@ def _run_mmgs() -> None:
 
 def _fix_rpath() -> None:
     """Fix RPATH for MMG executables - post-install utility."""
-    import site
+    import platform
     import subprocess
-    import sys
-    from pathlib import Path
+
+    # Only run on macOS
+    if platform.system() != "Darwin":
+        print("RPATH fix only needed on macOS", file=sys.stderr)
+        return
 
     try:
-        # Find site-packages directory
-        site_packages = Path(site.getsitepackages()[0])
-
-        # Find all MMG executables
-        bin_dir = site_packages / "bin"
-        if not bin_dir.exists():
-            msg = f"Warning: {bin_dir} does not exist"
-            print(msg, file=sys.stderr)
-            return
-
-        executables = list(bin_dir.glob("mmg*_O3"))
-        if not executables:
-            print("No MMG executables found", file=sys.stderr)
-            return
-
-        for exe in executables:
-            print(f"Fixing RPATH for {exe.name}...", file=sys.stderr)
-
-            # Check if RPATH already exists
-            # S603: Safe - using absolute paths to system tools with controlled input
-            result = subprocess.run(
-                ["/usr/bin/otool", "-l", str(exe)],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            if "@loader_path/../mmgpy/lib" in result.stdout:
-                print(f"  RPATH already correct for {exe.name}", file=sys.stderr)
-                continue
-
-            # Remove any existing incorrect RPATH entries
-            # S603: Safe - using absolute paths to system tools with controlled input
-            subprocess.run(
-                ["/usr/bin/install_name_tool", "-delete_rpath", "@rpath", str(exe)],
-                check=False,
-                capture_output=True,
-            )
-
-            # Add correct RPATH
-            # S603: Safe - using absolute paths to system tools with controlled input
-            result = subprocess.run(
-                [
-                    "/usr/bin/install_name_tool",
-                    "-add_rpath",
-                    "@loader_path/../mmgpy/lib",
-                    str(exe),
-                ],
-                check=False,
-                capture_output=True,
-                text=True,  # Fix mypy error - ensure text mode
-            )
-
-            if result.returncode == 0:
-                print(f"  Successfully fixed RPATH for {exe.name}", file=sys.stderr)
-            else:
-                print(f"  Warning: Failed to fix RPATH for {exe.name}", file=sys.stderr)
-
+        _fix_rpath_macos()
     except (OSError, subprocess.SubprocessError) as e:
         print(f"Error fixing RPATH: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise
+
+
+def _fix_rpath_macos() -> None:
+    """Fix RPATH for MMG executables on macOS."""
+    import site
+    from pathlib import Path
+
+    # Find site-packages directory
+    site_packages = Path(site.getsitepackages()[0])
+    print(f"Site packages: {site_packages}", file=sys.stderr)
+
+    # Find all MMG executables
+    bin_dir = site_packages / "bin"
+    if not bin_dir.exists():
+        print(f"Warning: {bin_dir} does not exist", file=sys.stderr)
+        return
+
+    executables = list(bin_dir.glob("mmg*_O3"))
+    if not executables:
+        print("No MMG executables found", file=sys.stderr)
+        return
+
+    print(f"Found {len(executables)} executables to fix", file=sys.stderr)
+
+    for exe in executables:
+        _fix_single_executable_rpath(exe)
+
+
+def _fix_single_executable_rpath(exe: "Path") -> None:
+    """Fix RPATH for a single executable."""
+    print(f"Fixing RPATH for {exe.name}...", file=sys.stderr)
+
+    # Check if executable exists and is executable
+    if not exe.exists() or not exe.is_file():
+        print(f"  Skipping {exe.name} - not a valid file", file=sys.stderr)
+        return
+
+    target_rpath = "@loader_path/../mmgpy/lib"
+
+    # Check current RPATH
+    if _has_correct_rpath(exe, target_rpath):
+        print(f"  RPATH already correct for {exe.name}", file=sys.stderr)
+        return
+
+    # Remove existing @rpath entries and add correct one
+    _remove_old_rpath(exe)
+    if _add_new_rpath(exe, target_rpath):
+        _verify_rpath_fix(exe, target_rpath)
+
+
+def _has_correct_rpath(exe: "Path", target_rpath: str) -> bool:
+    """Check if executable has the correct RPATH."""
+    import subprocess
+
+    result = subprocess.run(
+        ["/usr/bin/otool", "-l", str(exe)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0 and target_rpath in result.stdout
+
+
+def _remove_old_rpath(exe: "Path") -> None:
+    """Remove existing @rpath entries from executable."""
+    import subprocess
+
+    subprocess.run(
+        ["/usr/bin/install_name_tool", "-delete_rpath", "@rpath", str(exe)],
+        check=False,
+        capture_output=True,
+    )
+
+
+def _add_new_rpath(exe: "Path", target_rpath: str) -> bool:
+    """Add new RPATH to executable. Returns True if successful."""
+    import subprocess
+
+    result = subprocess.run(
+        ["/usr/bin/install_name_tool", "-add_rpath", target_rpath, str(exe)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    if result.returncode == 0:
+        print(f"  Successfully fixed RPATH for {exe.name}", file=sys.stderr)
+        return True
+    print(f"  Failed to fix RPATH for {exe.name}: {result.stderr}", file=sys.stderr)
+    return False
+
+
+def _verify_rpath_fix(exe: "Path", target_rpath: str) -> None:
+    """Verify that RPATH fix was successful."""
+    import subprocess
+
+    verify_result = subprocess.run(
+        ["/usr/bin/otool", "-l", str(exe)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    if target_rpath in verify_result.stdout:
+        print(f"  RPATH verification successful for {exe.name}", file=sys.stderr)
+    else:
+        print(f"  RPATH verification failed for {exe.name}", file=sys.stderr)
 
 
 __all__ = [
