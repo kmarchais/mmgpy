@@ -31,7 +31,7 @@ set(LIBMMGS_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 # MMG builds executables automatically when these are ON
 set(BUILD_MMG ON CACHE BOOL "Build all MMG components" FORCE)
 set(BUILD_MMG2D ON CACHE BOOL "Build MMG2D library and executable" FORCE)
-set(BUILD_MMG3D ON CACHE BOOL "Build MMG3D library and executable" FORCE)  
+set(BUILD_MMG3D ON CACHE BOOL "Build MMG3D library and executable" FORCE)
 set(BUILD_MMGS ON CACHE BOOL "Build MMGS library and executable" FORCE)
 
 set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
