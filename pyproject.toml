@@ -13,7 +13,10 @@ version = "0.1.2.5"
 description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["numpy>=2.0.2"]
+dependencies = [
+    "numpy>=2.0.2",
+    "patchelf>=0.17.2.4",
+]
 authors = [{ name = "Your Name", email = "your.email@example.com" }]
 license = { text = "MIT" } # or whatever license you're using
 classifiers = [
@@ -69,6 +72,9 @@ select = ["ALL"]
     "T201", # print statements used for debugging MMG executable issues
     "S110", # try-except-pass is acceptable for non-critical RPATH fixing
     "BLE001", # broad exception catching is acceptable for non-critical RPATH fixing
+    "E402", # imports inside functions are intentional for lazy loading
+    "C901", # complex functions are acceptable for RPATH fixing logic
+    "RUF005", # list concatenation is fine here for subprocess args
 ]
 
 [tool.cibuildwheel]
