@@ -92,7 +92,7 @@ def _fix_rpath() -> None:
             print(f"Error fixing RPATH: {e}", file=sys.stderr)
             raise
     else:
-        print(f"RPATH fix not implemented for {system}", file=sys.stderr)
+        print(f"RPATH fix not needed for {system}", file=sys.stderr)
         return
 
 
@@ -250,7 +250,7 @@ def _fix_single_executable_rpath_linux(exe: "Path", lib_dirs: list[str]) -> None
             )
 
     except FileNotFoundError:
-        print("  patchelf not found - installing patchelf...", file=sys.stderr)
+        print("  patchelf not found - trying venv patchelf...", file=sys.stderr)
         # Try to use the patchelf from the virtual environment
         venv_patchelf = Path(sys.executable).parent / "patchelf"
         if venv_patchelf.exists():
@@ -269,7 +269,7 @@ def _fix_single_executable_rpath_linux(exe: "Path", lib_dirs: list[str]) -> None
                 )
         else:
             print(
-                f"  patchelf not available in venv at {venv_patchelf}",
+                f"  patchelf not available - RPATH fix skipped for {exe.name}",
                 file=sys.stderr,
             )
 
@@ -310,7 +310,7 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
             )
     except FileNotFoundError:
         print(
-            f"  Could not verify RPATH for {exe.name} - patchelf not found",
+            f"  Could not verify RPATH for {exe.name} - patchelf not available",
             file=sys.stderr,
         )
 
