@@ -76,7 +76,7 @@ source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "patchelf" },
+    { name = "patchelf", marker = "sys_platform == 'linux'" },
 ]
 
 [package.dev-dependencies]
@@ -88,7 +88,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=2.0.2" },
-    { name = "patchelf", specifier = ">=0.17.2.4" },
+    { name = "patchelf", marker = "sys_platform == 'linux'", specifier = ">=0.17.2.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -241,7 +241,6 @@ version = "0.17.2.4"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/2c/a3/fdd3fa938c864aa2f11dd0b7f08befeda983d2dcdee44da493c6977a653f/patchelf-0.17.2.4.tar.gz", hash = "sha256:970ee5cd8af33e5ea2099510b2f9013fa1b8d5cd763bf3fd3961281c18101a09", size = 149629, upload-time = "2025-07-23T21:16:32.071Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/a7/8c4f86c78ec03db954d05fd9c57a114cc3a172a2d3e4a8b949cd5ff89471/patchelf-0.17.2.4-py3-none-macosx_10_9_universal2.whl", hash = "sha256:343bb1b94e959f9070ca9607453b04390e36bbaa33c88640b989cefad0aa049e", size = 184436, upload-time = "2025-07-23T21:16:20.578Z" },
     { url = "https://files.pythonhosted.org/packages/0b/6d/2e9f5483cdb352fab36b8076667b062b2d79cb09d2e3fd09b6fca5771cb6/patchelf-0.17.2.4-py3-none-manylinux1_i686.manylinux_2_5_i686.musllinux_1_1_i686.whl", hash = "sha256:09fd848d625a165fc7b7e07745508c24077129b019c4415a882938781d43adf8", size = 547318, upload-time = "2025-07-23T21:16:22.135Z" },
     { url = "https://files.pythonhosted.org/packages/7e/19/f7821ef31aab01fa7dc8ebe697ece88ec4f7a0fdd3155dab2dfee4b00e5c/patchelf-0.17.2.4-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.musllinux_1_1_x86_64.whl", hash = "sha256:d9b35ebfada70c02679ad036407d9724ffe1255122ba4ac5e4be5868618a5689", size = 482846, upload-time = "2025-07-23T21:16:23.73Z" },
     { url = "https://files.pythonhosted.org/packages/d1/50/107fea848ecfd851d473b079cab79107487d72c4c3cdb25b9d2603a24ca2/patchelf-0.17.2.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.musllinux_1_1_aarch64.whl", hash = "sha256:2931a1b5b85f3549661898af7bf746afbda7903c7c9a967cfc998a3563f84fad", size = 477811, upload-time = "2025-07-23T21:16:25.145Z" },

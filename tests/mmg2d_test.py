@@ -9,7 +9,7 @@ from mmgpy import mmg2d
 
 def test_mmg2d() -> None:
     """Test that the Python wrapper produces the same output as the executable."""
-    exe = "mmg2d.exe" if platform.system() == "Windows" else "mmg2d_O3"
+    exe = "mmg2d_O3.exe" if platform.system() == "Windows" else "mmg2d_O3"
     input_mesh = Path(__file__).parent.parent / "assets" / "acdcBdy.mesh"
 
     current_dir = Path(__file__).parent
