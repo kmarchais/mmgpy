@@ -125,8 +125,8 @@ repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest
 archs = ["AMD64"]
 # before-all = "vcpkg install vtk:x64-windows"
 before-all = [
-    # Download and extract pre-built VTK
-    "curl -L -o vtk-Windows-x86_64.tar.gz https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-%VTK_VERSION_MAJOR%.%VTK_VERSION_MINOR%.%VTK_VERSION_PATCH%-static/vtk-Windows-x86_64.tar.gz",
+    # Download and extract pre-built VTK using PowerShell
+    "powershell -Command \"Invoke-WebRequest -Uri 'https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-$env:VTK_VERSION_MAJOR.$env:VTK_VERSION_MINOR.$env:VTK_VERSION_PATCH-static/vtk-Windows-x86_64.tar.gz' -OutFile 'vtk-Windows-x86_64.tar.gz'\"",
     "mkdir C:\\vtk",
     "tar -xzf vtk-Windows-x86_64.tar.gz -C C:\\vtk",
     "dir C:\\vtk",
