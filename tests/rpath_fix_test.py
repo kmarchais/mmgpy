@@ -69,7 +69,7 @@ def test_rpath_fix_utility() -> None:  # noqa: PLR0912, C901
 
 def test_mmg_executable_can_run() -> None:
     """Test that MMG executable can actually run (RPATH test)."""
-    exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
+    exe = "mmg3d_O3.exe" if platform.system() == "Windows" else "mmg3d_O3"
 
     # Try to run the executable with --help to see if RPATH works
     try:
