@@ -1,0 +1,73 @@
+# .github/workflows/publish.yml
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Build workflow run ID to download artifacts from"
+        required: true
+        type: string
+      publish_to_testpypi:
+        description: "Publish to TestPyPI"
+        required: false
+        default: false
+        type: boolean
+      publish_to_pypi:
+        description: "Publish to PyPI"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  publish-to-testpypi:
+    runs-on: ubuntu-latest
+    name: Publish to TestPyPI
+    if: inputs.publish_to_testpypi
+
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/${{ github.event.repository.name }}
+
+    permissions:
+      id-token: write # For trusted publishing
+      actions: read # To download artifacts from other workflows
+
+    steps:
+      - name: Download artifacts from build workflow
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-to-pypi:
+    runs-on: ubuntu-latest
+    name: Publish to PyPI
+    if: inputs.publish_to_pypi
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/${{ github.event.repository.name }}
+
+    permissions:
+      id-token: write # For trusted publishing
+      actions: read # To download artifacts from other workflows
+
+    steps:
+      - name: Download artifacts from build workflow
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
