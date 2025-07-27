@@ -20,7 +20,7 @@ def test_mmg3d() -> None:
         },
     )
 
-    exe = "mmg3d.exe" if platform.system() == "Windows" else "mmg3d_O3"
+    exe = "mmg3d_O3.exe" if platform.system() == "Windows" else "mmg3d_O3"
 
     # Add debugging for CI - run RPATH fix before executing
     if platform.system() == "Darwin":
