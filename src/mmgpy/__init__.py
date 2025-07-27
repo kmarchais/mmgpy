@@ -78,9 +78,13 @@ except ImportError as e:
 def _run_mmg2d() -> None:
     """Run the mmg2d_O3 executable."""
     # Find the executable in site-packages for installed package
-    site_packages = Path(
-        site.getsitepackages()[1],
-    )  # Use [1] for actual site-packages on Windows
+    site_packages_list = site.getsitepackages()
+    # On Windows, prefer the actual site-packages over the venv root
+    if sys.platform == "win32" and len(site_packages_list) > 1:
+        site_packages = Path(site_packages_list[1])
+    else:
+        site_packages = Path(site_packages_list[0])
+    
     scripts_dir = "bin"  # Always use bin for the actual MMG executables
     exe_name = "mmg2d_O3.exe" if sys.platform == "win32" else "mmg2d_O3"
     exe_path = site_packages / scripts_dir / exe_name
@@ -96,9 +100,13 @@ def _run_mmg2d() -> None:
 def _run_mmg3d() -> None:
     """Run the mmg3d_O3 executable."""
     # Find the executable in site-packages for installed package
-    site_packages = Path(
-        site.getsitepackages()[1],
-    )  # Use [1] for actual site-packages on Windows
+    site_packages_list = site.getsitepackages()
+    # On Windows, prefer the actual site-packages over the venv root
+    if sys.platform == "win32" and len(site_packages_list) > 1:
+        site_packages = Path(site_packages_list[1])
+    else:
+        site_packages = Path(site_packages_list[0])
+    
     scripts_dir = "bin"  # Always use bin for the actual MMG executables
     exe_name = "mmg3d_O3.exe" if sys.platform == "win32" else "mmg3d_O3"
     exe_path = site_packages / scripts_dir / exe_name
@@ -114,9 +122,13 @@ def _run_mmg3d() -> None:
 def _run_mmgs() -> None:
     """Run the mmgs_O3 executable."""
     # Find the executable in site-packages for installed package
-    site_packages = Path(
-        site.getsitepackages()[1],
-    )  # Use [1] for actual site-packages on Windows
+    site_packages_list = site.getsitepackages()
+    # On Windows, prefer the actual site-packages over the venv root
+    if sys.platform == "win32" and len(site_packages_list) > 1:
+        site_packages = Path(site_packages_list[1])
+    else:
+        site_packages = Path(site_packages_list[0])
+    
     scripts_dir = "bin"  # Always use bin for the actual MMG executables
     exe_name = "mmgs_O3.exe" if sys.platform == "win32" else "mmgs_O3"
     exe_path = site_packages / scripts_dir / exe_name
