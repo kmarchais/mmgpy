@@ -16,10 +16,11 @@ if sys.platform == "win32":
     dll_search_dirs = [
         _module_dir,  # Module directory itself
         _module_dir / "lib",  # Common lib subdirectory
-        _module_dir / "bin",  # Common bin subdirectory
+        _module_dir / "Scripts",  # Common bin subdirectory
         _module_dir / ".libs",  # delvewheel directory
+        Path("C:/vcpkg/installed/x64-windows/bin"),  # VTK DLLs from vcpkg
     ]
-    
+
     for dll_dir in dll_search_dirs:
         if dll_dir.exists() and dll_dir.is_dir():
             try:
@@ -58,8 +59,8 @@ except ImportError as e:
         # On Windows, provide helpful debugging information
         _module_dir = Path(__file__).absolute().parent
         available_files = list(_module_dir.glob("*"))
-        lib_files = (
-            list(_module_dir.glob("**/*.dll")) + list(_module_dir.glob("**/*.pyd"))
+        lib_files = list(_module_dir.glob("**/*.dll")) + list(
+            _module_dir.glob("**/*.pyd"),
         )
 
         error_msg = (
@@ -77,8 +78,12 @@ except ImportError as e:
 def _run_mmg2d() -> None:
     """Run the mmg2d_O3 executable."""
     # Find the executable in site-packages for installed package
-    site_packages = Path(site.getsitepackages()[0])
-    exe_path = site_packages / "bin" / "mmg2d_O3"
+    site_packages = Path(
+        site.getsitepackages()[1],
+    )  # Use [1] for actual site-packages on Windows
+    scripts_dir = "bin"  # Always use bin for the actual MMG executables
+    exe_name = "mmg2d_O3.exe" if sys.platform == "win32" else "mmg2d_O3"
+    exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
         # S603: This is safe - we control the executable path and only pass user args
@@ -91,8 +96,12 @@ def _run_mmg2d() -> None:
 def _run_mmg3d() -> None:
     """Run the mmg3d_O3 executable."""
     # Find the executable in site-packages for installed package
-    site_packages = Path(site.getsitepackages()[0])
-    exe_path = site_packages / "bin" / "mmg3d_O3"
+    site_packages = Path(
+        site.getsitepackages()[1],
+    )  # Use [1] for actual site-packages on Windows
+    scripts_dir = "bin"  # Always use bin for the actual MMG executables
+    exe_name = "mmg3d_O3.exe" if sys.platform == "win32" else "mmg3d_O3"
+    exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
         # S603: This is safe - we control the executable path and only pass user args
@@ -105,8 +114,12 @@ def _run_mmg3d() -> None:
 def _run_mmgs() -> None:
     """Run the mmgs_O3 executable."""
     # Find the executable in site-packages for installed package
-    site_packages = Path(site.getsitepackages()[0])
-    exe_path = site_packages / "bin" / "mmgs_O3"
+    site_packages = Path(
+        site.getsitepackages()[1],
+    )  # Use [1] for actual site-packages on Windows
+    scripts_dir = "bin"  # Always use bin for the actual MMG executables
+    exe_name = "mmgs_O3.exe" if sys.platform == "win32" else "mmgs_O3"
+    exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
         # S603: This is safe - we control the executable path and only pass user args
@@ -368,6 +381,10 @@ __all__ = [
 # Auto-fix RPATH on import if needed (macOS only)
 def _auto_fix_rpath_on_import() -> None:
     """Automatically fix RPATH on import if executables need it."""
+    # Skip RPATH fixing on Windows entirely
+    if sys.platform == "win32":
+        return
+
     system = platform.system()
     if system not in ("Darwin", "Linux"):
         return
