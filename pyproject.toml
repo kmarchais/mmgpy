@@ -72,6 +72,7 @@ select = ["ALL"]
     "E402",   # imports inside functions are intentional for lazy loading
     "C901",   # complex functions are acceptable for RPATH fixing logic
     "RUF005", # list concatenation is fine here for subprocess args
+    "PTH207", # glob usage is fine for file discovery
 ]
 
 [tool.cibuildwheel]
