@@ -84,7 +84,7 @@ def _run_mmg2d() -> None:
         site_packages = Path(site_packages_list[1])
     else:
         site_packages = Path(site_packages_list[0])
-    
+
     scripts_dir = "bin"  # Always use bin for the actual MMG executables
     exe_name = "mmg2d_O3.exe" if sys.platform == "win32" else "mmg2d_O3"
     exe_path = site_packages / scripts_dir / exe_name
@@ -106,7 +106,7 @@ def _run_mmg3d() -> None:
         site_packages = Path(site_packages_list[1])
     else:
         site_packages = Path(site_packages_list[0])
-    
+
     scripts_dir = "bin"  # Always use bin for the actual MMG executables
     exe_name = "mmg3d_O3.exe" if sys.platform == "win32" else "mmg3d_O3"
     exe_path = site_packages / scripts_dir / exe_name
@@ -128,7 +128,7 @@ def _run_mmgs() -> None:
         site_packages = Path(site_packages_list[1])
     else:
         site_packages = Path(site_packages_list[0])
-    
+
     scripts_dir = "bin"  # Always use bin for the actual MMG executables
     exe_name = "mmgs_O3.exe" if sys.platform == "win32" else "mmgs_O3"
     exe_path = site_packages / scripts_dir / exe_name
