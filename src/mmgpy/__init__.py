@@ -12,8 +12,28 @@ if sys.platform == "win32":
     # Get the directory containing this file
     _module_dir = Path(__file__).absolute().parent
 
-    # Always add the module directory to DLL search path (for MMG DLLs)
-    os.add_dll_directory(str(_module_dir))
+    # Add common DLL directories to search path
+    dll_search_dirs = [
+        _module_dir,  # Module directory itself
+        _module_dir / "lib",  # Common lib subdirectory
+        _module_dir / "bin",  # Common bin subdirectory
+        _module_dir / ".libs",  # delvewheel directory
+    ]
+    
+    for dll_dir in dll_search_dirs:
+        if dll_dir.exists() and dll_dir.is_dir():
+            try:
+                os.add_dll_directory(str(dll_dir))
+                # Debug: print which directories were added (only in debug mode)
+                if os.environ.get("MMGPY_DEBUG"):
+                    print(f"Added DLL directory: {dll_dir}", file=sys.stderr)
+            except (OSError, AttributeError):
+                # Fallback for older Python versions or if add_dll_directory fails
+                os.environ.setdefault("PATH", "")
+                if str(dll_dir) not in os.environ["PATH"]:
+                    os.environ["PATH"] = str(dll_dir) + os.pathsep + os.environ["PATH"]
+                    if os.environ.get("MMGPY_DEBUG"):
+                        print(f"Added to PATH: {dll_dir}", file=sys.stderr)
 
 # Let delvewheel handle the rest of the imports
 # Import after DLL setup is complete
@@ -25,13 +45,33 @@ except ImportError:
     __version__ = "unknown"
 
 # Main imports
-from ._mmgpy import (  # type: ignore[attr-defined]
-    MMG_VERSION,
-    MmgMesh,
-    mmg2d,
-    mmg3d,
-    mmgs,
-)
+try:
+    from ._mmgpy import (  # type: ignore[attr-defined]
+        MMG_VERSION,
+        MmgMesh,
+        mmg2d,
+        mmg3d,
+        mmgs,
+    )
+except ImportError as e:
+    if sys.platform == "win32":
+        # On Windows, provide helpful debugging information
+        _module_dir = Path(__file__).absolute().parent
+        available_files = list(_module_dir.glob("*"))
+        lib_files = (
+            list(_module_dir.glob("**/*.dll")) + list(_module_dir.glob("**/*.pyd"))
+        )
+
+        error_msg = (
+            f"Failed to import _mmgpy module on Windows.\n"
+            f"Error: {e}\n"
+            f"Module directory: {_module_dir}\n"
+            f"Available files: {[f.name for f in available_files]}\n"
+            f"Found DLLs/PYDs: {[str(f) for f in lib_files]}\n"
+            f"To debug, set MMGPY_DEBUG=1 environment variable."
+        )
+        print(error_msg, file=sys.stderr)
+    raise
 
 
 def _run_mmg2d() -> None:
