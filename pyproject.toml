@@ -87,6 +87,8 @@ build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
 # Skip 32-bit builds and PyPy
 skip = "pp* *-win32 *-manylinux_i686 *-musllinux_i686 *-musllinux*"
 
+environment = { VTK_VERSION_MAJOR = "9", VTK_VERSION_MINOR = "3", VTK_VERSION_PATCH = "1" }
+
 # Test the built wheels
 test-command = [
     'python -c "import os, sys; sp = os.path.join(sys.prefix, \"Lib\", \"site-packages\"); print(\"Site-packages:\", os.listdir(sp) if os.path.exists(sp) else \"Not found\"); libs_dir = os.path.join(sp, \"mmgpy.libs\"); print(\"mmgpy.libs exists:\", os.path.exists(libs_dir)); print(\"mmgpy.libs contents:\", os.listdir(libs_dir) if os.path.exists(libs_dir) else \"Not found\")"',
