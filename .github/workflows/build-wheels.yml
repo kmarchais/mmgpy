@@ -1,18 +1,7 @@
+# .github/workflows/build.yml
 name: Build Wheels
 
 on:
-  workflow_dispatch:
-    inputs:
-      publish_to_testpypi:
-        description: "Publish to TestPyPI"
-        required: false
-        default: false
-        type: boolean
-      publish_to_pypi:
-        description: "Publish to PyPI"
-        required: false
-        default: false
-        type: boolean
   push:
     branches: [main]
   pull_request:
@@ -40,6 +29,7 @@ jobs:
         with:
           name: wheels-${{ matrix.os }}
           path: wheelhouse/*.whl
+          retention-days: 30 # Keep artifacts for 30 days
 
   build-sdist:
     needs: build-wheels
@@ -58,53 +48,4 @@ jobs:
         with:
           name: sdist
           path: dist/*.tar.gz
-
-  publish-to-testpypi:
-    needs: [build-wheels, build-sdist]
-    runs-on: ubuntu-latest
-    name: Publish to TestPyPI
-    if: >
-      (github.event_name == 'workflow_dispatch' && inputs.publish_to_testpypi) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/master')
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/${{ github.event.repository.name }}
-
-    permissions:
-      id-token: write # For trusted publishing
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: dist/
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-
-  publish-to-pypi:
-    needs: [build-wheels, build-sdist]
-    runs-on: ubuntu-latest
-    name: Publish to PyPI
-    # Only publish to PyPI on manual trigger with pypi option
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_pypi
-
-    environment:
-      name: pypi
-      url: https://pypi.org/p/${{ github.event.repository.name }}
-
-    permissions:
-      id-token: write # For trusted publishing
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: dist/
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          retention-days: 30
