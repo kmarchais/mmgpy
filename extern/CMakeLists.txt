@@ -27,7 +27,7 @@ set(LIBMMG2D_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 set(LIBMMG3D_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 set(LIBMMGS_STATIC OFF CACHE BOOL "Do not build static libraries" FORCE)
 
-set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
+set(USE_VTK OFF CACHE BOOL "Use VTK" FORCE)
 
 # Make MMG available
 FetchContent_MakeAvailable(mmg)

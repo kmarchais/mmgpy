@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uvx cibuildwheel:*)",
+      "Bash(git add:*)",
+      "Bash(git config:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(uv build:*)"
+    ],
+    "deny": []
+  }
+}

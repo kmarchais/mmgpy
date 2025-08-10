@@ -1,0 +1,5 @@
+services:
+  wheel_builder:
+    build: .
+    volumes:
+      - .:/io
