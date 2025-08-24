@@ -7,14 +7,19 @@ endif()
 
 # Read version from pyproject.toml
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml" PYPROJECT_CONTENT)
-string(REGEX MATCH "version = \"([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?)\"" _ ${PYPROJECT_CONTENT})
+string(REGEX MATCH "version = \"([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?([.a-zA-Z0-9]+)?)\"" _ ${PYPROJECT_CONTENT})
 
 if(NOT CMAKE_MATCH_1)
     message(FATAL_ERROR "Could not find version in pyproject.toml")
 endif()
 
 set(MMGPY_VERSION ${CMAKE_MATCH_1})
-project(mmgpy VERSION ${MMGPY_VERSION})
+
+# Extract numeric version for CMake project() which doesn't support suffixes
+string(REGEX MATCH "([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?)" _ ${MMGPY_VERSION})
+set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})
+
+project(mmgpy VERSION ${MMGPY_NUMERIC_VERSION})
 
 # Find Python - let scikit-build-core handle it in wheel builds
 if(DEFINED SKBUILD)
