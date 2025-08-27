@@ -107,7 +107,7 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
 [tool.cibuildwheel.linux]
 archs = ["x86_64"] #, "aarch64"]
 before-all = [
-    # Download and extract pre-built VTK, then reorganize to match expected paths
+    # Download and extract pre-built VTK
     'VTK_VERSION="9.4.1"',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
     'VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"',
@@ -116,57 +116,27 @@ before-all = [
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
-    'echo "Linux VTK extraction completed, checking structure:"',
-    'ls -la /tmp/vtk/ | head -10',
-    'echo "Checking for bin directory:"',
-    'ls -la /tmp/vtk/bin/ 2>/dev/null || echo "No bin directory found"',
-    'mkdir -p /tmp/lib64 /tmp/bin /tmp/include',
-    'cp /tmp/vtk/lib*.so* /tmp/lib64/ 2>/dev/null || echo "No .so files to copy"',
-    'cp /tmp/vtk/bin/* /tmp/bin/ 2>/dev/null || echo "No executables to copy"',
-    'if [ -d "/tmp/vtk/include" ]; then cp -r /tmp/vtk/include/* /tmp/include/; else echo "include directory not found"; fi',
-    'echo "Reorganization completed, checking /tmp/bin contents:"',
-    'ls -la /tmp/bin/ | head -10',
 ]
 # Point CMake to the extracted VTK installation
-environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib64/cmake/vtk-9.4" }
 repair-wheel-command = "auditwheel show {wheel} && auditwheel repair -w {dest_dir} {wheel} || cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
 before-all = [
-    # Download and extract pre-built VTK using the new URL scheme
+    # Download and extract pre-built VTK
     'VTK_VERSION="9.4.1"',
     'VTK_ARCH=$(uname -m)',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
     'VTK_FILE="vtk-macOS-${VTK_ARCH}.tar.gz"',
     'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
-    'echo "=== macOS VTK Setup Debug ==="',
-    'echo "Architecture: ${VTK_ARCH}"',
     'echo "Downloading VTK from ${VTK_URL}"',
-    'curl -L -v -o vtk.tar.gz "${VTK_URL}" || (echo "Download failed"; exit 1)',
-    'echo "Download completed, file info:"',
-    'ls -la vtk.tar.gz',
-    'file vtk.tar.gz',
+    'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
-    'echo "Extracting VTK archive..."',
-    'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1 || (echo "Extraction failed"; exit 1)',
-    'echo "macOS VTK extraction completed, checking structure:"',
-    'ls -la /tmp/vtk/ | head -15',
-    'echo "Looking for CMake files:"',
-    'find /tmp/vtk -name "*vtk-config.cmake" -o -name "VTKConfig.cmake" -o -name "vtk-config.cmake"',
-    'echo "Checking lib/cmake structure:"',
-    'ls -la /tmp/vtk/lib/ 2>/dev/null || echo "No lib directory"',
-    'ls -la /tmp/vtk/lib/cmake/ 2>/dev/null || echo "No lib/cmake directory"',
-    'ls -la /tmp/vtk/lib/cmake/vtk-9.4/ 2>/dev/null || echo "VTK cmake directory not found"',
-    'echo "Checking for executables (likely none on macOS):"',
-    'ls -la /tmp/vtk/bin/ 2>/dev/null || echo "No bin directory - macOS VTK is libraries only"',
-    'echo "Verifying VTK_DIR path /tmp/vtk/cmake/vtk-9.4:"',
-    'ls -la /tmp/vtk/cmake/vtk-9.4/ 2>/dev/null || echo "CMake directory not accessible"',
-    'echo "Testing if CMake can find VTK in this location:"',
-    'export VTK_DIR=/tmp/vtk/cmake/vtk-9.4 && echo "VTK_DIR set to: $VTK_DIR"',
+    'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
 ]
 # Point CMake to the extracted VTK installation
-environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib/cmake/vtk-9.4" }
 repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel} --ignore-missing-dependencies || cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
