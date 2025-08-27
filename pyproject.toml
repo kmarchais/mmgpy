@@ -107,7 +107,7 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
 [tool.cibuildwheel.linux]
 archs = ["x86_64"] #, "aarch64"]
 before-all = [
-    # Download and extract pre-built VTK using the new URL scheme
+    # Download and extract pre-built VTK, then reorganize to match expected paths
     'VTK_VERSION="9.4.1"',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
     'VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"',
@@ -116,6 +116,10 @@ before-all = [
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
+    'mkdir -p /tmp/lib64 /tmp/bin /tmp/include',
+    'mv /tmp/vtk/*.so* /tmp/lib64/',
+    'mv /tmp/vtk/vtk* /tmp/bin/ 2>/dev/null || true',
+    'mv /tmp/vtk/vtk-9.4 /tmp/include/vtk-9.4',
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
