@@ -116,6 +116,12 @@ before-all = [
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
+    'echo "VTK extraction completed, checking contents:"',
+    'ls -la /tmp/vtk/',
+    'echo "Looking for CMake files:"',
+    'find /tmp/vtk -name "*vtk-config.cmake" -o -name "VTKConfig.cmake"',
+    'echo "VTK_DIR will be set to: /tmp/vtk/lib64/cmake/vtk-9.4"',
+    'ls -la /tmp/vtk/lib64/cmake/vtk-9.4/ || echo "VTK cmake directory not found"',
 ]
 # Point CMake to the extracted VTK installation (Linux uses lib64)
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib64/cmake/vtk-9.4" }
