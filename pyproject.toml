@@ -118,17 +118,20 @@ before-all = [
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
     'echo "VTK extraction completed. Checking structure:"',
     'ls -la /tmp/vtk/ | head -10',
-    'echo "VTK_DIR will be: /tmp/vtk/lib64/cmake/vtk-9.4"',
-    'ls -la /tmp/vtk/lib64/cmake/vtk-9.4/ 2>/dev/null || echo "VTK CMake directory not found"',
+    'echo "Checking possible VTK_DIR locations:"',
+    'ls -la /tmp/vtk/cmake/ 2>/dev/null && echo "Found cmake in root" || echo "No cmake in root"',
+    'ls -la /tmp/vtk/lib64/cmake/ 2>/dev/null && echo "Found lib64/cmake" || echo "No lib64/cmake"',
+    'ls -la /tmp/vtk/cmake/vtk-9.4/ 2>/dev/null && echo "Found cmake/vtk-9.4" || echo "No cmake/vtk-9.4"',
+    'ls -la /tmp/vtk/lib64/cmake/vtk-9.4/ 2>/dev/null && echo "Found lib64/cmake/vtk-9.4" || echo "No lib64/cmake/vtk-9.4"',
     'echo "Current environment:"',
     'echo "VTK_VERSION=${VTK_VERSION}"',
     'echo "Setting VTK_DIR for CMake:"',
-    'export VTK_DIR="/tmp/vtk/lib64/cmake/vtk-9.4"',
+    'export VTK_DIR="/tmp/vtk/cmake/vtk-9.4"',
     'echo "VTK_DIR=${VTK_DIR}"',
     'test -f "${VTK_DIR}/vtk-config.cmake" && echo "vtk-config.cmake found" || echo "vtk-config.cmake NOT FOUND"',
 ]
 # Point CMake to the extracted VTK installation
-environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib64/cmake/vtk-9.4" }
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
 repair-wheel-command = "auditwheel show {wheel} && auditwheel repair -w {dest_dir} {wheel} || cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
@@ -146,18 +149,19 @@ before-all = [
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
     'echo "VTK extraction completed. Checking structure:"',
     'ls -la /tmp/vtk/ | head -10',
-    'echo "VTK_DIR will be: /tmp/vtk/lib/cmake/vtk-9.4"',
-    'ls -la /tmp/vtk/lib/cmake/vtk-9.4/ 2>/dev/null || echo "VTK CMake directory not found"',
+    'echo "VTK_DIR will be: /tmp/vtk/cmake/vtk-9.4"',
+    'ls -la /tmp/vtk/cmake/ 2>/dev/null || echo "No cmake directory in root"',
+    'ls -la /tmp/vtk/cmake/vtk-9.4/ 2>/dev/null || echo "VTK CMake directory not found"',
     'echo "Current environment:"',
     'echo "VTK_VERSION=${VTK_VERSION}"',
     'echo "VTK_ARCH=${VTK_ARCH}"',
     'echo "Setting VTK_DIR for CMake:"',
-    'export VTK_DIR="/tmp/vtk/lib/cmake/vtk-9.4"',
+    'export VTK_DIR="/tmp/vtk/cmake/vtk-9.4"',
     'echo "VTK_DIR=${VTK_DIR}"',
     'test -f "${VTK_DIR}/vtk-config.cmake" && echo "vtk-config.cmake found" || echo "vtk-config.cmake NOT FOUND"',
 ]
 # Point CMake to the extracted VTK installation
-environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib/cmake/vtk-9.4" }
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
 repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel} --ignore-missing-dependencies || cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
