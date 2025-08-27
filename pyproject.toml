@@ -117,8 +117,8 @@ before-all = [
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
 ]
-# Point CMake to the extracted VTK installation
-environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib/cmake/vtk-9.4" }
+# Point CMake to the extracted VTK installation (Linux uses lib64)
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib64/cmake/vtk-9.4" }
 repair-wheel-command = "auditwheel show {wheel} && auditwheel repair -w {dest_dir} {wheel} || cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
