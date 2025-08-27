@@ -116,10 +116,16 @@ before-all = [
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
+    'echo "VTK extraction completed, checking structure:"',
+    'ls -la /tmp/vtk/ | head -20',
     'mkdir -p /tmp/lib64 /tmp/bin /tmp/include',
-    'mv /tmp/vtk/*.so* /tmp/lib64/',
-    'mv /tmp/vtk/vtk* /tmp/bin/ 2>/dev/null || true',
-    'mv /tmp/vtk/vtk-9.4 /tmp/include/vtk-9.4',
+    'mv /tmp/vtk/lib*.so* /tmp/lib64/ 2>/dev/null || echo "No .so files to move"',
+    'mv /tmp/vtk/vtk-* /tmp/bin/ 2>/dev/null || echo "No vtk executables to move"',
+    'if [ -d "/tmp/vtk/vtk-9.4" ]; then mv /tmp/vtk/vtk-9.4 /tmp/include/vtk-9.4; else echo "vtk-9.4 directory not found"; fi',
+    'echo "Reorganization completed, checking results:"',
+    'ls -la /tmp/lib64/ | head -5',
+    'ls -la /tmp/bin/ | head -5',
+    'ls -la /tmp/include/ || echo "No include directory"',
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
@@ -138,6 +144,12 @@ before-all = [
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
+    'echo "macOS VTK extraction completed, checking structure:"',
+    'ls -la /tmp/vtk/ | head -10',
+    'echo "Looking for CMake files:"',
+    'find /tmp/vtk -name "*vtk-config.cmake" -o -name "VTKConfig.cmake"',
+    'echo "VTK_DIR will be set to: /tmp/vtk/lib/cmake/vtk-9.4"',
+    'ls -la /tmp/vtk/lib/cmake/vtk-9.4/ 2>/dev/null || echo "VTK cmake directory not found"',
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/lib/cmake/vtk-9.4" }
