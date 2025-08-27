@@ -182,6 +182,10 @@ before-all = [
     'echo "Environment variables that will be passed to CMake:"',
     'echo "VTK_VERSION=${VTK_VERSION}"',
     'echo "VTK_DIR=${VTK_DIR}"',
+    'echo "Checking VTK-targets.cmake for hardcoded paths:"',
+    'grep -n "lib/" "${VTK_DIR}/VTK-targets.cmake" | head -5',
+    'echo "Looking for specific library references:"',
+    'grep -n "libvtk.*dylib" "${VTK_DIR}/VTK-targets.cmake" | head -3',
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
