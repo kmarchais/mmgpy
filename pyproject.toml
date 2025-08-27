@@ -142,8 +142,10 @@ repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
 before-all = [
-    # Corrected to download the .tar.gz file and extract with tar
+    # Download and extract VTK, then debug the directory structure
     "powershell -Command \"$VTK_VERSION = $env:VTK_VERSION; $RELEASE_TAG = 'VTK-' + $VTK_VERSION + '-shared'; $VTK_FILE = 'vtk-Windows-x86_64.tar.gz'; $VTK_URL = 'https://github.com/sanguinariojoe/vtk-builds/releases/download/' + $RELEASE_TAG + '/' + $VTK_FILE; Write-Host ('Downloading VTK from ' + $VTK_URL); Invoke-WebRequest -Uri $VTK_URL -OutFile vtk.tar.gz; New-Item -Path 'C:/vtk' -ItemType Directory -Force; tar -xzf vtk.tar.gz -C C:/vtk --strip-components=1\"",
+    "powershell -Command \"Write-Host 'VTK directory contents:'; Get-ChildItem -Path 'C:/vtk' -Recurse -Depth 3 | Select-Object FullName\"",
+    "powershell -Command \"Write-Host 'Looking for VTKConfig.cmake:'; Get-ChildItem -Path 'C:/vtk' -Recurse -Filter '*VTKConfig.cmake' | Select-Object FullName\"",
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/lib/cmake/vtk-9.4" }
