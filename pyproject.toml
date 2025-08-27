@@ -129,6 +129,12 @@ before-all = [
     'export VTK_DIR="/tmp/vtk/cmake/vtk-9.4"',
     'echo "VTK_DIR=${VTK_DIR}"',
     'test -f "${VTK_DIR}/vtk-config.cmake" && echo "vtk-config.cmake found" || echo "vtk-config.cmake NOT FOUND"',
+    'echo "Reorganizing VTK files to match CMake target expectations:"',
+    'mkdir -p /tmp/lib64 /tmp/bin /tmp/include',
+    'cp /tmp/vtk/lib*.so* /tmp/lib64/ 2>/dev/null || echo "No .so files found"',
+    'cp /tmp/vtk/bin/* /tmp/bin/ 2>/dev/null || echo "No executables found"',
+    'cp -r /tmp/vtk/include/* /tmp/include/ 2>/dev/null || echo "No include files found"',
+    'echo "Linux file reorganization completed"',
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
@@ -159,6 +165,12 @@ before-all = [
     'export VTK_DIR="/tmp/vtk/cmake/vtk-9.4"',
     'echo "VTK_DIR=${VTK_DIR}"',
     'test -f "${VTK_DIR}/vtk-config.cmake" && echo "vtk-config.cmake found" || echo "vtk-config.cmake NOT FOUND"',
+    'echo "Reorganizing VTK files to match CMake target expectations:"',
+    'mkdir -p /tmp/lib /tmp/bin /tmp/include',
+    'cp /tmp/vtk/lib*.dylib /tmp/lib/ 2>/dev/null || echo "No .dylib files found"',
+    'cp /tmp/vtk/bin/* /tmp/bin/ 2>/dev/null || echo "No executables found"',
+    'cp -r /tmp/vtk/include/* /tmp/include/ 2>/dev/null || echo "No include files found"',
+    'echo "macOS file reorganization completed"',
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
