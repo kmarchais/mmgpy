@@ -78,6 +78,45 @@ else() # UNIX
     )
 endif()
 
+# Install VTK libraries if available
+if(VTK_DIR OR ENV{VTK_DIR})
+    message(STATUS "Installing VTK libraries for wheel...")
+    
+    # Find VTK library directory 
+    # Try common VTK library locations
+    set(VTK_LIB_SEARCH_PATHS
+        "${VTK_DIR}/../../../lib"
+        "${VTK_DIR}/../../lib"  
+        "${VTK_DIR}/../lib"
+        "/tmp/vtk/lib"
+        "/tmp/lib"
+    )
+    
+    foreach(search_path ${VTK_LIB_SEARCH_PATHS})
+        if(EXISTS "${search_path}" AND IS_DIRECTORY "${search_path}")
+            file(GLOB VTK_LIBS "${search_path}/libvtk*${CMAKE_SHARED_LIBRARY_SUFFIX}*")
+            if(VTK_LIBS)
+                set(VTK_LIB_DIR "${search_path}")
+                break()
+            endif()
+        endif()
+    endforeach()
+    
+    if(VTK_LIB_DIR AND VTK_LIBS)
+        message(STATUS "Found VTK libraries in: ${VTK_LIB_DIR}")
+        list(LENGTH VTK_LIBS VTK_LIBS_COUNT)
+        message(STATUS "Installing ${VTK_LIBS_COUNT} VTK libraries to wheel...")
+        
+        if(WIN32)
+            install(FILES ${VTK_LIBS} DESTINATION mmgpy)
+        else()
+            install(FILES ${VTK_LIBS} DESTINATION mmgpy/lib)
+        endif()
+    else()
+        message(WARNING "VTK libraries not found for wheel installation. VTK may not work in the built wheel.")
+    endif()
+endif()
+
 # Handle installation of executables if not skipped
 if(NOT MMGPY_SKIP_EXECUTABLES)
     # For development installs, install to site-packages/bin and create symlinks
