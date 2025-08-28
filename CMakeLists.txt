@@ -81,13 +81,13 @@ endif()
 # Install VTK libraries if available
 if(VTK_DIR OR ENV{VTK_DIR})
     message(STATUS "Installing VTK libraries for wheel...")
-    
-    # Find VTK library directory 
+
+    # Find VTK library directory
     # Try common VTK library locations for both macOS and Linux
     set(VTK_LIB_SEARCH_PATHS
         "${VTK_DIR}/../../../lib"
         "${VTK_DIR}/../../../lib64"
-        "${VTK_DIR}/../../lib"  
+        "${VTK_DIR}/../../lib"
         "${VTK_DIR}/../../lib64"
         "${VTK_DIR}/../lib"
         "${VTK_DIR}/../lib64"

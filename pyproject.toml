@@ -172,7 +172,7 @@ environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "
 before-build = [
     'echo "=== FINAL VTK ENVIRONMENT CHECK FOR LINUX ==="',
     'echo "VTK_DIR: $VTK_DIR"',
-    'echo "CMAKE_PREFIX_PATH: $CMAKE_PREFIX_PATH"', 
+    'echo "CMAKE_PREFIX_PATH: $CMAKE_PREFIX_PATH"',
     'echo "CMAKE_IGNORE_PATH: $CMAKE_IGNORE_PATH"',
     'echo "PATH: $PATH"',
     'ls -la /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
