@@ -81,20 +81,28 @@ endif()
 # Install VTK libraries if available
 if(VTK_DIR OR ENV{VTK_DIR})
     message(STATUS "Installing VTK libraries for wheel...")
-
-    # Find VTK library directory
-    # Try common VTK library locations
+    
+    # Find VTK library directory 
+    # Try common VTK library locations for both macOS and Linux
     set(VTK_LIB_SEARCH_PATHS
         "${VTK_DIR}/../../../lib"
-        "${VTK_DIR}/../../lib"
+        "${VTK_DIR}/../../../lib64"
+        "${VTK_DIR}/../../lib"  
+        "${VTK_DIR}/../../lib64"
         "${VTK_DIR}/../lib"
+        "${VTK_DIR}/../lib64"
         "/tmp/vtk/lib"
+        "/tmp/vtk/lib64"
         "/tmp/lib"
+        "/tmp/lib64"
     )
 
     foreach(search_path ${VTK_LIB_SEARCH_PATHS})
         if(EXISTS "${search_path}" AND IS_DIRECTORY "${search_path}")
-            file(GLOB VTK_LIBS "${search_path}/libvtk*${CMAKE_SHARED_LIBRARY_SUFFIX}*")
+            # Search for both .so and .dylib files
+            file(GLOB VTK_LIBS_SO "${search_path}/libvtk*.so*")
+            file(GLOB VTK_LIBS_DYLIB "${search_path}/libvtk*.dylib*")
+            set(VTK_LIBS ${VTK_LIBS_SO} ${VTK_LIBS_DYLIB})
             if(VTK_LIBS)
                 set(VTK_LIB_DIR "${search_path}")
                 break()
