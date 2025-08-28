@@ -125,6 +125,37 @@ if(VTK_DIR OR ENV{VTK_DIR})
     endif()
 endif()
 
+# Fix RPATH for MMG libraries to find VTK libraries on Linux
+if(UNIX AND NOT APPLE)
+    install(CODE "
+        message(STATUS \"Fixing RPATH for MMG libraries on Linux...\")
+
+        # Find MMG libraries in the install directory
+        set(MMG_LIB_DIR \"\${CMAKE_INSTALL_PREFIX}/mmgpy/lib\")
+        file(GLOB MMG_LIBS \"\${MMG_LIB_DIR}/libmmg*.so*\")
+
+        foreach(mmg_lib \${MMG_LIBS})
+            if(EXISTS \"\${mmg_lib}\")
+                get_filename_component(lib_name \"\${mmg_lib}\" NAME)
+                message(STATUS \"Setting RPATH for MMG library: \${lib_name}\")
+
+                # Set RPATH to look in the same directory (where VTK libs are installed)
+                execute_process(
+                    COMMAND patchelf --set-rpath \"\\\$ORIGIN\" \"\${mmg_lib}\"
+                    ERROR_VARIABLE PATCHELF_ERROR
+                    RESULT_VARIABLE PATCHELF_RESULT
+                )
+
+                if(PATCHELF_RESULT)
+                    message(WARNING \"patchelf failed for \${lib_name}: \${PATCHELF_ERROR}\")
+                else()
+                    message(STATUS \"Successfully set RPATH for \${lib_name}\")
+                endif()
+            endif()
+        endforeach()
+    ")
+endif()
+
 # Handle installation of executables if not skipped
 if(NOT MMGPY_SKIP_EXECUTABLES)
     # For development installs, install to site-packages/bin and create symlinks
