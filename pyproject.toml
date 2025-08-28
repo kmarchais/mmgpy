@@ -196,6 +196,12 @@ before-all = [
     'test -f "/tmp/vtk/include/vtk-9.4/vtklz4/lib/lz4.h" && echo "lz4.h found" || echo "lz4.h MISSING"',
     'test -f "/tmp/vtk/include/vtk-9.4/vtkzlib/zconf.h" && echo "zconf.h found" || echo "zconf.h MISSING"',
     'test -f "/tmp/vtk/include/vtk-9.4/vtkexpat/lib/expat.h" && echo "expat.h found" || echo "expat.h MISSING"',
+    'echo "Checking VTK-targets-release.cmake for library paths:"',
+    'grep -n "dylib" "${VTK_DIR}/VTK-targets-release.cmake" | head -5 || echo "No .dylib references in release file"',
+    'echo "Looking for IMPORTED_LOCATION in VTK-targets-release.cmake:"',
+    'grep -n "IMPORTED_LOCATION" "${VTK_DIR}/VTK-targets-release.cmake" | head -3 || echo "No IMPORTED_LOCATION found"',
+    'echo "Checking what CMake variables are available:"',
+    'grep -n "_IMPORT_PREFIX" "${VTK_DIR}/vtk-prefix.cmake" 2>/dev/null || echo "No vtk-prefix.cmake or _IMPORT_PREFIX found"',
 ]
 # Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "/tmp/vtk/cmake/vtk-9.4" }
