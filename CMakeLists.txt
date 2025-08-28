@@ -81,17 +81,17 @@ endif()
 # Install VTK libraries if available
 if(VTK_DIR OR ENV{VTK_DIR})
     message(STATUS "Installing VTK libraries for wheel...")
-    
-    # Find VTK library directory 
+
+    # Find VTK library directory
     # Try common VTK library locations
     set(VTK_LIB_SEARCH_PATHS
         "${VTK_DIR}/../../../lib"
-        "${VTK_DIR}/../../lib"  
+        "${VTK_DIR}/../../lib"
         "${VTK_DIR}/../lib"
         "/tmp/vtk/lib"
         "/tmp/lib"
     )
-    
+
     foreach(search_path ${VTK_LIB_SEARCH_PATHS})
         if(EXISTS "${search_path}" AND IS_DIRECTORY "${search_path}")
             file(GLOB VTK_LIBS "${search_path}/libvtk*${CMAKE_SHARED_LIBRARY_SUFFIX}*")
@@ -101,12 +101,12 @@ if(VTK_DIR OR ENV{VTK_DIR})
             endif()
         endif()
     endforeach()
-    
+
     if(VTK_LIB_DIR AND VTK_LIBS)
         message(STATUS "Found VTK libraries in: ${VTK_LIB_DIR}")
         list(LENGTH VTK_LIBS VTK_LIBS_COUNT)
         message(STATUS "Installing ${VTK_LIBS_COUNT} VTK libraries to wheel...")
-        
+
         if(WIN32)
             install(FILES ${VTK_LIBS} DESTINATION mmgpy)
         else()

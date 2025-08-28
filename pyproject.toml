@@ -111,7 +111,7 @@ environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "
 before-build = [
   'echo "=== FINAL VTK ENVIRONMENT CHECK ==="',
   'echo "VTK_DIR: $VTK_DIR"',
-  'echo "CMAKE_PREFIX_PATH: $CMAKE_PREFIX_PATH"', 
+  'echo "CMAKE_PREFIX_PATH: $CMAKE_PREFIX_PATH"',
   'echo "CMAKE_IGNORE_PATH: $CMAKE_IGNORE_PATH"',
   'echo "PATH: $PATH"',
   'ls -la /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
@@ -187,7 +187,7 @@ before-all = [
     'ln -sf /tmp/vtk/lib /tmp/lib || echo "lib symlink already exists"',
     'mkdir -p /tmp/vtk/bin',
     'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
-    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"', 
+    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
     'echo "Creating dummy VTK executables (not needed for mmgpy):"',
     'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
     'chmod +x /tmp/vtk/bin/vtk*',
