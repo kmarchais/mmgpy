@@ -112,8 +112,15 @@ before-all = [
     'mv /tmp/vtk/lib*.so* /tmp/vtk/lib64/ 2>/dev/null || echo "No loose .so files to move"',
     'mkdir -p /tmp/vtk/include/vtk-9.4',
     'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
+    'ln -sf /tmp/vtk/lib64 /tmp/lib64 || echo "lib64 symlink already exists"',
+    'mkdir -p /tmp/vtk/bin',
+    'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
+    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
+    'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
+    'chmod +x /tmp/vtk/bin/vtk*',
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
+repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
@@ -133,8 +140,15 @@ before-all = [
     'cd /tmp/vtk',
     'mkdir -p /tmp/vtk/include/vtk-9.4',
     'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
+    'ln -sf /tmp/vtk/lib /tmp/lib || echo "lib symlink already exists"',
+    'mkdir -p /tmp/vtk/bin',
+    'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
+    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
+    'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
+    'chmod +x /tmp/vtk/bin/vtk*',
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
+repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
@@ -143,4 +157,8 @@ before-all = [
     "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.4' 'C:/include/vtk-9.4' -Force\"",
 ]
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
-repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel"
+repair-wheel-command = [
+    "echo --- Contents of wheel before repair ---",
+    "python -m zipfile -l {wheel}",
+    "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel",
+]
