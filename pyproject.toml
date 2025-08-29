@@ -9,7 +9,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mmgpy"
-version = "0.1.3.0"
+version = "0.1.3.dev0"
 description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -81,60 +81,84 @@ select = ["ALL"]
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-# Build for Python 3.9-3.13 on all platforms
 build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
-
-# Skip 32-bit builds and PyPy
 skip = "pp* *-win32 *-manylinux_i686 *-musllinux_i686 *-musllinux*"
-
-environment = { VTK_VERSION_MAJOR = "9", VTK_VERSION_MINOR = "3", VTK_VERSION_PATCH = "1" }
-
-# Test the built wheels
-test-command = [
-    'python -c "import os, sys; sp = os.path.join(sys.prefix, \"Lib\", \"site-packages\"); print(\"Site-packages:\", os.listdir(sp) if os.path.exists(sp) else \"Not found\"); libs_dir = os.path.join(sp, \"mmgpy.libs\"); print(\"mmgpy.libs exists:\", os.path.exists(libs_dir)); print(\"mmgpy.libs contents:\", os.listdir(libs_dir) if os.path.exists(libs_dir) else \"Not found\")"',
-    'python -c "import mmgpy"',
-]
-
-# Build verbosity
+test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
 
 [[tool.cibuildwheel.overrides]]
 select = "*-macosx_x86_64"
-environment = { MACOSX_DEPLOYMENT_TARGET = "13.0" }
+environment = { MACOSX_DEPLOYMENT_TARGET = "10.15" }
 
 [[tool.cibuildwheel.overrides]]
 select = "*-macosx_arm64"
-environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
+environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
+
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx*"
+environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include" }
 
 [tool.cibuildwheel.linux]
-archs = ["x86_64"] #, "aarch64"]
+archs = ["x86_64"]
 before-all = [
-    "yum update -y",
-    "yum install -y epel-release",
-    "yum install -y vtk-devel cmake3 gcc-c++",
+    'VTK_VERSION="9.4.1"',
+    'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
+    'VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"',
+    'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
+    'curl -L -o vtk.tar.gz "${VTK_URL}"',
+    'mkdir -p /tmp/vtk',
+    'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
+    'mkdir -p /tmp/vtk/lib64',
+    'mv /tmp/vtk/lib*.so* /tmp/vtk/lib64/ 2>/dev/null || echo "No loose .so files to move"',
+    'mkdir -p /tmp/vtk/include/vtk-9.4',
+    'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
+    'ln -sf /tmp/vtk/lib64 /tmp/lib64 || echo "lib64 symlink already exists"',
+    'mkdir -p /tmp/vtk/bin',
+    'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
+    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
+    'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
+    'chmod +x /tmp/vtk/bin/vtk*',
 ]
-environment = { CMAKE_ARGS = "-DPython_FIND_STRATEGY=LOCATION" }
-repair-wheel-command = "auditwheel show {wheel} && auditwheel repair -w {dest_dir} {wheel} || cp {wheel} {dest_dir}/"
+environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
+repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
-before-all = ["brew install vtk"]
-repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel} --ignore-missing-dependencies || cp {wheel} {dest_dir}/"
+before-all = [
+    'VTK_VERSION="9.4.1"',
+    'VTK_ARCH=$(uname -m)',
+    'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
+    'VTK_FILE="vtk-macOS-${VTK_ARCH}.tar.gz"',
+    'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
+    'curl -L -o vtk.tar.gz "${VTK_URL}"',
+    'mkdir -p /tmp/vtk',
+    'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
+    'mkdir -p /tmp/vtk/lib',
+    'mv /tmp/vtk/lib*.dylib /tmp/vtk/lib/ 2>/dev/null || echo "No loose .dylib files to move"',
+    'cd /tmp/vtk/lib',
+    'for lib in *.dylib; do if [[ "$lib" == *"-9.4.9.4.dylib" ]]; then base=$(echo "$lib" | sed "s/-9.4.9.4.dylib//g"); ln -sf "${base}-9.4.9.4.dylib" "${base}-9.4.1.dylib"; fi; done',
+    'cd /tmp/vtk',
+    'mkdir -p /tmp/vtk/include/vtk-9.4',
+    'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
+    'ln -sf /tmp/vtk/lib /tmp/lib || echo "lib symlink already exists"',
+    'mkdir -p /tmp/vtk/bin',
+    'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
+    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
+    'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
+    'chmod +x /tmp/vtk/bin/vtk*',
+]
+environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
+repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
-before-all = "vcpkg install vtk:x64-windows"
-before-build = [
-    "set VTK_DIR=",
-    "set VTK_ROOT=",
-    "set CMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows",
-    "set PATH=C:/vcpkg/installed/x64-windows/bin;%SystemRoot%/system32;%SystemRoot%",
-    "if exist build rmdir /s /q build",
+before-all = [
+    "powershell -Command \"$VTK_VERSION = $env:VTK_VERSION; $RELEASE_TAG = 'VTK-' + $VTK_VERSION + '-shared'; $VTK_FILE = 'vtk-Windows-x86_64.tar.gz'; $VTK_URL = 'https://github.com/sanguinariojoe/vtk-builds/releases/download/' + $RELEASE_TAG + '/' + $VTK_FILE; Invoke-WebRequest -Uri $VTK_URL -OutFile vtk.tar.gz; New-Item -Path 'C:/vtk' -ItemType Directory -Force; tar -xzf vtk.tar.gz -C C:/vtk --strip-components=1\"",
+    "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.4' 'C:/include/vtk-9.4' -Force\"",
 ]
-environment = { VCPKG_ROOT = "C:/vcpkg", CMAKE_TOOLCHAIN_FILE = "C:/vcpkg/scripts/buildsystems/vcpkg.cmake", VTK_DIR = "C:/vcpkg/installed/x64-windows/share/vtk" }
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
 repair-wheel-command = [
     "echo --- Contents of wheel before repair ---",
     "python -m zipfile -l {wheel}",
-    # Tell delvewheel to ignore the MMG DLLs that are already in the wheel
-    "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/vcpkg/installed/x64-windows/bin --ignore-in-wheel",
+    "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel",
 ]
