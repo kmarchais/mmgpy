@@ -81,19 +81,9 @@ select = ["ALL"]
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-# Build for Python 3.9-3.13 on all platforms
 build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
-
-# Skip 32-bit builds, PyPy, and Python versions without system installs on macOS
 skip = "pp* *-win32 *-manylinux_i686 *-musllinux_i686 *-musllinux*"
-
-# Test the built wheels
-test-command = [
-    'python -c "import os, sys, site; sp = site.getsitepackages()[0]; print(\"Site-packages:\", sp); print(\"Contents:\", os.listdir(sp) if os.path.exists(sp) else \"Not found\"); libs_dir = os.path.join(sp, \"mmgpy.libs\"); print(\"mmgpy.libs exists:\", os.path.exists(libs_dir)); print(\"mmgpy.libs contents:\", os.listdir(libs_dir) if os.path.exists(libs_dir) else \"Not found\")"',
-    'python -c "import mmgpy"',
-]
-
-# Build verbosity
+test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
 
 [[tool.cibuildwheel.overrides]]
@@ -104,147 +94,53 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "10.15" }
 select = "*-macosx_arm64"
 environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 
-# Override to force VTK path for macOS builds
 [[tool.cibuildwheel.overrides]]
 select = "*-macosx*"
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include" }
-before-build = [
-  'export MACOSX_DEPLOYMENT_TARGET=10.15',
-  'echo "=== DEPLOYMENT TARGET AND VTK ENVIRONMENT CHECK ==="',
-  'echo "MACOSX_DEPLOYMENT_TARGET: $MACOSX_DEPLOYMENT_TARGET"',
-  'echo "VTK_DIR: $VTK_DIR"',
-  'echo "CMAKE_PREFIX_PATH: $CMAKE_PREFIX_PATH"',
-  'echo "CMAKE_IGNORE_PATH: $CMAKE_IGNORE_PATH"',
-  'echo "PATH: $PATH"',
-  'ls -la /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
-  'echo "Contents of VTK config:"',
-  'head -10 /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
-  'echo "=== END ENVIRONMENT CHECK ==="',
-]
 
 [tool.cibuildwheel.linux]
-archs = ["x86_64"] #, "aarch64"]
+archs = ["x86_64"]
 before-all = [
-    # Download and extract pre-built VTK
     'VTK_VERSION="9.4.1"',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
     'VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"',
     'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
-    'echo "Downloading VTK from ${VTK_URL}"',
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
-    'echo "VTK extraction completed. Original structure:"',
-    'ls -la /tmp/vtk/ | head -10',
-    'echo "=== FIXING VTK PREBUILT STRUCTURE FOR LINUX ==="',
-    'echo "Creating proper lib directory structure (Linux uses lib64 by default):"',
     'mkdir -p /tmp/vtk/lib64',
-    'echo "Moving all .so files to lib64 directory:"',
     'mv /tmp/vtk/lib*.so* /tmp/vtk/lib64/ 2>/dev/null || echo "No loose .so files to move"',
-    'echo "Linux VTK libraries already have the correct naming - just need to ensure they are accessible"',
-    'cd /tmp/vtk/lib64',
-    'echo "Current library structure in lib64:"',
-    'ls -la *.so* | head -10',
-    'cd /tmp/vtk',
-    'echo "Creating include directory structure:"',
     'mkdir -p /tmp/vtk/include/vtk-9.4',
-    'if [ -d "/tmp/vtk/vtk-9.4" ]; then echo "Moving headers from vtk-9.4/ to include/vtk-9.4/"; cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; else echo "ERROR: No vtk-9.4 directory found for headers"; fi',
-    'echo "Creating symlinks at expected VTK paths:"',
-    'ln -sf /tmp/vtk/lib64 /tmp/lib64 || echo "lib64 symlink already exists"',
-    'mkdir -p /tmp/vtk/bin',
-    'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
-    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
-    'echo "Creating dummy VTK executables (not needed for mmgpy):"',
-    'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
-    'chmod +x /tmp/vtk/bin/vtk*',
-    'echo "Created dummy VTK executables and symlinks"',
-    'echo "Final VTK structure verification:"',
-    'echo "Libraries in /tmp/vtk/lib64:"',
-    'ls -la /tmp/vtk/lib64/ | head -10',
-    'echo "Headers in /tmp/vtk/include/vtk-9.4:"',
-    'ls -la /tmp/vtk/include/vtk-9.4/ | head -5',
-    'echo "CMake config files:"',
-    'ls -la /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
-    'echo "VTK prebuilt structure fix completed for Linux"',
+    'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
 ]
-# Point CMake to the extracted VTK installation and ignore system VTK
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
-before-build = [
-    'echo "=== FINAL VTK ENVIRONMENT CHECK FOR LINUX ==="',
-    'echo "VTK_DIR: $VTK_DIR"',
-    'echo "CMAKE_PREFIX_PATH: $CMAKE_PREFIX_PATH"',
-    'echo "CMAKE_IGNORE_PATH: $CMAKE_IGNORE_PATH"',
-    'echo "PATH: $PATH"',
-    'ls -la /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
-    'echo "Contents of VTK config:"',
-    'head -10 /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
-    'echo "VTK library directory contents:"',
-    'ls -la /tmp/vtk/lib64/ | head -5',
-    'echo "=== END VTK ENVIRONMENT CHECK ==="',
-]
-repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
 before-all = [
-    # Download and extract pre-built VTK
     'VTK_VERSION="9.4.1"',
     'VTK_ARCH=$(uname -m)',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
     'VTK_FILE="vtk-macOS-${VTK_ARCH}.tar.gz"',
     'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
-    'echo "Downloading VTK from ${VTK_URL}"',
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
-    'echo "VTK extraction completed. Original structure:"',
-    'ls -la /tmp/vtk/ | head -10',
-    'echo "=== FIXING VTK PREBUILT STRUCTURE ==="',
-    'echo "Creating proper lib directory structure:"',
     'mkdir -p /tmp/vtk/lib',
-    'echo "Moving all dylib files to lib directory:"',
     'mv /tmp/vtk/lib*.dylib /tmp/vtk/lib/ 2>/dev/null || echo "No loose .dylib files to move"',
-    'echo "Fixing library symlinks for version mismatch (9.4.1 vs 9.4.9.4):"',
     'cd /tmp/vtk/lib',
-    'for lib in *.dylib; do if [[ "$lib" == *"-9.4.9.4.dylib" ]]; then base=$(echo "$lib" | sed "s/-9.4.9.4.dylib//g"); echo "Creating symlink: ${base}-9.4.1.dylib -> ${base}-9.4.9.4.dylib"; ln -sf "${base}-9.4.9.4.dylib" "${base}-9.4.1.dylib"; fi; done',
+    'for lib in *.dylib; do if [[ "$lib" == *"-9.4.9.4.dylib" ]]; then base=$(echo "$lib" | sed "s/-9.4.9.4.dylib//g"); ln -sf "${base}-9.4.9.4.dylib" "${base}-9.4.1.dylib"; fi; done',
     'cd /tmp/vtk',
-    'echo "Creating include directory structure:"',
     'mkdir -p /tmp/vtk/include/vtk-9.4',
-    'if [ -d "/tmp/vtk/vtk-9.4" ]; then echo "Moving headers from vtk-9.4/ to include/vtk-9.4/"; cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; else echo "ERROR: No vtk-9.4 directory found for headers"; fi',
-    'echo "Creating symlinks at expected VTK paths:"',
-    'ln -sf /tmp/vtk/lib /tmp/lib || echo "lib symlink already exists"',
-    'mkdir -p /tmp/vtk/bin',
-    'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
-    'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
-    'echo "Creating dummy VTK executables (not needed for mmgpy):"',
-    'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
-    'chmod +x /tmp/vtk/bin/vtk*',
-    'echo "Created dummy VTK executables and symlinks"',
-    'echo "Final VTK structure verification:"',
-    'echo "Libraries in /tmp/vtk/lib:"',
-    'ls -la /tmp/vtk/lib/ | head -10',
-    'echo "Headers in /tmp/vtk/include/vtk-9.4:"',
-    'ls -la /tmp/vtk/include/vtk-9.4/ | head -5',
-    'echo "CMake config files:"',
-    'ls -la /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
-    'echo "VTK prebuilt structure fix completed"',
+    'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
 ]
-# Point CMake to the extracted VTK installation and ignore Homebrew
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
-repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
 before-all = [
-    # Download and extract pre-built VTK, then reorganize to match expected paths
-    "powershell -Command \"$VTK_VERSION = $env:VTK_VERSION; $RELEASE_TAG = 'VTK-' + $VTK_VERSION + '-shared'; $VTK_FILE = 'vtk-Windows-x86_64.tar.gz'; $VTK_URL = 'https://github.com/sanguinariojoe/vtk-builds/releases/download/' + $RELEASE_TAG + '/' + $VTK_FILE; Write-Host ('Downloading VTK from ' + $VTK_URL); Invoke-WebRequest -Uri $VTK_URL -OutFile vtk.tar.gz; New-Item -Path 'C:/vtk' -ItemType Directory -Force; tar -xzf vtk.tar.gz -C C:/vtk --strip-components=1\"",
+    "powershell -Command \"$VTK_VERSION = $env:VTK_VERSION; $RELEASE_TAG = 'VTK-' + $VTK_VERSION + '-shared'; $VTK_FILE = 'vtk-Windows-x86_64.tar.gz'; $VTK_URL = 'https://github.com/sanguinariojoe/vtk-builds/releases/download/' + $RELEASE_TAG + '/' + $VTK_FILE; Invoke-WebRequest -Uri $VTK_URL -OutFile vtk.tar.gz; New-Item -Path 'C:/vtk' -ItemType Directory -Force; tar -xzf vtk.tar.gz -C C:/vtk --strip-components=1\"",
     "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.4' 'C:/include/vtk-9.4' -Force\"",
 ]
-# Point CMake to the extracted VTK installation
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
-repair-wheel-command = [
-    "echo --- Contents of wheel before repair ---",
-    "python -m zipfile -l {wheel}",
-    # Tell delvewheel to find DLLs in C:/bin where we moved them
-    "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel",
-]
+repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel"
