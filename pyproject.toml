@@ -109,7 +109,9 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 select = "*-macosx*"
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include" }
 before-build = [
-  'echo "=== FINAL VTK ENVIRONMENT CHECK ==="',
+  'export MACOSX_DEPLOYMENT_TARGET=10.15',
+  'echo "=== DEPLOYMENT TARGET AND VTK ENVIRONMENT CHECK ==="',
+  'echo "MACOSX_DEPLOYMENT_TARGET: $MACOSX_DEPLOYMENT_TARGET"',
   'echo "VTK_DIR: $VTK_DIR"',
   'echo "CMAKE_PREFIX_PATH: $CMAKE_PREFIX_PATH"',
   'echo "CMAKE_IGNORE_PATH: $CMAKE_IGNORE_PATH"',
@@ -117,7 +119,7 @@ before-build = [
   'ls -la /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
   'echo "Contents of VTK config:"',
   'head -10 /tmp/vtk/cmake/vtk-9.4/vtk-config.cmake',
-  'echo "=== END VTK ENVIRONMENT CHECK ==="',
+  'echo "=== END ENVIRONMENT CHECK ==="',
 ]
 
 [tool.cibuildwheel.linux]
