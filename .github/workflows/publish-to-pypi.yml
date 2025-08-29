@@ -1,0 +1,33 @@
+name: Publish to PyPI
+
+on:
+  workflow_run:
+    workflows: ["Build Wheels"]
+    types:
+      - completed
+
+jobs:
+  publish-to-pypi:
+    runs-on: ubuntu-latest
+    name: Publish to PyPI
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release' }}
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/${{ github.event.repository.name }}
+
+    permissions:
+      id-token: write # For trusted publishing
+      actions: read # To download artifacts from other workflows
+
+    steps:
+      - name: Download artifacts from build workflow
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
