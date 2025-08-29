@@ -7,14 +7,19 @@ endif()
 
 # Read version from pyproject.toml
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml" PYPROJECT_CONTENT)
-string(REGEX MATCH "version = \"([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?)\"" _ ${PYPROJECT_CONTENT})
+string(REGEX MATCH "version = \"([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?([.a-zA-Z0-9]+)?)\"" _ ${PYPROJECT_CONTENT})
 
 if(NOT CMAKE_MATCH_1)
     message(FATAL_ERROR "Could not find version in pyproject.toml")
 endif()
 
 set(MMGPY_VERSION ${CMAKE_MATCH_1})
-project(mmgpy VERSION ${MMGPY_VERSION})
+
+# Extract numeric version for CMake project() which doesn't support suffixes
+string(REGEX MATCH "([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?)" _ ${MMGPY_VERSION})
+set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})
+
+project(mmgpy VERSION ${MMGPY_NUMERIC_VERSION})
 
 # Find Python - let scikit-build-core handle it in wheel builds
 if(DEFINED SKBUILD)
@@ -71,6 +76,84 @@ else() # UNIX
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
         LIBRARY DESTINATION mmgpy/lib
     )
+endif()
+
+# Install VTK libraries if available
+if(VTK_DIR OR ENV{VTK_DIR})
+    message(STATUS "Installing VTK libraries for wheel...")
+
+    # Find VTK library directory
+    # Try common VTK library locations for both macOS and Linux
+    set(VTK_LIB_SEARCH_PATHS
+        "${VTK_DIR}/../../../lib"
+        "${VTK_DIR}/../../../lib64"
+        "${VTK_DIR}/../../lib"
+        "${VTK_DIR}/../../lib64"
+        "${VTK_DIR}/../lib"
+        "${VTK_DIR}/../lib64"
+        "/tmp/vtk/lib"
+        "/tmp/vtk/lib64"
+        "/tmp/lib"
+        "/tmp/lib64"
+    )
+
+    foreach(search_path ${VTK_LIB_SEARCH_PATHS})
+        if(EXISTS "${search_path}" AND IS_DIRECTORY "${search_path}")
+            # Search for both .so and .dylib files
+            file(GLOB VTK_LIBS_SO "${search_path}/libvtk*.so*")
+            file(GLOB VTK_LIBS_DYLIB "${search_path}/libvtk*.dylib*")
+            set(VTK_LIBS ${VTK_LIBS_SO} ${VTK_LIBS_DYLIB})
+            if(VTK_LIBS)
+                set(VTK_LIB_DIR "${search_path}")
+                break()
+            endif()
+        endif()
+    endforeach()
+
+    if(VTK_LIB_DIR AND VTK_LIBS)
+        message(STATUS "Found VTK libraries in: ${VTK_LIB_DIR}")
+        list(LENGTH VTK_LIBS VTK_LIBS_COUNT)
+        message(STATUS "Installing ${VTK_LIBS_COUNT} VTK libraries to wheel...")
+
+        if(WIN32)
+            install(FILES ${VTK_LIBS} DESTINATION mmgpy)
+        else()
+            install(FILES ${VTK_LIBS} DESTINATION mmgpy/lib)
+        endif()
+    else()
+        message(WARNING "VTK libraries not found for wheel installation. VTK may not work in the built wheel.")
+    endif()
+endif()
+
+# Fix RPATH for MMG libraries to find VTK libraries on Linux
+if(UNIX AND NOT APPLE)
+    install(CODE "
+        message(STATUS \"Fixing RPATH for MMG libraries on Linux...\")
+
+        # Find MMG libraries in the install directory
+        set(MMG_LIB_DIR \"\${CMAKE_INSTALL_PREFIX}/mmgpy/lib\")
+        file(GLOB MMG_LIBS \"\${MMG_LIB_DIR}/libmmg*.so*\")
+
+        foreach(mmg_lib \${MMG_LIBS})
+            if(EXISTS \"\${mmg_lib}\")
+                get_filename_component(lib_name \"\${mmg_lib}\" NAME)
+                message(STATUS \"Setting RPATH for MMG library: \${lib_name}\")
+
+                # Set RPATH to look in the same directory (where VTK libs are installed)
+                execute_process(
+                    COMMAND patchelf --set-rpath \"\\\$ORIGIN\" \"\${mmg_lib}\"
+                    ERROR_VARIABLE PATCHELF_ERROR
+                    RESULT_VARIABLE PATCHELF_RESULT
+                )
+
+                if(PATCHELF_RESULT)
+                    message(WARNING \"patchelf failed for \${lib_name}: \${PATCHELF_ERROR}\")
+                else()
+                    message(STATUS \"Successfully set RPATH for \${lib_name}\")
+                endif()
+            endif()
+        endforeach()
+    ")
 endif()
 
 # Handle installation of executables if not skipped
