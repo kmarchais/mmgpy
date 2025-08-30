@@ -25,12 +25,7 @@ jobs:
     name: Publish to TestPyPI
     if: inputs.publish_to_testpypi
 
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/${{ github.event.repository.name }}
-
     permissions:
-      id-token: write # For trusted publishing
       actions: read # To download artifacts from other workflows
 
     steps:
@@ -46,6 +41,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_TOKEN }}
 
   publish-to-pypi:
     runs-on: ubuntu-latest
