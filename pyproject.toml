@@ -45,7 +45,7 @@ build-dir = "build"
 wheel.packages = ["src/mmgpy"]
 
 # Source distribution
-sdist.include = ["CMakeLists.txt", "src/*", "extern/*"]
+sdist.include = ["CMakeLists.txt", "src/*", "extern/*", "scripts/*"]
 sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 
 # Scripts entry points for development installs
@@ -125,7 +125,7 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 before-test = [
-    "echo '=== Optimizing wheel size ===' && find {project}/wheelhouse -name '*.whl' | while read wheel; do echo \"Processing $wheel ($(du -h \"$wheel\" | cut -f1))\" && python -c \"import tempfile, shutil, zipfile, os, glob; temp_dir = tempfile.mkdtemp(); print('Extracting wheel...'); zf = zipfile.ZipFile('$wheel'); zf.extractall(temp_dir); zf.close(); removed_dirs = 0; removed_files = 0; vtk_removed = 0; print('Scanning for VTK duplicates...'); for root, dirs, files in os.walk(temp_dir): vtk_libs = [f for f in files if f.startswith('libvtk') and f.endswith(('.dylib', '.so'))]; base_libs = {{}}; for lib in vtk_libs: if '-9.4.9.4.' in lib: base = lib.split('-9.4.9.4.')[0]; base_libs[base] = lib; for lib in vtk_libs[:]: if lib not in base_libs.values() and any(lib.startswith(base + '-9.4.') for base in base_libs): os.remove(os.path.join(root, lib)); vtk_removed += 1; print(f'Removed duplicate VTK lib: {{lib}}'); [(exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for d in dirs[:] if d == 'include']; [(exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for d in dirs[:] if d == 'cmake']; print(f'Optimization: removed {{vtk_removed}} VTK duplicates, {{removed_dirs}} dev directories'); shutil.make_archive('$wheel'.replace('.whl', ''), 'zip', temp_dir); shutil.move('$wheel'.replace('.whl', '.zip'), '$wheel'); shutil.rmtree(temp_dir)\" && echo \"Optimized: $(du -h \"$wheel\" | cut -f1)\"; done"
+    "python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
 repair-wheel-command = "cp {wheel} {dest_dir}/"
@@ -158,7 +158,7 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 before-test = [
-    "echo '=== Optimizing wheel size ===' && find {project}/wheelhouse -name '*.whl' | while read wheel; do echo \"Processing $wheel ($(du -h \"$wheel\" | cut -f1))\" && python -c \"import tempfile, shutil, zipfile, os, glob; temp_dir = tempfile.mkdtemp(); print('Extracting wheel...'); zf = zipfile.ZipFile('$wheel'); zf.extractall(temp_dir); zf.close(); removed_dirs = 0; removed_files = 0; vtk_removed = 0; print('Scanning for VTK duplicates...'); for root, dirs, files in os.walk(temp_dir): vtk_libs = [f for f in files if f.startswith('libvtk') and f.endswith(('.dylib', '.so'))]; base_libs = {{}}; for lib in vtk_libs: if '-9.4.9.4.' in lib: base = lib.split('-9.4.9.4.')[0]; base_libs[base] = lib; for lib in vtk_libs[:]: if lib not in base_libs.values() and any(lib.startswith(base + '-9.4.') for base in base_libs): os.remove(os.path.join(root, lib)); vtk_removed += 1; print(f'Removed duplicate VTK lib: {{lib}}'); [(exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for d in dirs[:] if d == 'include']; [(exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for d in dirs[:] if d == 'cmake']; print(f'Optimization: removed {{vtk_removed}} VTK duplicates, {{removed_dirs}} dev directories'); shutil.make_archive('$wheel'.replace('.whl', ''), 'zip', temp_dir); shutil.move('$wheel'.replace('.whl', '.zip'), '$wheel'); shutil.rmtree(temp_dir)\" && echo \"Optimized: $(du -h \"$wheel\" | cut -f1)\"; done"
+    "python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
 repair-wheel-command = "cp {wheel} {dest_dir}/"
