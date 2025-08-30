@@ -15,15 +15,61 @@ def optimize_wheel(wheel_path):
 
     # VTK modules that are kept in Windows wheels (minimal required set)
     windows_vtk_modules = {
-        'CommonColor', 'CommonComputationalGeometry', 'CommonCore', 'CommonDataModel',
-        'CommonExecutionModel', 'CommonMath', 'CommonMisc', 'CommonSystem', 'CommonTransforms',
-        'DICOMParser', 'FiltersCellGrid', 'FiltersCore', 'FiltersExtraction', 'FiltersGeneral',
-        'FiltersGeometry', 'FiltersHybrid', 'FiltersHyperTree', 'FiltersModeling', 'FiltersParallel',
-        'FiltersReduction', 'FiltersSources', 'FiltersStatistics', 'FiltersTexture', 'FiltersVerdict',
-        'IOCellGrid', 'IOCore', 'IOGeometry', 'IOImage', 'IOLegacy', 'IOParallel', 'IOParallelXML',
-        'IOXML', 'IOXMLParser', 'ImagingCore', 'ImagingSources', 'ParallelCore', 'ParallelDIY',
-        'RenderingCore', 'doubleconversion', 'expat', 'fmt', 'jpeg', 'jsoncpp', 'kissfft',
-        'loguru', 'lz4', 'lzma', 'metaio', 'png', 'pugixml', 'sys', 'tiff', 'token', 'verdict', 'zlib'
+        "CommonColor",
+        "CommonComputationalGeometry",
+        "CommonCore",
+        "CommonDataModel",
+        "CommonExecutionModel",
+        "CommonMath",
+        "CommonMisc",
+        "CommonSystem",
+        "CommonTransforms",
+        "DICOMParser",
+        "FiltersCellGrid",
+        "FiltersCore",
+        "FiltersExtraction",
+        "FiltersGeneral",
+        "FiltersGeometry",
+        "FiltersHybrid",
+        "FiltersHyperTree",
+        "FiltersModeling",
+        "FiltersParallel",
+        "FiltersReduction",
+        "FiltersSources",
+        "FiltersStatistics",
+        "FiltersTexture",
+        "FiltersVerdict",
+        "IOCellGrid",
+        "IOCore",
+        "IOGeometry",
+        "IOImage",
+        "IOLegacy",
+        "IOParallel",
+        "IOParallelXML",
+        "IOXML",
+        "IOXMLParser",
+        "ImagingCore",
+        "ImagingSources",
+        "ParallelCore",
+        "ParallelDIY",
+        "RenderingCore",
+        "doubleconversion",
+        "expat",
+        "fmt",
+        "jpeg",
+        "jsoncpp",
+        "kissfft",
+        "loguru",
+        "lz4",
+        "lzma",
+        "metaio",
+        "png",
+        "pugixml",
+        "sys",
+        "tiff",
+        "token",
+        "verdict",
+        "zlib",
     }
 
     # Extract wheel to temp directory
@@ -67,7 +113,7 @@ def optimize_wheel(wheel_path):
                     if f.startswith("libvtk") and f.endswith((".dylib", ".so"))
                 ],
             )
-        
+
         for root, lib in remaining_vtk_libs:
             if "-9.4.9.4." in lib:
                 base = lib.split("-9.4.9.4.")[0]
