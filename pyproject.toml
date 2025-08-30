@@ -125,7 +125,11 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 before-test = [
-    "python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
+    "echo '=== Debug: Current directory ===' && pwd",
+    "echo '=== Debug: Project directory ===' && ls -la {project}",
+    "echo '=== Debug: Scripts directory ===' && ls -la {project}/scripts",
+    "echo '=== Debug: Wheelhouse directory ===' && ls -la {project}/wheelhouse",
+    "echo '=== Running wheel optimization ===' && python3 {project}/scripts/optimize_wheels.py {project}/wheelhouse || python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
 repair-wheel-command = "cp {wheel} {dest_dir}/"
@@ -158,7 +162,11 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 before-test = [
-    "python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
+    "echo '=== Debug: Current directory ===' && pwd",
+    "echo '=== Debug: Project directory ===' && ls -la {project}",
+    "echo '=== Debug: Scripts directory ===' && ls -la {project}/scripts",
+    "echo '=== Debug: Wheelhouse directory ===' && ls -la {project}/wheelhouse",
+    "echo '=== Running wheel optimization ===' && python3 {project}/scripts/optimize_wheels.py {project}/wheelhouse || python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
 repair-wheel-command = "cp {wheel} {dest_dir}/"
@@ -170,7 +178,11 @@ before-all = [
     "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.4' 'C:/include/vtk-9.4' -Force\"",
 ]
 before-test = [
-    "python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
+    "echo '=== Debug: Current directory ===' && pwd",
+    "echo '=== Debug: Project directory ===' && ls -la {project}",
+    "echo '=== Debug: Scripts directory ===' && ls -la {project}/scripts",
+    "echo '=== Debug: Wheelhouse directory ===' && ls -la {project}/wheelhouse",
+    "echo '=== Running wheel optimization ===' && python3 {project}/scripts/optimize_wheels.py {project}/wheelhouse || python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
 ]
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
 repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel"

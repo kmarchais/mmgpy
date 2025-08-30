@@ -74,12 +74,36 @@ def optimize_wheel(wheel_path):
 
 def main():
     """Main function to optimize all wheels in wheelhouse."""
+    import time
+
     wheelhouse = sys.argv[1] if len(sys.argv) > 1 else "./wheelhouse"
+
+    # Wait a bit for any wheels still being written
+    time.sleep(2)
+
     wheels = glob.glob(os.path.join(wheelhouse, "*.whl"))
+    print(f"=== Found {len(wheels)} wheels in {wheelhouse} ===")
+
+    if not wheels:
+        print("No wheels found! Checking directory contents:")
+        try:
+            import subprocess
+
+            result = subprocess.run(
+                ["ls", "-la", wheelhouse], capture_output=True, text=True, check=False
+            )
+            print(result.stdout)
+        except Exception as e:
+            print(f"Could not list directory: {e}")
+        return
 
     print(f"=== Optimizing {len(wheels)} wheels ===")
     for wheel in wheels:
-        optimize_wheel(wheel)
+        try:
+            optimize_wheel(wheel)
+        except Exception as e:
+            print(f"Error optimizing {wheel}: {e}")
+            continue
 
     print("=== Optimization complete ===")
 
