@@ -169,10 +169,8 @@ before-all = [
     "powershell -Command \"$VTK_VERSION = $env:VTK_VERSION; $RELEASE_TAG = 'VTK-' + $VTK_VERSION + '-shared'; $VTK_FILE = 'vtk-Windows-x86_64.tar.gz'; $VTK_URL = 'https://github.com/sanguinariojoe/vtk-builds/releases/download/' + $RELEASE_TAG + '/' + $VTK_FILE; Invoke-WebRequest -Uri $VTK_URL -OutFile vtk.tar.gz; New-Item -Path 'C:/vtk' -ItemType Directory -Force; tar -xzf vtk.tar.gz -C C:/vtk --strip-components=1\"",
     "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.4' 'C:/include/vtk-9.4' -Force\"",
 ]
-environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
-repair-wheel-command = [
-    "powershell -Command \"Write-Host '=== Original wheel size ==='; $size = (Get-Item '{wheel}').Length / 1MB; Write-Host ('{0:F1} MB' -f $size)\"",
-    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); print('Extracting wheel...'); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); removed_dirs = 0; removed_files = 0; [exec('global removed_dirs; removed_dirs += 1') or shutil.rmtree(os.path.join(root, d), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs for d in dirs if d == 'include']; [exec('global removed_dirs; removed_dirs += 1') or shutil.rmtree(os.path.join(root, d), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs for d in dirs if d == 'cmake']; [exec('global removed_files; removed_files += 1') or os.remove(os.path.join(root, f)) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; print(f'Removed {removed_dirs} dirs, {removed_files} files'); shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
-    "powershell -Command \"Write-Host '=== Optimized wheel size ==='; $size = (Get-Item '{wheel}').Length / 1MB; Write-Host ('{0:F1} MB' -f $size)\"",
-    "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel",
+before-test = [
+    "python {project}/scripts/optimize_wheels.py {project}/wheelhouse"
 ]
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
+repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel"
