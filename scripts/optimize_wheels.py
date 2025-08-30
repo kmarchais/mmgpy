@@ -13,6 +13,19 @@ def optimize_wheel(wheel_path):
     """Optimize a single wheel by removing duplicates and dev files."""
     print(f"Processing {wheel_path} ({os.path.getsize(wheel_path) // 1024 // 1024}MB)")
 
+    # VTK modules that are kept in Windows wheels (minimal required set)
+    windows_vtk_modules = {
+        'CommonColor', 'CommonComputationalGeometry', 'CommonCore', 'CommonDataModel',
+        'CommonExecutionModel', 'CommonMath', 'CommonMisc', 'CommonSystem', 'CommonTransforms',
+        'DICOMParser', 'FiltersCellGrid', 'FiltersCore', 'FiltersExtraction', 'FiltersGeneral',
+        'FiltersGeometry', 'FiltersHybrid', 'FiltersHyperTree', 'FiltersModeling', 'FiltersParallel',
+        'FiltersReduction', 'FiltersSources', 'FiltersStatistics', 'FiltersTexture', 'FiltersVerdict',
+        'IOCellGrid', 'IOCore', 'IOGeometry', 'IOImage', 'IOLegacy', 'IOParallel', 'IOParallelXML',
+        'IOXML', 'IOXMLParser', 'ImagingCore', 'ImagingSources', 'ParallelCore', 'ParallelDIY',
+        'RenderingCore', 'doubleconversion', 'expat', 'fmt', 'jpeg', 'jsoncpp', 'kissfft',
+        'loguru', 'lz4', 'lzma', 'metaio', 'png', 'pugixml', 'sys', 'tiff', 'token', 'verdict', 'zlib'
+    }
+
     # Extract wheel to temp directory
     temp_dir = tempfile.mkdtemp()
     try:
@@ -22,7 +35,7 @@ def optimize_wheel(wheel_path):
         vtk_removed = 0
         removed_dirs = 0
 
-        # Find all VTK libraries and identify base libraries (9.4.9.4 versions)
+        # Find all VTK libraries
         vtk_libs = []
         for root, dirs, files in os.walk(temp_dir):
             vtk_libs.extend(
@@ -33,15 +46,35 @@ def optimize_wheel(wheel_path):
                 ],
             )
 
-        # Map base library names to their 9.4.9.4 versions
-        base_libs = {}
+        # Remove VTK libraries that are not in Windows minimal set
         for root, lib in vtk_libs:
+            # Extract module name (e.g., "CommonCore" from "libvtkCommonCore-9.4.9.4.dylib")
+            if "-9.4.9.4." in lib:
+                module_name = lib.split("libvtk")[1].split("-9.4.9.4.")[0]
+                if module_name not in windows_vtk_modules:
+                    os.remove(os.path.join(root, lib))
+                    vtk_removed += 1
+                    print(f"  Removed unused VTK module: {lib}")
+
+        # Map base library names to their 9.4.9.4 versions (for remaining libraries)
+        base_libs = {}
+        remaining_vtk_libs = []
+        for root, dirs, files in os.walk(temp_dir):
+            remaining_vtk_libs.extend(
+                [
+                    (root, f)
+                    for f in files
+                    if f.startswith("libvtk") and f.endswith((".dylib", ".so"))
+                ],
+            )
+        
+        for root, lib in remaining_vtk_libs:
             if "-9.4.9.4." in lib:
                 base = lib.split("-9.4.9.4.")[0]
                 base_libs[base] = lib
 
         # Remove duplicate versions (keep only 9.4.9.4)
-        for root, lib in vtk_libs:
+        for root, lib in remaining_vtk_libs:
             if lib not in base_libs.values():
                 # Check if this is a duplicate of a base library
                 for base in base_libs:
