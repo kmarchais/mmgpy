@@ -90,7 +90,10 @@ def main():
             import subprocess
 
             result = subprocess.run(
-                ["ls", "-la", wheelhouse], capture_output=True, text=True, check=False
+                ["ls", "-la", wheelhouse],
+                capture_output=True,
+                text=True,
+                check=False,
             )
             print(result.stdout)
         except Exception as e:
