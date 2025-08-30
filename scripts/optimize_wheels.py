@@ -30,7 +30,7 @@ def optimize_wheel(wheel_path):
                     (root, f)
                     for f in files
                     if f.startswith("libvtk") and f.endswith((".dylib", ".so"))
-                ]
+                ],
             )
 
         # Map base library names to their 9.4.9.4 versions
