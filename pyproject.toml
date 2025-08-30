@@ -110,7 +110,6 @@ before-all = [
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
     'mkdir -p /tmp/vtk/lib64',
     'mv /tmp/vtk/lib*.so* /tmp/vtk/lib64/ 2>/dev/null || echo "No loose .so files to move"',
-    '# Create symlinks for VTK library versions to reduce wheel size',
     'cd /tmp/vtk/lib64',
     'for lib in *.so; do if [[ "$lib" == *"-9.4.9.4.so" ]]; then base=$(echo "$lib" | sed "s/-9.4.9.4.so//g"); ln -sf "${base}-9.4.9.4.so" "${base}-9.4.1.so"; ln -sf "${base}-9.4.9.4.so" "${base}-9.4.so"; fi; done',
     'cd /tmp/vtk',
