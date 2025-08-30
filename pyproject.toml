@@ -9,7 +9,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mmgpy"
-version = "0.1.4"
+version = "0.1.5.dev0"
 description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -125,7 +125,7 @@ before-all = [
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
 repair-wheel-command = [
     "echo '=== Original wheel size ===' && du -h {wheel}",
-    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); [shutil.rmtree(os.path.join(root, 'include'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs]; [shutil.rmtree(os.path.join(root, 'cmake'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs]; [os.remove(os.path.join(root, f)) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
+    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); print(f'Extracting to {temp_dir}'); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); removed_dirs = 0; removed_files = 0; print('Walking directories...'); [(print(f'Found include dir: {os.path.join(root, d)}'), exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs for d in dirs if d == 'include']; [(print(f'Found cmake dir: {os.path.join(root, d)}'), exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs for d in dirs if d == 'cmake']; [(print(f'Found binary: {os.path.join(root, f)}'), exec('global removed_files; removed_files += 1'), os.remove(os.path.join(root, f))) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; print(f'Removed {removed_dirs} directories, {removed_files} files'); shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
     "echo '=== Optimized wheel size ===' && du -h {wheel}",
     "cp {wheel} {dest_dir}/"
   ]
@@ -158,7 +158,7 @@ before-all = [
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
 repair-wheel-command = [
     "echo '=== Original wheel size ===' && du -h {wheel}",
-    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); [shutil.rmtree(os.path.join(root, 'include'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs]; [shutil.rmtree(os.path.join(root, 'cmake'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs]; [os.remove(os.path.join(root, f)) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
+    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); print(f'Extracting to {temp_dir}'); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); removed_dirs = 0; removed_files = 0; print('Walking directories...'); [(print(f'Found include dir: {os.path.join(root, d)}'), exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs for d in dirs if d == 'include']; [(print(f'Found cmake dir: {os.path.join(root, d)}'), exec('global removed_dirs; removed_dirs += 1'), shutil.rmtree(os.path.join(root, d), ignore_errors=True)) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs for d in dirs if d == 'cmake']; [(print(f'Found binary: {os.path.join(root, f)}'), exec('global removed_files; removed_files += 1'), os.remove(os.path.join(root, f))) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; print(f'Removed {removed_dirs} directories, {removed_files} files'); shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
     "echo '=== Optimized wheel size ===' && du -h {wheel}",
     "cp {wheel} {dest_dir}/"
   ]
@@ -171,7 +171,8 @@ before-all = [
 ]
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
 repair-wheel-command = [
-    "echo --- Contents of wheel before repair ---",
-    "python -m zipfile -l {wheel}",
+    "powershell -Command \"Write-Host '=== Original wheel size ==='; $size = (Get-Item '{wheel}').Length / 1MB; Write-Host ('{0:F1} MB' -f $size)\"",
+    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); print('Extracting wheel...'); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); removed_dirs = 0; removed_files = 0; [exec('global removed_dirs; removed_dirs += 1') or shutil.rmtree(os.path.join(root, d), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs for d in dirs if d == 'include']; [exec('global removed_dirs; removed_dirs += 1') or shutil.rmtree(os.path.join(root, d), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs for d in dirs if d == 'cmake']; [exec('global removed_files; removed_files += 1') or os.remove(os.path.join(root, f)) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; print(f'Removed {removed_dirs} dirs, {removed_files} files'); shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
+    "powershell -Command \"Write-Host '=== Optimized wheel size ==='; $size = (Get-Item '{wheel}').Length / 1MB; Write-Host ('{0:F1} MB' -f $size)\"",
     "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel",
 ]
