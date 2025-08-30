@@ -27,6 +27,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - uses: pypa/cibuildwheel@v3.0
       - name: Report wheel sizes
+        shell: bash
         run: |
           echo "## Wheel Sizes for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
           echo "| Wheel | Size |" >> $GITHUB_STEP_SUMMARY
