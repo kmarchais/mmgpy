@@ -52,12 +52,7 @@ jobs:
     name: Publish to PyPI
     if: inputs.publish_to_pypi
 
-    environment:
-      name: pypi
-      url: https://pypi.org/p/${{ github.event.repository.name }}
-
     permissions:
-      id-token: write # For trusted publishing
       actions: read # To download artifacts from other workflows
 
     steps:
@@ -71,3 +66,5 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
