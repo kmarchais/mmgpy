@@ -110,6 +110,16 @@ before-all = [
     'tar -xzf vtk.tar.gz -C /tmp/vtk --strip-components=1',
     'mkdir -p /tmp/vtk/lib64',
     'mv /tmp/vtk/lib*.so* /tmp/vtk/lib64/ 2>/dev/null || echo "No loose .so files to move"',
+    '# Create symlinks for VTK library versions to reduce wheel size',
+    'cd /tmp/vtk/lib64',
+    'for lib in *.so; do',
+    '  if [[ "$lib" == *"-9.4.9.4.so" ]]; then',
+    '    base=$(echo "$lib" | sed "s/-9.4.9.4.so//g")',
+    '    ln -sf "${base}-9.4.9.4.so" "${base}-9.4.1.so"',
+    '    ln -sf "${base}-9.4.9.4.so" "${base}-9.4.so"',
+    '  fi',
+    'done',
+    'cd /tmp/vtk',
     'mkdir -p /tmp/vtk/include/vtk-9.4',
     'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
     'ln -sf /tmp/vtk/lib64 /tmp/lib64 || echo "lib64 symlink already exists"',
@@ -120,7 +130,12 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
-repair-wheel-command = "cp {wheel} {dest_dir}/"
+repair-wheel-command = [
+    "echo '=== Original wheel size ===' && du -h {wheel}",
+    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); [shutil.rmtree(os.path.join(root, 'include'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs]; [shutil.rmtree(os.path.join(root, 'cmake'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs]; [os.remove(os.path.join(root, f)) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
+    "echo '=== Optimized wheel size ===' && du -h {wheel}",
+    "cp {wheel} {dest_dir}/"
+  ]
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
@@ -136,7 +151,14 @@ before-all = [
     'mkdir -p /tmp/vtk/lib',
     'mv /tmp/vtk/lib*.dylib /tmp/vtk/lib/ 2>/dev/null || echo "No loose .dylib files to move"',
     'cd /tmp/vtk/lib',
-    'for lib in *.dylib; do if [[ "$lib" == *"-9.4.9.4.dylib" ]]; then base=$(echo "$lib" | sed "s/-9.4.9.4.dylib//g"); ln -sf "${base}-9.4.9.4.dylib" "${base}-9.4.1.dylib"; fi; done',
+    '# Create symlinks for all VTK library versions to reduce wheel size',
+    'for lib in *.dylib; do',
+    '  if [[ "$lib" == *"-9.4.9.4.dylib" ]]; then',
+    '    base=$(echo "$lib" | sed "s/-9.4.9.4.dylib//g")',
+    '    ln -sf "${base}-9.4.9.4.dylib" "${base}-9.4.1.dylib"',
+    '    ln -sf "${base}-9.4.9.4.dylib" "${base}-9.4.dylib"',
+    '  fi',
+    'done',
     'cd /tmp/vtk',
     'mkdir -p /tmp/vtk/include/vtk-9.4',
     'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
@@ -148,7 +170,12 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
-repair-wheel-command = "cp {wheel} {dest_dir}/"
+repair-wheel-command = [
+    "echo '=== Original wheel size ===' && du -h {wheel}",
+    "python -c \"import tempfile, shutil, zipfile, os; temp_dir = tempfile.mkdtemp(); zf = zipfile.ZipFile('{wheel}'); zf.extractall(temp_dir); zf.close(); [shutil.rmtree(os.path.join(root, 'include'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'include' in dirs]; [shutil.rmtree(os.path.join(root, 'cmake'), ignore_errors=True) for root, dirs, files in os.walk(temp_dir) if 'cmake' in dirs]; [os.remove(os.path.join(root, f)) for root, dirs, files in os.walk(temp_dir) for f in files if f.startswith(('mmg2d_O3', 'mmg3d_O3', 'mmgs_O3')) and not f.endswith('.py')]; shutil.make_archive('{wheel}'.replace('.whl', ''), 'zip', temp_dir); shutil.move('{wheel}'.replace('.whl', '.zip'), '{wheel}'); shutil.rmtree(temp_dir)\"",
+    "echo '=== Optimized wheel size ===' && du -h {wheel}",
+    "cp {wheel} {dest_dir}/"
+  ]
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
