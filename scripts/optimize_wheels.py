@@ -152,40 +152,55 @@ def optimize_wheel(wheel_path):
 
 
 def main():
-    """Main function to optimize all wheels in wheelhouse."""
+    """Main function to optimize wheels."""
     import time
 
-    wheelhouse = sys.argv[1] if len(sys.argv) > 1 else "./wheelhouse"
+    if len(sys.argv) < 2:
+        print("Usage: optimize_wheels.py <wheel_file_or_directory>")
+        return
+
+    target = sys.argv[1]
 
     # Wait a bit for any wheels still being written
     time.sleep(2)
 
-    wheels = glob.glob(os.path.join(wheelhouse, "*.whl"))
-    print(f"=== Found {len(wheels)} wheels in {wheelhouse} ===")
-
-    if not wheels:
-        print("No wheels found! Checking directory contents:")
+    # Check if target is a single wheel file or directory
+    if target.endswith(".whl") and os.path.isfile(target):
+        # Single wheel optimization (for repair-wheel-command)
+        print(f"=== Optimizing single wheel: {target} ===")
         try:
-            import subprocess
-
-            result = subprocess.run(
-                ["ls", "-la", wheelhouse],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            print(result.stdout)
+            optimize_wheel(target)
         except Exception as e:
-            print(f"Could not list directory: {e}")
-        return
+            print(f"Error optimizing {target}: {e}")
+    else:
+        # Directory optimization (for before-test)
+        wheelhouse = target
+        wheels = glob.glob(os.path.join(wheelhouse, "*.whl"))
+        print(f"=== Found {len(wheels)} wheels in {wheelhouse} ===")
 
-    print(f"=== Optimizing {len(wheels)} wheels ===")
-    for wheel in wheels:
-        try:
-            optimize_wheel(wheel)
-        except Exception as e:
-            print(f"Error optimizing {wheel}: {e}")
-            continue
+        if not wheels:
+            print("No wheels found! Checking directory contents:")
+            try:
+                import subprocess
+
+                result = subprocess.run(
+                    ["ls", "-la", wheelhouse],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                print(result.stdout)
+            except Exception as e:
+                print(f"Could not list directory: {e}")
+            return
+
+        print(f"=== Optimizing {len(wheels)} wheels ===")
+        for wheel in wheels:
+            try:
+                optimize_wheel(wheel)
+            except Exception as e:
+                print(f"Error optimizing {wheel}: {e}")
+                continue
 
     print("=== Optimization complete ===")
 
