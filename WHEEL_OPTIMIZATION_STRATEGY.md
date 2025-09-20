@@ -26,8 +26,9 @@ The optimization script was working correctly but was disabled in commit `8bc00b
 
 1. **✅ Re-enabled optimization script** in `pyproject.toml`
 2. **✅ Tested Python 3.9 optimization** - 113MB → 59MB
-3. **⏳ Test Linux optimization** in CI
-4. **📋 Future**: Close macOS-Windows gap (59MB → 18MB target)
+3. **✅ Fixed Linux VTK pattern recognition** - Added `.so` support
+4. **⏳ Test Linux optimization** in CI (expecting 160MB → ~26MB)
+5. **📋 Future**: Close macOS-Windows gap (59MB → 18MB target)
 
 ## Implementation
 
