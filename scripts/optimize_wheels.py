@@ -96,27 +96,34 @@ def optimize_wheel(wheel_path):
 
         # Remove VTK libraries that are not in Windows minimal set
         for root, lib in vtk_libs:
-            # Extract module name (e.g., "CommonCore" from "libvtkCommonCore-9.4.9.4.dylib" or "libvtkCommonCore-9.4.1.dylib")
+            # Extract module name from different naming patterns:
+            # macOS: libvtkCommonCore-9.4.9.4.dylib, libvtkCommonCore-9.4.1.dylib, libvtkCommonCore-9.4.dylib
+            # Linux: libvtkCommonCore-9.4.so.9.4, libvtkCommonCore-9.4.so.1, libvtkCommonCore-9.4.so
+            module_name = None
+
             if "-9.4.9.4." in lib:
+                # macOS: libvtkCommonCore-9.4.9.4.dylib
                 module_name = lib.split("libvtk")[1].split("-9.4.9.4.")[0]
-                if module_name not in windows_vtk_modules:
-                    os.remove(os.path.join(root, lib))
-                    vtk_removed += 1
-                    print(f"  Removed unused VTK module: {lib}")
+            elif "-9.4.so.9.4" in lib:
+                # Linux: libvtkCommonCore-9.4.so.9.4
+                module_name = lib.split("libvtk")[1].split("-9.4.so.9.4")[0]
             elif "-9.4.1." in lib:
-                # Check symlinked version like libvtkIOParallel-9.4.1.dylib
+                # macOS: libvtkCommonCore-9.4.1.dylib
                 module_name = lib.split("libvtk")[1].split("-9.4.1.")[0]
-                if module_name not in windows_vtk_modules:
-                    os.remove(os.path.join(root, lib))
-                    vtk_removed += 1
-                    print(f"  Removed unused VTK module: {lib}")
-            elif "-9.4." in lib and "-9.4.9.4." not in lib and "-9.4.1." not in lib:
-                # Check other symlinked versions like libvtkIOParallel-9.4.dylib
+            elif "-9.4.so.1" in lib:
+                # Linux: libvtkCommonCore-9.4.so.1
+                module_name = lib.split("libvtk")[1].split("-9.4.so.1")[0]
+            elif "-9.4." in lib and "-9.4.9.4." not in lib and "-9.4.1." not in lib and "-9.4.so" not in lib:
+                # macOS: libvtkCommonCore-9.4.dylib
                 module_name = lib.split("libvtk")[1].split("-9.4.")[0]
-                if module_name not in windows_vtk_modules:
-                    os.remove(os.path.join(root, lib))
-                    vtk_removed += 1
-                    print(f"  Removed unused VTK module: {lib}")
+            elif "-9.4.so" in lib and "-9.4.so.9.4" not in lib and "-9.4.so.1" not in lib:
+                # Linux: libvtkCommonCore-9.4.so
+                module_name = lib.split("libvtk")[1].split("-9.4.so")[0]
+
+            if module_name and module_name not in windows_vtk_modules:
+                os.remove(os.path.join(root, lib))
+                vtk_removed += 1
+                print(f"  Removed unused VTK module: {lib}")
 
         # Map base library names to their 9.4.9.4 versions (for remaining libraries)
         base_libs = {}
@@ -132,7 +139,12 @@ def optimize_wheel(wheel_path):
 
         for root, lib in remaining_vtk_libs:
             if "-9.4.9.4." in lib:
+                # macOS: libvtkCommonCore-9.4.9.4.dylib
                 base = lib.split("-9.4.9.4.")[0]
+                base_libs[base] = lib
+            elif "-9.4.so.9.4" in lib:
+                # Linux: libvtkCommonCore-9.4.so.9.4
+                base = lib.split("-9.4.so.9.4")[0]
                 base_libs[base] = lib
 
         # Note: We don't remove symlinked versions as they may be required for dynamic linking
