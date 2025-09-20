@@ -88,15 +88,31 @@ def optimize_wheel(wheel_path):
                 [
                     (root, f)
                     for f in files
-                    if f.startswith("libvtk") and f.endswith((".dylib", ".so"))
+                    if f.startswith("libvtk")
+                    and f.endswith((".dylib", ".so"))
+                    and "-9.4" in f
                 ],
             )
 
         # Remove VTK libraries that are not in Windows minimal set
         for root, lib in vtk_libs:
-            # Extract module name (e.g., "CommonCore" from "libvtkCommonCore-9.4.9.4.dylib")
+            # Extract module name (e.g., "CommonCore" from "libvtkCommonCore-9.4.9.4.dylib" or "libvtkCommonCore-9.4.1.dylib")
             if "-9.4.9.4." in lib:
                 module_name = lib.split("libvtk")[1].split("-9.4.9.4.")[0]
+                if module_name not in windows_vtk_modules:
+                    os.remove(os.path.join(root, lib))
+                    vtk_removed += 1
+                    print(f"  Removed unused VTK module: {lib}")
+            elif "-9.4.1." in lib:
+                # Check symlinked version like libvtkIOParallel-9.4.1.dylib
+                module_name = lib.split("libvtk")[1].split("-9.4.1.")[0]
+                if module_name not in windows_vtk_modules:
+                    os.remove(os.path.join(root, lib))
+                    vtk_removed += 1
+                    print(f"  Removed unused VTK module: {lib}")
+            elif "-9.4." in lib and "-9.4.9.4." not in lib and "-9.4.1." not in lib:
+                # Check other symlinked versions like libvtkIOParallel-9.4.dylib
+                module_name = lib.split("libvtk")[1].split("-9.4.")[0]
                 if module_name not in windows_vtk_modules:
                     os.remove(os.path.join(root, lib))
                     vtk_removed += 1
@@ -119,16 +135,9 @@ def optimize_wheel(wheel_path):
                 base = lib.split("-9.4.9.4.")[0]
                 base_libs[base] = lib
 
-        # Remove duplicate versions (keep only 9.4.9.4)
-        for root, lib in remaining_vtk_libs:
-            if lib not in base_libs.values():
-                # Check if this is a duplicate of a base library
-                for base in base_libs:
-                    if lib.startswith(base + "-9.4."):
-                        os.remove(os.path.join(root, lib))
-                        vtk_removed += 1
-                        print(f"  Removed duplicate: {lib}")
-                        break
+        # Note: We don't remove symlinked versions as they may be required for dynamic linking
+        # The symlinks like libvtkIOParallel-9.4.1.dylib are needed even though they
+        # point to libvtkIOParallel-9.4.9.4.dylib because MMG libraries reference the -9.4.1 version
 
         # Remove development directories
         for root, dirs, files in os.walk(temp_dir):
