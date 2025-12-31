@@ -1,227 +1,198 @@
 #!/usr/bin/env python3
 """Optimize wheel files by removing VTK duplicates and development files."""
 
-import glob
 import os
 import shutil
 import sys
 import tempfile
 import zipfile
 
+# VTK modules required for MMG I/O (matching Windows minimal set)
+ESSENTIAL_VTK_MODULES = {
+    "CommonColor",
+    "CommonComputationalGeometry",
+    "CommonCore",
+    "CommonDataModel",
+    "CommonExecutionModel",
+    "CommonMath",
+    "CommonMisc",
+    "CommonSystem",
+    "CommonTransforms",
+    "DICOMParser",
+    "FiltersCellGrid",
+    "FiltersCore",
+    "FiltersExtraction",
+    "FiltersGeneral",
+    "FiltersGeometry",
+    "FiltersHybrid",
+    "FiltersHyperTree",
+    "FiltersModeling",
+    "FiltersParallel",
+    "FiltersReduction",
+    "FiltersSources",
+    "FiltersStatistics",
+    "FiltersTexture",
+    "FiltersVerdict",
+    "IOCellGrid",
+    "IOCore",
+    "IOGeometry",
+    "IOImage",
+    "IOLegacy",
+    "IOParallel",
+    "IOParallelXML",
+    "IOXML",
+    "IOXMLParser",
+    "ImagingCore",
+    "ImagingSources",
+    "ParallelCore",
+    "ParallelDIY",
+    "RenderingCore",
+    "doubleconversion",
+    "expat",
+    "fmt",
+    "jpeg",
+    "jsoncpp",
+    "kissfft",
+    "loguru",
+    "lz4",
+    "lzma",
+    "metaio",
+    "png",
+    "pugixml",
+    "sys",
+    "tiff",
+    "token",
+    "verdict",
+    "zlib",
+}
+
+
+def get_vtk_module_name(filename):
+    """Extract VTK module name from library filename.
+
+    Handles patterns like:
+    - libvtkCommonCore-9.4.so
+    - libvtkCommonCore-9.4.so.1
+    - libvtkCommonCore-9.4.so.9.4
+    - libvtkCommonCore-9.4.dylib
+    - libvtkCommonCore-9.4.1.dylib
+    - libvtkCommonCore-9.4.9.4.dylib
+    """
+    if not filename.startswith("libvtk"):
+        return None
+
+    # Remove libvtk prefix
+    name = filename[6:]  # Remove "libvtk"
+
+    # Find the -9.4 version marker
+    if "-9.4" not in name:
+        return None
+
+    # Extract module name (everything before -9.4)
+    module = name.split("-9.4")[0]
+    return module
+
+
+def is_vtk_library(filename):
+    """Check if file is a VTK shared library."""
+    return (
+        filename.startswith("libvtk")
+        and "-9.4" in filename
+        and (".so" in filename or ".dylib" in filename)
+    )
+
 
 def optimize_wheel(wheel_path):
     """Optimize a single wheel by removing duplicates and dev files."""
-    print(f"Processing {wheel_path} ({os.path.getsize(wheel_path) // 1024 // 1024}MB)")
+    original_size = os.path.getsize(wheel_path) // 1024 // 1024
+    print(f"Processing {wheel_path} ({original_size}MB)")
 
-    # VTK modules that are kept in Windows wheels (minimal required set)
-    windows_vtk_modules = {
-        "CommonColor",
-        "CommonComputationalGeometry",
-        "CommonCore",
-        "CommonDataModel",
-        "CommonExecutionModel",
-        "CommonMath",
-        "CommonMisc",
-        "CommonSystem",
-        "CommonTransforms",
-        "DICOMParser",
-        "FiltersCellGrid",
-        "FiltersCore",
-        "FiltersExtraction",
-        "FiltersGeneral",
-        "FiltersGeometry",
-        "FiltersHybrid",
-        "FiltersHyperTree",
-        "FiltersModeling",
-        "FiltersParallel",
-        "FiltersReduction",
-        "FiltersSources",
-        "FiltersStatistics",
-        "FiltersTexture",
-        "FiltersVerdict",
-        "IOCellGrid",
-        "IOCore",
-        "IOGeometry",
-        "IOImage",
-        "IOLegacy",
-        "IOParallel",
-        "IOParallelXML",
-        "IOXML",
-        "IOXMLParser",
-        "ImagingCore",
-        "ImagingSources",
-        "ParallelCore",
-        "ParallelDIY",
-        "RenderingCore",
-        "doubleconversion",
-        "expat",
-        "fmt",
-        "jpeg",
-        "jsoncpp",
-        "kissfft",
-        "loguru",
-        "lz4",
-        "lzma",
-        "metaio",
-        "png",
-        "pugixml",
-        "sys",
-        "tiff",
-        "token",
-        "verdict",
-        "zlib",
-    }
-
-    # Extract wheel to temp directory
     temp_dir = tempfile.mkdtemp()
     try:
         with zipfile.ZipFile(wheel_path) as zf:
             zf.extractall(temp_dir)
 
         vtk_removed = 0
-        removed_dirs = 0
+        other_removed = 0
 
-        # Find all VTK libraries
-        vtk_libs = []
-        for root, dirs, files in os.walk(temp_dir):
-            vtk_libs.extend(
-                [
-                    (root, f)
-                    for f in files
-                    if f.startswith("libvtk")
-                    and f.endswith((".dylib", ".so"))
-                    and "-9.4" in f
-                ],
-            )
+        # Walk through all files and remove unwanted ones
+        for root, dirs, files in os.walk(temp_dir, topdown=False):
+            # Remove development directories
+            for d in ["include", "cmake"]:
+                dir_path = os.path.join(root, d)
+                if os.path.isdir(dir_path):
+                    shutil.rmtree(dir_path, ignore_errors=True)
+                    print(f"  Removed dev directory: {os.path.relpath(dir_path, temp_dir)}")
 
-        # Remove VTK libraries that are not in Windows minimal set
-        for root, lib in vtk_libs:
-            # Extract module name from different naming patterns:
-            # macOS: libvtkCommonCore-9.4.9.4.dylib, libvtkCommonCore-9.4.1.dylib, libvtkCommonCore-9.4.dylib
-            # Linux: libvtkCommonCore-9.4.so.9.4, libvtkCommonCore-9.4.so.1, libvtkCommonCore-9.4.so
-            module_name = None
+            # Process files
+            for f in files:
+                filepath = os.path.join(root, f)
+                relpath = os.path.relpath(filepath, temp_dir)
 
-            if "-9.4.9.4." in lib:
-                # macOS: libvtkCommonCore-9.4.9.4.dylib
-                module_name = lib.split("libvtk")[1].split("-9.4.9.4.")[0]
-            elif "-9.4.so.9.4" in lib:
-                # Linux: libvtkCommonCore-9.4.so.9.4
-                module_name = lib.split("libvtk")[1].split("-9.4.so.9.4")[0]
-            elif "-9.4.1." in lib:
-                # macOS: libvtkCommonCore-9.4.1.dylib
-                module_name = lib.split("libvtk")[1].split("-9.4.1.")[0]
-            elif "-9.4.so.1" in lib:
-                # Linux: libvtkCommonCore-9.4.so.1
-                module_name = lib.split("libvtk")[1].split("-9.4.so.1")[0]
-            elif "-9.4." in lib and "-9.4.9.4." not in lib and "-9.4.1." not in lib and "-9.4.so" not in lib:
-                # macOS: libvtkCommonCore-9.4.dylib
-                module_name = lib.split("libvtk")[1].split("-9.4.")[0]
-            elif "-9.4.so" in lib and "-9.4.so.9.4" not in lib and "-9.4.so.1" not in lib:
-                # Linux: libvtkCommonCore-9.4.so
-                module_name = lib.split("libvtk")[1].split("-9.4.so")[0]
+                # Check if it's a VTK library
+                if is_vtk_library(f):
+                    module = get_vtk_module_name(f)
+                    if module and module not in ESSENTIAL_VTK_MODULES:
+                        os.remove(filepath)
+                        vtk_removed += 1
+                        # Only print first few to avoid spam
+                        if vtk_removed <= 10:
+                            print(f"  Removed VTK: {f} (module: {module})")
+                        elif vtk_removed == 11:
+                            print("  ... (more VTK removals)")
 
-            if module_name and module_name not in windows_vtk_modules:
-                os.remove(os.path.join(root, lib))
-                vtk_removed += 1
-                print(f"  Removed unused VTK module: {lib}")
+                # Remove duplicate directories (lib64/, bin/ with MMG binaries)
+                elif "/lib64/" in relpath or relpath.startswith("lib64/"):
+                    os.remove(filepath)
+                    other_removed += 1
+                elif "/bin/" in relpath or relpath.startswith("bin/"):
+                    # Keep executables in mmgpy/bin/ but remove top-level bin/
+                    if not relpath.startswith("mmgpy/"):
+                        os.remove(filepath)
+                        other_removed += 1
 
-        # Map base library names to their 9.4.9.4 versions (for remaining libraries)
-        base_libs = {}
-        remaining_vtk_libs = []
-        for root, dirs, files in os.walk(temp_dir):
-            remaining_vtk_libs.extend(
-                [
-                    (root, f)
-                    for f in files
-                    if f.startswith("libvtk") and f.endswith((".dylib", ".so"))
-                ],
-            )
+        # Remove empty directories
+        for root, dirs, files in os.walk(temp_dir, topdown=False):
+            for d in dirs:
+                dir_path = os.path.join(root, d)
+                try:
+                    if not os.listdir(dir_path):
+                        os.rmdir(dir_path)
+                except OSError:
+                    pass
 
-        for root, lib in remaining_vtk_libs:
-            if "-9.4.9.4." in lib:
-                # macOS: libvtkCommonCore-9.4.9.4.dylib
-                base = lib.split("-9.4.9.4.")[0]
-                base_libs[base] = lib
-            elif "-9.4.so.9.4" in lib:
-                # Linux: libvtkCommonCore-9.4.so.9.4
-                base = lib.split("-9.4.so.9.4")[0]
-                base_libs[base] = lib
+        print(f"  Removed {vtk_removed} VTK libraries, {other_removed} other files")
 
-        # Note: We don't remove symlinked versions as they may be required for dynamic linking
-        # The symlinks like libvtkIOParallel-9.4.1.dylib are needed even though they
-        # point to libvtkIOParallel-9.4.9.4.dylib because MMG libraries reference the -9.4.1 version
-
-        # Remove development directories
-        for root, dirs, files in os.walk(temp_dir):
-            for d in dirs[:]:  # Use slice to avoid modifying list while iterating
-                if d in ["include", "cmake"]:
-                    shutil.rmtree(os.path.join(root, d), ignore_errors=True)
-                    removed_dirs += 1
-                    print(f"  Removed dev directory: {d}")
-
-        print(f"  Removed {vtk_removed} VTK duplicates, {removed_dirs} dev directories")
-
-        # Recreate wheel
+        # Recreate wheel as zip
         zip_path = wheel_path.replace(".whl", "")
         shutil.make_archive(zip_path, "zip", temp_dir)
         shutil.move(zip_path + ".zip", wheel_path)
 
-        print(f"  Optimized to {os.path.getsize(wheel_path) // 1024 // 1024}MB")
+        new_size = os.path.getsize(wheel_path) // 1024 // 1024
+        print(f"  Optimized: {original_size}MB -> {new_size}MB")
 
     finally:
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def main():
     """Main function to optimize wheels."""
-    import time
-
     if len(sys.argv) < 2:
         print("Usage: optimize_wheels.py <wheel_file_or_directory>")
         return
 
     target = sys.argv[1]
 
-    # Wait a bit for any wheels still being written
-    time.sleep(2)
-
-    # Check if target is a single wheel file or directory
     if target.endswith(".whl") and os.path.isfile(target):
-        # Single wheel optimization (for repair-wheel-command)
         print(f"=== Optimizing single wheel: {target} ===")
-        try:
-            optimize_wheel(target)
-        except Exception as e:
-            print(f"Error optimizing {target}: {e}")
+        optimize_wheel(target)
     else:
-        # Directory optimization (for before-test)
-        wheelhouse = target
-        wheels = glob.glob(os.path.join(wheelhouse, "*.whl"))
-        print(f"=== Found {len(wheels)} wheels in {wheelhouse} ===")
+        import glob
 
-        if not wheels:
-            print("No wheels found! Checking directory contents:")
-            try:
-                import subprocess
-
-                result = subprocess.run(
-                    ["ls", "-la", wheelhouse],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
-                print(result.stdout)
-            except Exception as e:
-                print(f"Could not list directory: {e}")
-            return
-
-        print(f"=== Optimizing {len(wheels)} wheels ===")
+        wheels = glob.glob(os.path.join(target, "*.whl"))
+        print(f"=== Found {len(wheels)} wheels in {target} ===")
         for wheel in wheels:
-            try:
-                optimize_wheel(wheel)
-            except Exception as e:
-                print(f"Error optimizing {wheel}: {e}")
-                continue
+            optimize_wheel(wheel)
 
     print("=== Optimization complete ===")
 
