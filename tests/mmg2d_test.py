@@ -196,9 +196,7 @@ def test_mesh_quality_analysis(generated_meshes: tuple[pv.DataSet, pv.DataSet]) 
                 continue  # Skip unknown cell types
 
             cell_type_name = cell_type_map[cell_type_id]
-            if (
-                cell_type_id == 3  # noqa: PLR2004
-            ):  # Lines don't have meaningful quality measures
+            if cell_type_id == 3:  # Lines don't have meaningful quality measures
                 continue
 
             # Get quality info from PyVista
