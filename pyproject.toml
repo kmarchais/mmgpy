@@ -94,6 +94,7 @@ ignore = [
     "N806",    # uppercase variable names for matrices in examples
 ]
 "scripts/**/*.py" = [
+    "INP001",  # scripts are not a package
     "T201",    # print statements allowed in scripts
     "ANN",     # annotations not required in scripts
     "EXE001",  # shebang is fine in scripts
