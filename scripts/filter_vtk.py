@@ -8,64 +8,7 @@ it needs to process, significantly speeding up wheel repair.
 import os
 import sys
 
-# Must match ESSENTIAL_VTK_MODULES in optimize_wheels.py
-ESSENTIAL_VTK_MODULES = {
-    "CommonColor",
-    "CommonComputationalGeometry",
-    "CommonCore",
-    "CommonDataModel",
-    "CommonExecutionModel",
-    "CommonMath",
-    "CommonMisc",
-    "CommonSystem",
-    "CommonTransforms",
-    "DICOMParser",
-    "FiltersCellGrid",
-    "FiltersCore",
-    "FiltersExtraction",
-    "FiltersGeneral",
-    "FiltersGeometry",
-    "FiltersHybrid",
-    "FiltersHyperTree",
-    "FiltersModeling",
-    "FiltersParallel",
-    "FiltersReduction",
-    "FiltersSources",
-    "FiltersStatistics",
-    "FiltersTexture",
-    "FiltersVerdict",
-    "IOCellGrid",
-    "IOCore",
-    "IOGeometry",
-    "IOImage",
-    "IOLegacy",
-    "IOParallel",
-    "IOParallelXML",
-    "IOXML",
-    "IOXMLParser",
-    "ImagingCore",
-    "ImagingSources",
-    "ParallelCore",
-    "ParallelDIY",
-    "RenderingCore",
-    "doubleconversion",
-    "expat",
-    "fmt",
-    "jpeg",
-    "jsoncpp",
-    "kissfft",
-    "loguru",
-    "lz4",
-    "lzma",
-    "metaio",
-    "png",
-    "pugixml",
-    "sys",
-    "tiff",
-    "token",
-    "verdict",
-    "zlib",
-}
+from vtk_modules import ESSENTIAL_VTK_MODULES
 
 
 def get_vtk_module_name(filename):
@@ -81,8 +24,8 @@ def get_vtk_module_name(filename):
 def filter_vtk_libs(vtk_lib_dir):
     """Remove non-essential VTK libraries from the given directory."""
     if not os.path.isdir(vtk_lib_dir):
-        print(f"VTK lib directory not found: {vtk_lib_dir}")
-        return
+        print(f"ERROR: VTK lib directory not found: {vtk_lib_dir}")
+        sys.exit(1)
 
     removed = 0
     kept = 0
