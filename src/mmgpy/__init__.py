@@ -57,8 +57,6 @@ try:
         mmgs,
     )
 
-    # Backwards-compatible alias: MmgMesh -> MmgMesh3D
-    MmgMesh = MmgMesh3D
 except ImportError as e:
     if sys.platform == "win32":
         # On Windows, provide helpful debugging information
@@ -389,7 +387,6 @@ from . import metrics
 
 __all__ = [
     "MMG_VERSION",
-    "MmgMesh",  # Backwards-compatible alias for MmgMesh3D
     "MmgMesh2D",
     "MmgMesh3D",
     "MmgMeshS",

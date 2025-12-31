@@ -426,6 +426,3 @@ class MmgMeshS:
         nomove: int | None = None,
         **kwargs: float,
     ) -> None: ...
-
-# Backwards-compatible alias
-MmgMesh = MmgMesh3D

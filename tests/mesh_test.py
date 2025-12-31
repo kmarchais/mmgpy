@@ -1,4 +1,4 @@
-"""Test the MmgMesh class."""
+"""Test the MmgMesh3D class."""
 
 from pathlib import Path
 
@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from mmgpy import MmgMesh, MmgMesh2D, MmgMeshS
+from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
 def create_test_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -47,22 +47,22 @@ def test_mesh_construction() -> None:
     vertices, elements = create_test_mesh()
 
     # Test empty constructor and setter
-    mesh1 = MmgMesh()
+    mesh1 = MmgMesh3D()
     mesh1.set_vertices_and_elements(vertices, elements)
     npt.assert_array_almost_equal(mesh1.get_vertices(), vertices)
     npt.assert_array_equal(mesh1.get_elements(), elements)
 
     # Test constructor with data
-    mesh2 = MmgMesh(vertices, elements)
+    mesh2 = MmgMesh3D(vertices, elements)
     npt.assert_array_almost_equal(mesh2.get_vertices(), vertices)
     npt.assert_array_equal(mesh2.get_elements(), elements)
 
 
 def test_mmg_mesh() -> None:
-    """Test the MmgMesh class."""
+    """Test the MmgMesh3D class."""
     vertices, elements = create_test_mesh()
 
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     # Test scalar field (one value per vertex)
     metric = np.array(
@@ -121,12 +121,12 @@ def test_load_mesh(tmp_path: Path) -> None:
     vertices, elements = create_test_mesh()
 
     # Save mesh to file
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
     mesh_file = tmp_path / "test_mesh.mesh"
     mesh.save(mesh_file)
 
     # Load mesh from file
-    loaded = MmgMesh(mesh_file)
+    loaded = MmgMesh3D(mesh_file)
     npt.assert_array_almost_equal(loaded.get_vertices(), vertices)
     npt.assert_array_equal(loaded.get_elements(), elements)
 
@@ -145,7 +145,7 @@ def test_load_nonexistent_file_no_crash(tmp_path: Path) -> None:
     # Run multiple times to increase chance of catching memory issues
     for _ in range(10):
         with pytest.raises(RuntimeError, match="Failed to load mesh"):
-            MmgMesh(nonexistent_file)
+            MmgMesh3D(nonexistent_file)
 
 
 # Tests for low-level mesh construction API (Phase 1 of Issue #50)
@@ -153,7 +153,7 @@ def test_load_nonexistent_file_no_crash(tmp_path: Path) -> None:
 
 def test_set_mesh_size_and_get_mesh_size() -> None:
     """Test set_mesh_size and get_mesh_size methods."""
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
 
     expected_vertices = 8
     expected_tetrahedra = 5
@@ -172,7 +172,7 @@ def test_set_mesh_size_and_get_mesh_size() -> None:
 def test_set_vertices_bulk() -> None:
     """Test bulk vertex setting."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
 
     # Set mesh size first
     mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
@@ -192,7 +192,7 @@ def test_set_vertices_with_refs() -> None:
     vertices, elements = create_test_mesh()
     refs = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.int64)
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
     mesh.set_vertices(vertices, refs=refs)
     mesh.set_tetrahedra(elements)
@@ -206,7 +206,7 @@ def test_set_vertices_with_refs() -> None:
 def test_set_tetrahedra_bulk() -> None:
     """Test bulk tetrahedra setting."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
 
     mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
     mesh.set_vertices(vertices)
@@ -221,7 +221,7 @@ def test_set_tetrahedra_with_refs() -> None:
     vertices, elements = create_test_mesh()
     elem_refs = np.array([10, 20, 30, 40, 50], dtype=np.int64)
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
     mesh.set_vertices(vertices)
     mesh.set_tetrahedra(elements, refs=elem_refs)
@@ -248,7 +248,7 @@ def test_set_triangles() -> None:
     )
     tri_refs = np.array([1, 1, 2, 2], dtype=np.int64)  # boundary markers
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(
         vertices=len(vertices),
         tetrahedra=len(elements),
@@ -284,7 +284,7 @@ def test_set_edges() -> None:
     )
     edge_refs = np.array([100, 100, 200, 200], dtype=np.int64)  # edge markers
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(
         vertices=len(vertices),
         tetrahedra=len(elements),
@@ -332,7 +332,7 @@ def test_programmatic_mesh_construction() -> None:
     )
 
     # Construct mesh programmatically
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(
         vertices=len(vertices),
         tetrahedra=len(tetrahedra),
@@ -358,7 +358,7 @@ def test_programmatic_mesh_construction() -> None:
 
 def test_set_vertex_single() -> None:
     """Test setting a single vertex."""
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=3, tetrahedra=0)
 
     # Define vertex refs for testing
@@ -384,7 +384,7 @@ def test_set_vertex_single() -> None:
 def test_set_tetrahedron_single() -> None:
     """Test setting a single tetrahedron."""
     vertices, _ = create_test_mesh()
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=len(vertices), tetrahedra=1)
     mesh.set_vertices(vertices)
 
@@ -401,7 +401,7 @@ def test_set_tetrahedron_single() -> None:
 def test_set_triangle_single() -> None:
     """Test setting a single triangle."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements), triangles=1)
     mesh.set_vertices(vertices)
     mesh.set_tetrahedra(elements)
@@ -419,7 +419,7 @@ def test_set_triangle_single() -> None:
 def test_set_edge_single() -> None:
     """Test setting a single edge."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements), edges=1)
     mesh.set_vertices(vertices)
     mesh.set_tetrahedra(elements)
@@ -446,7 +446,7 @@ def test_single_element_mixed_construction() -> None:
     tri_refs = [10, 20, 30, 40]
 
     # Build a simple tetrahedron using single-element setters
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(
         vertices=expected_vertices,
         tetrahedra=expected_tetrahedra,
@@ -503,7 +503,7 @@ def test_set_prism_single() -> None:
         dtype=np.float64,
     )
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=len(vertices), prisms=1)
     mesh.set_vertices(vertices)
 
@@ -544,7 +544,7 @@ def test_set_prisms_bulk() -> None:
     )
     prism_refs = np.array([10, 20], dtype=np.int64)
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=len(vertices), prisms=len(prisms))
     mesh.set_vertices(vertices)
     mesh.set_prisms(prisms, refs=prism_refs)
@@ -563,7 +563,7 @@ def test_set_quadrilateral_single() -> None:
     """Test setting a single quadrilateral."""
     vertices, elements = create_test_mesh()
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(
         vertices=len(vertices),
         tetrahedra=len(elements),
@@ -596,7 +596,7 @@ def test_set_quadrilaterals_bulk() -> None:
     )
     quad_refs = np.array([100, 200], dtype=np.int64)
 
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(
         vertices=len(vertices),
         tetrahedra=len(elements),
@@ -619,14 +619,14 @@ def test_set_quadrilaterals_bulk() -> None:
 def test_get_tetrahedra_alias() -> None:
     """Test that get_tetrahedra() works as an alias for get_elements()."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     # Both methods should return the same result
     npt.assert_array_equal(mesh.get_tetrahedra(), mesh.get_elements())
 
     # Test with refs
     elem_refs = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-    mesh2 = MmgMesh()
+    mesh2 = MmgMesh3D()
     mesh2.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
     mesh2.set_vertices(vertices)
     mesh2.set_tetrahedra(elements, refs=elem_refs)
@@ -959,7 +959,7 @@ def test_mmg_mesh_s_file_io(tmp_path: Path) -> None:
 
 def test_non_contiguous_array_rejected() -> None:
     """Test that non-contiguous arrays are rejected with clear error message."""
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=4, tetrahedra=1)
 
     # Create a Fortran-order (column-major) array which is not C-contiguous
@@ -984,7 +984,7 @@ def test_non_contiguous_array_rejected() -> None:
 
 def test_sliced_array_rejected() -> None:
     """Test that sliced arrays (non-contiguous) are rejected."""
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=4, tetrahedra=1)
 
     # Create a larger array and slice it (non-contiguous view)
@@ -1015,7 +1015,7 @@ def test_sliced_array_rejected() -> None:
 
 def test_contiguous_copy_accepted() -> None:
     """Test that making a contiguous copy of non-contiguous data works."""
-    mesh = MmgMesh()
+    mesh = MmgMesh3D()
     mesh.set_mesh_size(vertices=4, tetrahedra=1)
 
     # Create a Fortran-order array
@@ -1044,11 +1044,11 @@ def test_contiguous_copy_accepted() -> None:
 
 
 def visualize_mmg_mesh() -> None:
-    """Visualize a simple MmgMesh using PyVista."""
+    """Visualize a simple MmgMesh3D using PyVista."""
     import pyvista as pv
 
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     # Create PyVista mesh
     cells = []
@@ -1101,7 +1101,7 @@ def visualize_mmg_mesh() -> None:
 def test_mmg_mesh_3d_remesh() -> None:
     """Test in-memory remeshing for MmgMesh3D."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     # Remesh with kwargs
     mesh.remesh(hmax=0.5, verbose=False)
@@ -1124,7 +1124,7 @@ def test_mmg_mesh_3d_remesh() -> None:
 def test_mmg_mesh_3d_remesh_with_metric() -> None:
     """Test in-memory remeshing with a metric field."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     # Set a scalar metric (target edge size at each vertex)
     metric = np.ones((len(vertices), 1), dtype=np.float64) * 0.3
@@ -1180,7 +1180,7 @@ def test_mmg_mesh_s_remesh() -> None:
 def test_mmg_mesh_3d_remesh_no_options() -> None:
     """Test remeshing with default options."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     # Remesh with default options (just suppress output)
     mesh.remesh(verbose=False)
@@ -1193,7 +1193,7 @@ def test_mmg_mesh_3d_remesh_no_options() -> None:
 def test_mmg_mesh_3d_remesh_verbose_int() -> None:
     """Test that verbose accepts both bool and int."""
     vertices, elements = create_test_mesh()
-    mesh = MmgMesh(vertices, elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     # Test with integer verbose level (MMG native)
     mesh.remesh(hmax=0.5, verbose=-1)
