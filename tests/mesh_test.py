@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from mmgpy import MmgMesh
 
@@ -136,8 +137,6 @@ def test_load_nonexistent_file_no_crash(tmp_path: Path) -> None:
     cleanup() is called before throwing. Previously, cleanup() didn't null
     pointers after freeing, which could cause double-free issues.
     """
-    import pytest
-
     nonexistent_file = tmp_path / "does_not_exist.mesh"
 
     # Loading a non-existent file should raise an exception but not crash
