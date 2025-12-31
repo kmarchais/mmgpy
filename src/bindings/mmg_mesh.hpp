@@ -3,6 +3,7 @@
 
 #include "mmg/mmg3d/libmmg3d.h"
 #include <filesystem>
+#include <optional>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <string>
@@ -23,6 +24,34 @@ public:
                                  const py::array_t<int> &elements);
   py::array_t<double> get_vertices() const;
   py::array_t<int> get_elements() const;
+
+  // Low-level mesh construction API (Phase 1 of Issue #50)
+  void set_mesh_size(MMG5_int vertices, MMG5_int tetrahedra, MMG5_int prisms,
+                     MMG5_int triangles, MMG5_int quadrilaterals,
+                     MMG5_int edges);
+  py::tuple get_mesh_size() const;
+
+  // Bulk setters with optional reference arrays
+  void
+  set_vertices(const py::array_t<double> &vertices,
+               const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void set_tetrahedra(
+      const py::array_t<int> &tetrahedra,
+      const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void set_triangles(
+      const py::array_t<int> &triangles,
+      const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void
+  set_edges(const py::array_t<int> &edges,
+            const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+
+  // Bulk getters
+  py::tuple get_vertices_with_refs() const;
+  py::array_t<int> get_triangles() const;
+  py::tuple get_triangles_with_refs() const;
+  py::tuple get_elements_with_refs() const;
+  py::array_t<int> get_edges() const;
+  py::tuple get_edges_with_refs() const;
 
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);

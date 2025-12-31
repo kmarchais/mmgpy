@@ -22,6 +22,26 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("set_vertices_and_elements", &MmgMesh::set_vertices_and_elements)
       .def("get_vertices", &MmgMesh::get_vertices)
       .def("get_elements", &MmgMesh::get_elements)
+      // Low-level mesh construction API (Phase 1 of Issue #50)
+      .def("set_mesh_size", &MmgMesh::set_mesh_size, py::arg("vertices") = 0,
+           py::arg("tetrahedra") = 0, py::arg("prisms") = 0,
+           py::arg("triangles") = 0, py::arg("quadrilaterals") = 0,
+           py::arg("edges") = 0)
+      .def("get_mesh_size", &MmgMesh::get_mesh_size)
+      .def("set_vertices", &MmgMesh::set_vertices, py::arg("vertices"),
+           py::arg("refs") = py::none())
+      .def("set_tetrahedra", &MmgMesh::set_tetrahedra, py::arg("tetrahedra"),
+           py::arg("refs") = py::none())
+      .def("set_triangles", &MmgMesh::set_triangles, py::arg("triangles"),
+           py::arg("refs") = py::none())
+      .def("set_edges", &MmgMesh::set_edges, py::arg("edges"),
+           py::arg("refs") = py::none())
+      .def("get_vertices_with_refs", &MmgMesh::get_vertices_with_refs)
+      .def("get_triangles", &MmgMesh::get_triangles)
+      .def("get_triangles_with_refs", &MmgMesh::get_triangles_with_refs)
+      .def("get_elements_with_refs", &MmgMesh::get_elements_with_refs)
+      .def("get_edges", &MmgMesh::get_edges)
+      .def("get_edges_with_refs", &MmgMesh::get_edges_with_refs)
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)

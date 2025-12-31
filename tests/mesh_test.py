@@ -147,6 +147,211 @@ def test_load_nonexistent_file_no_crash(tmp_path: Path) -> None:
             MmgMesh(nonexistent_file)
 
 
+# Tests for low-level mesh construction API (Phase 1 of Issue #50)
+
+
+def test_set_mesh_size_and_get_mesh_size() -> None:
+    """Test set_mesh_size and get_mesh_size methods."""
+    mesh = MmgMesh()
+
+    expected_vertices = 8
+    expected_tetrahedra = 5
+    mesh.set_mesh_size(vertices=expected_vertices, tetrahedra=expected_tetrahedra)
+
+    # Get mesh size and verify
+    np_v, ne, nprism, nt, nquad, na = mesh.get_mesh_size()
+    assert np_v == expected_vertices
+    assert ne == expected_tetrahedra
+    assert nprism == 0
+    assert nt == 0
+    assert nquad == 0
+    assert na == 0
+
+
+def test_set_vertices_bulk() -> None:
+    """Test bulk vertex setting."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh()
+
+    # Set mesh size first
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+
+    # Set vertices in bulk
+    mesh.set_vertices(vertices)
+
+    # Set elements
+    mesh.set_tetrahedra(elements)
+
+    # Verify vertices
+    npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
+
+
+def test_set_vertices_with_refs() -> None:
+    """Test bulk vertex setting with reference IDs."""
+    vertices, elements = create_test_mesh()
+    refs = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.int64)
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices, refs=refs)
+    mesh.set_tetrahedra(elements)
+
+    # Verify vertices and refs
+    verts_out, refs_out = mesh.get_vertices_with_refs()
+    npt.assert_array_almost_equal(verts_out, vertices)
+    npt.assert_array_equal(refs_out, refs)
+
+
+def test_set_tetrahedra_bulk() -> None:
+    """Test bulk tetrahedra setting."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh()
+
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Verify elements
+    npt.assert_array_equal(mesh.get_elements(), elements)
+
+
+def test_set_tetrahedra_with_refs() -> None:
+    """Test bulk tetrahedra setting with reference IDs (material IDs)."""
+    vertices, elements = create_test_mesh()
+    elem_refs = np.array([10, 20, 30, 40, 50], dtype=np.int64)
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements, refs=elem_refs)
+
+    # Verify elements and refs
+    elems_out, refs_out = mesh.get_elements_with_refs()
+    npt.assert_array_equal(elems_out, elements)
+    npt.assert_array_equal(refs_out, elem_refs)
+
+
+def test_set_triangles() -> None:
+    """Test bulk triangle setting for boundary faces."""
+    vertices, elements = create_test_mesh()
+
+    # Define some boundary triangles (subset of cube faces)
+    triangles = np.array(
+        [
+            [0, 1, 3],  # bottom face triangle 1
+            [1, 2, 3],  # bottom face triangle 2
+            [4, 5, 7],  # top face triangle 1
+            [5, 6, 7],  # top face triangle 2
+        ],
+        dtype=np.int32,
+    )
+    tri_refs = np.array([1, 1, 2, 2], dtype=np.int64)  # boundary markers
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        tetrahedra=len(elements),
+        triangles=len(triangles),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+    mesh.set_triangles(triangles, refs=tri_refs)
+
+    # Verify triangles
+    tris_out = mesh.get_triangles()
+    npt.assert_array_equal(tris_out, triangles)
+
+    # Verify triangles with refs
+    tris_out, refs_out = mesh.get_triangles_with_refs()
+    npt.assert_array_equal(tris_out, triangles)
+    npt.assert_array_equal(refs_out, tri_refs)
+
+
+def test_set_edges() -> None:
+    """Test bulk edge setting for ridge edges."""
+    vertices, elements = create_test_mesh()
+
+    # Define some edges along cube edges
+    edges = np.array(
+        [
+            [0, 1],  # bottom edge
+            [1, 2],  # bottom edge
+            [4, 5],  # top edge
+            [5, 6],  # top edge
+        ],
+        dtype=np.int32,
+    )
+    edge_refs = np.array([100, 100, 200, 200], dtype=np.int64)  # edge markers
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        tetrahedra=len(elements),
+        edges=len(edges),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+    mesh.set_edges(edges, refs=edge_refs)
+
+    # Verify edges
+    edges_out = mesh.get_edges()
+    npt.assert_array_equal(edges_out, edges)
+
+    # Verify edges with refs
+    edges_out, refs_out = mesh.get_edges_with_refs()
+    npt.assert_array_equal(edges_out, edges)
+    npt.assert_array_equal(refs_out, edge_refs)
+
+
+def test_programmatic_mesh_construction() -> None:
+    """Test complete programmatic mesh construction workflow (Issue #50 use case)."""
+    # Define vertices programmatically
+    vertices = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.5, 1.0, 0.0],
+            [0.5, 0.5, 1.0],
+        ],
+        dtype=np.float64,
+    )
+
+    # Single tetrahedron
+    tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+
+    # All 4 boundary triangles
+    triangles = np.array(
+        [
+            [0, 1, 2],  # bottom
+            [0, 1, 3],  # front
+            [1, 2, 3],  # right
+            [0, 2, 3],  # left
+        ],
+        dtype=np.int32,
+    )
+
+    # Construct mesh programmatically
+    mesh = MmgMesh()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        tetrahedra=len(tetrahedra),
+        triangles=len(triangles),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(tetrahedra)
+    mesh.set_triangles(triangles)
+
+    # Verify mesh construction
+    np_v, ne, nprism, nt, nquad, na = mesh.get_mesh_size()
+    assert np_v == len(vertices)
+    assert ne == len(tetrahedra)
+    assert nt == len(triangles)
+
+    npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
+    npt.assert_array_equal(mesh.get_elements(), tetrahedra)
+    npt.assert_array_equal(mesh.get_triangles(), triangles)
+
+
 def visualize_mmg_mesh() -> None:
     """Visualize a simple MmgMesh using PyVista."""
     import pyvista as pv
