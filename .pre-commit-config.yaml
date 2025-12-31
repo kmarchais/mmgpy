@@ -44,11 +44,11 @@ repos:
             "--no-capitalize-first-letter",
           ]
 
-  # - repo: https://github.com/codespell-project/codespell
-  #   rev: v2.4.1
-  #   hooks:
-  #     - id: codespell
-  #       files: ^.*\.(py|rst|md)$
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        files: ^.*\.(py|rst|md)$
 
   # - repo: https://github.com/pre-commit/mirrors-mypy
   #   rev: "v1.16.0"
