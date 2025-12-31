@@ -493,6 +493,12 @@ def intersect_metrics(
 
     for i in range(n):
         eigvals1, eigvecs1 = np.linalg.eigh(M1[i])
+
+        # Guard against near-singular metrics (eigenvalues close to zero)
+        # Use machine epsilon scaled by max eigenvalue for numerical stability
+        eps = np.finfo(np.float64).eps * np.max(np.abs(eigvals1)) * 100
+        eigvals1 = np.maximum(eigvals1, eps)
+
         sqrt_eigvals1 = np.sqrt(eigvals1)
         inv_sqrt_eigvals1 = 1.0 / sqrt_eigvals1
 
@@ -570,6 +576,9 @@ def create_metric_from_hessian(
 
         metric_eigvals = c * abs_eigvals / target_error
 
+        # Floor eigenvalues to avoid singular metrics when Hessian is near-zero.
+        # 1e-12 corresponds to element sizes up to ~1e6, sufficient for most meshes.
+        # This is applied before hmin/hmax bounds which may further constrain values.
         eps = 1e-12
         metric_eigvals = np.maximum(metric_eigvals, eps)
 

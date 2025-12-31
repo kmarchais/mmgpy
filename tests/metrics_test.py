@@ -258,6 +258,13 @@ class TestIntersectMetrics:
         assert np.min(sizes) < 0.2  # At least one small direction
         assert np.sum(sizes < 0.2) >= 2  # At least two small directions
 
+    def test_shape_mismatch_raises(self) -> None:
+        """Test that mismatched shapes raise ValueError."""
+        m1 = metrics.create_isotropic_metric(0.1, 5, dim=3)
+        m2 = metrics.create_isotropic_metric(0.1, 3, dim=3)
+        with pytest.raises(ValueError, match="same shape"):
+            metrics.intersect_metrics(m1, m2)
+
 
 class TestCreateMetricFromHessian:
     """Tests for create_metric_from_hessian function."""
