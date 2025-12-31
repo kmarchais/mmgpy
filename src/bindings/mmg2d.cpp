@@ -212,7 +212,7 @@ void set_mesh_options_2D(MMG5_pMesh mesh, MMG5_pSol met,
     }
 
     const ParamInfo &info = it->second;
-    bool success;
+    bool success = false;
 
     switch (info.type) {
     case ParamType::Double:
