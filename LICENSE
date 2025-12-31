@@ -1,19 +1,27 @@
-# Project License
+mmgpy - Python bindings for the MMG mesh library
+Copyright (C) 2024-2025 Kevin Marchais <kevinmarchais@gmail.com>
 
-This project is licensed under the GNU General Public License v3.0 or later (GPL-3.0+).
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-## Dependencies
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
 
-mmg (https://www.mmgtools.org/)
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-- Licensed under GNU Lesser General Public License v3.0 or later (LGPL-3.0+)
-- Copyright (c) Bx INP/Inria/UBordeaux/UPMC, 2004-
+--------------------------------------------------------------------------------
 
-Full license texts can be found in:
+DEPENDENCY LICENSES
 
-- COPYING: GNU General Public License v3.0
-- COPYING.LESSER: GNU Lesser General Public License v3.0
+This project depends on the MMG library (https://www.mmgtools.org/):
+  - Licensed under GNU Lesser General Public License v3.0 or later (LGPL-3.0+)
+  - Copyright (C) Bx INP/Inria/UBordeaux/UPMC, 2004-
 
-This project is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE. See the GNU General Public License for more details.
+Full license texts:
+  - COPYING: GNU General Public License v3.0 (this project)
+  - COPYING.LESSER: GNU Lesser General Public License v3.0 (MMG dependency)
