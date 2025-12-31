@@ -116,18 +116,19 @@ def test_mmg_mesh() -> None:
     npt.assert_array_almost_equal(mesh["tensor"], tensor)
 
 
-def test_load_mesh() -> None:
+def test_load_mesh(tmp_path: Path) -> None:
     """Test loading a mesh from file."""
     vertices, elements = create_test_mesh()
 
     # Save mesh to file
     mesh = MmgMesh(vertices, elements)
-    mesh.save(Path(__file__).parent / "test_mesh.mesh")
+    mesh_file = tmp_path / "test_mesh.mesh"
+    mesh.save(mesh_file)
 
     # Load mesh from file
-    mesh = MmgMesh(Path(__file__).parent / "test_mesh.mesh")
-    npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
-    npt.assert_array_equal(mesh.get_elements(), elements)
+    loaded = MmgMesh(mesh_file)
+    npt.assert_array_almost_equal(loaded.get_vertices(), vertices)
+    npt.assert_array_equal(loaded.get_elements(), elements)
 
 
 def test_load_nonexistent_file_no_crash(tmp_path: Path) -> None:
