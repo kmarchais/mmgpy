@@ -56,6 +56,21 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_tetrahedron", &MmgMesh::get_tetrahedron, py::arg("idx"))
       .def("get_triangle", &MmgMesh::get_triangle, py::arg("idx"))
       .def("get_edge", &MmgMesh::get_edge, py::arg("idx"))
+      // Phase 3: Advanced element types
+      .def("set_prism", &MmgMesh::set_prism, py::arg("v0"), py::arg("v1"),
+           py::arg("v2"), py::arg("v3"), py::arg("v4"), py::arg("v5"),
+           py::arg("ref"), py::arg("idx"))
+      .def("set_quadrilateral", &MmgMesh::set_quadrilateral, py::arg("v0"),
+           py::arg("v1"), py::arg("v2"), py::arg("v3"), py::arg("ref"),
+           py::arg("idx"))
+      .def("set_prisms", &MmgMesh::set_prisms, py::arg("prisms"),
+           py::arg("refs") = py::none())
+      .def("set_quadrilaterals", &MmgMesh::set_quadrilaterals, py::arg("quads"),
+           py::arg("refs") = py::none())
+      .def("get_prism", &MmgMesh::get_prism, py::arg("idx"))
+      .def("get_quadrilateral", &MmgMesh::get_quadrilateral, py::arg("idx"))
+      .def("get_prisms", &MmgMesh::get_prisms)
+      .def("get_quadrilaterals", &MmgMesh::get_quadrilaterals)
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)

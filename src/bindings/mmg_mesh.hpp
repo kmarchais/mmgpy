@@ -64,6 +64,22 @@ public:
   py::tuple get_triangle(MMG5_int idx) const;
   py::tuple get_edge(MMG5_int idx) const;
 
+  // Phase 3: Advanced element types (prisms and quadrilaterals)
+  void set_prism(int v0, int v1, int v2, int v3, int v4, int v5, MMG5_int ref,
+                 MMG5_int idx);
+  void set_quadrilateral(int v0, int v1, int v2, int v3, MMG5_int ref,
+                         MMG5_int idx);
+  void
+  set_prisms(const py::array_t<int> &prisms,
+             const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void set_quadrilaterals(
+      const py::array_t<int> &quads,
+      const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  py::tuple get_prism(MMG5_int idx) const;
+  py::tuple get_quadrilateral(MMG5_int idx) const;
+  py::array_t<int> get_prisms() const;
+  py::array_t<int> get_quadrilaterals() const;
+
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);
   py::array_t<double> get_field(const std::string &field_name) const;

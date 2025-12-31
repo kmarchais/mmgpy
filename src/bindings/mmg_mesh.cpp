@@ -729,3 +729,156 @@ py::tuple MmgMesh::get_edge(MMG5_int idx) const {
   return py::make_tuple(static_cast<int>(pe->a - 1),
                         static_cast<int>(pe->b - 1), pe->ref);
 }
+
+// Phase 3: Advanced element types (prisms and quadrilaterals)
+
+void MmgMesh::set_prism(int v0, int v1, int v2, int v3, int v4, int v5,
+                        MMG5_int ref, MMG5_int idx) {
+  // Convert from 0-based Python indexing to 1-based MMG indexing
+  if (!MMG3D_Set_prism(mesh, v0 + 1, v1 + 1, v2 + 1, v3 + 1, v4 + 1, v5 + 1,
+                       ref, idx + 1)) {
+    throw std::runtime_error("Failed to set prism at index " +
+                             std::to_string(idx));
+  }
+}
+
+void MmgMesh::set_quadrilateral(int v0, int v1, int v2, int v3, MMG5_int ref,
+                                MMG5_int idx) {
+  // Convert from 0-based Python indexing to 1-based MMG indexing
+  if (!MMG3D_Set_quadrilateral(mesh, v0 + 1, v1 + 1, v2 + 1, v3 + 1, ref,
+                               idx + 1)) {
+    throw std::runtime_error("Failed to set quadrilateral at index " +
+                             std::to_string(idx));
+  }
+}
+
+void MmgMesh::set_prisms(const py::array_t<int> &prisms,
+                         const std::optional<py::array_t<MMG5_int>> &refs) {
+  py::buffer_info prism_buf = prisms.request();
+
+  if (prism_buf.ndim != 2 || prism_buf.shape[1] != 6) {
+    throw std::runtime_error("Prisms must be an Nx6 array");
+  }
+
+  const int *prism_ptr = static_cast<int *>(prism_buf.ptr);
+  MMG5_int nprism = prism_buf.shape[0];
+
+  const MMG5_int *refs_ptr = nullptr;
+  if (refs.has_value()) {
+    py::buffer_info refs_buf = refs->request();
+    if (refs_buf.ndim != 1 || refs_buf.shape[0] != nprism) {
+      throw std::runtime_error(
+          "References array must be 1D with same length as prisms");
+    }
+    refs_ptr = static_cast<MMG5_int *>(refs_buf.ptr);
+  }
+
+  for (MMG5_int i = 0; i < nprism; i++) {
+    MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
+    if (!MMG3D_Set_prism(mesh, prism_ptr[i * 6] + 1, prism_ptr[i * 6 + 1] + 1,
+                         prism_ptr[i * 6 + 2] + 1, prism_ptr[i * 6 + 3] + 1,
+                         prism_ptr[i * 6 + 4] + 1, prism_ptr[i * 6 + 5] + 1,
+                         ref, i + 1)) {
+      throw std::runtime_error("Failed to set prism at index " +
+                               std::to_string(i));
+    }
+  }
+}
+
+void MmgMesh::set_quadrilaterals(
+    const py::array_t<int> &quads,
+    const std::optional<py::array_t<MMG5_int>> &refs) {
+  py::buffer_info quad_buf = quads.request();
+
+  if (quad_buf.ndim != 2 || quad_buf.shape[1] != 4) {
+    throw std::runtime_error("Quadrilaterals must be an Nx4 array");
+  }
+
+  const int *quad_ptr = static_cast<int *>(quad_buf.ptr);
+  MMG5_int nquad = quad_buf.shape[0];
+
+  const MMG5_int *refs_ptr = nullptr;
+  if (refs.has_value()) {
+    py::buffer_info refs_buf = refs->request();
+    if (refs_buf.ndim != 1 || refs_buf.shape[0] != nquad) {
+      throw std::runtime_error(
+          "References array must be 1D with same length as quadrilaterals");
+    }
+    refs_ptr = static_cast<MMG5_int *>(refs_buf.ptr);
+  }
+
+  for (MMG5_int i = 0; i < nquad; i++) {
+    MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
+    if (!MMG3D_Set_quadrilateral(
+            mesh, quad_ptr[i * 4] + 1, quad_ptr[i * 4 + 1] + 1,
+            quad_ptr[i * 4 + 2] + 1, quad_ptr[i * 4 + 3] + 1, ref, i + 1)) {
+      throw std::runtime_error("Failed to set quadrilateral at index " +
+                               std::to_string(i));
+    }
+  }
+}
+
+py::tuple MmgMesh::get_prism(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nprism) {
+    throw std::runtime_error("Prism index out of range: " +
+                             std::to_string(idx));
+  }
+
+  MMG5_pPrism pp = &mesh->prism[mmg_idx];
+
+  return py::make_tuple(
+      static_cast<int>(pp->v[0] - 1), static_cast<int>(pp->v[1] - 1),
+      static_cast<int>(pp->v[2] - 1), static_cast<int>(pp->v[3] - 1),
+      static_cast<int>(pp->v[4] - 1), static_cast<int>(pp->v[5] - 1), pp->ref);
+}
+
+py::tuple MmgMesh::get_quadrilateral(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nquad) {
+    throw std::runtime_error("Quadrilateral index out of range: " +
+                             std::to_string(idx));
+  }
+
+  MMG5_pQuad pq = &mesh->quadra[mmg_idx];
+
+  return py::make_tuple(
+      static_cast<int>(pq->v[0] - 1), static_cast<int>(pq->v[1] - 1),
+      static_cast<int>(pq->v[2] - 1), static_cast<int>(pq->v[3] - 1), pq->ref);
+}
+
+py::array_t<int> MmgMesh::get_prisms() const {
+  MMG5_int nprism = mesh->nprism;
+  py::array_t<int> prisms({nprism, static_cast<MMG5_int>(6)});
+  auto buf = prisms.request();
+  int *ptr = static_cast<int *>(buf.ptr);
+
+  for (MMG5_int i = 0; i < nprism; i++) {
+    MMG5_pPrism pp = &mesh->prism[i + 1];
+    ptr[i * 6] = static_cast<int>(pp->v[0] - 1);
+    ptr[i * 6 + 1] = static_cast<int>(pp->v[1] - 1);
+    ptr[i * 6 + 2] = static_cast<int>(pp->v[2] - 1);
+    ptr[i * 6 + 3] = static_cast<int>(pp->v[3] - 1);
+    ptr[i * 6 + 4] = static_cast<int>(pp->v[4] - 1);
+    ptr[i * 6 + 5] = static_cast<int>(pp->v[5] - 1);
+  }
+  return prisms;
+}
+
+py::array_t<int> MmgMesh::get_quadrilaterals() const {
+  MMG5_int nquad = mesh->nquad;
+  py::array_t<int> quads({nquad, static_cast<MMG5_int>(4)});
+  auto buf = quads.request();
+  int *ptr = static_cast<int *>(buf.ptr);
+
+  for (MMG5_int i = 0; i < nquad; i++) {
+    MMG5_pQuad pq = &mesh->quadra[i + 1];
+    ptr[i * 4] = static_cast<int>(pq->v[0] - 1);
+    ptr[i * 4 + 1] = static_cast<int>(pq->v[1] - 1);
+    ptr[i * 4 + 2] = static_cast<int>(pq->v[2] - 1);
+    ptr[i * 4 + 3] = static_cast<int>(pq->v[3] - 1);
+  }
+  return quads;
+}
