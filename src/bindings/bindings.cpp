@@ -72,7 +72,12 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_prism", &MmgMesh::get_prism, py::arg("idx"))
       .def("get_quadrilateral", &MmgMesh::get_quadrilateral, py::arg("idx"))
       .def("get_prisms", &MmgMesh::get_prisms)
+      .def("get_prisms_with_refs", &MmgMesh::get_prisms_with_refs)
       .def("get_quadrilaterals", &MmgMesh::get_quadrilaterals)
+      .def("get_quadrilaterals_with_refs",
+           &MmgMesh::get_quadrilaterals_with_refs)
+      .def("get_tetrahedra", &MmgMesh::get_tetrahedra)
+      .def("get_tetrahedra_with_refs", &MmgMesh::get_tetrahedra_with_refs)
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)

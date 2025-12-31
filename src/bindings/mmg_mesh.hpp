@@ -47,9 +47,12 @@ public:
 
   // Bulk getters
   py::tuple get_vertices_with_refs() const;
+  py::array_t<int> get_tetrahedra() const; // Alias for get_elements()
   py::array_t<int> get_triangles() const;
   py::tuple get_triangles_with_refs() const;
   py::tuple get_elements_with_refs() const;
+  py::tuple
+  get_tetrahedra_with_refs() const; // Alias for get_elements_with_refs()
   py::array_t<int> get_edges() const;
   py::tuple get_edges_with_refs() const;
 
@@ -78,7 +81,9 @@ public:
   py::tuple get_prism(MMG5_int idx) const;
   py::tuple get_quadrilateral(MMG5_int idx) const;
   py::array_t<int> get_prisms() const;
+  py::tuple get_prisms_with_refs() const;
   py::array_t<int> get_quadrilaterals() const;
+  py::tuple get_quadrilaterals_with_refs() const;
 
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);

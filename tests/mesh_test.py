@@ -484,6 +484,158 @@ def test_single_element_mixed_construction() -> None:
     assert ref == tri_refs[3]
 
 
+# Tests for Phase 3: Prisms and Quadrilaterals
+
+
+def test_set_prism_single() -> None:
+    """Test setting a single prism."""
+    # Create a simple mesh with vertices for a prism
+    vertices = np.array(
+        [
+            [0.0, 0.0, 0.0],  # 0
+            [1.0, 0.0, 0.0],  # 1
+            [0.5, 1.0, 0.0],  # 2
+            [0.0, 0.0, 1.0],  # 3
+            [1.0, 0.0, 1.0],  # 4
+            [0.5, 1.0, 1.0],  # 5
+        ],
+        dtype=np.float64,
+    )
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=len(vertices), prisms=1)
+    mesh.set_vertices(vertices)
+
+    # Set a single prism with a material ID
+    prism_ref = 42
+    mesh.set_prism(0, 1, 2, 3, 4, 5, ref=prism_ref, idx=0)
+
+    # Verify with get_prism
+    v0, v1, v2, v3, v4, v5, ref = mesh.get_prism(0)
+    assert (v0, v1, v2, v3, v4, v5) == (0, 1, 2, 3, 4, 5)
+    assert ref == prism_ref
+
+
+def test_set_prisms_bulk() -> None:
+    """Test bulk prism setting."""
+    # Create vertices for 2 prisms (stacked)
+    vertices = np.array(
+        [
+            [0.0, 0.0, 0.0],  # 0
+            [1.0, 0.0, 0.0],  # 1
+            [0.5, 1.0, 0.0],  # 2
+            [0.0, 0.0, 1.0],  # 3
+            [1.0, 0.0, 1.0],  # 4
+            [0.5, 1.0, 1.0],  # 5
+            [0.0, 0.0, 2.0],  # 6
+            [1.0, 0.0, 2.0],  # 7
+            [0.5, 1.0, 2.0],  # 8
+        ],
+        dtype=np.float64,
+    )
+
+    prisms = np.array(
+        [
+            [0, 1, 2, 3, 4, 5],  # bottom prism
+            [3, 4, 5, 6, 7, 8],  # top prism
+        ],
+        dtype=np.int32,
+    )
+    prism_refs = np.array([10, 20], dtype=np.int64)
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=len(vertices), prisms=len(prisms))
+    mesh.set_vertices(vertices)
+    mesh.set_prisms(prisms, refs=prism_refs)
+
+    # Verify prisms
+    prisms_out = mesh.get_prisms()
+    npt.assert_array_equal(prisms_out, prisms)
+
+    # Verify prisms with refs
+    prisms_out, refs_out = mesh.get_prisms_with_refs()
+    npt.assert_array_equal(prisms_out, prisms)
+    npt.assert_array_equal(refs_out, prism_refs)
+
+
+def test_set_quadrilateral_single() -> None:
+    """Test setting a single quadrilateral."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        tetrahedra=len(elements),
+        quadrilaterals=1,
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Set a single quadrilateral (bottom face of cube)
+    quad_ref = 77
+    mesh.set_quadrilateral(0, 1, 2, 3, ref=quad_ref, idx=0)
+
+    # Verify with get_quadrilateral
+    v0, v1, v2, v3, ref = mesh.get_quadrilateral(0)
+    assert (v0, v1, v2, v3) == (0, 1, 2, 3)
+    assert ref == quad_ref
+
+
+def test_set_quadrilaterals_bulk() -> None:
+    """Test bulk quadrilateral setting."""
+    vertices, elements = create_test_mesh()
+
+    # Define quadrilateral faces of the cube
+    quads = np.array(
+        [
+            [0, 1, 2, 3],  # bottom face
+            [4, 5, 6, 7],  # top face
+        ],
+        dtype=np.int32,
+    )
+    quad_refs = np.array([100, 200], dtype=np.int64)
+
+    mesh = MmgMesh()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        tetrahedra=len(elements),
+        quadrilaterals=len(quads),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+    mesh.set_quadrilaterals(quads, refs=quad_refs)
+
+    # Verify quadrilaterals
+    quads_out = mesh.get_quadrilaterals()
+    npt.assert_array_equal(quads_out, quads)
+
+    # Verify quadrilaterals with refs
+    quads_out, refs_out = mesh.get_quadrilaterals_with_refs()
+    npt.assert_array_equal(quads_out, quads)
+    npt.assert_array_equal(refs_out, quad_refs)
+
+
+def test_get_tetrahedra_alias() -> None:
+    """Test that get_tetrahedra() works as an alias for get_elements()."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh(vertices, elements)
+
+    # Both methods should return the same result
+    npt.assert_array_equal(mesh.get_tetrahedra(), mesh.get_elements())
+
+    # Test with refs
+    elem_refs = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+    mesh2 = MmgMesh()
+    mesh2.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh2.set_vertices(vertices)
+    mesh2.set_tetrahedra(elements, refs=elem_refs)
+
+    elems1, refs1 = mesh2.get_elements_with_refs()
+    elems2, refs2 = mesh2.get_tetrahedra_with_refs()
+    npt.assert_array_equal(elems1, elems2)
+    npt.assert_array_equal(refs1, refs2)
+
+
 # Phase 4: Tests for MmgMesh2D (2D planar meshes)
 
 

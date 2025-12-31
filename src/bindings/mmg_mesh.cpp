@@ -682,6 +682,10 @@ py::tuple MmgMesh::get_tetrahedron(MMG5_int idx) const {
   // idx is 0-based Python index, convert to 1-based MMG index
   MMG5_int mmg_idx = idx + 1;
 
+  if (!mesh->tetra) {
+    throw std::runtime_error("No tetrahedra in mesh");
+  }
+
   if (mmg_idx < 1 || mmg_idx > mesh->ne) {
     throw std::runtime_error("Tetrahedron index out of range: " +
                              std::to_string(idx));
@@ -700,6 +704,10 @@ py::tuple MmgMesh::get_triangle(MMG5_int idx) const {
   // idx is 0-based Python index, convert to 1-based MMG index
   MMG5_int mmg_idx = idx + 1;
 
+  if (!mesh->tria) {
+    throw std::runtime_error("No triangles in mesh");
+  }
+
   if (mmg_idx < 1 || mmg_idx > mesh->nt) {
     throw std::runtime_error("Triangle index out of range: " +
                              std::to_string(idx));
@@ -717,6 +725,10 @@ py::tuple MmgMesh::get_triangle(MMG5_int idx) const {
 py::tuple MmgMesh::get_edge(MMG5_int idx) const {
   // idx is 0-based Python index, convert to 1-based MMG index
   MMG5_int mmg_idx = idx + 1;
+
+  if (!mesh->edge) {
+    throw std::runtime_error("No edges in mesh");
+  }
 
   if (mmg_idx < 1 || mmg_idx > mesh->na) {
     throw std::runtime_error("Edge index out of range: " + std::to_string(idx));
@@ -821,6 +833,10 @@ void MmgMesh::set_quadrilaterals(
 py::tuple MmgMesh::get_prism(MMG5_int idx) const {
   MMG5_int mmg_idx = idx + 1;
 
+  if (!mesh->prism) {
+    throw std::runtime_error("No prisms in mesh");
+  }
+
   if (mmg_idx < 1 || mmg_idx > mesh->nprism) {
     throw std::runtime_error("Prism index out of range: " +
                              std::to_string(idx));
@@ -836,6 +852,10 @@ py::tuple MmgMesh::get_prism(MMG5_int idx) const {
 
 py::tuple MmgMesh::get_quadrilateral(MMG5_int idx) const {
   MMG5_int mmg_idx = idx + 1;
+
+  if (!mesh->quadra) {
+    throw std::runtime_error("No quadrilaterals in mesh");
+  }
 
   if (mmg_idx < 1 || mmg_idx > mesh->nquad) {
     throw std::runtime_error("Quadrilateral index out of range: " +
@@ -881,4 +901,58 @@ py::array_t<int> MmgMesh::get_quadrilaterals() const {
     ptr[i * 4 + 3] = static_cast<int>(pq->v[3] - 1);
   }
   return quads;
+}
+
+py::tuple MmgMesh::get_prisms_with_refs() const {
+  MMG5_int nprism = mesh->nprism;
+  py::array_t<int> prisms({nprism, static_cast<MMG5_int>(6)});
+  py::array_t<MMG5_int> refs(nprism);
+
+  auto prism_buf = prisms.request();
+  auto refs_buf = refs.request();
+  int *prism_ptr = static_cast<int *>(prism_buf.ptr);
+  MMG5_int *refs_ptr = static_cast<MMG5_int *>(refs_buf.ptr);
+
+  for (MMG5_int i = 0; i < nprism; i++) {
+    MMG5_pPrism pp = &mesh->prism[i + 1];
+    prism_ptr[i * 6] = static_cast<int>(pp->v[0] - 1);
+    prism_ptr[i * 6 + 1] = static_cast<int>(pp->v[1] - 1);
+    prism_ptr[i * 6 + 2] = static_cast<int>(pp->v[2] - 1);
+    prism_ptr[i * 6 + 3] = static_cast<int>(pp->v[3] - 1);
+    prism_ptr[i * 6 + 4] = static_cast<int>(pp->v[4] - 1);
+    prism_ptr[i * 6 + 5] = static_cast<int>(pp->v[5] - 1);
+    refs_ptr[i] = pp->ref;
+  }
+  return py::make_tuple(prisms, refs);
+}
+
+py::tuple MmgMesh::get_quadrilaterals_with_refs() const {
+  MMG5_int nquad = mesh->nquad;
+  py::array_t<int> quads({nquad, static_cast<MMG5_int>(4)});
+  py::array_t<MMG5_int> refs(nquad);
+
+  auto quad_buf = quads.request();
+  auto refs_buf = refs.request();
+  int *quad_ptr = static_cast<int *>(quad_buf.ptr);
+  MMG5_int *refs_ptr = static_cast<MMG5_int *>(refs_buf.ptr);
+
+  for (MMG5_int i = 0; i < nquad; i++) {
+    MMG5_pQuad pq = &mesh->quadra[i + 1];
+    quad_ptr[i * 4] = static_cast<int>(pq->v[0] - 1);
+    quad_ptr[i * 4 + 1] = static_cast<int>(pq->v[1] - 1);
+    quad_ptr[i * 4 + 2] = static_cast<int>(pq->v[2] - 1);
+    quad_ptr[i * 4 + 3] = static_cast<int>(pq->v[3] - 1);
+    refs_ptr[i] = pq->ref;
+  }
+  return py::make_tuple(quads, refs);
+}
+
+py::array_t<int> MmgMesh::get_tetrahedra() const {
+  // Alias for get_elements() for API symmetry with set_tetrahedra()
+  return get_elements();
+}
+
+py::tuple MmgMesh::get_tetrahedra_with_refs() const {
+  // Alias for get_elements_with_refs() for API symmetry with set_tetrahedra()
+  return get_elements_with_refs();
 }
