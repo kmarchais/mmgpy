@@ -4,6 +4,31 @@
 #include "mmg_mesh_2d.hpp"
 #include "mmg_mesh_s.hpp"
 
+namespace {
+// MMG verbose level constants for Pythonic bool conversion
+constexpr int MMG_VERBOSE_SILENT = -1; // Suppress all output
+constexpr int MMG_VERBOSE_DEFAULT = 1; // Standard output
+
+// Helper to convert Python kwargs to options dict with verbose bool->int
+// conversion. MMG uses integer verbosity levels where -1 = silent and
+// positive values increase output verbosity.
+py::dict kwargs_to_options(const py::kwargs &kwargs) {
+  py::dict options;
+  for (const auto &item : kwargs) {
+    std::string key = py::str(item.first);
+    if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
+      // Convert bool to MMG verbose level for Pythonic API
+      bool verbose_bool = item.second.cast<bool>();
+      options[item.first] =
+          verbose_bool ? MMG_VERBOSE_DEFAULT : MMG_VERBOSE_SILENT;
+    } else {
+      options[item.first] = item.second;
+    }
+  }
+  return options;
+}
+} // namespace
+
 PYBIND11_MODULE(_mmgpy, m) {
   // MmgMesh3D class for 3D volumetric meshes (MMG3D)
   py::class_<MmgMesh>(m, "MmgMesh3D")
@@ -82,18 +107,26 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)
       .def("__setitem__", &MmgMesh::setitem)
-      .def("save", [](const MmgMesh &self, const py::object &path) {
-        // Handle both str and Path objects
-        if (py::isinstance<py::str>(path)) {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          // Assume it's a Path object
-          self.save(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
-      });
+      .def("save",
+           [](const MmgMesh &self, const py::object &path) {
+             // Handle both str and Path objects
+             if (py::isinstance<py::str>(path)) {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               // Assume it's a Path object
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
+      .def(
+          "remesh",
+          [](MmgMesh &self, py::kwargs kwargs) {
+            self.remesh(kwargs_to_options(kwargs));
+          },
+          "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
+          "hgrad, optim, verbose.");
 
   // Phase 4: MmgMesh2D class for 2D planar meshes
   py::class_<MmgMesh2D>(m, "MmgMesh2D")
@@ -154,16 +187,24 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("__getitem__", &MmgMesh2D::getitem)
       .def("__setitem__", &MmgMesh2D::setitem)
       // File I/O
-      .def("save", [](const MmgMesh2D &self, const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
-      });
+      .def("save",
+           [](const MmgMesh2D &self, const py::object &path) {
+             if (py::isinstance<py::str>(path)) {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
+      .def(
+          "remesh",
+          [](MmgMesh2D &self, py::kwargs kwargs) {
+            self.remesh(kwargs_to_options(kwargs));
+          },
+          "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
+          "hgrad, optim, verbose.");
 
   // Phase 4: MmgMeshS class for surface meshes
   py::class_<MmgMeshS>(m, "MmgMeshS")
@@ -214,16 +255,24 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("__getitem__", &MmgMeshS::getitem)
       .def("__setitem__", &MmgMeshS::setitem)
       // File I/O
-      .def("save", [](const MmgMeshS &self, const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
-      });
+      .def("save",
+           [](const MmgMeshS &self, const py::object &path) {
+             if (py::isinstance<py::str>(path)) {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
+      .def(
+          "remesh",
+          [](MmgMeshS &self, py::kwargs kwargs) {
+            self.remesh(kwargs_to_options(kwargs));
+          },
+          "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
+          "hgrad, optim, verbose.");
 
   py::class_<mmg3d>(m, "mmg3d")
       .def_static("remesh", remesh_3d, py::arg("input_mesh"),

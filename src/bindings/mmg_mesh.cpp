@@ -1,4 +1,5 @@
 #include "mmg_mesh.hpp"
+#include "mmg_common.hpp"
 #include <stdexcept>
 
 namespace {
@@ -1018,4 +1019,25 @@ py::array_t<int> MmgMesh::get_tetrahedra() const {
 py::tuple MmgMesh::get_tetrahedra_with_refs() const {
   // Alias for get_elements_with_refs() for API symmetry with set_tetrahedra()
   return get_elements_with_refs();
+}
+
+void MmgMesh::remesh(const py::dict &options) {
+  set_mesh_options_3D(mesh, met, options);
+
+  int ret;
+  const char *mode_name;
+  if (mesh->info.lag > -1) {
+    ret = MMG3D_mmg3dmov(mesh, met, disp);
+    mode_name = "MMG3D_mmg3dmov (lagrangian motion)";
+  } else if (mesh->info.iso || mesh->info.isosurf) {
+    ret = MMG3D_mmg3dls(mesh, ls, met);
+    mode_name = "MMG3D_mmg3dls (level-set discretization)";
+  } else {
+    ret = MMG3D_mmg3dlib(mesh, met);
+    mode_name = "MMG3D_mmg3dlib (standard remeshing)";
+  }
+
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
+  }
 }

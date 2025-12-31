@@ -96,6 +96,9 @@ public:
   void
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
 
+  // In-memory remeshing
+  void remesh(const py::dict &options = py::dict());
+
   // Delete copy constructor and assignment operator
   MmgMesh(const MmgMesh &) = delete;
   MmgMesh &operator=(const MmgMesh &) = delete;

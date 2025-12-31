@@ -75,6 +75,9 @@ public:
   void
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
 
+  // In-memory remeshing
+  void remesh(const py::dict &options = py::dict());
+
   // Delete copy constructor and assignment operator
   MmgMesh2D(const MmgMesh2D &) = delete;
   MmgMesh2D &operator=(const MmgMesh2D &) = delete;
@@ -82,6 +85,8 @@ public:
 private:
   MMG5_pMesh mesh;
   MMG5_pSol met;
+  MMG5_pSol disp;
+  MMG5_pSol ls;
 
   enum class SolutionType { SCALAR, VECTOR, TENSOR };
 
