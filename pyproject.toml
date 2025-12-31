@@ -85,6 +85,15 @@ ignore = [
     "C901",    # complex functions acceptable for mathematical algorithms
     "E501",    # long lines acceptable in docstrings
 ]
+"examples/**/*.py" = [
+    "T201",    # print statements essential for example output
+    "PLR0913", # many arguments allowed for clarity in examples
+    "PLR0915", # long functions allowed for comprehensive examples
+    "PERF401", # list comprehensions not required in examples (readability first)
+    "PTH123",  # open() is fine for simple examples
+    "PLR2004", # magic values allowed in examples
+    "N806",    # uppercase variable names for matrices in examples
+]
 "scripts/**/*.py" = [
     "T201",    # print statements allowed in scripts
     "ANN",     # annotations not required in scripts
