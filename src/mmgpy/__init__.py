@@ -385,6 +385,8 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
         )
 
 
+from . import metrics
+
 __all__ = [
     "MMG_VERSION",
     "MmgMesh",  # Backwards-compatible alias for MmgMesh3D
@@ -392,6 +394,7 @@ __all__ = [
     "MmgMesh3D",
     "MmgMeshS",
     "__version__",
+    "metrics",
     "mmg2d",
     "mmg3d",
     "mmgs",
