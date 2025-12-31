@@ -9,64 +9,7 @@ import sys
 import tempfile
 import zipfile
 
-# VTK modules required for MMG I/O (matching Windows minimal set)
-ESSENTIAL_VTK_MODULES = {
-    "CommonColor",
-    "CommonComputationalGeometry",
-    "CommonCore",
-    "CommonDataModel",
-    "CommonExecutionModel",
-    "CommonMath",
-    "CommonMisc",
-    "CommonSystem",
-    "CommonTransforms",
-    "DICOMParser",
-    "FiltersCellGrid",
-    "FiltersCore",
-    "FiltersExtraction",
-    "FiltersGeneral",
-    "FiltersGeometry",
-    "FiltersHybrid",
-    "FiltersHyperTree",
-    "FiltersModeling",
-    "FiltersParallel",
-    "FiltersReduction",
-    "FiltersSources",
-    "FiltersStatistics",
-    "FiltersTexture",
-    "FiltersVerdict",
-    "IOCellGrid",
-    "IOCore",
-    "IOGeometry",
-    "IOImage",
-    "IOLegacy",
-    "IOParallel",
-    "IOParallelXML",
-    "IOXML",
-    "IOXMLParser",
-    "ImagingCore",
-    "ImagingSources",
-    "ParallelCore",
-    "ParallelDIY",
-    "RenderingCore",
-    "doubleconversion",
-    "expat",
-    "fmt",
-    "jpeg",
-    "jsoncpp",
-    "kissfft",
-    "loguru",
-    "lz4",
-    "lzma",
-    "metaio",
-    "png",
-    "pugixml",
-    "sys",
-    "tiff",
-    "token",
-    "verdict",
-    "zlib",
-}
+from vtk_modules import ESSENTIAL_VTK_MODULES, VTK_MAJOR_MINOR
 
 
 def get_vtk_module_name(filename):
@@ -86,20 +29,22 @@ def get_vtk_module_name(filename):
     # Remove libvtk prefix
     name = filename[6:]  # Remove "libvtk"
 
-    # Find the -9.4 version marker
-    if "-9.4" not in name:
+    # Find the version marker (e.g., "-9.4", "-9.5")
+    version_marker = f"-{VTK_MAJOR_MINOR}"
+    if version_marker not in name:
         return None
 
-    # Extract module name (everything before -9.4)
-    module = name.split("-9.4")[0]
+    # Extract module name (everything before version marker)
+    module = name.split(version_marker)[0]
     return module
 
 
 def is_vtk_library(filename):
     """Check if file is a VTK shared library."""
+    version_marker = f"-{VTK_MAJOR_MINOR}"
     return (
         filename.startswith("libvtk")
-        and "-9.4" in filename
+        and version_marker in filename
         and (".so" in filename or ".dylib" in filename)
     )
 
