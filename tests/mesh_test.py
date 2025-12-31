@@ -129,7 +129,7 @@ def test_load_mesh() -> None:
     npt.assert_array_equal(mesh.get_elements(), elements)
 
 
-def test_load_nonexistent_file_no_crash() -> None:
+def test_load_nonexistent_file_no_crash(tmp_path: Path) -> None:
     """Test that loading a non-existent file raises and doesn't cause memory issues.
 
     This tests the cleanup() path in the constructor: when file loading fails,
@@ -138,15 +138,14 @@ def test_load_nonexistent_file_no_crash() -> None:
     """
     import pytest
 
+    nonexistent_file = tmp_path / "does_not_exist.mesh"
+
     # Loading a non-existent file should raise an exception but not crash
     # (no double-free or memory corruption)
-    with pytest.raises(RuntimeError, match="Failed to load mesh"):
-        MmgMesh("/nonexistent/path/to/mesh.mesh")
-
     # Run multiple times to increase chance of catching memory issues
     for _ in range(10):
         with pytest.raises(RuntimeError, match="Failed to load mesh"):
-            MmgMesh("/tmp/does_not_exist_12345.mesh")
+            MmgMesh(nonexistent_file)
 
 
 def visualize_mmg_mesh() -> None:
