@@ -17,6 +17,7 @@ dependencies = [
     "meshio>=5.3.5",
     "numpy>=2.0.2",
     "patchelf>=0.17.2.4; sys_platform == 'linux'",
+    "scipy>=1.11.0",
 ]
 authors = [{ name = "Kevin MArchais", email = "kevinmarchais@gmail.com" }]
 license = { text = "MIT" }

@@ -126,7 +126,22 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
-          "hgrad, optim, verbose.");
+          "hgrad, optim, verbose.")
+      .def(
+          "remesh_lagrangian",
+          [](MmgMesh &self, const py::array_t<double> &displacement,
+             py::kwargs kwargs) {
+            self.remesh_lagrangian(displacement, kwargs_to_options(kwargs));
+          },
+          py::arg("displacement"),
+          "Remesh the mesh following Lagrangian motion defined by a "
+          "displacement field.\n\n"
+          "Args:\n"
+          "    displacement: Nx3 array of displacement vectors per vertex.\n"
+          "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
+          "              lag: Lagrangian mode (default=1, "
+          "displacement-based).\n"
+          "                   0=velocity, 1=displacement, 2=final position.");
 
   // Phase 4: MmgMesh2D class for 2D planar meshes
   py::class_<MmgMesh2D>(m, "MmgMesh2D")
@@ -204,7 +219,22 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
-          "hgrad, optim, verbose.");
+          "hgrad, optim, verbose.")
+      .def(
+          "remesh_lagrangian",
+          [](MmgMesh2D &self, const py::array_t<double> &displacement,
+             py::kwargs kwargs) {
+            self.remesh_lagrangian(displacement, kwargs_to_options(kwargs));
+          },
+          py::arg("displacement"),
+          "Remesh the mesh following Lagrangian motion defined by a "
+          "displacement field.\n\n"
+          "Args:\n"
+          "    displacement: Nx2 array of displacement vectors per vertex.\n"
+          "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
+          "              lag: Lagrangian mode (default=1, "
+          "displacement-based).\n"
+          "                   0=velocity, 1=displacement, 2=final position.");
 
   // Phase 4: MmgMeshS class for surface meshes
   py::class_<MmgMeshS>(m, "MmgMeshS")
