@@ -4,6 +4,7 @@
 #     "mmgpy",
 #     "numpy",
 #     "matplotlib",
+#     "scipy",
 # ]
 #
 # [tool.uv.sources]
@@ -11,15 +12,19 @@
 # ///
 """2D Lagrangian motion remeshing example.
 
-This example demonstrates how to use the Lagrangian motion remeshing feature
-in 2D to deform a mesh while maintaining mesh quality.
+This example demonstrates how to use the pure Python Lagrangian motion
+implementation to deform a 2D mesh while maintaining mesh quality.
+
+The Python implementation uses Laplacian smoothing to propagate boundary
+displacements to interior nodes, then applies the motion and remeshes.
+This works on all platforms without requiring the ELAS library.
 """
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 
-from mmgpy import MmgMesh2D
+from mmgpy import MmgMesh2D, move_mesh
 
 
 def create_unit_square_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -37,12 +42,13 @@ def create_unit_square_mesh() -> tuple[np.ndarray, np.ndarray]:
 
 
 def main() -> None:
-    """Demonstrate 2D Lagrangian motion remeshing."""
+    """Demonstrate 2D Lagrangian motion using pure Python implementation."""
     vertices, triangles = create_unit_square_mesh()
     print(f"Initial mesh: {len(vertices)} vertices, {len(triangles)} triangles")
 
     mesh = MmgMesh2D(vertices, triangles)
 
+    # Create radial expansion displacement field
     n_vertices = vertices.shape[0]
     displacement = np.zeros((n_vertices, 2), dtype=np.float64)
 
@@ -53,8 +59,8 @@ def main() -> None:
             direction = (vertices[i] - center) / r
             displacement[i] = direction * 0.05
 
-    print("Applying Lagrangian motion remeshing...")
-    mesh.remesh_lagrangian(displacement, hmax=0.15, verbose=False)
+    print("Applying Lagrangian motion (pure Python implementation)...")
+    move_mesh(mesh, displacement, hmax=0.15, verbose=False)
 
     output_vertices = mesh.get_vertices()
     output_triangles = mesh.get_triangles()

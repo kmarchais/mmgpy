@@ -4,22 +4,26 @@
 #     "mmgpy",
 #     "numpy",
 #     "pyvista",
+#     "scipy",
 # ]
 #
 # [tool.uv.sources]
 # mmgpy = { path = "../.." }
 # ///
-"""Lagrangian motion remeshing example.
+"""3D Lagrangian motion remeshing example.
 
-This example demonstrates how to use the Lagrangian motion remeshing feature
-to deform a mesh while maintaining mesh quality. The mesh is deformed by
-applying a displacement field to all vertices.
+This example demonstrates how to use the pure Python Lagrangian motion
+implementation to deform a 3D mesh while maintaining mesh quality.
+
+The Python implementation uses Laplacian smoothing to propagate boundary
+displacements to interior nodes, then applies the motion and remeshes.
+This works on all platforms without requiring the ELAS library.
 """
 
 import numpy as np
 import pyvista as pv
 
-from mmgpy import MmgMesh3D
+from mmgpy import MmgMesh3D, move_mesh
 
 
 def create_unit_cube_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -32,12 +36,13 @@ def create_unit_cube_mesh() -> tuple[np.ndarray, np.ndarray]:
 
 
 def main() -> None:
-    """Demonstrate Lagrangian motion remeshing."""
+    """Demonstrate 3D Lagrangian motion using pure Python implementation."""
     vertices, elements = create_unit_cube_mesh()
     print(f"Initial mesh: {len(vertices)} vertices, {len(elements)} tetrahedra")
 
     mesh = MmgMesh3D(vertices, elements)
 
+    # Create radial expansion displacement field
     n_vertices = vertices.shape[0]
     displacement = np.zeros((n_vertices, 3), dtype=np.float64)
 
@@ -48,8 +53,8 @@ def main() -> None:
             direction = (vertices[i] - center) / r
             displacement[i] = direction * 0.1 * (1.0 - r)
 
-    print("Applying Lagrangian motion remeshing...")
-    mesh.remesh_lagrangian(displacement, hmax=0.2, verbose=False)
+    print("Applying Lagrangian motion (pure Python implementation)...")
+    move_mesh(mesh, displacement, hmax=0.2, verbose=False)
 
     output_vertices = mesh.get_vertices()
     output_elements = mesh.get_elements()
