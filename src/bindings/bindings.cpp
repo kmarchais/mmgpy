@@ -42,6 +42,20 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_elements_with_refs", &MmgMesh::get_elements_with_refs)
       .def("get_edges", &MmgMesh::get_edges)
       .def("get_edges_with_refs", &MmgMesh::get_edges_with_refs)
+      // Phase 2: Single element operations
+      .def("set_vertex", &MmgMesh::set_vertex, py::arg("x"), py::arg("y"),
+           py::arg("z"), py::arg("ref"), py::arg("idx"))
+      .def("set_tetrahedron", &MmgMesh::set_tetrahedron, py::arg("v0"),
+           py::arg("v1"), py::arg("v2"), py::arg("v3"), py::arg("ref"),
+           py::arg("idx"))
+      .def("set_triangle", &MmgMesh::set_triangle, py::arg("v0"), py::arg("v1"),
+           py::arg("v2"), py::arg("ref"), py::arg("idx"))
+      .def("set_edge", &MmgMesh::set_edge, py::arg("v0"), py::arg("v1"),
+           py::arg("ref"), py::arg("idx"))
+      .def("get_vertex", &MmgMesh::get_vertex, py::arg("idx"))
+      .def("get_tetrahedron", &MmgMesh::get_tetrahedron, py::arg("idx"))
+      .def("get_triangle", &MmgMesh::get_triangle, py::arg("idx"))
+      .def("get_edge", &MmgMesh::get_edge, py::arg("idx"))
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)

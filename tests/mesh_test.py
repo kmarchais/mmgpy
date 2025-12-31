@@ -352,6 +352,138 @@ def test_programmatic_mesh_construction() -> None:
     npt.assert_array_equal(mesh.get_triangles(), triangles)
 
 
+# Tests for Phase 2: Single element operations
+
+
+def test_set_vertex_single() -> None:
+    """Test setting a single vertex."""
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=3, tetrahedra=0)
+
+    # Define vertex refs for testing
+    vertex_refs = [1, 2, 3]
+    mesh.set_vertex(0.0, 0.0, 0.0, ref=vertex_refs[0], idx=0)
+    mesh.set_vertex(1.0, 0.0, 0.0, ref=vertex_refs[1], idx=1)
+    mesh.set_vertex(0.5, 1.0, 0.0, ref=vertex_refs[2], idx=2)
+
+    # Verify with get_vertex
+    x, y, z, ref = mesh.get_vertex(0)
+    assert (x, y, z) == (0.0, 0.0, 0.0)
+    assert ref == vertex_refs[0]
+
+    x, y, z, ref = mesh.get_vertex(1)
+    assert (x, y, z) == (1.0, 0.0, 0.0)
+    assert ref == vertex_refs[1]
+
+    x, y, z, ref = mesh.get_vertex(2)
+    assert (x, y, z) == (0.5, 1.0, 0.0)
+    assert ref == vertex_refs[2]
+
+
+def test_set_tetrahedron_single() -> None:
+    """Test setting a single tetrahedron."""
+    vertices, _ = create_test_mesh()
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=1)
+    mesh.set_vertices(vertices)
+
+    # Set a single tetrahedron with a material ID
+    tet_ref = 100
+    mesh.set_tetrahedron(0, 1, 3, 4, ref=tet_ref, idx=0)
+
+    # Verify with get_tetrahedron
+    v0, v1, v2, v3, ref = mesh.get_tetrahedron(0)
+    assert (v0, v1, v2, v3) == (0, 1, 3, 4)
+    assert ref == tet_ref
+
+
+def test_set_triangle_single() -> None:
+    """Test setting a single triangle."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements), triangles=1)
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Set a single triangle with a boundary marker
+    tri_ref = 50
+    mesh.set_triangle(0, 1, 2, ref=tri_ref, idx=0)
+
+    # Verify with get_triangle
+    v0, v1, v2, ref = mesh.get_triangle(0)
+    assert (v0, v1, v2) == (0, 1, 2)
+    assert ref == tri_ref
+
+
+def test_set_edge_single() -> None:
+    """Test setting a single edge."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements), edges=1)
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Set a single edge with a ridge marker
+    edge_ref = 25
+    mesh.set_edge(0, 1, ref=edge_ref, idx=0)
+
+    # Verify with get_edge
+    v0, v1, ref = mesh.get_edge(0)
+    assert (v0, v1) == (0, 1)
+    assert ref == edge_ref
+
+
+def test_single_element_mixed_construction() -> None:
+    """Test building a mesh using a mix of single and bulk operations."""
+    # Define expected counts
+    expected_vertices = 4
+    expected_tetrahedra = 1
+    expected_triangles = 4
+
+    # Define reference IDs for verification
+    tet_ref = 100
+    tri_refs = [10, 20, 30, 40]
+
+    # Build a simple tetrahedron using single-element setters
+    mesh = MmgMesh()
+    mesh.set_mesh_size(
+        vertices=expected_vertices,
+        tetrahedra=expected_tetrahedra,
+        triangles=expected_triangles,
+    )
+
+    # Set vertices one by one with different refs
+    mesh.set_vertex(0.0, 0.0, 0.0, ref=1, idx=0)
+    mesh.set_vertex(1.0, 0.0, 0.0, ref=2, idx=1)
+    mesh.set_vertex(0.5, 1.0, 0.0, ref=3, idx=2)
+    mesh.set_vertex(0.5, 0.5, 1.0, ref=4, idx=3)
+
+    # Set the tetrahedron
+    mesh.set_tetrahedron(0, 1, 2, 3, ref=tet_ref, idx=0)
+
+    # Set boundary triangles one by one
+    mesh.set_triangle(0, 1, 2, ref=tri_refs[0], idx=0)  # bottom
+    mesh.set_triangle(0, 1, 3, ref=tri_refs[1], idx=1)  # front
+    mesh.set_triangle(1, 2, 3, ref=tri_refs[2], idx=2)  # right
+    mesh.set_triangle(0, 2, 3, ref=tri_refs[3], idx=3)  # left
+
+    # Verify mesh construction
+    np_v, ne, _, nt, _, _ = mesh.get_mesh_size()
+    assert np_v == expected_vertices
+    assert ne == expected_tetrahedra
+    assert nt == expected_triangles
+
+    # Verify element by index
+    _, _, _, _, ref = mesh.get_tetrahedron(0)
+    assert ref == tet_ref
+
+    # Verify triangles by index
+    _, _, _, ref = mesh.get_triangle(0)
+    assert ref == tri_refs[0]
+    _, _, _, ref = mesh.get_triangle(3)
+    assert ref == tri_refs[3]
+
+
 def visualize_mmg_mesh() -> None:
     """Visualize a simple MmgMesh using PyVista."""
     import pyvista as pv

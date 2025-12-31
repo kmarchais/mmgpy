@@ -625,3 +625,107 @@ py::tuple MmgMesh::get_edges_with_refs() const {
   }
   return py::make_tuple(edges, refs);
 }
+
+// Phase 2: Single element operations
+
+void MmgMesh::set_vertex(double x, double y, double z, MMG5_int ref,
+                         MMG5_int idx) {
+  // idx is 0-based Python index, convert to 1-based MMG index
+  if (!MMG3D_Set_vertex(mesh, x, y, z, ref, idx + 1)) {
+    throw std::runtime_error("Failed to set vertex at index " +
+                             std::to_string(idx));
+  }
+}
+
+void MmgMesh::set_tetrahedron(int v0, int v1, int v2, int v3, MMG5_int ref,
+                              MMG5_int idx) {
+  // Convert from 0-based Python indexing to 1-based MMG indexing
+  if (!MMG3D_Set_tetrahedron(mesh, v0 + 1, v1 + 1, v2 + 1, v3 + 1, ref,
+                             idx + 1)) {
+    throw std::runtime_error("Failed to set tetrahedron at index " +
+                             std::to_string(idx));
+  }
+}
+
+void MmgMesh::set_triangle(int v0, int v1, int v2, MMG5_int ref, MMG5_int idx) {
+  // Convert from 0-based Python indexing to 1-based MMG indexing
+  if (!MMG3D_Set_triangle(mesh, v0 + 1, v1 + 1, v2 + 1, ref, idx + 1)) {
+    throw std::runtime_error("Failed to set triangle at index " +
+                             std::to_string(idx));
+  }
+}
+
+void MmgMesh::set_edge(int v0, int v1, MMG5_int ref, MMG5_int idx) {
+  // Convert from 0-based Python indexing to 1-based MMG indexing
+  if (!MMG3D_Set_edge(mesh, v0 + 1, v1 + 1, ref, idx + 1)) {
+    throw std::runtime_error("Failed to set edge at index " +
+                             std::to_string(idx));
+  }
+}
+
+py::tuple MmgMesh::get_vertex(MMG5_int idx) const {
+  double x, y, z;
+  MMG5_int ref;
+  int corner, required;
+
+  // idx is 0-based Python index, convert to 1-based MMG index
+  if (!MMG3D_GetByIdx_vertex(mesh, &x, &y, &z, &ref, &corner, &required,
+                             idx + 1)) {
+    throw std::runtime_error("Failed to get vertex at index " +
+                             std::to_string(idx));
+  }
+
+  return py::make_tuple(x, y, z, ref);
+}
+
+py::tuple MmgMesh::get_tetrahedron(MMG5_int idx) const {
+  // idx is 0-based Python index, convert to 1-based MMG index
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->ne) {
+    throw std::runtime_error("Tetrahedron index out of range: " +
+                             std::to_string(idx));
+  }
+
+  // Access tetrahedron data directly from mesh structure
+  MMG5_pTetra pt = &mesh->tetra[mmg_idx];
+
+  // Convert from 1-based MMG indexing to 0-based Python indexing
+  return py::make_tuple(
+      static_cast<int>(pt->v[0] - 1), static_cast<int>(pt->v[1] - 1),
+      static_cast<int>(pt->v[2] - 1), static_cast<int>(pt->v[3] - 1), pt->ref);
+}
+
+py::tuple MmgMesh::get_triangle(MMG5_int idx) const {
+  // idx is 0-based Python index, convert to 1-based MMG index
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nt) {
+    throw std::runtime_error("Triangle index out of range: " +
+                             std::to_string(idx));
+  }
+
+  // Access triangle data directly from mesh structure
+  MMG5_pTria pt = &mesh->tria[mmg_idx];
+
+  // Convert from 1-based MMG indexing to 0-based Python indexing
+  return py::make_tuple(static_cast<int>(pt->v[0] - 1),
+                        static_cast<int>(pt->v[1] - 1),
+                        static_cast<int>(pt->v[2] - 1), pt->ref);
+}
+
+py::tuple MmgMesh::get_edge(MMG5_int idx) const {
+  // idx is 0-based Python index, convert to 1-based MMG index
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->na) {
+    throw std::runtime_error("Edge index out of range: " + std::to_string(idx));
+  }
+
+  // Access edge data directly from mesh structure
+  MMG5_pEdge pe = &mesh->edge[mmg_idx];
+
+  // Convert from 1-based MMG indexing to 0-based Python indexing
+  return py::make_tuple(static_cast<int>(pe->a - 1),
+                        static_cast<int>(pe->b - 1), pe->ref);
+}

@@ -103,6 +103,41 @@ class MmgMesh:
     def get_edges_with_refs(
         self,
     ) -> tuple[NDArray[np.int32], NDArray[np.int64]]: ...
+
+    # Phase 2: Single element operations
+    def set_vertex(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        ref: int,
+        idx: int,
+    ) -> None: ...
+    def set_tetrahedron(
+        self,
+        v0: int,
+        v1: int,
+        v2: int,
+        v3: int,
+        ref: int,
+        idx: int,
+    ) -> None: ...
+    def set_triangle(
+        self,
+        v0: int,
+        v1: int,
+        v2: int,
+        ref: int,
+        idx: int,
+    ) -> None: ...
+    def set_edge(self, v0: int, v1: int, ref: int, idx: int) -> None: ...
+    def get_vertex(self, idx: int) -> tuple[float, float, float, int]: ...
+    def get_tetrahedron(
+        self,
+        idx: int,
+    ) -> tuple[int, int, int, int, int]: ...
+    def get_triangle(self, idx: int) -> tuple[int, int, int, int]: ...
+    def get_edge(self, idx: int) -> tuple[int, int, int]: ...
     def set_field(self, key: str, value: NDArray[np.float64]) -> None: ...
     def get_field(self, key: str) -> NDArray[np.float64]: ...
     def __setitem__(self, key: str, value: NDArray[np.float64]) -> None: ...

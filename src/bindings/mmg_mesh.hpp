@@ -53,6 +53,17 @@ public:
   py::array_t<int> get_edges() const;
   py::tuple get_edges_with_refs() const;
 
+  // Phase 2: Single element operations
+  void set_vertex(double x, double y, double z, MMG5_int ref, MMG5_int idx);
+  void set_tetrahedron(int v0, int v1, int v2, int v3, MMG5_int ref,
+                       MMG5_int idx);
+  void set_triangle(int v0, int v1, int v2, MMG5_int ref, MMG5_int idx);
+  void set_edge(int v0, int v1, MMG5_int ref, MMG5_int idx);
+  py::tuple get_vertex(MMG5_int idx) const;
+  py::tuple get_tetrahedron(MMG5_int idx) const;
+  py::tuple get_triangle(MMG5_int idx) const;
+  py::tuple get_edge(MMG5_int idx) const;
+
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);
   py::array_t<double> get_field(const std::string &field_name) const;
