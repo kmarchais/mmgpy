@@ -131,7 +131,7 @@ unresolved-import = "ignore"
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 build = "cp310-* cp311-* cp312-* cp313-*"
-skip = "*-win32 *-manylinux_i686 *-musllinux*"
+skip = "*-win32 *-manylinux_i686 *-musllinux_i686"
 test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
 
@@ -152,7 +152,8 @@ archs = ["x86_64"]
 before-all = [
     'VTK_VERSION="9.4.1"',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
-    'VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"',
+    # Detect musl vs glibc to download correct VTK build
+    'if ldd --version 2>&1 | grep -q musl; then VTK_FILE="vtk-musllinux_1_2_x86_64.tar.gz"; else VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"; fi',
     'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
