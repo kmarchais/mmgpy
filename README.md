@@ -14,28 +14,21 @@ Example from [`examples/mmg3d/mesh_quality_improvement.py`](https://github.com/k
 
 ## Installation
 
-To install the package, run the following command (from Windows or MacOS), the Linux package is not available on PyPI yet and needs the next command to be installed:
+Install from PyPI (Windows, macOS, and Linux):
 
 ```bash
 pip install mmgpy
 ```
 
-Or directly from this repository:
-
-```bash
-pip install git+https://github.com/kmarchais/mmgpy.git
-```
-
-for `uv` users:
+Or with `uv`:
 
 ```bash
 uv pip install mmgpy
 ```
 
-On Linux:
+To install directly from the repository:
 
 ```bash
-sudo apt install build-essential libvtk9-dev
 pip install git+https://github.com/kmarchais/mmgpy.git
 ```
 
