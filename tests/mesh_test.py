@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from mmgpy import MmgMesh
+from mmgpy import MmgMesh, MmgMesh2D, MmgMeshS
 
 
 def create_test_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -482,6 +482,323 @@ def test_single_element_mixed_construction() -> None:
     assert ref == tri_refs[0]
     _, _, _, ref = mesh.get_triangle(3)
     assert ref == tri_refs[3]
+
+
+# Phase 4: Tests for MmgMesh2D (2D planar meshes)
+
+
+def create_2d_test_mesh() -> tuple[np.ndarray, np.ndarray]:
+    """Create a simple 2D square mesh for testing."""
+    vertices = np.array(
+        [
+            [0.0, 0.0],  # 0
+            [1.0, 0.0],  # 1
+            [1.0, 1.0],  # 2
+            [0.0, 1.0],  # 3
+        ],
+        dtype=np.float64,
+    )
+
+    triangles = np.array(
+        [
+            [0, 1, 2],
+            [0, 2, 3],
+        ],
+        dtype=np.int32,
+    )
+
+    return vertices, triangles
+
+
+def test_mmg_mesh_2d_construction() -> None:
+    """Test MmgMesh2D construction."""
+    vertices, triangles = create_2d_test_mesh()
+
+    # Test constructor with data
+    mesh = MmgMesh2D(vertices, triangles)
+    npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
+    npt.assert_array_equal(mesh.get_triangles(), triangles)
+
+
+def test_mmg_mesh_2d_mesh_size() -> None:
+    """Test MmgMesh2D set_mesh_size and get_mesh_size."""
+    mesh = MmgMesh2D()
+
+    expected_vertices = 4
+    expected_triangles = 2
+    expected_edges = 4
+    mesh.set_mesh_size(
+        vertices=expected_vertices,
+        triangles=expected_triangles,
+        edges=expected_edges,
+    )
+
+    nv, nt, nquad, ne = mesh.get_mesh_size()
+    assert nv == expected_vertices
+    assert nt == expected_triangles
+    assert nquad == 0
+    assert ne == expected_edges
+
+
+def test_mmg_mesh_2d_bulk_operations() -> None:
+    """Test MmgMesh2D bulk set/get operations."""
+    vertices, triangles = create_2d_test_mesh()
+
+    # Define edges (boundary edges)
+    edges = np.array(
+        [
+            [0, 1],  # bottom
+            [1, 2],  # right
+            [2, 3],  # top
+            [3, 0],  # left
+        ],
+        dtype=np.int32,
+    )
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        triangles=len(triangles),
+        edges=len(edges),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+    mesh.set_edges(edges)
+
+    npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
+    npt.assert_array_equal(mesh.get_triangles(), triangles)
+    npt.assert_array_equal(mesh.get_edges(), edges)
+
+
+def test_mmg_mesh_2d_single_element() -> None:
+    """Test MmgMesh2D single element setters/getters."""
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=3, triangles=1, edges=1)
+
+    # Set vertices one by one
+    vertex_ref = 1
+    mesh.set_vertex(0.0, 0.0, ref=vertex_ref, idx=0)
+    mesh.set_vertex(1.0, 0.0, ref=vertex_ref, idx=1)
+    mesh.set_vertex(0.5, 1.0, ref=vertex_ref, idx=2)
+
+    # Set triangle
+    tri_ref = 10
+    mesh.set_triangle(0, 1, 2, ref=tri_ref, idx=0)
+
+    # Set edge
+    edge_ref = 100
+    mesh.set_edge(0, 1, ref=edge_ref, idx=0)
+
+    # Verify vertex
+    x, y, ref = mesh.get_vertex(0)
+    assert (x, y) == (0.0, 0.0)
+    assert ref == vertex_ref
+
+    # Verify triangle
+    v0, v1, v2, ref = mesh.get_triangle(0)
+    assert (v0, v1, v2) == (0, 1, 2)
+    assert ref == tri_ref
+
+    # Verify edge
+    v0, v1, ref = mesh.get_edge(0)
+    assert (v0, v1) == (0, 1)
+    assert ref == edge_ref
+
+
+def test_mmg_mesh_2d_with_refs() -> None:
+    """Test MmgMesh2D with reference IDs."""
+    vertices, triangles = create_2d_test_mesh()
+    vertex_refs = np.array([1, 2, 3, 4], dtype=np.int64)
+    tri_refs = np.array([10, 20], dtype=np.int64)
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices, refs=vertex_refs)
+    mesh.set_triangles(triangles, refs=tri_refs)
+
+    # Verify vertices with refs
+    verts_out, refs_out = mesh.get_vertices_with_refs()
+    npt.assert_array_almost_equal(verts_out, vertices)
+    npt.assert_array_equal(refs_out, vertex_refs)
+
+    # Verify triangles with refs
+    tris_out, refs_out = mesh.get_triangles_with_refs()
+    npt.assert_array_equal(tris_out, triangles)
+    npt.assert_array_equal(refs_out, tri_refs)
+
+
+def test_mmg_mesh_2d_file_io(tmp_path: Path) -> None:
+    """Test MmgMesh2D file I/O."""
+    vertices, triangles = create_2d_test_mesh()
+    mesh = MmgMesh2D(vertices, triangles)
+
+    # Save and reload
+    mesh_file = tmp_path / "test_2d.mesh"
+    mesh.save(mesh_file)
+
+    loaded = MmgMesh2D(mesh_file)
+    npt.assert_array_almost_equal(loaded.get_vertices(), vertices)
+    npt.assert_array_equal(loaded.get_triangles(), triangles)
+
+
+# Phase 4: Tests for MmgMeshS (surface meshes)
+
+
+def create_surface_test_mesh() -> tuple[np.ndarray, np.ndarray]:
+    """Create a simple surface mesh (unit triangle in 3D) for testing."""
+    vertices = np.array(
+        [
+            [0.0, 0.0, 0.0],  # 0
+            [1.0, 0.0, 0.0],  # 1
+            [0.5, 1.0, 0.0],  # 2
+            [0.5, 0.5, 1.0],  # 3
+        ],
+        dtype=np.float64,
+    )
+
+    triangles = np.array(
+        [
+            [0, 1, 2],  # bottom
+            [0, 1, 3],  # front
+            [1, 2, 3],  # right
+            [0, 2, 3],  # left
+        ],
+        dtype=np.int32,
+    )
+
+    return vertices, triangles
+
+
+def test_mmg_mesh_s_construction() -> None:
+    """Test MmgMeshS construction."""
+    vertices, triangles = create_surface_test_mesh()
+
+    # Test constructor with data
+    mesh = MmgMeshS(vertices, triangles)
+    npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
+    npt.assert_array_equal(mesh.get_triangles(), triangles)
+
+
+def test_mmg_mesh_s_mesh_size() -> None:
+    """Test MmgMeshS set_mesh_size and get_mesh_size."""
+    mesh = MmgMeshS()
+
+    expected_vertices = 4
+    expected_triangles = 4
+    expected_edges = 6
+    mesh.set_mesh_size(
+        vertices=expected_vertices,
+        triangles=expected_triangles,
+        edges=expected_edges,
+    )
+
+    nv, nt, ne = mesh.get_mesh_size()
+    assert nv == expected_vertices
+    assert nt == expected_triangles
+    assert ne == expected_edges
+
+
+def test_mmg_mesh_s_bulk_operations() -> None:
+    """Test MmgMeshS bulk set/get operations."""
+    vertices, triangles = create_surface_test_mesh()
+
+    # Define edges (boundary edges of the surface)
+    edges = np.array(
+        [
+            [0, 1],
+            [1, 2],
+            [2, 0],
+            [0, 3],
+            [1, 3],
+            [2, 3],
+        ],
+        dtype=np.int32,
+    )
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        triangles=len(triangles),
+        edges=len(edges),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+    mesh.set_edges(edges)
+
+    npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
+    npt.assert_array_equal(mesh.get_triangles(), triangles)
+    npt.assert_array_equal(mesh.get_edges(), edges)
+
+
+def test_mmg_mesh_s_single_element() -> None:
+    """Test MmgMeshS single element setters/getters."""
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=3, triangles=1, edges=1)
+
+    # Set vertices one by one
+    vertex_ref = 1
+    mesh.set_vertex(0.0, 0.0, 0.0, ref=vertex_ref, idx=0)
+    mesh.set_vertex(1.0, 0.0, 0.0, ref=vertex_ref, idx=1)
+    mesh.set_vertex(0.5, 1.0, 0.5, ref=vertex_ref, idx=2)
+
+    # Set triangle
+    tri_ref = 10
+    mesh.set_triangle(0, 1, 2, ref=tri_ref, idx=0)
+
+    # Set edge
+    edge_ref = 100
+    mesh.set_edge(0, 1, ref=edge_ref, idx=0)
+
+    # Verify vertex
+    x, y, z, ref = mesh.get_vertex(0)
+    assert (x, y, z) == (0.0, 0.0, 0.0)
+    assert ref == vertex_ref
+
+    # Verify triangle
+    v0, v1, v2, ref = mesh.get_triangle(0)
+    assert (v0, v1, v2) == (0, 1, 2)
+    assert ref == tri_ref
+
+    # Verify edge
+    v0, v1, ref = mesh.get_edge(0)
+    assert (v0, v1) == (0, 1)
+    assert ref == edge_ref
+
+
+def test_mmg_mesh_s_with_refs() -> None:
+    """Test MmgMeshS with reference IDs."""
+    vertices, triangles = create_surface_test_mesh()
+    vertex_refs = np.array([1, 2, 3, 4], dtype=np.int64)
+    tri_refs = np.array([10, 20, 30, 40], dtype=np.int64)
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices, refs=vertex_refs)
+    mesh.set_triangles(triangles, refs=tri_refs)
+
+    # Verify vertices with refs
+    verts_out, refs_out = mesh.get_vertices_with_refs()
+    npt.assert_array_almost_equal(verts_out, vertices)
+    npt.assert_array_equal(refs_out, vertex_refs)
+
+    # Verify triangles with refs
+    tris_out, refs_out = mesh.get_triangles_with_refs()
+    npt.assert_array_equal(tris_out, triangles)
+    npt.assert_array_equal(refs_out, tri_refs)
+
+
+def test_mmg_mesh_s_file_io(tmp_path: Path) -> None:
+    """Test MmgMeshS file I/O."""
+    vertices, triangles = create_surface_test_mesh()
+    mesh = MmgMeshS(vertices, triangles)
+
+    # Save and reload
+    mesh_file = tmp_path / "test_s.mesh"
+    mesh.save(mesh_file)
+
+    loaded = MmgMeshS(mesh_file)
+    npt.assert_array_almost_equal(loaded.get_vertices(), vertices)
+    npt.assert_array_equal(loaded.get_triangles(), triangles)
 
 
 def visualize_mmg_mesh() -> None:
