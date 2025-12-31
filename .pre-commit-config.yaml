@@ -65,11 +65,11 @@ repos:
       - id: clang-format
         types_or: [c++, c, cuda]
 
-  # - repo: https://github.com/rbubley/mirrors-prettier
-  #   rev: "v3.5.3"
-  #   hooks:
-  #     - id: prettier
-  #       types_or: [yaml, markdown]
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: "v3.7.4"
+    hooks:
+      - id: prettier
+        types_or: [yaml, markdown]
 
   # - repo: https://github.com/abravalheri/validate-pyproject
   #   rev: "v0.24.1"
