@@ -4,6 +4,25 @@
 #include "mmg_mesh_2d.hpp"
 #include "mmg_mesh_s.hpp"
 
+namespace {
+// Helper to convert Python kwargs to options dict with verbose bool->int
+// conversion
+py::dict kwargs_to_options(const py::kwargs &kwargs) {
+  py::dict options;
+  for (const auto &item : kwargs) {
+    std::string key = py::str(item.first);
+    if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
+      // Convert bool to MMG verbose level: False=-1 (silent), True=1
+      bool verbose_bool = item.second.cast<bool>();
+      options[item.first] = verbose_bool ? 1 : -1;
+    } else {
+      options[item.first] = item.second;
+    }
+  }
+  return options;
+}
+} // namespace
+
 PYBIND11_MODULE(_mmgpy, m) {
   // MmgMesh3D class for 3D volumetric meshes (MMG3D)
   py::class_<MmgMesh>(m, "MmgMesh3D")
@@ -98,18 +117,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh &self, py::kwargs kwargs) {
-            py::dict options;
-            for (auto item : kwargs) {
-              std::string key = py::str(item.first);
-              if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
-                // Convert bool to MMG verbose level: False=-1 (silent), True=1
-                bool verbose_bool = item.second.cast<bool>();
-                options[item.first] = verbose_bool ? 1 : -1;
-              } else {
-                options[item.first] = item.second;
-              }
-            }
-            self.remesh(options);
+            self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
           "hgrad, verbose.");
@@ -187,17 +195,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh2D &self, py::kwargs kwargs) {
-            py::dict options;
-            for (auto item : kwargs) {
-              std::string key = py::str(item.first);
-              if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
-                bool verbose_bool = item.second.cast<bool>();
-                options[item.first] = verbose_bool ? 1 : -1;
-              } else {
-                options[item.first] = item.second;
-              }
-            }
-            self.remesh(options);
+            self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
           "hgrad, verbose.");
@@ -265,17 +263,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMeshS &self, py::kwargs kwargs) {
-            py::dict options;
-            for (auto item : kwargs) {
-              std::string key = py::str(item.first);
-              if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
-                bool verbose_bool = item.second.cast<bool>();
-                options[item.first] = verbose_bool ? 1 : -1;
-              } else {
-                options[item.first] = item.second;
-              }
-            }
-            self.remesh(options);
+            self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
           "hgrad, verbose.");
