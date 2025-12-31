@@ -12,7 +12,7 @@ name = "mmgpy"
 version = "0.1.6.dev0"
 description = "Python bindings for the MMG software"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "meshio>=5.3.5",
     "numpy>=2.0.2",
@@ -25,7 +25,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -56,7 +55,7 @@ mmgs_O3 = "mmgpy:_run_mmgs"
 fix-mmg-rpath = "mmgpy:_fix_rpath"
 
 [dependency-groups]
-dev = ["pre-commit>=4.0.1", "pytest>=8.3.4", "pyvista>=0.45.3"]
+dev = ["pre-commit>=4.0.1", "pytest>=8.3.4", "pyvista>=0.46.4"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -95,6 +94,7 @@ ignore = [
     "N806",    # uppercase variable names for matrices in examples
 ]
 "scripts/**/*.py" = [
+    "INP001",  # scripts are not a package
     "T201",    # print statements allowed in scripts
     "ANN",     # annotations not required in scripts
     "EXE001",  # shebang is fine in scripts
@@ -131,7 +131,7 @@ unresolved-import = "ignore"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+build = "cp310-* cp311-* cp312-* cp313-*"
 skip = "*-win32 *-manylinux_i686 *-musllinux*"
 test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
@@ -175,7 +175,7 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
-repair-wheel-command = "LD_LIBRARY_PATH=/tmp/vtk/lib64:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl"
+repair-wheel-command = "if [ ! -d /tmp/vtk-filtered ]; then cp -r /tmp/vtk/lib64 /tmp/vtk-filtered && python3 /project/scripts/filter_vtk.py /tmp/vtk-filtered; fi && LD_LIBRARY_PATH=/tmp/vtk-filtered:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -c%s \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
@@ -205,7 +205,7 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
-repair-wheel-command = "python3 $PWD/scripts/optimize_wheels.py {wheel} && cp {wheel} {dest_dir}/"
+repair-wheel-command = "python3 $PWD/scripts/optimize_wheels.py {wheel} && cp {wheel} {dest_dir}/ && for whl in {dest_dir}/*.whl; do size=$(stat -f%z \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
@@ -214,4 +214,4 @@ before-all = [
     "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.4' 'C:/include/vtk-9.4' -Force\"",
 ]
 environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
-repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel"
+repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel && powershell -Command \"Get-ChildItem '{dest_dir}/*.whl' | ForEach-Object { if ($_.Length -gt 104857600) { throw ('Wheel exceeds 100MB PyPI limit: ' + $_.Name + ' (' + $_.Length + ' bytes)') } }\""
