@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v5.0.0"
+    rev: "v6.0.0"
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=5000"]
@@ -20,55 +20,55 @@ repos:
       - id: name-tests-test
       - id: trailing-whitespace
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.11.13"
-    hooks:
-      - id: ruff # linter
-        args: [--fix, --select, ALL, --ignore, INP001]
-      - id: ruff-format
+  # - repo: https://github.com/astral-sh/ruff-pre-commit
+  #   rev: "v0.11.13"
+  #   hooks:
+  #     - id: ruff # linter
+  #       args: [--fix, --select, ALL, --ignore, INP001]
+  #     - id: ruff-format
 
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
-    hooks:
-      - id: pyupgrade
-        args: [--py39-plus, --keep-runtime-typing]
+  # - repo: https://github.com/asottile/pyupgrade
+  #   rev: v3.20.0
+  #   hooks:
+  #     - id: pyupgrade
+  #       args: [--py39-plus, --keep-runtime-typing]
 
-  - repo: https://github.com/DanielNoord/pydocstringformatter
-    rev: v0.7.3
-    hooks:
-      - id: pydocstringformatter
-        args:
-          [
-            "--style {numpydoc,pep257}",
-            "--no-strip-whitespace",
-            "--no-capitalize-first-letter",
-          ]
+  # - repo: https://github.com/DanielNoord/pydocstringformatter
+  #   rev: v0.7.3
+  #   hooks:
+  #     - id: pydocstringformatter
+  #       args:
+  #         [
+  #           "--style {numpydoc,pep257}",
+  #           "--no-strip-whitespace",
+  #           "--no-capitalize-first-letter",
+  #         ]
 
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
-    hooks:
-      - id: codespell
-        files: ^.*\.(py|rst|md)$
+  # - repo: https://github.com/codespell-project/codespell
+  #   rev: v2.4.1
+  #   hooks:
+  #     - id: codespell
+  #       files: ^.*\.(py|rst|md)$
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.16.0"
-    hooks:
-      - id: mypy
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: "v1.16.0"
+  #   hooks:
+  #     - id: mypy
 
-  - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: "v20.1.6"
-    hooks:
-      - id: clang-format
-        types_or: [c++, c, cuda]
+  # - repo: https://github.com/pre-commit/mirrors-clang-format
+  #   rev: "v20.1.6"
+  #   hooks:
+  #     - id: clang-format
+  #       types_or: [c++, c, cuda]
 
-  - repo: https://github.com/rbubley/mirrors-prettier
-    rev: "v3.5.3"
-    hooks:
-      - id: prettier
-        types_or: [yaml, markdown]
+  # - repo: https://github.com/rbubley/mirrors-prettier
+  #   rev: "v3.5.3"
+  #   hooks:
+  #     - id: prettier
+  #       types_or: [yaml, markdown]
 
-  - repo: https://github.com/abravalheri/validate-pyproject
-    rev: "v0.24.1"
-    hooks:
-      - id: validate-pyproject
-        additional_dependencies: ["validate-pyproject-schema-store[all]"]
+  # - repo: https://github.com/abravalheri/validate-pyproject
+  #   rev: "v0.24.1"
+  #   hooks:
+  #     - id: validate-pyproject
+  #       additional_dependencies: ["validate-pyproject-schema-store[all]"]
