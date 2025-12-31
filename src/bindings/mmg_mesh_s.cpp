@@ -1,6 +1,26 @@
 #include "mmg_mesh_s.hpp"
 #include <stdexcept>
 
+namespace {
+// Helper to ensure array is C-contiguous for safe memory access
+// This is critical because we use raw pointer arithmetic to access elements.
+// Non-contiguous arrays (e.g., Fortran-order or sliced views) will have
+// incorrect data access patterns if we assume C-contiguous layout.
+template <typename T>
+void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
+  // Check if array is C-contiguous by examining its flags
+  // PyArray_CHKFLAGS checks the NPY_ARRAY_C_CONTIGUOUS flag
+  py::object flags = arr.attr("flags");
+  py::object c_contiguous_obj = flags.attr("c_contiguous");
+  bool c_contiguous = c_contiguous_obj.template cast<bool>();
+  if (!c_contiguous) {
+    throw std::runtime_error(
+        name +
+        " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
+  }
+}
+} // namespace
+
 MmgMeshS::MmgMeshS() {
   mesh = nullptr;
   met = nullptr;
@@ -89,6 +109,7 @@ py::tuple MmgMeshS::get_mesh_size() const {
 
 void MmgMeshS::set_vertices(const py::array_t<double> &vertices,
                             const std::optional<py::array_t<MMG5_int>> &refs) {
+  ensure_c_contiguous(vertices, "Vertices");
   py::buffer_info vert_buf = vertices.request();
 
   if (vert_buf.ndim != 2 || vert_buf.shape[1] != 3) {
@@ -100,6 +121,7 @@ void MmgMeshS::set_vertices(const py::array_t<double> &vertices,
 
   const MMG5_int *refs_ptr = nullptr;
   if (refs.has_value()) {
+    ensure_c_contiguous(*refs, "References");
     py::buffer_info refs_buf = refs->request();
     if (refs_buf.ndim != 1 || refs_buf.shape[0] != nvert) {
       throw std::runtime_error(
@@ -120,6 +142,7 @@ void MmgMeshS::set_vertices(const py::array_t<double> &vertices,
 
 void MmgMeshS::set_triangles(const py::array_t<int> &triangles,
                              const std::optional<py::array_t<MMG5_int>> &refs) {
+  ensure_c_contiguous(triangles, "Triangles");
   py::buffer_info tri_buf = triangles.request();
 
   if (tri_buf.ndim != 2 || tri_buf.shape[1] != 3) {
@@ -131,6 +154,7 @@ void MmgMeshS::set_triangles(const py::array_t<int> &triangles,
 
   const MMG5_int *refs_ptr = nullptr;
   if (refs.has_value()) {
+    ensure_c_contiguous(*refs, "References");
     py::buffer_info refs_buf = refs->request();
     if (refs_buf.ndim != 1 || refs_buf.shape[0] != ntri) {
       throw std::runtime_error(
@@ -151,6 +175,7 @@ void MmgMeshS::set_triangles(const py::array_t<int> &triangles,
 
 void MmgMeshS::set_edges(const py::array_t<int> &edges,
                          const std::optional<py::array_t<MMG5_int>> &refs) {
+  ensure_c_contiguous(edges, "Edges");
   py::buffer_info edge_buf = edges.request();
 
   if (edge_buf.ndim != 2 || edge_buf.shape[1] != 2) {
@@ -162,6 +187,7 @@ void MmgMeshS::set_edges(const py::array_t<int> &edges,
 
   const MMG5_int *refs_ptr = nullptr;
   if (refs.has_value()) {
+    ensure_c_contiguous(*refs, "References");
     py::buffer_info refs_buf = refs->request();
     if (refs_buf.ndim != 1 || refs_buf.shape[0] != nedge) {
       throw std::runtime_error(
@@ -194,7 +220,8 @@ py::array_t<double> MmgMeshS::get_vertices() const {
     int corner, required;
 
     if (!MMGS_Get_vertex(mesh, &x, &y, &z, &ref, &corner, &required)) {
-      throw std::runtime_error("Failed to get vertex");
+      throw std::runtime_error("Failed to get vertex at index " +
+                               std::to_string(i));
     }
 
     ptr[i * 3] = x;
@@ -222,7 +249,8 @@ py::tuple MmgMeshS::get_vertices_with_refs() const {
     int corner, required;
 
     if (!MMGS_Get_vertex(mesh, &x, &y, &z, &ref, &corner, &required)) {
-      throw std::runtime_error("Failed to get vertex");
+      throw std::runtime_error("Failed to get vertex at index " +
+                               std::to_string(i));
     }
 
     vert_ptr[i * 3] = x;
@@ -247,7 +275,8 @@ py::array_t<int> MmgMeshS::get_triangles() const {
     int required;
 
     if (!MMGS_Get_triangle(mesh, &v0, &v1, &v2, &ref, &required)) {
-      throw std::runtime_error("Failed to get triangle");
+      throw std::runtime_error("Failed to get triangle at index " +
+                               std::to_string(i));
     }
 
     ptr[i * 3] = v0 - 1;
@@ -275,7 +304,8 @@ py::tuple MmgMeshS::get_triangles_with_refs() const {
     int required;
 
     if (!MMGS_Get_triangle(mesh, &v0, &v1, &v2, &ref, &required)) {
-      throw std::runtime_error("Failed to get triangle");
+      throw std::runtime_error("Failed to get triangle at index " +
+                               std::to_string(i));
     }
 
     tri_ptr[i * 3] = v0 - 1;
@@ -300,7 +330,8 @@ py::array_t<int> MmgMeshS::get_edges() const {
     int corner, required;
 
     if (!MMGS_Get_edge(mesh, &v0, &v1, &ref, &corner, &required)) {
-      throw std::runtime_error("Failed to get edge");
+      throw std::runtime_error("Failed to get edge at index " +
+                               std::to_string(i));
     }
 
     ptr[i * 2] = static_cast<int>(v0 - 1);
@@ -327,7 +358,8 @@ py::tuple MmgMeshS::get_edges_with_refs() const {
     int corner, required;
 
     if (!MMGS_Get_edge(mesh, &v0, &v1, &ref, &corner, &required)) {
-      throw std::runtime_error("Failed to get edge");
+      throw std::runtime_error("Failed to get edge at index " +
+                               std::to_string(i));
     }
 
     edge_ptr[i * 2] = static_cast<int>(v0 - 1);
@@ -339,6 +371,10 @@ py::tuple MmgMeshS::get_edges_with_refs() const {
 
 void MmgMeshS::set_vertex(double x, double y, double z, MMG5_int ref,
                           MMG5_int idx) {
+  if (idx < 0 || idx >= mesh->npmax) {
+    throw std::runtime_error("Vertex index out of range: " +
+                             std::to_string(idx));
+  }
   if (!MMGS_Set_vertex(mesh, x, y, z, ref, idx + 1)) {
     throw std::runtime_error("Failed to set vertex at index " +
                              std::to_string(idx));
@@ -347,6 +383,10 @@ void MmgMeshS::set_vertex(double x, double y, double z, MMG5_int ref,
 
 void MmgMeshS::set_triangle(int v0, int v1, int v2, MMG5_int ref,
                             MMG5_int idx) {
+  if (idx < 0 || idx >= mesh->ntmax) {
+    throw std::runtime_error("Triangle index out of range: " +
+                             std::to_string(idx));
+  }
   if (!MMGS_Set_triangle(mesh, v0 + 1, v1 + 1, v2 + 1, ref, idx + 1)) {
     throw std::runtime_error("Failed to set triangle at index " +
                              std::to_string(idx));
@@ -354,6 +394,9 @@ void MmgMeshS::set_triangle(int v0, int v1, int v2, MMG5_int ref,
 }
 
 void MmgMeshS::set_edge(int v0, int v1, MMG5_int ref, MMG5_int idx) {
+  if (idx < 0 || idx >= mesh->namax) {
+    throw std::runtime_error("Edge index out of range: " + std::to_string(idx));
+  }
   if (!MMGS_Set_edge(mesh, v0 + 1, v1 + 1, ref, idx + 1)) {
     throw std::runtime_error("Failed to set edge at index " +
                              std::to_string(idx));
@@ -377,6 +420,10 @@ py::tuple MmgMeshS::get_vertex(MMG5_int idx) const {
 py::tuple MmgMeshS::get_triangle(MMG5_int idx) const {
   MMG5_int mmg_idx = idx + 1;
 
+  if (!mesh->tria) {
+    throw std::runtime_error("No triangles in mesh");
+  }
+
   if (mmg_idx < 1 || mmg_idx > mesh->nt) {
     throw std::runtime_error("Triangle index out of range: " +
                              std::to_string(idx));
@@ -391,6 +438,10 @@ py::tuple MmgMeshS::get_triangle(MMG5_int idx) const {
 
 py::tuple MmgMeshS::get_edge(MMG5_int idx) const {
   MMG5_int mmg_idx = idx + 1;
+
+  if (!mesh->edge) {
+    throw std::runtime_error("No edges in mesh");
+  }
 
   if (mmg_idx < 1 || mmg_idx > mesh->na) {
     throw std::runtime_error("Edge index out of range: " + std::to_string(idx));
