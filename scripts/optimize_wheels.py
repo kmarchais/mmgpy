@@ -126,7 +126,9 @@ def optimize_wheel(wheel_path):
                     libs_count = len(os.listdir(libs_dir))
                     shutil.rmtree(libs_dir, ignore_errors=True)
                     libs_removed += libs_count
-                    print(f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)")
+                    print(
+                        f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)"
+                    )
 
         # Walk through all files and remove unwanted ones
         for root, dirs, files in os.walk(temp_dir, topdown=False):

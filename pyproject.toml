@@ -85,6 +85,7 @@ ignore = [
     "RET504",  # unnecessary assignment allowed in scripts
     "C901",    # complex functions allowed in scripts
     "PLR0912", # many branches allowed in scripts
+    "PLR0915", # many statements allowed in scripts
     "B007",    # unused loop variables allowed in scripts
     "E501",    # long lines allowed in scripts
     "D401",    # docstring mood not enforced in scripts
