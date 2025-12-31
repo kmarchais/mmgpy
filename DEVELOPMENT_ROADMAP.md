@@ -4,24 +4,15 @@
 
 ## Open GitHub Issues
 
-| Issue                                               | Description                    | Status  |
-| --------------------------------------------------- | ------------------------------ | ------- |
-| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores |         |
-| [#47](https://github.com/kmarchais/mmgpy/issues/47) | Migrate to Trusted Publishing  | ✅ Done |
-| [#41](https://github.com/kmarchais/mmgpy/issues/41) | Optimize wheel sizes           | ✅ Done |
+| Issue                                               | Description                    |
+| --------------------------------------------------- | ------------------------------ |
+| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores |
 
 ---
 
 ## Pending Features by Priority
 
 ### 🟠 High Priority
-
-#### ~~In-Memory Remeshing API~~ ✅ Done
-
-```python
-mesh = MmgMesh3D(vertices, elements)
-mesh.remesh(hmax=0.1, verbose=False)  # No temp files, kwargs API
-```
 
 #### Element Attributes
 
@@ -44,32 +35,6 @@ mesh.get_element_quality(idx)
 ```python
 mmg3d.remesh_levelset(mesh, levelset, metric)
 ```
-
-#### ~~Lagrangian Motion~~ ✅ Done
-
-Two approaches available:
-
-**1. Pure Python (works everywhere, no extra dependencies):**
-
-```python
-from mmgpy import MmgMesh3D, move_mesh
-
-mesh = MmgMesh3D(vertices, elements)
-move_mesh(mesh, displacement, hmax=0.1, verbose=False)
-
-# With boundary propagation (Laplacian smoothing):
-move_mesh(mesh, displacement, boundary_mask=boundary_mask, propagate=True)
-```
-
-**2. C++ (requires ELAS library):**
-
-```python
-mesh = MmgMesh3D(vertices, elements)
-mesh.remesh_lagrangian(displacement, hmax=0.1, verbose=False)
-```
-
-> **Note:** The C++ method requires building with `USE_ELAS=ON` in CMake (disabled by default).
-> The Python `move_mesh()` function works on all platforms without additional dependencies.
 
 ### 🟡 Medium Priority
 
@@ -98,8 +63,6 @@ mesh.remesh_lagrangian(displacement, hmax=0.1, verbose=False)
 
 ## Code Quality Items
 
-| Priority | Item                                       | Location                                 | Status    |
-| -------- | ------------------------------------------ | ---------------------------------------- | --------- |
-| 🟡       | ~~Initialize `success = false` in switch~~ | ~~`mmg3d.cpp`, `mmg2d.cpp`, `mmgs.cpp`~~ | ✅ Done   |
-| 🟡       | ~~Centralize VTK version string~~          | ~~Multiple files~~                       | ✅ PR #61 |
-| 🟢       | Use `logging` module                       | `__init__.py`                            |           |
+| Priority | Item                 | Location      |
+| -------- | -------------------- | ------------- |
+| 🟢       | Use `logging` module | `__init__.py` |
