@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from mmgpy import MmgMesh
 
@@ -127,6 +128,23 @@ def test_load_mesh() -> None:
     mesh = MmgMesh(Path(__file__).parent / "test_mesh.mesh")
     npt.assert_array_almost_equal(mesh.get_vertices(), vertices)
     npt.assert_array_equal(mesh.get_elements(), elements)
+
+
+def test_load_nonexistent_file_no_crash(tmp_path: Path) -> None:
+    """Test that loading a non-existent file raises and doesn't cause memory issues.
+
+    This tests the cleanup() path in the constructor: when file loading fails,
+    cleanup() is called before throwing. Previously, cleanup() didn't null
+    pointers after freeing, which could cause double-free issues.
+    """
+    nonexistent_file = tmp_path / "does_not_exist.mesh"
+
+    # Loading a non-existent file should raise an exception but not crash
+    # (no double-free or memory corruption)
+    # Run multiple times to increase chance of catching memory issues
+    for _ in range(10):
+        with pytest.raises(RuntimeError, match="Failed to load mesh"):
+            MmgMesh(nonexistent_file)
 
 
 def visualize_mmg_mesh() -> None:

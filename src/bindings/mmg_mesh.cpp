@@ -61,10 +61,7 @@ MmgMesh::MmgMesh(
   }
 }
 
-MmgMesh::~MmgMesh() {
-  MMG3D_Free_all(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet, &met,
-                 MMG5_ARG_ppDisp, &disp, MMG5_ARG_ppLs, &ls, MMG5_ARG_end);
-}
+MmgMesh::~MmgMesh() { cleanup(); }
 
 void MmgMesh::set_vertices_and_elements(const py::array_t<double> &vertices,
                                         const py::array_t<int> &elements) {
@@ -301,5 +298,11 @@ void MmgMesh::cleanup() {
   if (mesh || met || disp || ls) {
     MMG3D_Free_all(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet, &met,
                    MMG5_ARG_ppDisp, &disp, MMG5_ARG_ppLs, &ls, MMG5_ARG_end);
+    // Null pointers to prevent double-free if cleanup() or destructor is called
+    // again
+    mesh = nullptr;
+    met = nullptr;
+    disp = nullptr;
+    ls = nullptr;
   }
 }
