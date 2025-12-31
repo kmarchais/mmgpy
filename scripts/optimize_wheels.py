@@ -122,7 +122,9 @@ def optimize_wheel(wheel_path):
                 dir_path = os.path.join(root, d)
                 if os.path.isdir(dir_path):
                     shutil.rmtree(dir_path, ignore_errors=True)
-                    print(f"  Removed dev directory: {os.path.relpath(dir_path, temp_dir)}")
+                    print(
+                        f"  Removed dev directory: {os.path.relpath(dir_path, temp_dir)}",
+                    )
 
             # Process files
             for f in files:
