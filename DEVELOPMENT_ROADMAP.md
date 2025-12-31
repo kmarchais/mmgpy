@@ -6,11 +6,11 @@
 
 **11 PRs merged** (#48-60) bringing MMG API coverage from ~5% to ~25%.
 
-| Milestone                        | Status                        |
-| -------------------------------- | ----------------------------- |
-| v0.2.0 - Stability & Compliance  | ✅ Complete                   |
-| v0.3.0 - Testing & Documentation | 🟡 In Progress (2 items left) |
-| v0.4.0 - Advanced Features       | ⏳ Planned                    |
+| Milestone                        | Status                       |
+| -------------------------------- | ---------------------------- |
+| v0.2.0 - Stability & Compliance  | ✅ Complete                  |
+| v0.3.0 - Testing & Documentation | 🟡 In Progress (1 item left) |
+| v0.4.0 - Advanced Features       | ⏳ Planned                   |
 
 ---
 
