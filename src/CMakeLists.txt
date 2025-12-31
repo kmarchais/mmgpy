@@ -15,6 +15,8 @@ pybind11_add_module(${PROJECT_NAME}
     bindings/mmg2d.cpp
     bindings/bindings.cpp
     bindings/mmg_mesh.cpp
+    bindings/mmg_mesh_2d.cpp
+    bindings/mmg_mesh_s.cpp
 )
 
 # Set include directories

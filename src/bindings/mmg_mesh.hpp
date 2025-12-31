@@ -3,6 +3,7 @@
 
 #include "mmg/mmg3d/libmmg3d.h"
 #include <filesystem>
+#include <optional>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <string>
@@ -23,6 +24,66 @@ public:
                                  const py::array_t<int> &elements);
   py::array_t<double> get_vertices() const;
   py::array_t<int> get_elements() const;
+
+  // Low-level mesh construction API (Phase 1 of Issue #50)
+  void set_mesh_size(MMG5_int vertices, MMG5_int tetrahedra, MMG5_int prisms,
+                     MMG5_int triangles, MMG5_int quadrilaterals,
+                     MMG5_int edges);
+  py::tuple get_mesh_size() const;
+
+  // Bulk setters with optional reference arrays
+  void
+  set_vertices(const py::array_t<double> &vertices,
+               const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void set_tetrahedra(
+      const py::array_t<int> &tetrahedra,
+      const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void set_triangles(
+      const py::array_t<int> &triangles,
+      const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void
+  set_edges(const py::array_t<int> &edges,
+            const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+
+  // Bulk getters
+  py::tuple get_vertices_with_refs() const;
+  py::array_t<int> get_tetrahedra() const; // Alias for get_elements()
+  py::array_t<int> get_triangles() const;
+  py::tuple get_triangles_with_refs() const;
+  py::tuple get_elements_with_refs() const;
+  py::tuple
+  get_tetrahedra_with_refs() const; // Alias for get_elements_with_refs()
+  py::array_t<int> get_edges() const;
+  py::tuple get_edges_with_refs() const;
+
+  // Phase 2: Single element operations
+  void set_vertex(double x, double y, double z, MMG5_int ref, MMG5_int idx);
+  void set_tetrahedron(int v0, int v1, int v2, int v3, MMG5_int ref,
+                       MMG5_int idx);
+  void set_triangle(int v0, int v1, int v2, MMG5_int ref, MMG5_int idx);
+  void set_edge(int v0, int v1, MMG5_int ref, MMG5_int idx);
+  py::tuple get_vertex(MMG5_int idx) const;
+  py::tuple get_tetrahedron(MMG5_int idx) const;
+  py::tuple get_triangle(MMG5_int idx) const;
+  py::tuple get_edge(MMG5_int idx) const;
+
+  // Phase 3: Advanced element types (prisms and quadrilaterals)
+  void set_prism(int v0, int v1, int v2, int v3, int v4, int v5, MMG5_int ref,
+                 MMG5_int idx);
+  void set_quadrilateral(int v0, int v1, int v2, int v3, MMG5_int ref,
+                         MMG5_int idx);
+  void
+  set_prisms(const py::array_t<int> &prisms,
+             const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  void set_quadrilaterals(
+      const py::array_t<int> &quads,
+      const std::optional<py::array_t<MMG5_int>> &refs = std::nullopt);
+  py::tuple get_prism(MMG5_int idx) const;
+  py::tuple get_quadrilateral(MMG5_int idx) const;
+  py::array_t<int> get_prisms() const;
+  py::tuple get_prisms_with_refs() const;
+  py::array_t<int> get_quadrilaterals() const;
+  py::tuple get_quadrilaterals_with_refs() const;
 
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);
