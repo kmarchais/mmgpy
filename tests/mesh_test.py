@@ -953,6 +953,95 @@ def test_mmg_mesh_s_file_io(tmp_path: Path) -> None:
     npt.assert_array_equal(loaded.get_triangles(), triangles)
 
 
+# Tests for C-contiguity validation
+
+
+def test_non_contiguous_array_rejected() -> None:
+    """Test that non-contiguous arrays are rejected with clear error message."""
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=4, tetrahedra=1)
+
+    # Create a Fortran-order (column-major) array which is not C-contiguous
+    vertices_f = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.5, 1.0, 0.0],
+            [0.5, 0.5, 1.0],
+        ],
+        dtype=np.float64,
+        order="F",  # Fortran order (column-major)
+    )
+
+    # Verify it's not C-contiguous
+    assert not vertices_f.flags["C_CONTIGUOUS"]
+
+    # Should raise RuntimeError about C-contiguity
+    with pytest.raises(RuntimeError, match="C-contiguous"):
+        mesh.set_vertices(vertices_f)
+
+
+def test_sliced_array_rejected() -> None:
+    """Test that sliced arrays (non-contiguous) are rejected."""
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=4, tetrahedra=1)
+
+    # Create a larger array and slice it (non-contiguous view)
+    large_vertices = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.5, 1.0, 0.0],
+            [0.5, 0.5, 1.0],
+            [2.0, 0.0, 0.0],
+            [2.5, 1.0, 0.0],
+            [2.5, 0.5, 1.0],
+            [3.0, 0.0, 0.0],
+        ],
+        dtype=np.float64,
+    )
+
+    # Slice every other row - this creates a non-contiguous view
+    vertices_sliced = large_vertices[::2]
+
+    # Verify it's not C-contiguous
+    assert not vertices_sliced.flags["C_CONTIGUOUS"]
+
+    # Should raise RuntimeError about C-contiguity
+    with pytest.raises(RuntimeError, match="C-contiguous"):
+        mesh.set_vertices(vertices_sliced)
+
+
+def test_contiguous_copy_accepted() -> None:
+    """Test that making a contiguous copy of non-contiguous data works."""
+    mesh = MmgMesh()
+    mesh.set_mesh_size(vertices=4, tetrahedra=1)
+
+    # Create a Fortran-order array
+    vertices_f = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.5, 1.0, 0.0],
+            [0.5, 0.5, 1.0],
+        ],
+        dtype=np.float64,
+        order="F",
+    )
+
+    # Make a C-contiguous copy
+    vertices_c = np.ascontiguousarray(vertices_f)
+
+    # Verify it's now C-contiguous
+    assert vertices_c.flags["C_CONTIGUOUS"]
+
+    # Should work now
+    mesh.set_vertices(vertices_c)
+
+    # Verify vertices were set correctly
+    npt.assert_array_almost_equal(mesh.get_vertices(), vertices_c)
+
+
 def visualize_mmg_mesh() -> None:
     """Visualize a simple MmgMesh using PyVista."""
     import pyvista as pv
