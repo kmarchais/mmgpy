@@ -162,8 +162,10 @@ def test_mesh_quality_analysis(generated_meshes: tuple[pv.DataSet, pv.DataSet]) 
     """Test mesh quality metrics with proper acceptable ranges."""
     test_mesh, ref_mesh = generated_meshes
 
-    # Quality metrics appropriate for 3D meshes (tetrahedra, hexahedra, etc.)
-    quality_metrics = ["scaled_jacobian", "aspect_ratio", "volume", "condition"]
+    # Use scaled_jacobian - the most universal quality metric for 3D meshes
+    # Other metrics (aspect_ratio, condition) have different semantics
+    # where "lower is better" and require different tolerance handling
+    quality_metrics = ["scaled_jacobian"]
 
     for metric in quality_metrics:
         # Compute quality using the correct PyVista method
@@ -256,22 +258,6 @@ def test_mesh_quality_analysis(generated_meshes: tuple[pv.DataSet, pv.DataSet]) 
                 f"Reference mesh: too many cells outside normal {metric} range "
                 f"({normal_ratio_ref:.1%} in [{normal_min:.3f}, {normal_max:.3f}])"
             )
-
-        # Basic sanity checks regardless of cell type
-        if metric == "volume":
-            # Volumes should be positive
-            assert (test_quality_values > 0).all(), (
-                "Test mesh has non-positive cell volumes"
-            )
-            assert (ref_quality_values > 0).all(), (
-                "Reference mesh has non-positive cell volumes"
-            )
-
-        # Successfully validated this metric
-        return
-
-    # If we get here, no quality metric worked
-    pytest.skip(f"Could not compute any mesh quality metrics from: {quality_metrics}")
 
 
 def test_mesh_geometric_properties(
