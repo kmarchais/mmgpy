@@ -164,6 +164,8 @@ before-all = [
     'for lib in *.so; do if [[ "$lib" == *"-9.4.9.4.so" ]]; then base=$(echo "$lib" | sed "s/-9.4.9.4.so//g"); rm -f "${base}-9.4.1.so" "${base}-9.4.so" 2>/dev/null || true; ln -sf "${base}-9.4.9.4.so" "${base}-9.4.1.so"; ln -sf "${base}-9.4.9.4.so" "${base}-9.4.so"; fi; done',
     'echo "After VTK cleanup: $(ls -1 *.so 2>/dev/null | wc -l) so files, $(ls -1 *.so 2>/dev/null | grep -v 9.4.9.4 | wc -l) are symlinks"',
     'cd /tmp/vtk',
+    # Filter non-essential VTK modules BEFORE build to speed up auditwheel
+    'python3 /project/scripts/filter_vtk.py /tmp/vtk/lib64',
     'mkdir -p /tmp/vtk/include/vtk-9.4',
     'if [ -d "/tmp/vtk/vtk-9.4" ]; then cp -r /tmp/vtk/vtk-9.4/* /tmp/vtk/include/vtk-9.4/; fi',
     'ln -sf /tmp/vtk/lib64 /tmp/lib64 || echo "lib64 symlink already exists"',
