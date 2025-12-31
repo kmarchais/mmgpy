@@ -127,7 +127,7 @@ def optimize_wheel(wheel_path):
                     shutil.rmtree(libs_dir, ignore_errors=True)
                     libs_removed += libs_count
                     print(
-                        f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)"
+                        f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)",
                     )
 
         # Walk through all files and remove unwanted ones
@@ -180,7 +180,7 @@ def optimize_wheel(wheel_path):
 
         print(
             f"  Removed {vtk_removed} VTK libraries, {libs_removed} auditwheel duplicates, "
-            f"{other_removed} other files"
+            f"{other_removed} other files",
         )
 
         # Recreate wheel as zip
