@@ -5,6 +5,7 @@ from __future__ import annotations
 import platform
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -12,18 +13,32 @@ import pyvista as pv
 
 from mmgpy import mmgs
 
-_3D = 3  # Constant for 3D mesh dimensionality (surface meshes use 3D coordinates)
+if TYPE_CHECKING:
+    from _pytest.tmpdir import TempPathFactory
+
+# Quality metric thresholds
 ACCEPTABLE_RATIO = 0.3  # Minimum ratio of cells in acceptable range
 NORMAL_RATIO = 0.95  # Minimum ratio of cells in normal range
+NORMAL_TOLERANCE_FACTOR = 1.1  # 10% tolerance for normal range bounds
+
+# VTK cell type IDs mapped to PyVista CellType names for surface meshes
+VTK_CELL_TYPE_MAP: dict[int, str] = {
+    3: "line",  # VTK_LINE - skip quality measures
+    5: "TRIANGLE",  # VTK_TRIANGLE - main surface element
+    7: "TRIANGLE",  # VTK_POLYGON - treat as triangle
+}
 
 
 @pytest.fixture(scope="module")
-def mesh_paths() -> tuple[Path, Path, Path]:
-    """Provide input and output mesh paths for surface remeshing."""
+def mesh_paths(tmp_path_factory: TempPathFactory) -> tuple[Path, Path, Path]:
+    """Provide input and output mesh paths for surface remeshing.
+
+    Uses tmp_path_factory for automatic cleanup of generated files.
+    """
     input_mesh: Path = Path(__file__).parent.parent / "assets" / "rodin.mesh"
-    current_dir: Path = Path(__file__).parent
-    test_path: Path = current_dir / "rodin_remeshed.vtk"
-    ref_path: Path = current_dir / "rodin_ref.vtk"
+    tmp_dir: Path = tmp_path_factory.mktemp("mmgs_test")
+    test_path: Path = tmp_dir / "rodin_remeshed.vtk"
+    ref_path: Path = tmp_dir / "rodin_ref.vtk"
     return input_mesh, test_path, ref_path
 
 
@@ -43,8 +58,6 @@ def generated_meshes(
 ) -> tuple[pv.PolyData, pv.PolyData]:
     """Generate test and reference meshes, return as PyVista objects."""
     input_mesh, test_path, ref_path = mesh_paths
-    hausd: int | float = mesh_params["hausd"]
-    verbose: int | float = mesh_params["verbose"]
 
     # Generate test mesh using Python wrapper
     mmgs.remesh(
@@ -53,32 +66,29 @@ def generated_meshes(
         options=mesh_params,
     )
 
-    # Add debugging for CI - run RPATH fix before executing
+    # Ensure RPATH is fixed on macOS before running CLI executable
     if platform.system() == "Darwin":
         try:
             import mmgpy
 
             mmgpy._fix_rpath()
-        except Exception:
-            print(
-                "Failed to fix RPATH for MMGS executable, "
-                "this may cause issues on macOS CI.",
-            )
+        except (OSError, RuntimeError):
+            pass  # RPATH fix may fail if already applied or not needed
 
     # Generate reference mesh using executable
     exe: str = "mmgs_O3.exe" if platform.system() == "Windows" else "mmgs_O3"
     command: list[str] = [
         exe,
         "-hausd",
-        str(hausd),
+        str(mesh_params["hausd"]),
         "-in",
         str(input_mesh),
         "-out",
         str(ref_path),
         "-v",
-        str(verbose),
+        str(mesh_params["verbose"]),
     ]
-    subprocess.run(command, check=True)  # noqa: S603
+    subprocess.run(command, check=True, capture_output=True)  # noqa: S603
 
     # Load meshes with PyVista
     test_mesh: pv.PolyData = pv.read(test_path)
@@ -194,19 +204,13 @@ def test_mesh_quality_analysis(
         cell_types_in_mesh = {int(ct.item()) for ct in test_mesh.celltypes}
 
         for cell_type_id in cell_types_in_mesh:
-            # Map VTK cell type IDs to PyVista CellType names for surface meshes
-            cell_type_map = {
-                3: "line",  # VTK_LINE - skip quality measures
-                5: "TRIANGLE",  # VTK_TRIANGLE - main surface element
-                7: "triangle",  # VTK_POLYGON - treat as triangle
-            }
-
-            if cell_type_id not in cell_type_map:
+            if cell_type_id not in VTK_CELL_TYPE_MAP:
                 continue  # Skip unknown cell types
 
-            cell_type_name = cell_type_map[cell_type_id]
             if cell_type_id == 3:
                 continue  # Lines don't have meaningful quality measures
+
+            cell_type_name = VTK_CELL_TYPE_MAP[cell_type_id]
 
             # Get quality info from PyVista
             quality_info = pv.cell_quality_info(cell_type_name, metric)
@@ -239,12 +243,12 @@ def test_mesh_quality_analysis(
             )
 
             normal_test = np.logical_and(
-                test_quality_values >= normal_min * 1.1,  # Allow 10% tolerance
-                test_quality_values <= normal_max * 1.1,
+                test_quality_values >= normal_min * NORMAL_TOLERANCE_FACTOR,
+                test_quality_values <= normal_max * NORMAL_TOLERANCE_FACTOR,
             )
             normal_ref = np.logical_and(
-                ref_quality_values >= normal_min * 1.1,
-                ref_quality_values <= normal_max * 1.1,
+                ref_quality_values >= normal_min * NORMAL_TOLERANCE_FACTOR,
+                ref_quality_values <= normal_max * NORMAL_TOLERANCE_FACTOR,
             )
 
             # At least 95% should be in normal range
@@ -360,10 +364,8 @@ def test_mesh_data_integrity(
         ), "Reference mesh contains cell indices exceeding point count"
 
     # Check mesh dimensionality (surface meshes use 3D coordinates)
-    assert test_mesh.points.shape[1] >= _3D, (
-        "Test mesh must have at least 3D coordinates"
-    )
-    assert ref_mesh.points.shape[1] >= _3D, (
+    assert test_mesh.points.shape[1] >= 3, "Test mesh must have at least 3D coordinates"
+    assert ref_mesh.points.shape[1] >= 3, (
         "Reference mesh must have at least 3D coordinates"
     )
 
