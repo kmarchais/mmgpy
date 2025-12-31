@@ -114,6 +114,21 @@ def optimize_wheel(wheel_path):
 
         vtk_removed = 0
         other_removed = 0
+        libs_removed = 0
+
+        # Remove auditwheel's .libs directory (duplicates of mmgpy/lib/)
+        # auditwheel bundles libraries to <package>.libs/ but we already have
+        # them in mmgpy/lib/ from CMake install, so .libs is all duplicates
+        for item in os.listdir(temp_dir):
+            if item.endswith(".libs"):
+                libs_dir = os.path.join(temp_dir, item)
+                if os.path.isdir(libs_dir):
+                    libs_count = len(os.listdir(libs_dir))
+                    shutil.rmtree(libs_dir, ignore_errors=True)
+                    libs_removed += libs_count
+                    print(
+                        f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)",
+                    )
 
         # Walk through all files and remove unwanted ones
         for root, dirs, files in os.walk(temp_dir, topdown=False):
@@ -163,7 +178,10 @@ def optimize_wheel(wheel_path):
                 except OSError:
                     pass
 
-        print(f"  Removed {vtk_removed} VTK libraries, {other_removed} other files")
+        print(
+            f"  Removed {vtk_removed} VTK libraries, {libs_removed} auditwheel duplicates, "
+            f"{other_removed} other files",
+        )
 
         # Recreate wheel as zip
         zip_path = wheel_path.replace(".whl", "")
