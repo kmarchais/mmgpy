@@ -129,6 +129,8 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_triangles", &MmgMesh2D::get_triangles)
       .def("get_triangles_with_refs", &MmgMesh2D::get_triangles_with_refs)
       .def("get_quadrilaterals", &MmgMesh2D::get_quadrilaterals)
+      .def("get_quadrilaterals_with_refs",
+           &MmgMesh2D::get_quadrilaterals_with_refs)
       .def("get_edges", &MmgMesh2D::get_edges)
       .def("get_edges_with_refs", &MmgMesh2D::get_edges_with_refs)
       // Single element setters
