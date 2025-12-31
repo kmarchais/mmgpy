@@ -101,6 +101,14 @@ ignore = [
     "PTH207", # glob usage is fine for file discovery
 ]
 
+[tool.ty.src]
+# Exclude tests, scripts, and examples from type checking
+exclude = ["tests/**", "scripts/**", "examples/**"]
+
+[tool.ty.rules]
+# Ignore unresolved imports for C++ extension module that isn't available at type-check time
+unresolved-import = "ignore"
+
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
