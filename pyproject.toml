@@ -60,13 +60,35 @@ dev = ["pre-commit>=4.0.1", "pytest>=8.3.4", "pyvista>=0.45.3"]
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = [
+    "D203",   # incompatible with D211 (no-blank-line-before-class)
+    "D213",   # incompatible with D212 (multi-line-summary-first-line)
+    "COM812", # conflicts with formatter
+]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "tests/**/*.py" = [
-    "S101",   # asserts allowed in tests
-    "T201",   # print statements allowed in tests for debugging
-    "SLF001", # accessing private members allowed in tests
-    "BLE001", # broad exception catching allowed in tests
+    "S101",    # asserts allowed in tests
+    "T201",    # print statements allowed in tests for debugging
+    "SLF001",  # accessing private members allowed in tests
+    "BLE001",  # broad exception catching allowed in tests
+    "PLC0415", # imports inside functions are intentional for fixtures
+    "RUF059",  # unused unpacked variables are intentional fixtures
+]
+"scripts/**/*.py" = [
+    "T201",    # print statements allowed in scripts
+    "ANN",     # annotations not required in scripts
+    "EXE001",  # shebang is fine in scripts
+    "PTH",     # pathlib not required in scripts
+    "F841",    # unused variables allowed in scripts
+    "PLR2004", # magic values allowed in scripts
+    "RET504",  # unnecessary assignment allowed in scripts
+    "C901",    # complex functions allowed in scripts
+    "PLR0912", # many branches allowed in scripts
+    "B007",    # unused loop variables allowed in scripts
+    "E501",    # long lines allowed in scripts
+    "D401",    # docstring mood not enforced in scripts
+    "PLC0415", # imports in functions allowed in scripts
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
@@ -78,6 +100,14 @@ select = ["ALL"]
     "RUF005", # list concatenation is fine here for subprocess args
     "PTH207", # glob usage is fine for file discovery
 ]
+
+[tool.ty.src]
+# Exclude tests, scripts, and examples from type checking
+exclude = ["tests/**", "scripts/**", "examples/**"]
+
+[tool.ty.rules]
+# Ignore unresolved imports for C++ extension module that isn't available at type-check time
+unresolved-import = "ignore"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
