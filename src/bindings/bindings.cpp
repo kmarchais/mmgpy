@@ -5,16 +5,22 @@
 #include "mmg_mesh_s.hpp"
 
 namespace {
+// MMG verbose level constants for Pythonic bool conversion
+constexpr int MMG_VERBOSE_SILENT = -1; // Suppress all output
+constexpr int MMG_VERBOSE_DEFAULT = 1; // Standard output
+
 // Helper to convert Python kwargs to options dict with verbose bool->int
-// conversion
+// conversion. MMG uses integer verbosity levels where -1 = silent and
+// positive values increase output verbosity.
 py::dict kwargs_to_options(const py::kwargs &kwargs) {
   py::dict options;
   for (const auto &item : kwargs) {
     std::string key = py::str(item.first);
     if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
-      // Convert bool to MMG verbose level: False=-1 (silent), True=1
+      // Convert bool to MMG verbose level for Pythonic API
       bool verbose_bool = item.second.cast<bool>();
-      options[item.first] = verbose_bool ? 1 : -1;
+      options[item.first] =
+          verbose_bool ? MMG_VERBOSE_DEFAULT : MMG_VERBOSE_SILENT;
     } else {
       options[item.first] = item.second;
     }
@@ -119,8 +125,8 @@ PYBIND11_MODULE(_mmgpy, m) {
           [](MmgMesh &self, py::kwargs kwargs) {
             self.remesh(kwargs_to_options(kwargs));
           },
-          "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
-          "hgrad, verbose.");
+          "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
+          "hgrad, optim, verbose.");
 
   // Phase 4: MmgMesh2D class for 2D planar meshes
   py::class_<MmgMesh2D>(m, "MmgMesh2D")
@@ -197,8 +203,8 @@ PYBIND11_MODULE(_mmgpy, m) {
           [](MmgMesh2D &self, py::kwargs kwargs) {
             self.remesh(kwargs_to_options(kwargs));
           },
-          "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
-          "hgrad, verbose.");
+          "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
+          "hgrad, optim, verbose.");
 
   // Phase 4: MmgMeshS class for surface meshes
   py::class_<MmgMeshS>(m, "MmgMeshS")
@@ -265,8 +271,8 @@ PYBIND11_MODULE(_mmgpy, m) {
           [](MmgMeshS &self, py::kwargs kwargs) {
             self.remesh(kwargs_to_options(kwargs));
           },
-          "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
-          "hgrad, verbose.");
+          "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
+          "hgrad, optim, verbose.");
 
   py::class_<mmg3d>(m, "mmg3d")
       .def_static("remesh", remesh_3d, py::arg("input_mesh"),

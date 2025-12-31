@@ -608,14 +608,20 @@ void MmgMeshS::cleanup() {
 void MmgMeshS::remesh(const py::dict &options) {
   set_mesh_options_surface(mesh, met, options);
 
+  // Note: MMGS does not support lagrangian motion mode (mesh->info.lag).
+  // Unlike MMG3D and MMG2D which have mmg3dmov/mmg2dmov functions,
+  // MMGS only supports standard remeshing and level-set discretization.
   int ret;
+  const char *mode_name;
   if (mesh->info.iso || mesh->info.isosurf) {
     ret = MMGS_mmgsls(mesh, ls, met);
+    mode_name = "MMGS_mmgsls (level-set discretization)";
   } else {
     ret = MMGS_mmgslib(mesh, met);
+    mode_name = "MMGS_mmgslib (standard remeshing)";
   }
 
   if (ret != MMG5_SUCCESS) {
-    throw std::runtime_error("Remeshing failed");
+    throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 }

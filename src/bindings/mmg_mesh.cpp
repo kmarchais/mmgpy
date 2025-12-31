@@ -1025,15 +1025,19 @@ void MmgMesh::remesh(const py::dict &options) {
   set_mesh_options_3D(mesh, met, options);
 
   int ret;
+  const char *mode_name;
   if (mesh->info.lag > -1) {
     ret = MMG3D_mmg3dmov(mesh, met, disp);
+    mode_name = "MMG3D_mmg3dmov (lagrangian motion)";
   } else if (mesh->info.iso || mesh->info.isosurf) {
     ret = MMG3D_mmg3dls(mesh, ls, met);
+    mode_name = "MMG3D_mmg3dls (level-set discretization)";
   } else {
     ret = MMG3D_mmg3dlib(mesh, met);
+    mode_name = "MMG3D_mmg3dlib (standard remeshing)";
   }
 
   if (ret != MMG5_SUCCESS) {
-    throw std::runtime_error("Remeshing failed");
+    throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 }

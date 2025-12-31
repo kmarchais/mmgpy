@@ -718,17 +718,22 @@ void MmgMesh2D::remesh(const py::dict &options) {
   set_mesh_options_2D(mesh, met, options);
 
   int ret;
+  const char *mode_name;
   if (mesh->info.lag > -1) {
     ret = MMG2D_mmg2dmov(mesh, met, disp);
+    mode_name = "MMG2D_mmg2dmov (lagrangian motion)";
   } else if (mesh->info.iso || mesh->info.isosurf) {
     ret = MMG2D_mmg2dls(mesh, ls, met);
+    mode_name = "MMG2D_mmg2dls (level-set discretization)";
   } else if (!mesh->nt) {
     ret = MMG2D_mmg2dmesh(mesh, met);
+    mode_name = "MMG2D_mmg2dmesh (mesh generation from edges)";
   } else {
     ret = MMG2D_mmg2dlib(mesh, met);
+    mode_name = "MMG2D_mmg2dlib (standard remeshing)";
   }
 
   if (ret != MMG5_SUCCESS) {
-    throw std::runtime_error("Remeshing failed");
+    throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 }
