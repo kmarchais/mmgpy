@@ -5,8 +5,8 @@
 #include "mmg_mesh_s.hpp"
 
 PYBIND11_MODULE(_mmgpy, m) {
-  // Add the new MmgMesh class
-  py::class_<MmgMesh>(m, "MmgMesh")
+  // MmgMesh3D class for 3D volumetric meshes (MMG3D)
+  py::class_<MmgMesh>(m, "MmgMesh3D")
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
       .def(py::init([](const py::object &path) {

@@ -49,13 +49,16 @@ except ImportError:
 try:
     from ._mmgpy import (  # type: ignore[attr-defined]
         MMG_VERSION,
-        MmgMesh,
         MmgMesh2D,
+        MmgMesh3D,
         MmgMeshS,
         mmg2d,
         mmg3d,
         mmgs,
     )
+
+    # Backwards-compatible alias: MmgMesh -> MmgMesh3D
+    MmgMesh = MmgMesh3D
 except ImportError as e:
     if sys.platform == "win32":
         # On Windows, provide helpful debugging information
@@ -384,8 +387,9 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
 
 __all__ = [
     "MMG_VERSION",
-    "MmgMesh",
+    "MmgMesh",  # Backwards-compatible alias for MmgMesh3D
     "MmgMesh2D",
+    "MmgMesh3D",
     "MmgMeshS",
     "__version__",
     "mmg2d",

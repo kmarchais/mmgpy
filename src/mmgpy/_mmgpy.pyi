@@ -34,7 +34,7 @@ class mmgs:  # noqa: N801
         options: dict[str, float | int] = ...,
     ) -> bool: ...
 
-class MmgMesh:
+class MmgMesh3D:
     @overload
     def __init__(self) -> None: ...
     @overload
@@ -377,3 +377,6 @@ class MmgMeshS:
 
     # File I/O
     def save(self, filename: str | Path) -> None: ...
+
+# Backwards-compatible alias
+MmgMesh = MmgMesh3D
