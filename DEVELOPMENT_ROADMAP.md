@@ -45,11 +45,14 @@ mesh.get_element_quality(idx)
 mmg3d.remesh_levelset(mesh, levelset, metric)
 ```
 
-#### Lagrangian Motion
+#### ~~Lagrangian Motion~~ ✅ PR #64
 
 ```python
-mmg3d.remesh_with_motion(mesh, displacement)
+mesh = MmgMesh3D(vertices, elements)
+mesh.remesh_lagrangian(displacement, hmax=0.1, verbose=False)
 ```
+
+> **Note:** Requires building with `USE_ELAS=ON` in CMake (disabled by default).
 
 ### 🟡 Medium Priority
 
