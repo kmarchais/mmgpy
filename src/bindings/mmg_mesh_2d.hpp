@@ -45,6 +45,7 @@ public:
   py::array_t<int> get_triangles() const;
   py::tuple get_triangles_with_refs() const;
   py::array_t<int> get_quadrilaterals() const;
+  py::tuple get_quadrilaterals_with_refs() const;
   py::array_t<int> get_edges() const;
   py::tuple get_edges_with_refs() const;
 
