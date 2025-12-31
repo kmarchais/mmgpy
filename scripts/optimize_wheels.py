@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Optimize wheel files by removing VTK duplicates and development files."""
 
+import base64
+import hashlib
 import os
 import shutil
 import sys
@@ -102,6 +104,48 @@ def is_vtk_library(filename):
     )
 
 
+def update_record(wheel_dir):
+    """Regenerate RECORD file after wheel modifications.
+
+    This is required because PyPI validates that the RECORD manifest
+    matches the actual wheel contents. See:
+    https://blog.pypi.org/posts/2025-08-07-wheel-archive-confusion-attacks/
+    """
+    # Find the .dist-info directory
+    dist_info = None
+    for item in os.listdir(wheel_dir):
+        if item.endswith(".dist-info"):
+            dist_info = os.path.join(wheel_dir, item)
+            break
+
+    if not dist_info:
+        print("  Warning: No .dist-info directory found")
+        return
+
+    record_path = os.path.join(dist_info, "RECORD")
+    records = []
+
+    for root, _dirs, files in os.walk(wheel_dir):
+        for f in files:
+            filepath = os.path.join(root, f)
+            relpath = os.path.relpath(filepath, wheel_dir)
+
+            if relpath.endswith("RECORD"):
+                # RECORD itself has no hash
+                records.append(f"{relpath},,")
+            else:
+                with open(filepath, "rb") as fp:
+                    digest = hashlib.sha256(fp.read()).digest()
+                    hash_b64 = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+                    size = os.path.getsize(filepath)
+                    records.append(f"{relpath},sha256={hash_b64},{size}")
+
+    with open(record_path, "w") as fp:
+        fp.write("\n".join(sorted(records)) + "\n")
+
+    print(f"  Updated RECORD with {len(records)} entries")
+
+
 def optimize_wheel(wheel_path):
     """Optimize a single wheel by removing duplicates and dev files."""
     original_size = os.path.getsize(wheel_path) // 1024 // 1024
@@ -182,6 +226,9 @@ def optimize_wheel(wheel_path):
             f"  Removed {vtk_removed} VTK libraries, {libs_removed} auditwheel duplicates, "
             f"{other_removed} other files",
         )
+
+        # Regenerate RECORD file to match actual wheel contents
+        update_record(temp_dir)
 
         # Recreate wheel as zip
         zip_path = wheel_path.replace(".whl", "")
