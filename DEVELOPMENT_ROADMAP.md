@@ -45,11 +45,31 @@ mesh.get_element_quality(idx)
 mmg3d.remesh_levelset(mesh, levelset, metric)
 ```
 
-#### Lagrangian Motion
+#### ~~Lagrangian Motion~~ ✅ PR #64
+
+Two approaches available:
+
+**1. Pure Python (works everywhere, no extra dependencies):**
 
 ```python
-mmg3d.remesh_with_motion(mesh, displacement)
+from mmgpy import MmgMesh3D, move_mesh
+
+mesh = MmgMesh3D(vertices, elements)
+move_mesh(mesh, displacement, hmax=0.1, verbose=False)
+
+# With boundary propagation (Laplacian smoothing):
+move_mesh(mesh, displacement, boundary_mask=boundary_mask, propagate=True)
 ```
+
+**2. C++ (requires ELAS library):**
+
+```python
+mesh = MmgMesh3D(vertices, elements)
+mesh.remesh_lagrangian(displacement, hmax=0.1, verbose=False)
+```
+
+> **Note:** The C++ method requires building with `USE_ELAS=ON` in CMake (disabled by default).
+> The Python `move_mesh()` function works on all platforms without additional dependencies.
 
 ### 🟡 Medium Priority
 

@@ -383,7 +383,8 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
         )
 
 
-from . import metrics
+from . import lagrangian, metrics
+from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
 
 __all__ = [
     "MMG_VERSION",
@@ -391,10 +392,14 @@ __all__ = [
     "MmgMesh3D",
     "MmgMeshS",
     "__version__",
+    "detect_boundary_vertices",
+    "lagrangian",
     "metrics",
     "mmg2d",
     "mmg3d",
     "mmgs",
+    "move_mesh",
+    "propagate_displacement",
 ]
 
 

@@ -1202,6 +1202,123 @@ def test_mmg_mesh_3d_remesh_verbose_int() -> None:
     assert mesh.get_elements().shape[0] > 0
 
 
+# Tests for Lagrangian Motion Remeshing
+# Note: Lagrangian motion requires the optional ELAS library.
+# The feature is disabled by default (USE_ELAS=OFF in CMake).
+# Tests are skipped if the feature is not available.
+
+
+def _lagrangian_available_3d() -> bool:
+    """Check if Lagrangian motion is available for 3D meshes."""
+    try:
+        vertices, elements = create_test_mesh()
+        mesh = MmgMesh3D(vertices, elements)
+        displacement = np.zeros((vertices.shape[0], 3), dtype=np.float64)
+        mesh.remesh_lagrangian(displacement, verbose=False)
+    except RuntimeError as e:
+        if "lagrangian motion" in str(e).lower() or "lag" in str(e).lower():
+            return False
+        raise
+    else:
+        return True
+
+
+def _lagrangian_available_2d() -> bool:
+    """Check if Lagrangian motion is available for 2D meshes."""
+    try:
+        vertices, triangles = create_2d_test_mesh()
+        mesh = MmgMesh2D(vertices, triangles)
+        displacement = np.zeros((vertices.shape[0], 2), dtype=np.float64)
+        mesh.remesh_lagrangian(displacement, verbose=False)
+    except RuntimeError as e:
+        if "lagrangian motion" in str(e).lower() or "lag" in str(e).lower():
+            return False
+        raise
+    else:
+        return True
+
+
+@pytest.mark.skipif(
+    not _lagrangian_available_3d(),
+    reason="Lagrangian motion requires USE_ELAS=ON at build time",
+)
+def test_mmg_mesh_3d_remesh_lagrangian() -> None:
+    """Test Lagrangian motion remeshing for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh3D(vertices, elements)
+
+    n_vertices = vertices.shape[0]
+    displacement = np.zeros((n_vertices, 3), dtype=np.float64)
+    displacement[:, 0] = 0.1
+
+    mesh.remesh_lagrangian(displacement, verbose=False)
+
+    output_vertices = mesh.get_vertices()
+    output_elements = mesh.get_elements()
+
+    assert output_vertices.shape[0] > 0, "Should have vertices after remeshing"
+    assert output_vertices.shape[1] == 3, "Vertices should be 3D"
+    assert output_elements.shape[0] > 0, "Should have elements after remeshing"
+    assert output_elements.shape[1] == 4, "Elements should be tetrahedra"
+
+
+@pytest.mark.skipif(
+    not _lagrangian_available_3d(),
+    reason="Lagrangian motion requires USE_ELAS=ON at build time",
+)
+def test_mmg_mesh_3d_remesh_lagrangian_with_options() -> None:
+    """Test Lagrangian motion remeshing with additional options."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh3D(vertices, elements)
+
+    n_vertices = vertices.shape[0]
+    displacement = np.zeros((n_vertices, 3), dtype=np.float64)
+    displacement[:, 1] = 0.05
+
+    mesh.remesh_lagrangian(displacement, hmax=0.3, verbose=False)
+
+    output_vertices = mesh.get_vertices()
+    assert output_vertices.shape[0] > 0
+
+
+@pytest.mark.skipif(
+    not _lagrangian_available_2d(),
+    reason="Lagrangian motion requires USE_ELAS=ON at build time",
+)
+def test_mmg_mesh_2d_remesh_lagrangian() -> None:
+    """Test Lagrangian motion remeshing for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+    mesh = MmgMesh2D(vertices, triangles)
+
+    n_vertices = vertices.shape[0]
+    displacement = np.zeros((n_vertices, 2), dtype=np.float64)
+    displacement[:, 0] = 0.05
+
+    mesh.remesh_lagrangian(displacement, verbose=False)
+
+    output_vertices = mesh.get_vertices()
+    output_triangles = mesh.get_triangles()
+
+    assert output_vertices.shape[0] > 0, "Should have vertices after remeshing"
+    assert output_vertices.shape[1] == 2, "Vertices should be 2D"
+    assert output_triangles.shape[0] > 0, "Should have triangles after remeshing"
+    assert output_triangles.shape[1] == 3, "Triangles should have 3 vertices"
+
+
+def test_mmg_mesh_2d_displacement_field() -> None:
+    """Test setting and getting displacement field for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+    mesh = MmgMesh2D(vertices, triangles)
+
+    n_vertices = vertices.shape[0]
+    displacement = np.random.rand(n_vertices, 2).astype(np.float64) * 0.1
+
+    mesh["displacement"] = displacement
+    retrieved = mesh["displacement"]
+
+    npt.assert_array_almost_equal(retrieved, displacement)
+
+
 if __name__ == "__main__":
     test_mesh_construction()
     test_mmg_mesh()

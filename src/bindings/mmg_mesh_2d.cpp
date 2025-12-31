@@ -676,6 +676,10 @@ MmgMesh2D::SolutionField
 MmgMesh2D::get_solution_field(const std::string &field_name) const {
   if (field_name == "metric") {
     return {&met, SolutionType::SCALAR, 1};
+  } else if (field_name == "displacement") {
+    return {&disp, SolutionType::VECTOR, 2}; // 2D displacement has 2 components
+  } else if (field_name == "levelset") {
+    return {&ls, SolutionType::SCALAR, 1};
   } else if (field_name == "tensor") {
     return {&met, SolutionType::TENSOR, 3}; // 2D tensor has 3 components
   }
@@ -735,5 +739,25 @@ void MmgMesh2D::remesh(const py::dict &options) {
 
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
+  }
+}
+
+void MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
+                                  const py::dict &options) {
+  set_field("displacement", displacement);
+
+  py::dict lag_options = py::dict();
+  for (auto item : options) {
+    lag_options[item.first] = item.second;
+  }
+  if (!lag_options.contains("lag")) {
+    lag_options["lag"] = 1;
+  }
+
+  set_mesh_options_2D(mesh, met, lag_options);
+
+  int ret = MMG2D_mmg2dmov(mesh, met, disp);
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error("Lagrangian motion remeshing failed");
   }
 }

@@ -205,6 +205,19 @@ class MmgMesh3D:
         nosurf: int | None = None,
         **kwargs: float,
     ) -> None: ...
+    def remesh_lagrangian(
+        self,
+        displacement: NDArray[np.float64],
+        *,
+        hmin: float | None = None,
+        hmax: float | None = None,
+        hsiz: float | None = None,
+        hausd: float | None = None,
+        hgrad: float | None = None,
+        verbose: bool | int | None = None,
+        lag: int | None = None,
+        **kwargs: float,
+    ) -> None: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -320,6 +333,19 @@ class MmgMesh2D:
         noinsert: int | None = None,
         noswap: int | None = None,
         nomove: int | None = None,
+        **kwargs: float,
+    ) -> None: ...
+    def remesh_lagrangian(
+        self,
+        displacement: NDArray[np.float64],
+        *,
+        hmin: float | None = None,
+        hmax: float | None = None,
+        hsiz: float | None = None,
+        hausd: float | None = None,
+        hgrad: float | None = None,
+        verbose: bool | int | None = None,
+        lag: int | None = None,
         **kwargs: float,
     ) -> None: ...
 

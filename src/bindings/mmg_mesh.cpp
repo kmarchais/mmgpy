@@ -1041,3 +1041,23 @@ void MmgMesh::remesh(const py::dict &options) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 }
+
+void MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
+                                const py::dict &options) {
+  set_field("displacement", displacement);
+
+  py::dict lag_options = py::dict();
+  for (auto item : options) {
+    lag_options[item.first] = item.second;
+  }
+  if (!lag_options.contains("lag")) {
+    lag_options["lag"] = 1;
+  }
+
+  set_mesh_options_3D(mesh, met, lag_options);
+
+  int ret = MMG3D_mmg3dmov(mesh, met, disp);
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error("Lagrangian motion remeshing failed");
+  }
+}
