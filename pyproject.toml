@@ -150,11 +150,6 @@ environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "
 [tool.cibuildwheel.linux]
 archs = ["x86_64"]
 before-all = [
-    # Install sccache for faster rebuilds
-    'curl -L -o sccache.tar.gz "https://github.com/mozilla/sccache/releases/download/v0.9.1/sccache-v0.9.1-x86_64-unknown-linux-musl.tar.gz"',
-    'tar -xzf sccache.tar.gz',
-    'mv sccache-v0.9.1-x86_64-unknown-linux-musl/sccache /usr/local/bin/',
-    'chmod +x /usr/local/bin/sccache',
     'VTK_VERSION="9.4.1"',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
     'VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"',
@@ -178,19 +173,12 @@ before-all = [
     'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
-environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt", "CMAKE_C_COMPILER_LAUNCHER" = "sccache", "CMAKE_CXX_COMPILER_LAUNCHER" = "sccache" }
+environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
 repair-wheel-command = "LD_LIBRARY_PATH=/tmp/vtk/lib64:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
 before-all = [
-    # Install sccache for faster rebuilds
-    'SCCACHE_ARCH=$(uname -m)',
-    'if [ "$SCCACHE_ARCH" = "arm64" ]; then SCCACHE_ARCH="aarch64"; fi',
-    'curl -L -o sccache.tar.gz "https://github.com/mozilla/sccache/releases/download/v0.9.1/sccache-v0.9.1-${SCCACHE_ARCH}-apple-darwin.tar.gz"',
-    'tar -xzf sccache.tar.gz',
-    'mv sccache-v0.9.1-${SCCACHE_ARCH}-apple-darwin/sccache /usr/local/bin/',
-    'chmod +x /usr/local/bin/sccache',
     'VTK_VERSION="9.4.1"',
     'VTK_ARCH=$(uname -m)',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
@@ -215,16 +203,14 @@ before-all = [
     'touch /tmp/vtk/bin/vtkWrapHierarchy-9.4 /tmp/vtk/bin/vtkWrapPython-9.4 /tmp/vtk/bin/vtkWrapPythonInit-9.4 /tmp/vtk/bin/vtkParseJava-9.4 /tmp/vtk/bin/vtkWrapJava-9.4 /tmp/vtk/bin/vtkWrapSerDes-9.4 /tmp/vtk/bin/vtkProbeOpenGLVersion-9.4',
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
-environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15", "CMAKE_C_COMPILER_LAUNCHER" = "sccache", "CMAKE_CXX_COMPILER_LAUNCHER" = "sccache" }
+environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
 repair-wheel-command = "python3 $PWD/scripts/optimize_wheels.py {wheel} && cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
 before-all = [
-    # Install sccache for faster rebuilds
-    "powershell -Command \"Invoke-WebRequest -Uri 'https://github.com/mozilla/sccache/releases/download/v0.9.1/sccache-v0.9.1-x86_64-pc-windows-msvc.tar.gz' -OutFile sccache.tar.gz; tar -xzf sccache.tar.gz; New-Item -Path 'C:/sccache' -ItemType Directory -Force; Move-Item 'sccache-v0.9.1-x86_64-pc-windows-msvc/sccache.exe' 'C:/sccache/' -Force\"",
     "powershell -Command \"$VTK_VERSION = $env:VTK_VERSION; $RELEASE_TAG = 'VTK-' + $VTK_VERSION + '-shared'; $VTK_FILE = 'vtk-Windows-x86_64.tar.gz'; $VTK_URL = 'https://github.com/sanguinariojoe/vtk-builds/releases/download/' + $RELEASE_TAG + '/' + $VTK_FILE; Invoke-WebRequest -Uri $VTK_URL -OutFile vtk.tar.gz; New-Item -Path 'C:/vtk' -ItemType Directory -Force; tar -xzf vtk.tar.gz -C C:/vtk --strip-components=1\"",
     "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.4' 'C:/include/vtk-9.4' -Force\"",
 ]
-environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4", CMAKE_C_COMPILER_LAUNCHER = "C:/sccache/sccache.exe", CMAKE_CXX_COMPILER_LAUNCHER = "C:/sccache/sccache.exe" }
+environment = { VTK_VERSION = "9.4.1", VTK_DIR = "C:/vtk/cmake/vtk-9.4" }
 repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel"
