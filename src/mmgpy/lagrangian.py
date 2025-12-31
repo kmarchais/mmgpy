@@ -12,7 +12,7 @@ Key functions:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy import sparse
@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from ._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+
+# Type alias for mesh union
+MeshType = "MmgMesh2D | MmgMesh3D | MmgMeshS"
 
 
 def _build_adjacency_from_elements(
@@ -224,7 +227,10 @@ def _get_elements(
     is_3d: bool,
 ) -> NDArray[np.int32]:
     """Get elements from mesh based on mesh type."""
-    return mesh.get_tetrahedra() if is_3d else mesh.get_triangles()
+    if is_3d:
+        # Use cast since we've verified is_3d means mesh has get_tetrahedra
+        return cast("Any", mesh).get_tetrahedra()
+    return mesh.get_triangles()
 
 
 def _set_mesh_data(
@@ -235,11 +241,15 @@ def _set_mesh_data(
     is_3d: bool,
 ) -> None:
     """Set vertices and elements on mesh, reinitializing internal structures."""
+    # Ensure vertices is float64
+    verts = np.asarray(vertices, dtype=np.float64)
     if is_3d:
-        mesh.set_vertices_and_elements(vertices, elements)
+        # MmgMesh3D has set_vertices_and_elements
+        cast("Any", mesh).set_vertices_and_elements(verts, elements)
     else:
-        mesh.set_mesh_size(vertices=len(vertices), triangles=len(elements))
-        mesh.set_vertices(vertices)
+        # MmgMesh2D uses separate methods
+        mesh.set_mesh_size(vertices=len(verts), triangles=len(elements))
+        mesh.set_vertices(verts)
         mesh.set_triangles(elements)
 
 
@@ -265,7 +275,7 @@ def move_mesh(
     boundary_mask: NDArray[np.bool_] | None = None,
     propagate: bool = True,
     n_steps: int = 1,
-    **remesh_options: float | int | bool | None,
+    **remesh_options: float | bool | None,
 ) -> None:
     """Move mesh vertices by displacement and remesh to maintain quality.
 
@@ -315,13 +325,21 @@ def move_mesh(
     # Apply displacement in steps
     step_displacement = full_displacement / n_steps
 
+    # Filter out None values from remesh options
+    filtered_options: dict[str, float | int | bool] = {
+        k: v for k, v in remesh_options.items() if v is not None
+    }
+
     for _ in range(n_steps):
         current_vertices = mesh.get_vertices()
-        new_vertices = current_vertices + step_displacement
+        new_vertices = np.asarray(
+            current_vertices + step_displacement,
+            dtype=np.float64,
+        )
         current_elements = _get_elements(mesh, is_3d=is_3d)
 
         _set_mesh_data(mesh, new_vertices, current_elements, is_3d=is_3d)
-        mesh.remesh(**remesh_options)
+        mesh.remesh(**filtered_options)  # type: ignore[arg-type]
 
         # Break if topology changed (can't continue incremental steps)
         if len(mesh.get_vertices()) != len(current_vertices):
