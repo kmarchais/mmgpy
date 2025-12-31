@@ -133,6 +133,7 @@ unresolved-import = "ignore"
 build-frontend = "build[uv]"
 build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
 skip = "*-win32 *-manylinux_i686 *-musllinux*"
+enable = ["cpython-prerelease"]  # Required for Python 3.14
 test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
 
