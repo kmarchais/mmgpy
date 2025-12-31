@@ -1,4 +1,5 @@
 #include "mmg_mesh_s.hpp"
+#include "mmg_common.hpp"
 #include <stdexcept>
 
 namespace {
@@ -24,9 +25,10 @@ void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
 MmgMeshS::MmgMeshS() {
   mesh = nullptr;
   met = nullptr;
+  ls = nullptr;
 
   if (!MMGS_Init_mesh(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet,
-                      &met, MMG5_ARG_end)) {
+                      &met, MMG5_ARG_ppLs, &ls, MMG5_ARG_end)) {
     throw std::runtime_error("Failed to initialize MMGS mesh");
   }
 }
@@ -56,9 +58,10 @@ MmgMeshS::MmgMeshS(
     const std::variant<std::string, std::filesystem::path> &filename) {
   mesh = nullptr;
   met = nullptr;
+  ls = nullptr;
 
   if (!MMGS_Init_mesh(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet,
-                      &met, MMG5_ARG_end)) {
+                      &met, MMG5_ARG_ppLs, &ls, MMG5_ARG_end)) {
     throw std::runtime_error("Failed to initialize MMGS mesh");
   }
 
@@ -593,10 +596,26 @@ std::string MmgMeshS::get_file_extension(const std::string &filename) {
 }
 
 void MmgMeshS::cleanup() {
-  if (mesh || met) {
+  if (mesh || met || ls) {
     MMGS_Free_all(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet, &met,
-                  MMG5_ARG_end);
+                  MMG5_ARG_ppLs, &ls, MMG5_ARG_end);
     mesh = nullptr;
     met = nullptr;
+    ls = nullptr;
+  }
+}
+
+void MmgMeshS::remesh(const py::dict &options) {
+  set_mesh_options_surface(mesh, met, options);
+
+  int ret;
+  if (mesh->info.iso || mesh->info.isosurf) {
+    ret = MMGS_mmgsls(mesh, ls, met);
+  } else {
+    ret = MMGS_mmgslib(mesh, met);
+  }
+
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error("Remeshing failed");
   }
 }

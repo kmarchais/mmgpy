@@ -82,18 +82,37 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)
       .def("__setitem__", &MmgMesh::setitem)
-      .def("save", [](const MmgMesh &self, const py::object &path) {
-        // Handle both str and Path objects
-        if (py::isinstance<py::str>(path)) {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          // Assume it's a Path object
-          self.save(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
-      });
+      .def("save",
+           [](const MmgMesh &self, const py::object &path) {
+             // Handle both str and Path objects
+             if (py::isinstance<py::str>(path)) {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               // Assume it's a Path object
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
+      .def(
+          "remesh",
+          [](MmgMesh &self, py::kwargs kwargs) {
+            py::dict options;
+            for (auto item : kwargs) {
+              std::string key = py::str(item.first);
+              if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
+                // Convert bool to MMG verbose level: False=-1 (silent), True=1
+                bool verbose_bool = item.second.cast<bool>();
+                options[item.first] = verbose_bool ? 1 : -1;
+              } else {
+                options[item.first] = item.second;
+              }
+            }
+            self.remesh(options);
+          },
+          "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
+          "hgrad, verbose.");
 
   // Phase 4: MmgMesh2D class for 2D planar meshes
   py::class_<MmgMesh2D>(m, "MmgMesh2D")
@@ -154,16 +173,34 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("__getitem__", &MmgMesh2D::getitem)
       .def("__setitem__", &MmgMesh2D::setitem)
       // File I/O
-      .def("save", [](const MmgMesh2D &self, const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
-      });
+      .def("save",
+           [](const MmgMesh2D &self, const py::object &path) {
+             if (py::isinstance<py::str>(path)) {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
+      .def(
+          "remesh",
+          [](MmgMesh2D &self, py::kwargs kwargs) {
+            py::dict options;
+            for (auto item : kwargs) {
+              std::string key = py::str(item.first);
+              if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
+                bool verbose_bool = item.second.cast<bool>();
+                options[item.first] = verbose_bool ? 1 : -1;
+              } else {
+                options[item.first] = item.second;
+              }
+            }
+            self.remesh(options);
+          },
+          "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
+          "hgrad, verbose.");
 
   // Phase 4: MmgMeshS class for surface meshes
   py::class_<MmgMeshS>(m, "MmgMeshS")
@@ -214,16 +251,34 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("__getitem__", &MmgMeshS::getitem)
       .def("__setitem__", &MmgMeshS::setitem)
       // File I/O
-      .def("save", [](const MmgMeshS &self, const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          self.save(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
-      });
+      .def("save",
+           [](const MmgMeshS &self, const py::object &path) {
+             if (py::isinstance<py::str>(path)) {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               self.save(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
+      .def(
+          "remesh",
+          [](MmgMeshS &self, py::kwargs kwargs) {
+            py::dict options;
+            for (auto item : kwargs) {
+              std::string key = py::str(item.first);
+              if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
+                bool verbose_bool = item.second.cast<bool>();
+                options[item.first] = verbose_bool ? 1 : -1;
+              } else {
+                options[item.first] = item.second;
+              }
+            }
+            self.remesh(options);
+          },
+          "Remesh the mesh in-place. Common options: hmax, hmin, hausd, "
+          "hgrad, verbose.");
 
   py::class_<mmg3d>(m, "mmg3d")
       .def_static("remesh", remesh_3d, py::arg("input_mesh"),

@@ -1,4 +1,5 @@
 #include "mmg_mesh_2d.hpp"
+#include "mmg_common.hpp"
 #include <stdexcept>
 
 namespace {
@@ -24,9 +25,12 @@ void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
 MmgMesh2D::MmgMesh2D() {
   mesh = nullptr;
   met = nullptr;
+  disp = nullptr;
+  ls = nullptr;
 
   if (!MMG2D_Init_mesh(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet,
-                       &met, MMG5_ARG_end)) {
+                       &met, MMG5_ARG_ppLs, &ls, MMG5_ARG_ppDisp, &disp,
+                       MMG5_ARG_end)) {
     throw std::runtime_error("Failed to initialize MMG2D mesh");
   }
 }
@@ -56,9 +60,12 @@ MmgMesh2D::MmgMesh2D(
     const std::variant<std::string, std::filesystem::path> &filename) {
   mesh = nullptr;
   met = nullptr;
+  disp = nullptr;
+  ls = nullptr;
 
   if (!MMG2D_Init_mesh(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet,
-                       &met, MMG5_ARG_end)) {
+                       &met, MMG5_ARG_ppLs, &ls, MMG5_ARG_ppDisp, &disp,
+                       MMG5_ARG_end)) {
     throw std::runtime_error("Failed to initialize MMG2D mesh");
   }
 
@@ -697,10 +704,31 @@ std::string MmgMesh2D::get_file_extension(const std::string &filename) {
 }
 
 void MmgMesh2D::cleanup() {
-  if (mesh || met) {
+  if (mesh || met || disp || ls) {
     MMG2D_Free_all(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet, &met,
-                   MMG5_ARG_end);
+                   MMG5_ARG_ppLs, &ls, MMG5_ARG_ppDisp, &disp, MMG5_ARG_end);
     mesh = nullptr;
     met = nullptr;
+    disp = nullptr;
+    ls = nullptr;
+  }
+}
+
+void MmgMesh2D::remesh(const py::dict &options) {
+  set_mesh_options_2D(mesh, met, options);
+
+  int ret;
+  if (mesh->info.lag > -1) {
+    ret = MMG2D_mmg2dmov(mesh, met, disp);
+  } else if (mesh->info.iso || mesh->info.isosurf) {
+    ret = MMG2D_mmg2dls(mesh, ls, met);
+  } else if (!mesh->nt) {
+    ret = MMG2D_mmg2dmesh(mesh, met);
+  } else {
+    ret = MMG2D_mmg2dlib(mesh, met);
+  }
+
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error("Remeshing failed");
   }
 }

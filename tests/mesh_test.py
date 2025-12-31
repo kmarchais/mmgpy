@@ -1095,6 +1095,113 @@ def visualize_mmg_mesh() -> None:
     plotter.show()
 
 
+# Tests for In-Memory Remeshing API
+
+
+def test_mmg_mesh_3d_remesh() -> None:
+    """Test in-memory remeshing for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh(vertices, elements)
+
+    # Remesh with kwargs
+    mesh.remesh(hmax=0.5, verbose=False)
+
+    # Verify mesh still has valid data after remeshing
+    output_vertices = mesh.get_vertices()
+    output_elements = mesh.get_elements()
+
+    assert output_vertices.shape[0] > 0, "Mesh should have vertices after remeshing"
+    assert output_vertices.shape[1] == 3, "Vertices should be 3D"
+    assert output_elements.shape[0] > 0, "Mesh should have elements after remeshing"
+    assert output_elements.shape[1] == 4, "Elements should be tetrahedra"
+
+    # Remeshing with hmax should generally increase element count
+    # (finer mesh) but this depends on initial mesh size
+    # Just verify that we got a valid mesh back
+    assert not np.isnan(output_vertices).any(), "Vertices should not contain NaN"
+
+
+def test_mmg_mesh_3d_remesh_with_metric() -> None:
+    """Test in-memory remeshing with a metric field."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh(vertices, elements)
+
+    # Set a scalar metric (target edge size at each vertex)
+    metric = np.ones((len(vertices), 1), dtype=np.float64) * 0.3
+    mesh["metric"] = metric
+
+    # Remesh
+    mesh.remesh(verbose=False)
+
+    # Verify mesh is valid
+    output_vertices = mesh.get_vertices()
+    output_elements = mesh.get_elements()
+
+    assert output_vertices.shape[0] > 0
+    assert output_elements.shape[0] > 0
+
+
+def test_mmg_mesh_2d_remesh() -> None:
+    """Test in-memory remeshing for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+    mesh = MmgMesh2D(vertices, triangles)
+
+    # Remesh
+    mesh.remesh(hmax=0.3, verbose=False)
+
+    # Verify mesh is valid after remeshing
+    output_vertices = mesh.get_vertices()
+    output_triangles = mesh.get_triangles()
+
+    assert output_vertices.shape[0] > 0, "Mesh should have vertices after remeshing"
+    assert output_vertices.shape[1] == 2, "Vertices should be 2D"
+    assert output_triangles.shape[0] > 0, "Mesh should have triangles after remeshing"
+    assert output_triangles.shape[1] == 3, "Triangles should have 3 vertices"
+
+
+def test_mmg_mesh_s_remesh() -> None:
+    """Test in-memory remeshing for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+    mesh = MmgMeshS(vertices, triangles)
+
+    # Remesh
+    mesh.remesh(hmax=0.5, verbose=False)
+
+    # Verify mesh is valid after remeshing
+    output_vertices = mesh.get_vertices()
+    output_triangles = mesh.get_triangles()
+
+    assert output_vertices.shape[0] > 0, "Mesh should have vertices after remeshing"
+    assert output_vertices.shape[1] == 3, "Vertices should be 3D"
+    assert output_triangles.shape[0] > 0, "Mesh should have triangles after remeshing"
+    assert output_triangles.shape[1] == 3, "Triangles should have 3 vertices"
+
+
+def test_mmg_mesh_3d_remesh_no_options() -> None:
+    """Test remeshing with default options."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh(vertices, elements)
+
+    # Remesh with default options (just suppress output)
+    mesh.remesh(verbose=False)
+
+    # Should still produce valid output
+    assert mesh.get_vertices().shape[0] > 0
+    assert mesh.get_elements().shape[0] > 0
+
+
+def test_mmg_mesh_3d_remesh_verbose_int() -> None:
+    """Test that verbose accepts both bool and int."""
+    vertices, elements = create_test_mesh()
+    mesh = MmgMesh(vertices, elements)
+
+    # Test with integer verbose level (MMG native)
+    mesh.remesh(hmax=0.5, verbose=-1)
+
+    assert mesh.get_vertices().shape[0] > 0
+    assert mesh.get_elements().shape[0] > 0
+
+
 if __name__ == "__main__":
     test_mesh_construction()
     test_mmg_mesh()
