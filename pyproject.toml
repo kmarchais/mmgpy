@@ -155,7 +155,7 @@ before-all = [
     'chmod +x /tmp/vtk/bin/vtk*',
 ]
 environment = { "VTK_VERSION" = "9.4.1", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.4", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
-repair-wheel-command = "python3 /project/scripts/optimize_wheels.py {wheel} && cp {wheel} {dest_dir}/"
+repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl"
 
 [tool.cibuildwheel.macos]
 archs = ["auto"]
