@@ -1,14 +1,14 @@
 # mmgpy Development Roadmap
 
-> Last updated: 2025-12-31
+> Last updated: 2026-01-01
 
 ## Open GitHub Issues
 
-| Issue                                               | Description                    | Status    |
-| --------------------------------------------------- | ------------------------------ | --------- |
-| [#47](https://github.com/kmarchais/mmgpy/issues/47) | Migrate to Trusted Publishing  | ✅ Done   |
-| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores |           |
-| [#41](https://github.com/kmarchais/mmgpy/issues/41) | Optimize wheel sizes           | ✅ PR #61 |
+| Issue                                               | Description                    | Status  |
+| --------------------------------------------------- | ------------------------------ | ------- |
+| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores |         |
+| [#47](https://github.com/kmarchais/mmgpy/issues/47) | Migrate to Trusted Publishing  | ✅ Done |
+| [#41](https://github.com/kmarchais/mmgpy/issues/41) | Optimize wheel sizes           | ✅ Done |
 
 ---
 
@@ -16,7 +16,7 @@
 
 ### 🟠 High Priority
 
-#### ~~In-Memory Remeshing API~~ ✅ PR #63
+#### ~~In-Memory Remeshing API~~ ✅ Done
 
 ```python
 mesh = MmgMesh3D(vertices, elements)
@@ -45,7 +45,7 @@ mesh.get_element_quality(idx)
 mmg3d.remesh_levelset(mesh, levelset, metric)
 ```
 
-#### ~~Lagrangian Motion~~ ✅ PR #64
+#### ~~Lagrangian Motion~~ ✅ Done
 
 Two approaches available:
 
