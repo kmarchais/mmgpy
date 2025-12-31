@@ -6,7 +6,7 @@
 
 | Issue                                               | Description                    | Status    |
 | --------------------------------------------------- | ------------------------------ | --------- |
-| [#47](https://github.com/kmarchais/mmgpy/issues/47) | Migrate to Trusted Publishing  |           |
+| [#47](https://github.com/kmarchais/mmgpy/issues/47) | Migrate to Trusted Publishing  | ✅ Done   |
 | [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores |           |
 | [#41](https://github.com/kmarchais/mmgpy/issues/41) | Optimize wheel sizes           | ✅ PR #61 |
 
@@ -16,11 +16,11 @@
 
 ### 🟠 High Priority
 
-#### In-Memory Remeshing API
+#### ~~In-Memory Remeshing API~~ ✅ PR #63
 
 ```python
-mesh = MmgMesh(vertices, elements)
-result = mmg3d.remesh(mesh, options={"hmax": 0.1})  # No temp files
+mesh = MmgMesh3D(vertices, elements)
+mesh.remesh(hmax=0.1, verbose=False)  # No temp files, kwargs API
 ```
 
 #### Element Attributes
