@@ -4,11 +4,11 @@
 
 ## Open GitHub Issues
 
-| Issue                                               | Description                    |
-| --------------------------------------------------- | ------------------------------ |
-| [#47](https://github.com/kmarchais/mmgpy/issues/47) | Migrate to Trusted Publishing  |
-| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores |
-| [#41](https://github.com/kmarchais/mmgpy/issues/41) | Optimize wheel sizes           |
+| Issue                                               | Description                    | Status    |
+| --------------------------------------------------- | ------------------------------ | --------- |
+| [#47](https://github.com/kmarchais/mmgpy/issues/47) | Migrate to Trusted Publishing  |           |
+| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores |           |
+| [#41](https://github.com/kmarchais/mmgpy/issues/41) | Optimize wheel sizes           | ✅ PR #61 |
 
 ---
 
@@ -78,9 +78,8 @@ mmg3d.remesh_with_motion(mesh, displacement)
 
 ## Code Quality Items
 
-| Priority | Item                                   | Location                                         |
-| -------- | -------------------------------------- | ------------------------------------------------ |
-| 🟡       | Initialize `success = false` in switch | `mmg3d.cpp:187`, `mmg2d.cpp:215`, `mmgs.cpp:195` |
-| 🟡       | Centralize VTK version string          | Multiple files                                   |
-| 🟡       | Add CI dependency caching              | Workflows                                        |
-| 🟢       | Use `logging` module                   | `__init__.py`                                    |
+| Priority | Item                                       | Location                                 | Status    |
+| -------- | ------------------------------------------ | ---------------------------------------- | --------- |
+| 🟡       | ~~Initialize `success = false` in switch~~ | ~~`mmg3d.cpp`, `mmg2d.cpp`, `mmgs.cpp`~~ | ✅ Done   |
+| 🟡       | ~~Centralize VTK version string~~          | ~~Multiple files~~                       | ✅ PR #61 |
+| 🟢       | Use `logging` module                       | `__init__.py`                            |           |
