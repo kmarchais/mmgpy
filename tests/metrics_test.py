@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from mmgpy import MmgMesh, MmgMesh2D, MmgMeshS, metrics
+from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS, metrics
 
 
 class TestCreateIsotropicMetric:
@@ -304,7 +304,7 @@ class TestCreateMetricFromHessian:
 
 
 class TestMmgMeshTensorIntegration:
-    """Integration tests for tensor metrics with MmgMesh classes."""
+    """Integration tests for tensor metrics with MmgMesh3D class."""
 
     def test_mmg_mesh_tensor_field_3d(self) -> None:
         """Test setting and getting tensor field on 3D mesh."""
@@ -319,7 +319,7 @@ class TestMmgMeshTensorIntegration:
         )
         elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh(vertices, elements)
+        mesh = MmgMesh3D(vertices, elements)
 
         # Create anisotropic metric
         tensor = metrics.create_isotropic_metric(0.1, len(vertices), dim=3)
@@ -382,7 +382,7 @@ class TestMmgMeshTensorIntegration:
         )
         elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh(vertices, elements)
+        mesh = MmgMesh3D(vertices, elements)
 
         # Create different anisotropic metric at each vertex
         tensors = np.zeros((4, 6), dtype=np.float64)

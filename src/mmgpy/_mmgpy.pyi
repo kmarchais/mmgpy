@@ -189,6 +189,22 @@ class MmgMesh3D:
     def __setitem__(self, key: str, value: NDArray[np.float64]) -> None: ...
     def __getitem__(self, key: str) -> NDArray[np.float64]: ...
     def save(self, filename: str | Path) -> None: ...
+    def remesh(
+        self,
+        *,
+        hmin: float | None = None,
+        hmax: float | None = None,
+        hsiz: float | None = None,
+        hausd: float | None = None,
+        hgrad: float | None = None,
+        verbose: bool | int | None = None,
+        optim: int | None = None,
+        noinsert: int | None = None,
+        noswap: int | None = None,
+        nomove: int | None = None,
+        nosurf: int | None = None,
+        **kwargs: float,
+    ) -> None: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -291,6 +307,21 @@ class MmgMesh2D:
 
     # File I/O
     def save(self, filename: str | Path) -> None: ...
+    def remesh(
+        self,
+        *,
+        hmin: float | None = None,
+        hmax: float | None = None,
+        hsiz: float | None = None,
+        hausd: float | None = None,
+        hgrad: float | None = None,
+        verbose: bool | int | None = None,
+        optim: int | None = None,
+        noinsert: int | None = None,
+        noswap: int | None = None,
+        nomove: int | None = None,
+        **kwargs: float,
+    ) -> None: ...
 
 # Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
@@ -380,6 +411,18 @@ class MmgMeshS:
 
     # File I/O
     def save(self, filename: str | Path) -> None: ...
-
-# Backwards-compatible alias
-MmgMesh = MmgMesh3D
+    def remesh(
+        self,
+        *,
+        hmin: float | None = None,
+        hmax: float | None = None,
+        hsiz: float | None = None,
+        hausd: float | None = None,
+        hgrad: float | None = None,
+        verbose: bool | int | None = None,
+        optim: int | None = None,
+        noinsert: int | None = None,
+        noswap: int | None = None,
+        nomove: int | None = None,
+        **kwargs: float,
+    ) -> None: ...
