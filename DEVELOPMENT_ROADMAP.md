@@ -6,6 +6,7 @@
 
 | Feature                  | PR  | Description                                   |
 | ------------------------ | --- | --------------------------------------------- |
+| PyVista integration      | #69 | `from_pyvista()`, `to_pyvista()` conversions  |
 | Level-set discretization | #68 | `remesh_levelset()` for isosurface extraction |
 | Progress callbacks       | #65 | Real-time progress events during remeshing    |
 | Topology queries         | #64 | Vertex/edge/face neighbor lookups             |
@@ -24,10 +25,9 @@
 
 ### 🟠 High Priority
 
-| Feature                    | Description                      | Recommended Next |
-| -------------------------- | -------------------------------- | ---------------- |
-| PyVista/meshio integration | `from_pyvista()`, `to_pyvista()` | ⭐ Yes           |
-| Typed options              | `TypedDict` for discoverability  |                  |
+| Feature       | Description                     | Recommended Next |
+| ------------- | ------------------------------- | ---------------- |
+| Typed options | `TypedDict` for discoverability | ⭐ Yes           |
 
 ### 🟡 Medium Priority
 
@@ -51,30 +51,33 @@
 
 ---
 
-## Recommended Next: PyVista Integration
+## Recommended Next: Typed Options
 
-**Why:** Examples already use PyVista extensively for visualization. Adding native integration eliminates boilerplate and makes mmgpy a natural fit in the PyVista ecosystem.
+**Why:** The current `remesh()` methods accept `**kwargs` with no IDE autocompletion or type checking. Adding `TypedDict` definitions would improve developer experience with better discoverability and validation.
 
 **Scope:**
 
 ```python
 # Target API
-from mmgpy import MmgMesh3D
-import pyvista as pv
+from mmgpy import MmgMesh3D, Mmg3DOptions
 
-# Load from PyVista
-grid = pv.read("model.vtk")
-mesh = MmgMesh3D.from_pyvista(grid)
+# With TypedDict, IDE shows available options
+options: Mmg3DOptions = {
+    "hmin": 0.01,
+    "hmax": 0.1,
+    "hausd": 0.001,
+    "hgrad": 1.3,
+}
+mesh.remesh(**options)
 
-# Remesh and export back
-mesh.remesh(hmax=0.1)
-result = mesh.to_pyvista()  # Returns pv.UnstructuredGrid
+# Or directly with autocomplete
+mesh.remesh(hmin=0.01, hmax=0.1, hausd=0.001)
 ```
 
 **Implementation:**
 
-1. Add `from_pyvista()` class methods to `MmgMesh3D`, `MmgMesh2D`, `MmgMeshS`
-2. Add `to_pyvista()` instance methods returning appropriate PyVista types
-3. Handle field data transfer (scalars, vectors, tensors)
-4. Make PyVista an optional dependency (soft import)
-5. Add tests and update examples to use the new API
+1. Define `TypedDict` classes for each mesh type's options (`Mmg3DOptions`, `Mmg2DOptions`, `MmgSOptions`)
+2. Update method signatures to use these types
+3. Add validation for invalid option names
+4. Document all options with docstrings
+5. Ensure backward compatibility with existing code
