@@ -72,6 +72,12 @@ public:
   void set_required_vertices(const py::array_t<int> &vertex_indices);
   void set_ridge_edges(const py::array_t<int> &edge_indices);
 
+  // Topology queries
+  py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
+  py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;
+  double get_element_quality(MMG5_int idx) const;
+  py::array_t<double> get_element_qualities() const;
+
   // Phase 3: Advanced element types (prisms and quadrilaterals)
   void set_prism(int v0, int v1, int v2, int v3, int v4, int v5, MMG5_int ref,
                  MMG5_int idx);
