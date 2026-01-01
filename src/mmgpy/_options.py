@@ -29,6 +29,9 @@ if TYPE_CHECKING:
 # Maximum angle value for ridge detection (degrees)
 _MAX_ANGLE_DEGREES = 180
 
+# Minimum gradation value
+_MIN_GRADATION = 1.0
+
 
 def _validate_common_options(opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions) -> None:
     """Validate options common to all mesh types.
@@ -59,11 +62,19 @@ def _validate_common_options(opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions) ->
     if opts.hausd is not None and opts.hausd <= 0:
         msg = "hausd must be positive"
         raise ValueError(msg)
-    if opts.hgrad is not None and opts.hgrad < 1.0:
-        msg = "hgrad must be >= 1.0"
+    if opts.hgrad is not None and opts.hgrad < _MIN_GRADATION:
+        msg = f"hgrad must be >= {_MIN_GRADATION}"
         raise ValueError(msg)
-    if opts.angle is not None and (opts.angle < 0 or opts.angle > _MAX_ANGLE_DEGREES):
-        msg = f"angle must be between 0 and {_MAX_ANGLE_DEGREES} degrees"
+    # hgradreq can be -1 to disable, or >= 1.0 for gradation control
+    if (
+        opts.hgradreq is not None
+        and opts.hgradreq != -1
+        and opts.hgradreq < _MIN_GRADATION
+    ):
+        msg = f"hgradreq must be >= {_MIN_GRADATION} or -1 to disable"
+        raise ValueError(msg)
+    if opts.ar is not None and (opts.ar < 0 or opts.ar > _MAX_ANGLE_DEGREES):
+        msg = f"ar (angle detection) must be between 0 and {_MAX_ANGLE_DEGREES} degrees"
         raise ValueError(msg)
     if opts.mem is not None and opts.mem <= 0:
         msg = "mem must be positive"
@@ -117,9 +128,18 @@ class Mmg3DOptions:
     hausd : float | None
         Hausdorff distance for surface approximation.
     hgrad : float | None
-        Gradation parameter (default ~1.3). Controls size transition.
+        Gradation parameter (default ~1.3). Controls size transition between
+        adjacent elements. Must be >= 1.0.
+    hgradreq : float | None
+        Gradation on required entities (advanced usage). Must be >= 1.0,
+        or -1 to disable gradation control on required entities.
+    ar : float | None
+        Angle detection threshold in degrees (0-180). Edges with angles
+        sharper than this are preserved as ridges.
     verbose : int | None
         Verbosity level (-1=silent, 0=errors, 1=info, higher=debug).
+    mem : int | None
+        Maximum memory usage in MB.
     optim : bool
         Enable mesh optimization mode.
     noinsert : bool
@@ -130,12 +150,6 @@ class Mmg3DOptions:
         Disable point relocation.
     nosurf : bool
         Disable surface modifications.
-    angle : float | None
-        Ridge detection angle (degrees, 0-180).
-    hgradreq : float | None
-        Required gradation value.
-    mem : int | None
-        Maximum memory usage in MB.
 
     Example:
     -------
@@ -149,15 +163,15 @@ class Mmg3DOptions:
     hsiz: float | None = None
     hausd: float | None = None
     hgrad: float | None = None
+    hgradreq: float | None = None
+    ar: float | None = None
     verbose: int | None = None
+    mem: int | None = None
     optim: bool = False
     noinsert: bool = False
     noswap: bool = False
     nomove: bool = False
     nosurf: bool = False
-    angle: float | None = None
-    hgradreq: float | None = None
-    mem: int | None = None
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
@@ -239,9 +253,18 @@ class Mmg2DOptions:
     hausd : float | None
         Hausdorff distance for boundary approximation.
     hgrad : float | None
-        Gradation parameter (default ~1.3). Controls size transition.
+        Gradation parameter (default ~1.3). Controls size transition between
+        adjacent elements. Must be >= 1.0.
+    hgradreq : float | None
+        Gradation on required entities (advanced usage). Must be >= 1.0,
+        or -1 to disable gradation control on required entities.
+    ar : float | None
+        Angle detection threshold in degrees (0-180). Edges with angles
+        sharper than this are preserved as ridges.
     verbose : int | None
         Verbosity level (-1=silent, 0=errors, 1=info, higher=debug).
+    mem : int | None
+        Maximum memory usage in MB.
     optim : bool
         Enable mesh optimization mode.
     noinsert : bool
@@ -250,12 +273,6 @@ class Mmg2DOptions:
         Disable edge swapping.
     nomove : bool
         Disable point relocation.
-    angle : float | None
-        Ridge detection angle (degrees, 0-180).
-    hgradreq : float | None
-        Required gradation value.
-    mem : int | None
-        Maximum memory usage in MB.
 
     """
 
@@ -264,14 +281,14 @@ class Mmg2DOptions:
     hsiz: float | None = None
     hausd: float | None = None
     hgrad: float | None = None
+    hgradreq: float | None = None
+    ar: float | None = None
     verbose: int | None = None
+    mem: int | None = None
     optim: bool = False
     noinsert: bool = False
     noswap: bool = False
     nomove: bool = False
-    angle: float | None = None
-    hgradreq: float | None = None
-    mem: int | None = None
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
@@ -353,9 +370,18 @@ class MmgSOptions:
     hausd : float | None
         Hausdorff distance for surface approximation.
     hgrad : float | None
-        Gradation parameter (default ~1.3). Controls size transition.
+        Gradation parameter (default ~1.3). Controls size transition between
+        adjacent elements. Must be >= 1.0.
+    hgradreq : float | None
+        Gradation on required entities (advanced usage). Must be >= 1.0,
+        or -1 to disable gradation control on required entities.
+    ar : float | None
+        Angle detection threshold in degrees (0-180). Edges with angles
+        sharper than this are preserved as ridges.
     verbose : int | None
         Verbosity level (-1=silent, 0=errors, 1=info, higher=debug).
+    mem : int | None
+        Maximum memory usage in MB.
     optim : bool
         Enable mesh optimization mode.
     noinsert : bool
@@ -364,12 +390,6 @@ class MmgSOptions:
         Disable edge swapping.
     nomove : bool
         Disable point relocation.
-    angle : float | None
-        Ridge detection angle (degrees, 0-180).
-    hgradreq : float | None
-        Required gradation value.
-    mem : int | None
-        Maximum memory usage in MB.
 
     """
 
@@ -378,14 +398,14 @@ class MmgSOptions:
     hsiz: float | None = None
     hausd: float | None = None
     hgrad: float | None = None
+    hgradreq: float | None = None
+    ar: float | None = None
     verbose: int | None = None
+    mem: int | None = None
     optim: bool = False
     noinsert: bool = False
     noswap: bool = False
     nomove: bool = False
-    angle: float | None = None
-    hgradreq: float | None = None
-    mem: int | None = None
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""

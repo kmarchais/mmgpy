@@ -384,6 +384,13 @@ def _add_convenience_methods() -> None:
     _original_remesh_2d = MmgMesh2D.remesh
     _original_remesh_s = MmgMeshS.remesh
 
+    # Map mesh types to their expected options types
+    _options_type_map: dict[type, type] = {
+        MmgMesh3D: Mmg3DOptions,
+        MmgMesh2D: Mmg2DOptions,
+        MmgMeshS: MmgSOptions,
+    }
+
     def _make_remesh_wrapper(
         original_remesh: Callable[..., None],
     ) -> Callable[..., None]:
@@ -397,6 +404,14 @@ def _add_convenience_methods() -> None:
                     msg = (
                         "Cannot pass both options object and keyword arguments. "
                         "Use one or the other."
+                    )
+                    raise TypeError(msg)
+                # Validate options type matches mesh type
+                expected_type = _options_type_map[type(self)]
+                if not isinstance(options, expected_type):
+                    msg = (
+                        f"Expected {expected_type.__name__} for {type(self).__name__}, "
+                        f"got {type(options).__name__}"
                     )
                     raise TypeError(msg)
                 # Options object passed - convert to kwargs

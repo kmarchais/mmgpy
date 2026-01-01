@@ -73,16 +73,27 @@ class TestMmg3DOptions:
         with pytest.raises(ValueError, match="mem must be positive"):
             Mmg3DOptions(mem=0)
 
-    def test_validation_angle_range(self) -> None:
-        """Test that angle must be between 0 and 180."""
-        with pytest.raises(ValueError, match="angle must be between 0 and 180"):
-            Mmg3DOptions(angle=-1)
-        with pytest.raises(ValueError, match="angle must be between 0 and 180"):
-            Mmg3DOptions(angle=181)
+    def test_validation_ar_range(self) -> None:
+        """Test that ar (angle detection) must be between 0 and 180."""
+        with pytest.raises(ValueError, match=r"ar.*must be between 0 and 180"):
+            Mmg3DOptions(ar=-1)
+        with pytest.raises(ValueError, match=r"ar.*must be between 0 and 180"):
+            Mmg3DOptions(ar=181)
         # Valid angles should not raise
-        Mmg3DOptions(angle=0)
-        Mmg3DOptions(angle=90)
-        Mmg3DOptions(angle=180)
+        Mmg3DOptions(ar=0)
+        Mmg3DOptions(ar=90)
+        Mmg3DOptions(ar=180)
+
+    def test_validation_hgradreq(self) -> None:
+        """Test that hgradreq must be >= 1.0 or -1."""
+        with pytest.raises(ValueError, match=r"hgradreq must be >= 1\.0 or -1"):
+            Mmg3DOptions(hgradreq=0.5)
+        with pytest.raises(ValueError, match=r"hgradreq must be >= 1\.0 or -1"):
+            Mmg3DOptions(hgradreq=0)
+        # Valid values should not raise
+        Mmg3DOptions(hgradreq=-1)  # Disable
+        Mmg3DOptions(hgradreq=1.0)
+        Mmg3DOptions(hgradreq=1.5)
 
     def test_frozen_immutable(self) -> None:
         """Test that options are immutable (frozen)."""
@@ -343,6 +354,106 @@ class TestConvenienceMethods:
         opts = MmgSOptions(hsiz=0.5)
         with pytest.raises(TypeError, match="Cannot pass both options object"):
             meshs.remesh(opts, optim=True)
+
+    def test_remesh_wrong_options_type_3d(self, mesh3d: MmgMesh3D) -> None:
+        """Test that passing wrong options type raises TypeError for 3D mesh."""
+        opts_2d = Mmg2DOptions(hsiz=0.5)
+        with pytest.raises(TypeError, match="Expected Mmg3DOptions for MmgMesh3D"):
+            mesh3d.remesh(opts_2d)  # type: ignore[arg-type]
+        opts_s = MmgSOptions(hsiz=0.5)
+        with pytest.raises(TypeError, match="Expected Mmg3DOptions for MmgMesh3D"):
+            mesh3d.remesh(opts_s)  # type: ignore[arg-type]
+
+    def test_remesh_wrong_options_type_2d(self, mesh2d: MmgMesh2D) -> None:
+        """Test that passing wrong options type raises TypeError for 2D mesh."""
+        opts_3d = Mmg3DOptions(hsiz=0.5)
+        with pytest.raises(TypeError, match="Expected Mmg2DOptions for MmgMesh2D"):
+            mesh2d.remesh(opts_3d)  # type: ignore[arg-type]
+
+    def test_remesh_wrong_options_type_s(self, meshs: MmgMeshS) -> None:
+        """Test that passing wrong options type raises TypeError for surface mesh."""
+        opts_3d = Mmg3DOptions(hsiz=0.5)
+        with pytest.raises(TypeError, match="Expected MmgSOptions for MmgMeshS"):
+            meshs.remesh(opts_3d)  # type: ignore[arg-type]
+
+
+class TestMeshChangeVerification:
+    """Tests that verify mesh actually changes after remeshing."""
+
+    @pytest.fixture
+    def coarse_mesh3d(self) -> MmgMesh3D:
+        """Create a coarse 3D mesh (single tetrahedron)."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        return MmgMesh3D(vertices, elements)
+
+    @pytest.fixture
+    def coarse_mesh2d(self) -> MmgMesh2D:
+        """Create a coarse 2D mesh (two triangles)."""
+        vertices = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [1.0, 1.0],
+                [0.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        return MmgMesh2D(vertices, triangles)
+
+    def test_remesh_uniform_increases_vertices_3d(
+        self,
+        coarse_mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that remesh_uniform with small size increases vertex count."""
+        initial_vertices = len(coarse_mesh3d.get_vertices())
+        coarse_mesh3d.remesh_uniform(0.3, verbose=-1)
+        final_vertices = len(coarse_mesh3d.get_vertices())
+        assert final_vertices > initial_vertices
+
+    def test_remesh_uniform_increases_elements_3d(
+        self,
+        coarse_mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that remesh_uniform with small size increases element count."""
+        initial_elements = len(coarse_mesh3d.get_tetrahedra())
+        coarse_mesh3d.remesh_uniform(0.3, verbose=-1)
+        final_elements = len(coarse_mesh3d.get_tetrahedra())
+        assert final_elements > initial_elements
+
+    def test_remesh_uniform_increases_vertices_2d(
+        self,
+        coarse_mesh2d: MmgMesh2D,
+    ) -> None:
+        """Test that remesh_uniform with small size increases vertex count for 2D."""
+        initial_vertices = len(coarse_mesh2d.get_vertices())
+        coarse_mesh2d.remesh_uniform(0.3, verbose=-1)
+        final_vertices = len(coarse_mesh2d.get_vertices())
+        assert final_vertices > initial_vertices
+
+    def test_remesh_with_options_changes_mesh(self, coarse_mesh3d: MmgMesh3D) -> None:
+        """Test that remesh with options object actually modifies the mesh."""
+        initial_vertices = len(coarse_mesh3d.get_vertices())
+        opts = Mmg3DOptions(hsiz=0.3, verbose=-1)
+        coarse_mesh3d.remesh(opts)
+        final_vertices = len(coarse_mesh3d.get_vertices())
+        assert final_vertices > initial_vertices
+
+    def test_remesh_with_fine_preset(self, coarse_mesh3d: MmgMesh3D) -> None:
+        """Test that remesh with fine preset creates more vertices."""
+        initial_vertices = len(coarse_mesh3d.get_vertices())
+        coarse_mesh3d.remesh(Mmg3DOptions.fine(hmax=0.3))
+        final_vertices = len(coarse_mesh3d.get_vertices())
+        assert final_vertices > initial_vertices
 
 
 class TestModuleExports:
