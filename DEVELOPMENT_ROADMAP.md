@@ -14,23 +14,20 @@
 
 ### 🟠 High Priority
 
-#### Level-Set Discretization
-
-```python
-mmg3d.remesh_levelset(mesh, levelset, metric)
-```
-
-### 🟡 Medium Priority
-
 | Feature                    | Description                      |
 | -------------------------- | -------------------------------- |
 | PyVista/meshio integration | `from_pyvista()`, `to_pyvista()` |
 | Typed options              | `TypedDict` for discoverability  |
-| Gmsh format support        | `.msh` files                     |
-| Local parameters           | Per-region sizing                |
-| Mesh validation            | `mesh.validate()`                |
-| API documentation          | MkDocs site                      |
-| CONTRIBUTING guide         | Development docs                 |
+
+### 🟡 Medium Priority
+
+| Feature             | Description       |
+| ------------------- | ----------------- |
+| Gmsh format support | `.msh` files      |
+| Local parameters    | Per-region sizing |
+| Mesh validation     | `mesh.validate()` |
+| API documentation   | MkDocs site       |
+| CONTRIBUTING guide  | Development docs  |
 
 ### 🟢 Low Priority
 
