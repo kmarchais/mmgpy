@@ -16,3 +16,15 @@ std::string path_to_string(const py::object &path) {
     return path.attr("__str__")().cast<std::string>();
   }
 }
+
+py::dict merge_options_with_default(const py::dict &options, const char *key,
+                                    py::object default_value) {
+  py::dict merged;
+  for (auto item : options) {
+    merged[item.first] = item.second;
+  }
+  if (!merged.contains(key)) {
+    merged[key] = default_value;
+  }
+  return merged;
+}

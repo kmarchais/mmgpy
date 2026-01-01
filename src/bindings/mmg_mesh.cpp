@@ -1216,39 +1216,26 @@ void MmgMesh::remesh(const py::dict &options) {
 void MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
                                 const py::dict &options) {
   set_field("displacement", displacement);
-
-  py::dict lag_options = py::dict();
-  for (auto item : options) {
-    lag_options[item.first] = item.second;
-  }
-  if (!lag_options.contains("lag")) {
-    lag_options["lag"] = 1;
-  }
-
+  py::dict lag_options =
+      merge_options_with_default(options, "lag", py::int_(1));
   set_mesh_options_3D(mesh, met, lag_options);
 
   int ret = MMG3D_mmg3dmov(mesh, met, disp);
   if (ret != MMG5_SUCCESS) {
-    throw std::runtime_error("Lagrangian motion remeshing failed");
+    throw std::runtime_error("MMG3D Lagrangian motion remeshing failed (ret=" +
+                             std::to_string(ret) + ")");
   }
 }
 
 void MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
                               const py::dict &options) {
   set_field("levelset", levelset);
-
-  py::dict ls_options = py::dict();
-  for (auto item : options) {
-    ls_options[item.first] = item.second;
-  }
-  if (!ls_options.contains("iso")) {
-    ls_options["iso"] = 1;
-  }
-
+  py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
   set_mesh_options_3D(mesh, met, ls_options);
 
   int ret = MMG3D_mmg3dls(mesh, ls, met);
   if (ret != MMG5_SUCCESS) {
-    throw std::runtime_error("Level-set discretization failed");
+    throw std::runtime_error("MMG3D level-set discretization failed (ret=" +
+                             std::to_string(ret) + ")");
   }
 }
