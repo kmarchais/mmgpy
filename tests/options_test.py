@@ -73,6 +73,23 @@ class TestMmg3DOptions:
         with pytest.raises(ValueError, match="mem must be positive"):
             Mmg3DOptions(mem=0)
 
+    def test_validation_angle_range(self) -> None:
+        """Test that angle must be between 0 and 180."""
+        with pytest.raises(ValueError, match="angle must be between 0 and 180"):
+            Mmg3DOptions(angle=-1)
+        with pytest.raises(ValueError, match="angle must be between 0 and 180"):
+            Mmg3DOptions(angle=181)
+        # Valid angles should not raise
+        Mmg3DOptions(angle=0)
+        Mmg3DOptions(angle=90)
+        Mmg3DOptions(angle=180)
+
+    def test_frozen_immutable(self) -> None:
+        """Test that options are immutable (frozen)."""
+        opts = Mmg3DOptions(hmax=0.1)
+        with pytest.raises(AttributeError):
+            opts.hmax = 0.2  # type: ignore[misc]
+
     def test_to_dict_empty(self) -> None:
         """Test to_dict with default values."""
         opts = Mmg3DOptions()
@@ -308,6 +325,24 @@ class TestConvenienceMethods:
     def test_remesh_with_preset_3d(self, mesh3d: MmgMesh3D) -> None:
         """Test passing preset options directly to remesh."""
         mesh3d.remesh(Mmg3DOptions.optimize_only(verbose=-1))
+
+    def test_remesh_options_and_kwargs_conflict(self, mesh3d: MmgMesh3D) -> None:
+        """Test that passing both options and kwargs raises TypeError."""
+        opts = Mmg3DOptions(hsiz=0.5)
+        with pytest.raises(TypeError, match="Cannot pass both options object"):
+            mesh3d.remesh(opts, verbose=-1)
+
+    def test_remesh_options_and_kwargs_conflict_2d(self, mesh2d: MmgMesh2D) -> None:
+        """Test that passing both options and kwargs raises TypeError for 2D."""
+        opts = Mmg2DOptions(hsiz=0.5)
+        with pytest.raises(TypeError, match="Cannot pass both options object"):
+            mesh2d.remesh(opts, hmax=0.2)
+
+    def test_remesh_options_and_kwargs_conflict_s(self, meshs: MmgMeshS) -> None:
+        """Test that passing both options and kwargs raises TypeError for surface."""
+        opts = MmgSOptions(hsiz=0.5)
+        with pytest.raises(TypeError, match="Cannot pass both options object"):
+            meshs.remesh(opts, optim=True)
 
 
 class TestModuleExports:

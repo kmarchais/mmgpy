@@ -376,21 +376,32 @@ add_pyvista_methods()
 
 def _add_convenience_methods() -> None:
     """Add convenience remeshing methods and wrap remesh() to accept options objects."""
+    from collections.abc import Callable  # noqa: PLC0415
+    from typing import Any  # noqa: PLC0415
+
     # Wrap remesh() to accept options objects directly
     _original_remesh_3d = MmgMesh3D.remesh
     _original_remesh_2d = MmgMesh2D.remesh
     _original_remesh_s = MmgMeshS.remesh
 
-    def _make_remesh_wrapper(original_remesh: object) -> object:
+    def _make_remesh_wrapper(
+        original_remesh: Callable[..., None],
+    ) -> Callable[..., None]:
         def _wrapped_remesh(
-            self: object,
-            options: object = None,
-            **kwargs: object,
-        ) -> object:
+            self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+            options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
+            **kwargs: Any,  # noqa: ANN401
+        ) -> None:
             if options is not None:
+                if kwargs:
+                    msg = (
+                        "Cannot pass both options object and keyword arguments. "
+                        "Use one or the other."
+                    )
+                    raise TypeError(msg)
                 # Options object passed - convert to kwargs
-                kwargs.update(options.to_dict())  # type: ignore[union-attr]
-            return original_remesh(self, **kwargs)  # type: ignore[operator]
+                kwargs = options.to_dict()
+            original_remesh(self, **kwargs)
 
         return _wrapped_remesh
 
@@ -398,7 +409,11 @@ def _add_convenience_methods() -> None:
     MmgMesh2D.remesh = _make_remesh_wrapper(_original_remesh_2d)  # type: ignore[method-assign]
     MmgMeshS.remesh = _make_remesh_wrapper(_original_remesh_s)  # type: ignore[method-assign]
 
-    def _remesh_optimize(self: object, *, verbose: int | None = None) -> None:
+    def _remesh_optimize(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+        *,
+        verbose: int | None = None,
+    ) -> None:
         """Optimize mesh quality without changing topology.
 
         Only moves vertices to improve element quality.
@@ -413,10 +428,10 @@ def _add_convenience_methods() -> None:
         opts: dict[str, int] = {"optim": 1, "noinsert": 1}
         if verbose is not None:
             opts["verbose"] = verbose
-        self.remesh(**opts)  # type: ignore[attr-defined]
+        self.remesh(**opts)  # type: ignore[arg-type]
 
     def _remesh_uniform(
-        self: object,
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
         size: float,
         *,
         verbose: int | None = None,
@@ -434,7 +449,7 @@ def _add_convenience_methods() -> None:
         opts: dict[str, float | int] = {"hsiz": size}
         if verbose is not None:
             opts["verbose"] = verbose
-        self.remesh(**opts)  # type: ignore[attr-defined]
+        self.remesh(**opts)  # type: ignore[arg-type]
 
     MmgMesh3D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
     MmgMesh3D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]

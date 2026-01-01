@@ -4,16 +4,17 @@ This module provides structured configuration objects for mesh remeshing,
 offering better IDE support, validation, and preset configurations.
 
 Example:
-    >>> from mmgpy import MmgMesh3D, Mmg3DOptions
-    >>>
-    >>> mesh = MmgMesh3D(vertices, elements)
-    >>>
-    >>> # Using options dataclass
-    >>> options = Mmg3DOptions(hmax=0.1, hausd=0.001)
-    >>> mesh.remesh(options)
-    >>>
-    >>> # Using factory presets
-    >>> mesh.remesh(Mmg3DOptions.fine(hmax=0.05))
+-------
+>>> from mmgpy import MmgMesh3D, Mmg3DOptions
+>>>
+>>> mesh = MmgMesh3D(vertices, elements)
+>>>
+>>> # Using options dataclass
+>>> options = Mmg3DOptions(hmax=0.1, hausd=0.001)
+>>> mesh.remesh(options)
+>>>
+>>> # Using factory presets
+>>> mesh.remesh(Mmg3DOptions.fine(hmax=0.05))
 
 """
 
@@ -25,12 +26,85 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Self
 
+# Maximum angle value for ridge detection (degrees)
+_MAX_ANGLE_DEGREES = 180
 
-@dataclass(slots=True, kw_only=True)
+
+def _validate_common_options(opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions) -> None:
+    """Validate options common to all mesh types.
+
+    Parameters
+    ----------
+    opts : Mmg3DOptions | Mmg2DOptions | MmgSOptions
+        Options object to validate.
+
+    Raises
+    ------
+    ValueError
+        If any option value is invalid.
+
+    """
+    if opts.hmin is not None and opts.hmin <= 0:
+        msg = "hmin must be positive"
+        raise ValueError(msg)
+    if opts.hmax is not None and opts.hmax <= 0:
+        msg = "hmax must be positive"
+        raise ValueError(msg)
+    if opts.hsiz is not None and opts.hsiz <= 0:
+        msg = "hsiz must be positive"
+        raise ValueError(msg)
+    if opts.hmin is not None and opts.hmax is not None and opts.hmin > opts.hmax:
+        msg = "hmin must be less than or equal to hmax"
+        raise ValueError(msg)
+    if opts.hausd is not None and opts.hausd <= 0:
+        msg = "hausd must be positive"
+        raise ValueError(msg)
+    if opts.hgrad is not None and opts.hgrad < 1.0:
+        msg = "hgrad must be >= 1.0"
+        raise ValueError(msg)
+    if opts.angle is not None and (opts.angle < 0 or opts.angle > _MAX_ANGLE_DEGREES):
+        msg = f"angle must be between 0 and {_MAX_ANGLE_DEGREES} degrees"
+        raise ValueError(msg)
+    if opts.mem is not None and opts.mem <= 0:
+        msg = "mem must be positive"
+        raise ValueError(msg)
+
+
+def _options_to_dict(
+    opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions,
+) -> dict[str, float | int]:
+    """Convert options to dictionary for passing to remesh().
+
+    Parameters
+    ----------
+    opts : Mmg3DOptions | Mmg2DOptions | MmgSOptions
+        Options object to convert.
+
+    Returns
+    -------
+    dict[str, float | int]
+        Dictionary with non-None values, booleans converted to int.
+
+    """
+    result: dict[str, float | int] = {}
+    for f in fields(opts):
+        value = getattr(opts, f.name)
+        if value is None:
+            continue
+        if isinstance(value, bool):
+            if value:
+                result[f.name] = 1
+        else:
+            result[f.name] = value
+    return result
+
+
+@dataclass(slots=True, kw_only=True, frozen=True)
 class Mmg3DOptions:
     """Options for 3D tetrahedral mesh remeshing (MMG3D).
 
     All parameters are optional. When None, MMG uses its internal defaults.
+    Options are immutable after creation.
 
     Attributes:
     ----------
@@ -57,7 +131,7 @@ class Mmg3DOptions:
     nosurf : bool
         Disable surface modifications.
     angle : float | None
-        Ridge detection angle (degrees).
+        Ridge detection angle (degrees, 0-180).
     hgradreq : float | None
         Required gradation value.
     mem : int | None
@@ -87,27 +161,7 @@ class Mmg3DOptions:
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
-        if self.hmin is not None and self.hmin <= 0:
-            msg = "hmin must be positive"
-            raise ValueError(msg)
-        if self.hmax is not None and self.hmax <= 0:
-            msg = "hmax must be positive"
-            raise ValueError(msg)
-        if self.hsiz is not None and self.hsiz <= 0:
-            msg = "hsiz must be positive"
-            raise ValueError(msg)
-        if self.hmin is not None and self.hmax is not None and self.hmin > self.hmax:
-            msg = "hmin must be less than or equal to hmax"
-            raise ValueError(msg)
-        if self.hausd is not None and self.hausd <= 0:
-            msg = "hausd must be positive"
-            raise ValueError(msg)
-        if self.hgrad is not None and self.hgrad < 1.0:
-            msg = "hgrad must be >= 1.0"
-            raise ValueError(msg)
-        if self.mem is not None and self.mem <= 0:
-            msg = "mem must be positive"
-            raise ValueError(msg)
+        _validate_common_options(self)
 
     def to_dict(self) -> dict[str, float | int]:
         """Convert options to dictionary for passing to remesh().
@@ -118,17 +172,7 @@ class Mmg3DOptions:
             Dictionary with non-None values, booleans converted to int.
 
         """
-        result: dict[str, float | int] = {}
-        for f in fields(self):
-            value = getattr(self, f.name)
-            if value is None:
-                continue
-            if isinstance(value, bool):
-                if value:
-                    result[f.name] = 1
-            else:
-                result[f.name] = value
-        return result
+        return _options_to_dict(self)
 
     @classmethod
     def fine(cls, *, hmax: float, hausd: float | None = None) -> Self:
@@ -177,11 +221,12 @@ class Mmg3DOptions:
         )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(slots=True, kw_only=True, frozen=True)
 class Mmg2DOptions:
     """Options for 2D triangular mesh remeshing (MMG2D).
 
     All parameters are optional. When None, MMG uses its internal defaults.
+    Options are immutable after creation.
 
     Attributes
     ----------
@@ -206,7 +251,7 @@ class Mmg2DOptions:
     nomove : bool
         Disable point relocation.
     angle : float | None
-        Ridge detection angle (degrees).
+        Ridge detection angle (degrees, 0-180).
     hgradreq : float | None
         Required gradation value.
     mem : int | None
@@ -230,27 +275,7 @@ class Mmg2DOptions:
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
-        if self.hmin is not None and self.hmin <= 0:
-            msg = "hmin must be positive"
-            raise ValueError(msg)
-        if self.hmax is not None and self.hmax <= 0:
-            msg = "hmax must be positive"
-            raise ValueError(msg)
-        if self.hsiz is not None and self.hsiz <= 0:
-            msg = "hsiz must be positive"
-            raise ValueError(msg)
-        if self.hmin is not None and self.hmax is not None and self.hmin > self.hmax:
-            msg = "hmin must be less than or equal to hmax"
-            raise ValueError(msg)
-        if self.hausd is not None and self.hausd <= 0:
-            msg = "hausd must be positive"
-            raise ValueError(msg)
-        if self.hgrad is not None and self.hgrad < 1.0:
-            msg = "hgrad must be >= 1.0"
-            raise ValueError(msg)
-        if self.mem is not None and self.mem <= 0:
-            msg = "mem must be positive"
-            raise ValueError(msg)
+        _validate_common_options(self)
 
     def to_dict(self) -> dict[str, float | int]:
         """Convert options to dictionary for passing to remesh().
@@ -261,17 +286,7 @@ class Mmg2DOptions:
             Dictionary with non-None values, booleans converted to int.
 
         """
-        result: dict[str, float | int] = {}
-        for f in fields(self):
-            value = getattr(self, f.name)
-            if value is None:
-                continue
-            if isinstance(value, bool):
-                if value:
-                    result[f.name] = 1
-            else:
-                result[f.name] = value
-        return result
+        return _options_to_dict(self)
 
     @classmethod
     def fine(cls, *, hmax: float, hausd: float | None = None) -> Self:
@@ -320,11 +335,12 @@ class Mmg2DOptions:
         )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(slots=True, kw_only=True, frozen=True)
 class MmgSOptions:
     """Options for surface mesh remeshing (MMGS).
 
     All parameters are optional. When None, MMG uses its internal defaults.
+    Options are immutable after creation.
 
     Attributes
     ----------
@@ -349,7 +365,7 @@ class MmgSOptions:
     nomove : bool
         Disable point relocation.
     angle : float | None
-        Ridge detection angle (degrees).
+        Ridge detection angle (degrees, 0-180).
     hgradreq : float | None
         Required gradation value.
     mem : int | None
@@ -373,27 +389,7 @@ class MmgSOptions:
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
-        if self.hmin is not None and self.hmin <= 0:
-            msg = "hmin must be positive"
-            raise ValueError(msg)
-        if self.hmax is not None and self.hmax <= 0:
-            msg = "hmax must be positive"
-            raise ValueError(msg)
-        if self.hsiz is not None and self.hsiz <= 0:
-            msg = "hsiz must be positive"
-            raise ValueError(msg)
-        if self.hmin is not None and self.hmax is not None and self.hmin > self.hmax:
-            msg = "hmin must be less than or equal to hmax"
-            raise ValueError(msg)
-        if self.hausd is not None and self.hausd <= 0:
-            msg = "hausd must be positive"
-            raise ValueError(msg)
-        if self.hgrad is not None and self.hgrad < 1.0:
-            msg = "hgrad must be >= 1.0"
-            raise ValueError(msg)
-        if self.mem is not None and self.mem <= 0:
-            msg = "mem must be positive"
-            raise ValueError(msg)
+        _validate_common_options(self)
 
     def to_dict(self) -> dict[str, float | int]:
         """Convert options to dictionary for passing to remesh().
@@ -404,17 +400,7 @@ class MmgSOptions:
             Dictionary with non-None values, booleans converted to int.
 
         """
-        result: dict[str, float | int] = {}
-        for f in fields(self):
-            value = getattr(self, f.name)
-            if value is None:
-                continue
-            if isinstance(value, bool):
-                if value:
-                    result[f.name] = 1
-            else:
-                result[f.name] = value
-        return result
+        return _options_to_dict(self)
 
     @classmethod
     def fine(cls, *, hmax: float, hausd: float | None = None) -> Self:
