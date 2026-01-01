@@ -17,7 +17,9 @@ dependencies = [
     "meshio>=5.3.5",
     "numpy>=2.0.2",
     "patchelf>=0.17.2.4; sys_platform == 'linux'",
+    "rich>=13.0.0",
     "scipy>=1.11.0",
+    "typing-extensions>=4.0.0; python_version < '3.11'",
 ]
 authors = [{ name = "Kevin MArchais", email = "kevinmarchais@gmail.com" }]
 license = { text = "MIT" }
@@ -31,9 +33,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-
-[project.optional-dependencies]
-rich = ["rich>=13.0.0"]
 
 [tool.scikit-build]
 # Build configuration

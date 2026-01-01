@@ -1,28 +1,18 @@
-"""Logging configuration for mmgpy with optional Rich integration."""
+"""Logging configuration for mmgpy with Rich integration."""
 
 from __future__ import annotations
 
 import functools
 import logging
 import os
-import sys
 from typing import TYPE_CHECKING
+
+from rich.logging import RichHandler
 
 if TYPE_CHECKING:
     from typing import Literal
 
     LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-
-
-@functools.lru_cache(maxsize=1)
-def _check_rich_available() -> bool:
-    """Check if Rich library is available."""
-    try:
-        import rich  # noqa: F401
-    except ImportError:
-        return False
-    else:
-        return True
 
 
 @functools.lru_cache(maxsize=1)
@@ -32,7 +22,7 @@ def get_logger() -> logging.Logger:
     Returns
     -------
     logging.Logger
-        The mmgpy logger instance, configured with RichHandler if available.
+        The mmgpy logger instance, configured with RichHandler.
 
     """
     logger = logging.getLogger("mmgpy")
@@ -44,22 +34,13 @@ def get_logger() -> logging.Logger:
 
 
 def _configure_logger(logger: logging.Logger) -> None:
-    """Configure the logger with appropriate handler."""
-    if _check_rich_available():
-        from rich.logging import RichHandler
-
-        handler: logging.Handler = RichHandler(
-            rich_tracebacks=True,
-            show_path=False,
-            markup=True,
-        )
-        handler.setFormatter(logging.Formatter("%(message)s"))
-    else:
-        handler = logging.StreamHandler(sys.stderr)
-        handler.setFormatter(
-            logging.Formatter("[%(levelname)s] %(name)s: %(message)s"),
-        )
-
+    """Configure the logger with RichHandler."""
+    handler = RichHandler(
+        rich_tracebacks=True,
+        show_path=False,
+        markup=True,
+    )
+    handler.setFormatter(logging.Formatter("%(message)s"))
     logger.addHandler(handler)
 
     if os.environ.get("MMGPY_DEBUG"):

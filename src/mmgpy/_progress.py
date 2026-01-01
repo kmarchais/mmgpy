@@ -1,10 +1,16 @@
-"""Progress callback utilities for mmgpy with optional Rich integration."""
+"""Progress callback utilities for mmgpy with Rich integration."""
 
 from __future__ import annotations
 
+import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, Self
+from typing import TYPE_CHECKING, Protocol
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -129,25 +135,22 @@ class RichProgressReporter:
 
     def __enter__(self) -> Self:
         """Start the progress display."""
-        try:
-            from rich.progress import (
-                BarColumn,
-                Progress,
-                SpinnerColumn,
-                TextColumn,
-                TimeElapsedColumn,
-            )
+        from rich.progress import (
+            BarColumn,
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            TimeElapsedColumn,
+        )
 
-            self._progress = Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TimeElapsedColumn(),
-                transient=self._transient,
-            )
-            self._progress.start()
-        except ImportError:
-            pass
+        self._progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TimeElapsedColumn(),
+            transient=self._transient,
+        )
+        self._progress.start()
         return self
 
     def __exit__(self, *args: object) -> None:
@@ -181,11 +184,10 @@ class RichProgressReporter:
 def rich_progress(
     *,
     transient: bool = True,
-) -> Generator[ProgressCallback | None, None, None]:
+) -> Generator[ProgressCallback, None, None]:
     """Context manager for Rich progress display.
 
     This is a convenience function for using Rich progress with remeshing.
-    Falls back gracefully if Rich is not installed.
 
     Parameters
     ----------
@@ -194,8 +196,8 @@ def rich_progress(
 
     Yields
     ------
-    ProgressCallback | None
-        A progress callback function, or None if Rich is not available.
+    ProgressCallback
+        A progress callback function.
 
     Examples
     --------
@@ -206,17 +208,13 @@ def rich_progress(
     ...     mesh.remesh(hmax=0.1, progress=callback)
 
     """
-    try:
-        from rich.progress import (
-            BarColumn,
-            Progress,
-            SpinnerColumn,
-            TextColumn,
-            TimeElapsedColumn,
-        )
-    except ImportError:
-        yield None
-        return
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
 
     phase_names = {
         "init": "Initializing",

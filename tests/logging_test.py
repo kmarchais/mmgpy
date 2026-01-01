@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 import mmgpy
-from mmgpy._logging import _check_rich_available, get_logger
+from mmgpy._logging import get_logger
 
 if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
@@ -68,12 +68,6 @@ def test_logger_outputs_debug_messages(caplog: LogCaptureFixture) -> None:
         logger.debug("Test debug message")
 
     assert "Test debug message" in caplog.text
-
-
-def test_check_rich_available() -> None:
-    """Test that _check_rich_available returns a boolean."""
-    result = _check_rich_available()
-    assert isinstance(result, bool)
 
 
 def test_exports_in_all() -> None:
