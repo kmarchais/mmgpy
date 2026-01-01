@@ -261,6 +261,38 @@ class MmgMesh3D:
     # Convenience methods (added by mmgpy._add_convenience_methods)
     def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
     def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
+    # Local sizing methods (added by mmgpy._add_sizing_methods)
+    def set_size_sphere(
+        self,
+        center: list[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_box(
+        self,
+        bounds: list[list[float]] | NDArray[np.float64],
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_cylinder(
+        self,
+        point1: list[float] | NDArray[np.float64],
+        point2: list[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_from_point(
+        self,
+        point: list[float] | NDArray[np.float64],
+        near_size: float,
+        far_size: float,
+        influence_radius: float,
+    ) -> None: ...
+    def clear_local_sizing(self) -> None: ...
+    def get_local_sizing_count(self) -> int: ...
+    def apply_local_sizing(self) -> None: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -427,6 +459,30 @@ class MmgMesh2D:
     # Convenience methods (added by mmgpy._add_convenience_methods)
     def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
     def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
+    # Local sizing methods (added by mmgpy._add_sizing_methods)
+    def set_size_sphere(
+        self,
+        center: list[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_box(
+        self,
+        bounds: list[list[float]] | NDArray[np.float64],
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_from_point(
+        self,
+        point: list[float] | NDArray[np.float64],
+        near_size: float,
+        far_size: float,
+        influence_radius: float,
+    ) -> None: ...
+    def clear_local_sizing(self) -> None: ...
+    def get_local_sizing_count(self) -> int: ...
+    def apply_local_sizing(self) -> None: ...
 
 # Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
@@ -567,3 +623,35 @@ class MmgMeshS:
     # Convenience methods (added by mmgpy._add_convenience_methods)
     def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
     def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
+    # Local sizing methods (added by mmgpy._add_sizing_methods)
+    def set_size_sphere(
+        self,
+        center: list[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_box(
+        self,
+        bounds: list[list[float]] | NDArray[np.float64],
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_cylinder(
+        self,
+        point1: list[float] | NDArray[np.float64],
+        point2: list[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+        transition: float = 0.0,
+    ) -> None: ...
+    def set_size_from_point(
+        self,
+        point: list[float] | NDArray[np.float64],
+        near_size: float,
+        far_size: float,
+        influence_radius: float,
+    ) -> None: ...
+    def clear_local_sizing(self) -> None: ...
+    def get_local_sizing_count(self) -> int: ...
+    def apply_local_sizing(self) -> None: ...

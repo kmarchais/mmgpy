@@ -364,11 +364,19 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
         )
 
 
-from . import lagrangian, metrics, progress
+from . import lagrangian, metrics, progress, sizing
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import ProgressEvent, rich_progress
 from ._pyvista import add_pyvista_methods, from_pyvista, to_pyvista
 from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
+from .sizing import (
+    BoxSize,
+    CylinderSize,
+    PointSize,
+    SizingConstraint,
+    SphereSize,
+    apply_sizing_constraints,
+)
 
 # Add from_pyvista/to_pyvista methods to mesh classes
 add_pyvista_methods()
@@ -478,15 +486,316 @@ def _add_convenience_methods() -> None:
 
 _add_convenience_methods()
 
+
+_sizing_constraints_store: dict[int, list[SizingConstraint]] = {}
+
+
+def _add_sizing_methods() -> None:  # noqa: PLR0915
+    """Add local sizing methods to mesh classes."""
+    import numpy as np  # noqa: PLC0415
+    from numpy.typing import NDArray  # noqa: PLC0415
+
+    def _get_sizing_constraints(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    ) -> list[SizingConstraint]:
+        """Get or create the sizing constraints list."""
+        mesh_id = id(self)
+        if mesh_id not in _sizing_constraints_store:
+            _sizing_constraints_store[mesh_id] = []
+        return _sizing_constraints_store[mesh_id]
+
+    def _set_size_sphere(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+        center: list[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+        transition: float = 0.0,
+    ) -> None:
+        """Set uniform size within a spherical region.
+
+        Parameters
+        ----------
+        center : array_like
+            Center of the sphere.
+        radius : float
+            Radius of the sphere.
+        size : float
+            Target edge size within the sphere.
+        transition : float, optional
+            Width of gradation zone outside sphere. Default is 0.
+
+        Examples
+        --------
+        >>> mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
+        >>> mesh.remesh(hmax=0.1, verbose=-1)
+
+        """
+        constraints = _get_sizing_constraints(self)
+        constraints.append(
+            SphereSize(
+                center=np.asarray(center, dtype=np.float64),
+                radius=radius,
+                size=size,
+                transition=transition,
+            ),
+        )
+
+    def _set_size_box(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+        bounds: list[list[float]] | NDArray[np.float64],
+        size: float,
+        transition: float = 0.0,
+    ) -> None:
+        """Set uniform size within a box region.
+
+        Parameters
+        ----------
+        bounds : array_like
+            Box bounds as [[xmin, ymin, zmin], [xmax, ymax, zmax]] for 3D
+            or [[xmin, ymin], [xmax, ymax]] for 2D.
+        size : float
+            Target edge size within the box.
+        transition : float, optional
+            Width of gradation zone outside box. Default is 0.
+
+        Examples
+        --------
+        >>> mesh.set_size_box(
+        ...     bounds=[[0, 0, 0], [0.5, 0.5, 0.5]],
+        ...     size=0.01,
+        ... )
+        >>> mesh.remesh(hmax=0.1, verbose=-1)
+
+        """
+        constraints = _get_sizing_constraints(self)
+        constraints.append(
+            BoxSize(
+                bounds=np.asarray(bounds, dtype=np.float64),
+                size=size,
+                transition=transition,
+            ),
+        )
+
+    def _set_size_cylinder(  # noqa: PLR0913
+        self: MmgMesh3D | MmgMeshS,
+        point1: list[float] | NDArray[np.float64],
+        point2: list[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+        transition: float = 0.0,
+    ) -> None:
+        """Set uniform size within a cylindrical region.
+
+        Parameters
+        ----------
+        point1 : array_like
+            First endpoint of cylinder axis.
+        point2 : array_like
+            Second endpoint of cylinder axis.
+        radius : float
+            Radius of the cylinder.
+        size : float
+            Target edge size within the cylinder.
+        transition : float, optional
+            Width of gradation zone outside cylinder. Default is 0.
+
+        Examples
+        --------
+        >>> mesh.set_size_cylinder(
+        ...     point1=[0, 0, 0],
+        ...     point2=[0, 0, 1],
+        ...     radius=0.1,
+        ...     size=0.02,
+        ... )
+        >>> mesh.remesh(hmax=0.1, verbose=-1)
+
+        """
+        constraints = _get_sizing_constraints(self)
+        constraints.append(
+            CylinderSize(
+                point1=np.asarray(point1, dtype=np.float64),
+                point2=np.asarray(point2, dtype=np.float64),
+                radius=radius,
+                size=size,
+                transition=transition,
+            ),
+        )
+
+    def _set_size_from_point(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+        point: list[float] | NDArray[np.float64],
+        near_size: float,
+        far_size: float,
+        influence_radius: float,
+    ) -> None:
+        """Set distance-based sizing from a point.
+
+        Size varies linearly from near_size at the point to far_size at
+        influence_radius distance.
+
+        Parameters
+        ----------
+        point : array_like
+            Reference point.
+        near_size : float
+            Target size at the reference point.
+        far_size : float
+            Target size at influence_radius distance and beyond.
+        influence_radius : float
+            Distance over which size transitions.
+
+        Examples
+        --------
+        >>> mesh.set_size_from_point(
+        ...     point=[0.5, 0.5, 0.5],
+        ...     near_size=0.01,
+        ...     far_size=0.1,
+        ...     influence_radius=0.5,
+        ... )
+        >>> mesh.remesh(verbose=-1)
+
+        """
+        constraints = _get_sizing_constraints(self)
+        constraints.append(
+            PointSize(
+                point=np.asarray(point, dtype=np.float64),
+                near_size=near_size,
+                far_size=far_size,
+                influence_radius=influence_radius,
+            ),
+        )
+
+    def _clear_local_sizing(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    ) -> None:
+        """Clear all local sizing constraints.
+
+        After calling this method, remeshing will use only global
+        parameters (hmin, hmax, hsiz) without any local sizing.
+
+        Examples
+        --------
+        >>> mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
+        >>> mesh.clear_local_sizing()  # Remove all sizing constraints
+        >>> mesh.remesh(hmax=0.1)  # Uses only global hmax
+
+        """
+        mesh_id = id(self)
+        if mesh_id in _sizing_constraints_store:
+            _sizing_constraints_store[mesh_id].clear()
+
+    def _get_local_sizing_count(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    ) -> int:
+        """Get the number of local sizing constraints.
+
+        Returns
+        -------
+        int
+            Number of sizing constraints currently set.
+
+        """
+        mesh_id = id(self)
+        if mesh_id in _sizing_constraints_store:
+            return len(_sizing_constraints_store[mesh_id])
+        return 0
+
+    def _apply_local_sizing(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    ) -> None:
+        """Apply local sizing constraints to the mesh metric field.
+
+        This is called automatically before remeshing if sizing constraints
+        are set. You can also call it manually to inspect the resulting
+        metric field before remeshing.
+
+        Multiple sizing constraints are combined by taking the minimum size
+        at each vertex (finest mesh wins).
+
+        """
+        import contextlib  # noqa: PLC0415
+
+        constraints = _get_sizing_constraints(self)
+        if constraints:
+            existing_metric = None
+            with contextlib.suppress(RuntimeError, KeyError):
+                existing_metric = self["metric"]
+            apply_sizing_constraints(self, constraints, existing_metric)
+
+    # Add methods to all mesh classes
+    MmgMesh3D.set_size_sphere = _set_size_sphere  # type: ignore[attr-defined]
+    MmgMesh3D.set_size_box = _set_size_box  # type: ignore[attr-defined]
+    MmgMesh3D.set_size_cylinder = _set_size_cylinder  # type: ignore[attr-defined]
+    MmgMesh3D.set_size_from_point = _set_size_from_point  # type: ignore[attr-defined]
+    MmgMesh3D.clear_local_sizing = _clear_local_sizing  # type: ignore[attr-defined]
+    MmgMesh3D.get_local_sizing_count = _get_local_sizing_count  # type: ignore[attr-defined]
+    MmgMesh3D.apply_local_sizing = _apply_local_sizing  # type: ignore[attr-defined]
+
+    MmgMesh2D.set_size_sphere = _set_size_sphere  # type: ignore[attr-defined]
+    MmgMesh2D.set_size_box = _set_size_box  # type: ignore[attr-defined]
+    MmgMesh2D.set_size_from_point = _set_size_from_point  # type: ignore[attr-defined]
+    MmgMesh2D.clear_local_sizing = _clear_local_sizing  # type: ignore[attr-defined]
+    MmgMesh2D.get_local_sizing_count = _get_local_sizing_count  # type: ignore[attr-defined]
+    MmgMesh2D.apply_local_sizing = _apply_local_sizing  # type: ignore[attr-defined]
+
+    MmgMeshS.set_size_sphere = _set_size_sphere  # type: ignore[attr-defined]
+    MmgMeshS.set_size_box = _set_size_box  # type: ignore[attr-defined]
+    MmgMeshS.set_size_cylinder = _set_size_cylinder  # type: ignore[attr-defined]
+    MmgMeshS.set_size_from_point = _set_size_from_point  # type: ignore[attr-defined]
+    MmgMeshS.clear_local_sizing = _clear_local_sizing  # type: ignore[attr-defined]
+    MmgMeshS.get_local_sizing_count = _get_local_sizing_count  # type: ignore[attr-defined]
+    MmgMeshS.apply_local_sizing = _apply_local_sizing  # type: ignore[attr-defined]
+
+
+_add_sizing_methods()
+
+
+def _wrap_remesh_with_sizing() -> None:
+    """Wrap remesh methods to auto-apply sizing constraints."""
+    from collections.abc import Callable  # noqa: PLC0415
+    from typing import Any  # noqa: PLC0415
+
+    _sizing_aware_remesh_3d = MmgMesh3D.remesh
+    _sizing_aware_remesh_2d = MmgMesh2D.remesh
+    _sizing_aware_remesh_s = MmgMeshS.remesh
+
+    def _make_sizing_wrapper(
+        wrapped_remesh: Callable[..., None],
+    ) -> Callable[..., None]:
+        def _sizing_remesh(
+            self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+            *args: Any,  # noqa: ANN401
+            **kwargs: Any,  # noqa: ANN401
+        ) -> None:
+            # Apply sizing constraints before remeshing
+            constraints = _sizing_constraints_store.get(id(self))
+            if constraints:
+                self.apply_local_sizing()  # type: ignore[attr-defined]
+            wrapped_remesh(self, *args, **kwargs)
+
+        return _sizing_remesh
+
+    MmgMesh3D.remesh = _make_sizing_wrapper(_sizing_aware_remesh_3d)  # type: ignore[method-assign]
+    MmgMesh2D.remesh = _make_sizing_wrapper(_sizing_aware_remesh_2d)  # type: ignore[method-assign]
+    MmgMeshS.remesh = _make_sizing_wrapper(_sizing_aware_remesh_s)  # type: ignore[method-assign]
+
+
+_wrap_remesh_with_sizing()
+
 __all__ = [
     "MMG_VERSION",
+    "BoxSize",
+    "CylinderSize",
     "Mmg2DOptions",
     "Mmg3DOptions",
     "MmgMesh2D",
     "MmgMesh3D",
     "MmgMeshS",
     "MmgSOptions",
+    "PointSize",
     "ProgressEvent",
+    "SizingConstraint",
+    "SphereSize",
     "__version__",
     "detect_boundary_vertices",
     "disable_logging",
@@ -502,6 +811,7 @@ __all__ = [
     "propagate_displacement",
     "rich_progress",
     "set_log_level",
+    "sizing",
     "to_pyvista",
 ]
 
