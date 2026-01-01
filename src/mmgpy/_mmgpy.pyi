@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from pathlib import Path
 from typing import overload
 
@@ -264,28 +265,25 @@ class MmgMesh3D:
     # Local sizing methods (added by mmgpy._add_sizing_methods)
     def set_size_sphere(
         self,
-        center: list[float] | NDArray[np.float64],
+        center: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_box(
         self,
-        bounds: list[list[float]] | NDArray[np.float64],
+        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_cylinder(
         self,
-        point1: list[float] | NDArray[np.float64],
-        point2: list[float] | NDArray[np.float64],
+        point1: Sequence[float] | NDArray[np.float64],
+        point2: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_from_point(
         self,
-        point: list[float] | NDArray[np.float64],
+        point: Sequence[float] | NDArray[np.float64],
         near_size: float,
         far_size: float,
         influence_radius: float,
@@ -462,20 +460,18 @@ class MmgMesh2D:
     # Local sizing methods (added by mmgpy._add_sizing_methods)
     def set_size_sphere(
         self,
-        center: list[float] | NDArray[np.float64],
+        center: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_box(
         self,
-        bounds: list[list[float]] | NDArray[np.float64],
+        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_from_point(
         self,
-        point: list[float] | NDArray[np.float64],
+        point: Sequence[float] | NDArray[np.float64],
         near_size: float,
         far_size: float,
         influence_radius: float,
@@ -626,28 +622,25 @@ class MmgMeshS:
     # Local sizing methods (added by mmgpy._add_sizing_methods)
     def set_size_sphere(
         self,
-        center: list[float] | NDArray[np.float64],
+        center: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_box(
         self,
-        bounds: list[list[float]] | NDArray[np.float64],
+        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_cylinder(
         self,
-        point1: list[float] | NDArray[np.float64],
-        point2: list[float] | NDArray[np.float64],
+        point1: Sequence[float] | NDArray[np.float64],
+        point2: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
-        transition: float = 0.0,
     ) -> None: ...
     def set_size_from_point(
         self,
-        point: list[float] | NDArray[np.float64],
+        point: Sequence[float] | NDArray[np.float64],
         near_size: float,
         far_size: float,
         influence_radius: float,

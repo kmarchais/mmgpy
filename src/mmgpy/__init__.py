@@ -487,11 +487,16 @@ def _add_convenience_methods() -> None:
 _add_convenience_methods()
 
 
+import weakref as _weakref
+
 _sizing_constraints_store: dict[int, list[SizingConstraint]] = {}
+_sizing_mesh_refs: dict[int, "_weakref.ref[MmgMesh3D | MmgMesh2D | MmgMeshS]"] = {}
 
 
 def _add_sizing_methods() -> None:  # noqa: PLR0915
     """Add local sizing methods to mesh classes."""
+    from collections.abc import Sequence  # noqa: PLC0415
+
     import numpy as np  # noqa: PLC0415
     from numpy.typing import NDArray  # noqa: PLC0415
 
@@ -502,14 +507,23 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
         mesh_id = id(self)
         if mesh_id not in _sizing_constraints_store:
             _sizing_constraints_store[mesh_id] = []
+
+            # Register weakref callback to clean up when mesh is garbage collected
+            def _cleanup_sizing(
+                _ref: "_weakref.ref[MmgMesh3D | MmgMesh2D | MmgMeshS]",
+                mid: int = mesh_id,
+            ) -> None:
+                _sizing_constraints_store.pop(mid, None)
+                _sizing_mesh_refs.pop(mid, None)
+
+            _sizing_mesh_refs[mesh_id] = _weakref.ref(self, _cleanup_sizing)
         return _sizing_constraints_store[mesh_id]
 
     def _set_size_sphere(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
-        center: list[float] | NDArray[np.float64],
+        center: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
-        transition: float = 0.0,
     ) -> None:
         """Set uniform size within a spherical region.
 
@@ -518,11 +532,9 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
         center : array_like
             Center of the sphere.
         radius : float
-            Radius of the sphere.
+            Radius of the sphere. Must be positive.
         size : float
-            Target edge size within the sphere.
-        transition : float, optional
-            Width of gradation zone outside sphere. Default is 0.
+            Target edge size within the sphere. Must be positive.
 
         Examples
         --------
@@ -536,15 +548,13 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
                 center=np.asarray(center, dtype=np.float64),
                 radius=radius,
                 size=size,
-                transition=transition,
             ),
         )
 
     def _set_size_box(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
-        bounds: list[list[float]] | NDArray[np.float64],
+        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
         size: float,
-        transition: float = 0.0,
     ) -> None:
         """Set uniform size within a box region.
 
@@ -554,9 +564,7 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
             Box bounds as [[xmin, ymin, zmin], [xmax, ymax, zmax]] for 3D
             or [[xmin, ymin], [xmax, ymax]] for 2D.
         size : float
-            Target edge size within the box.
-        transition : float, optional
-            Width of gradation zone outside box. Default is 0.
+            Target edge size within the box. Must be positive.
 
         Examples
         --------
@@ -572,17 +580,15 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
             BoxSize(
                 bounds=np.asarray(bounds, dtype=np.float64),
                 size=size,
-                transition=transition,
             ),
         )
 
-    def _set_size_cylinder(  # noqa: PLR0913
+    def _set_size_cylinder(
         self: MmgMesh3D | MmgMeshS,
-        point1: list[float] | NDArray[np.float64],
-        point2: list[float] | NDArray[np.float64],
+        point1: Sequence[float] | NDArray[np.float64],
+        point2: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
-        transition: float = 0.0,
     ) -> None:
         """Set uniform size within a cylindrical region.
 
@@ -593,11 +599,9 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
         point2 : array_like
             Second endpoint of cylinder axis.
         radius : float
-            Radius of the cylinder.
+            Radius of the cylinder. Must be positive.
         size : float
-            Target edge size within the cylinder.
-        transition : float, optional
-            Width of gradation zone outside cylinder. Default is 0.
+            Target edge size within the cylinder. Must be positive.
 
         Examples
         --------
@@ -617,13 +621,12 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
                 point2=np.asarray(point2, dtype=np.float64),
                 radius=radius,
                 size=size,
-                transition=transition,
             ),
         )
 
     def _set_size_from_point(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
-        point: list[float] | NDArray[np.float64],
+        point: Sequence[float] | NDArray[np.float64],
         near_size: float,
         far_size: float,
         influence_radius: float,
@@ -638,11 +641,11 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
         point : array_like
             Reference point.
         near_size : float
-            Target size at the reference point.
+            Target size at the reference point. Must be positive.
         far_size : float
-            Target size at influence_radius distance and beyond.
+            Target size at influence_radius distance and beyond. Must be positive.
         influence_radius : float
-            Distance over which size transitions.
+            Distance over which size transitions. Must be positive.
 
         Examples
         --------

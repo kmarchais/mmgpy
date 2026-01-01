@@ -86,21 +86,24 @@ class SphereSize(SizingConstraint):
     center : array_like
         Center of the sphere, shape (dim,).
     radius : float
-        Radius of the sphere.
+        Radius of the sphere. Must be positive.
     size : float
-        Target edge size within the sphere.
-    transition : float, optional
-        Width of gradation zone outside sphere. Default is 0 (sharp boundary).
+        Target edge size within the sphere. Must be positive.
 
     """
 
     center: NDArray[np.float64]
     radius: float
     size: float
-    transition: float = 0.0
 
     def __post_init__(self) -> None:  # noqa: D105
         self.center = np.asarray(self.center, dtype=np.float64)
+        if self.radius <= 0:
+            msg = f"radius must be positive, got {self.radius}"
+            raise ValueError(msg)
+        if self.size <= 0:
+            msg = f"size must be positive, got {self.size}"
+            raise ValueError(msg)
 
     def compute_sizes(  # noqa: D102
         self,
@@ -112,11 +115,6 @@ class SphereSize(SizingConstraint):
 
         inside_mask = distances <= self.radius
         sizes[inside_mask] = self.size
-
-        if self.transition > 0:
-            outer_radius = self.radius + self.transition
-            transition_mask = (distances > self.radius) & (distances < outer_radius)
-            sizes[transition_mask] = self.size
 
         return sizes
 
@@ -131,20 +129,20 @@ class BoxSize(SizingConstraint):
         Box bounds as [[xmin, ymin, zmin], [xmax, ymax, zmax]] for 3D
         or [[xmin, ymin], [xmax, ymax]] for 2D.
     size : float
-        Target edge size within the box.
-    transition : float, optional
-        Width of gradation zone outside box. Default is 0 (sharp boundary).
+        Target edge size within the box. Must be positive.
 
     """
 
     bounds: NDArray[np.float64]
     size: float
-    transition: float = 0.0
 
     def __post_init__(self) -> None:  # noqa: D105
         self.bounds = np.asarray(self.bounds, dtype=np.float64)
         if self.bounds.shape[0] != _BOUNDS_DIM_COUNT:
             msg = f"bounds must have shape (2, dim), got {self.bounds.shape}"
+            raise ValueError(msg)
+        if self.size <= 0:
+            msg = f"size must be positive, got {self.size}"
             raise ValueError(msg)
 
     def compute_sizes(  # noqa: D102
@@ -176,11 +174,9 @@ class CylinderSize(SizingConstraint):
     point2 : array_like
         Second endpoint of cylinder axis, shape (3,).
     radius : float
-        Radius of the cylinder.
+        Radius of the cylinder. Must be positive.
     size : float
-        Target edge size within the cylinder.
-    transition : float, optional
-        Width of gradation zone outside cylinder. Default is 0 (sharp boundary).
+        Target edge size within the cylinder. Must be positive.
 
     """
 
@@ -188,11 +184,16 @@ class CylinderSize(SizingConstraint):
     point2: NDArray[np.float64]
     radius: float
     size: float
-    transition: float = 0.0
 
     def __post_init__(self) -> None:  # noqa: D105
         self.point1 = np.asarray(self.point1, dtype=np.float64)
         self.point2 = np.asarray(self.point2, dtype=np.float64)
+        if self.radius <= 0:
+            msg = f"radius must be positive, got {self.radius}"
+            raise ValueError(msg)
+        if self.size <= 0:
+            msg = f"size must be positive, got {self.size}"
+            raise ValueError(msg)
 
     def compute_sizes(  # noqa: D102
         self,
@@ -232,11 +233,12 @@ class PointSize(SizingConstraint):
     point : array_like
         Reference point, shape (dim,).
     near_size : float
-        Target size at the reference point.
+        Target size at the reference point. Must be positive.
     far_size : float
-        Target size at influence_radius distance and beyond.
+        Target size at influence_radius distance and beyond. Must be positive.
     influence_radius : float
         Distance over which size transitions from near_size to far_size.
+        Must be positive.
 
     """
 
@@ -247,6 +249,15 @@ class PointSize(SizingConstraint):
 
     def __post_init__(self) -> None:  # noqa: D105
         self.point = np.asarray(self.point, dtype=np.float64)
+        if self.near_size <= 0:
+            msg = f"near_size must be positive, got {self.near_size}"
+            raise ValueError(msg)
+        if self.far_size <= 0:
+            msg = f"far_size must be positive, got {self.far_size}"
+            raise ValueError(msg)
+        if self.influence_radius <= 0:
+            msg = f"influence_radius must be positive, got {self.influence_radius}"
+            raise ValueError(msg)
 
     def compute_sizes(  # noqa: D102
         self,
@@ -341,6 +352,10 @@ def apply_sizing_constraints(
 
     finite_mask = np.isfinite(sizes)
     if not np.any(finite_mask):
+        # No constraints applied to any vertex (all sizes are inf).
+        # This can happen if all region-based constraints are placed outside
+        # the mesh bounds. Silently return without modifying the metric field,
+        # allowing remeshing to proceed with global parameters only.
         return
 
     metric = sizes_to_metric(sizes)

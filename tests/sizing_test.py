@@ -52,6 +52,16 @@ class TestSphereSize:
         assert sizes[1] == pytest.approx(0.02)
         assert sizes[2] == np.inf
 
+    def test_negative_radius_raises(self) -> None:
+        """Test that negative radius raises error."""
+        with pytest.raises(ValueError, match="radius must be positive"):
+            SphereSize(center=[0.5, 0.5, 0.5], radius=-0.2, size=0.01)
+
+    def test_negative_size_raises(self) -> None:
+        """Test that negative size raises error."""
+        with pytest.raises(ValueError, match="size must be positive"):
+            SphereSize(center=[0.5, 0.5, 0.5], radius=0.2, size=-0.01)
+
 
 class TestBoxSize:
     """Tests for BoxSize constraint."""
@@ -93,6 +103,11 @@ class TestBoxSize:
         with pytest.raises(ValueError, match="bounds must have shape"):
             BoxSize(bounds=[[0.0, 0.0, 0.0]], size=0.01)
 
+    def test_negative_size_raises(self) -> None:
+        """Test that negative size raises error."""
+        with pytest.raises(ValueError, match="size must be positive"):
+            BoxSize(bounds=[[0.0, 0.0], [1.0, 1.0]], size=-0.01)
+
 
 class TestCylinderSize:
     """Tests for CylinderSize constraint."""
@@ -130,6 +145,26 @@ class TestCylinderSize:
         vertices = np.array([[0.0, 0.0, 0.0]])
         with pytest.raises(ValueError, match="zero length"):
             cylinder.compute_sizes(vertices)
+
+    def test_negative_radius_raises(self) -> None:
+        """Test that negative radius raises error."""
+        with pytest.raises(ValueError, match="radius must be positive"):
+            CylinderSize(
+                point1=[0.0, 0.0, 0.0],
+                point2=[0.0, 0.0, 1.0],
+                radius=-0.2,
+                size=0.01,
+            )
+
+    def test_negative_size_raises(self) -> None:
+        """Test that negative size raises error."""
+        with pytest.raises(ValueError, match="size must be positive"):
+            CylinderSize(
+                point1=[0.0, 0.0, 0.0],
+                point2=[0.0, 0.0, 1.0],
+                radius=0.2,
+                size=-0.01,
+            )
 
 
 class TestPointSize:
@@ -176,6 +211,36 @@ class TestPointSize:
         sizes = point_size.compute_sizes(vertices)
         assert sizes[0] == pytest.approx(0.01)
         assert sizes[1] == pytest.approx(0.1)
+
+    def test_negative_near_size_raises(self) -> None:
+        """Test that negative near_size raises error."""
+        with pytest.raises(ValueError, match="near_size must be positive"):
+            PointSize(
+                point=[0.5, 0.5, 0.5],
+                near_size=-0.01,
+                far_size=0.1,
+                influence_radius=0.5,
+            )
+
+    def test_negative_far_size_raises(self) -> None:
+        """Test that negative far_size raises error."""
+        with pytest.raises(ValueError, match="far_size must be positive"):
+            PointSize(
+                point=[0.5, 0.5, 0.5],
+                near_size=0.01,
+                far_size=-0.1,
+                influence_radius=0.5,
+            )
+
+    def test_negative_influence_radius_raises(self) -> None:
+        """Test that negative influence_radius raises error."""
+        with pytest.raises(ValueError, match="influence_radius must be positive"):
+            PointSize(
+                point=[0.5, 0.5, 0.5],
+                near_size=0.01,
+                far_size=0.1,
+                influence_radius=-0.5,
+            )
 
 
 class TestConstraintCombination:
@@ -438,4 +503,59 @@ class TestSizingWithRemesh:
         mesh.remesh(hmax=0.5, verbose=-1)
 
         # With hmax=0.5, the mesh shouldn't be too refined
+        assert mesh.get_local_sizing_count() == 0
+
+    def test_sizing_computes_correct_metric_values(self) -> None:
+        """Test that sizing constraints compute correct metric values.
+
+        This test verifies the sizing computation logic by directly testing
+        the constraint classes on mesh vertices.
+        """
+        pv = pytest.importorskip("pyvista")
+
+        # Create a sphere surface mesh with reasonable resolution
+        sphere = pv.Sphere(radius=1.0, theta_resolution=16, phi_resolution=16)
+        mesh = MmgMeshS.from_pyvista(sphere)
+
+        vertices = mesh.get_vertices()
+        assert len(vertices) > 50  # Ensure we have a substantial mesh
+
+        # Test point-based sizing computation
+        constraint = PointSize(
+            point=np.array([0.0, 0.0, 0.0]),
+            near_size=0.05,
+            far_size=0.2,
+            influence_radius=1.0,
+        )
+
+        sizes = constraint.compute_sizes(vertices)
+
+        # All vertices are on a unit sphere, so all distances are ~1.0
+        # This means all sizes should be at or near far_size (0.2)
+        assert len(sizes) == len(vertices)
+        assert np.all(np.isfinite(sizes))
+        # All vertices at radius 1.0 should have far_size
+        assert np.allclose(sizes, 0.2, rtol=0.01)
+
+    def test_sizing_constraint_count_on_pyvista_mesh(self) -> None:
+        """Test sizing constraint management on a PyVista-created mesh."""
+        pv = pytest.importorskip("pyvista")
+
+        sphere = pv.Sphere(radius=1.0)
+        mesh = MmgMeshS.from_pyvista(sphere)
+
+        assert mesh.get_local_sizing_count() == 0
+
+        mesh.set_size_sphere(center=[0.0, 0.0, 0.0], radius=0.5, size=0.05)
+        assert mesh.get_local_sizing_count() == 1
+
+        mesh.set_size_from_point(
+            point=[0.0, 0.0, 0.0],
+            near_size=0.05,
+            far_size=0.2,
+            influence_radius=1.0,
+        )
+        assert mesh.get_local_sizing_count() == 2
+
+        mesh.clear_local_sizing()
         assert mesh.get_local_sizing_count() == 0
