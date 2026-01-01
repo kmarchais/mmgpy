@@ -805,15 +805,14 @@ void MmgMesh::set_corners(const py::array_t<int> &vertex_indices) {
   }
 
   const int *idx_ptr = static_cast<int *>(buf.ptr);
-  ssize_t n = buf.shape[0];
+  py::ssize_t n = buf.shape[0];
 
-  for (ssize_t i = 0; i < n; i++) {
+  for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
     if (idx < 0 || idx >= mesh->np) {
       throw std::runtime_error("Vertex index out of range: " +
                                std::to_string(idx));
     }
-    // Convert from 0-based Python indexing to 1-based MMG indexing
     if (!MMG3D_Set_corner(mesh, idx + 1)) {
       throw std::runtime_error("Failed to set corner at vertex index " +
                                std::to_string(idx));
@@ -830,15 +829,14 @@ void MmgMesh::set_required_vertices(const py::array_t<int> &vertex_indices) {
   }
 
   const int *idx_ptr = static_cast<int *>(buf.ptr);
-  ssize_t n = buf.shape[0];
+  py::ssize_t n = buf.shape[0];
 
-  for (ssize_t i = 0; i < n; i++) {
+  for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
     if (idx < 0 || idx >= mesh->np) {
       throw std::runtime_error("Vertex index out of range: " +
                                std::to_string(idx));
     }
-    // Convert from 0-based Python indexing to 1-based MMG indexing
     if (!MMG3D_Set_requiredVertex(mesh, idx + 1)) {
       throw std::runtime_error("Failed to set required vertex at index " +
                                std::to_string(idx));
@@ -855,15 +853,14 @@ void MmgMesh::set_ridge_edges(const py::array_t<int> &edge_indices) {
   }
 
   const int *idx_ptr = static_cast<int *>(buf.ptr);
-  ssize_t n = buf.shape[0];
+  py::ssize_t n = buf.shape[0];
 
-  for (ssize_t i = 0; i < n; i++) {
+  for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
     if (idx < 0 || idx >= mesh->na) {
       throw std::runtime_error("Edge index out of range: " +
                                std::to_string(idx));
     }
-    // Convert from 0-based Python indexing to 1-based MMG indexing
     if (!MMG3D_Set_ridge(mesh, idx + 1)) {
       throw std::runtime_error("Failed to set ridge at edge index " +
                                std::to_string(idx));

@@ -467,9 +467,9 @@ void MmgMeshS::set_corners(const py::array_t<int> &vertex_indices) {
   }
 
   const int *idx_ptr = static_cast<int *>(buf.ptr);
-  ssize_t n = buf.shape[0];
+  py::ssize_t n = buf.shape[0];
 
-  for (ssize_t i = 0; i < n; i++) {
+  for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
     if (idx < 0 || idx >= mesh->np) {
       throw std::runtime_error("Vertex index out of range: " +
@@ -491,9 +491,9 @@ void MmgMeshS::set_required_vertices(const py::array_t<int> &vertex_indices) {
   }
 
   const int *idx_ptr = static_cast<int *>(buf.ptr);
-  ssize_t n = buf.shape[0];
+  py::ssize_t n = buf.shape[0];
 
-  for (ssize_t i = 0; i < n; i++) {
+  for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
     if (idx < 0 || idx >= mesh->np) {
       throw std::runtime_error("Vertex index out of range: " +
@@ -515,9 +515,9 @@ void MmgMeshS::set_ridge_edges(const py::array_t<int> &edge_indices) {
   }
 
   const int *idx_ptr = static_cast<int *>(buf.ptr);
-  ssize_t n = buf.shape[0];
+  py::ssize_t n = buf.shape[0];
 
-  for (ssize_t i = 0; i < n; i++) {
+  for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
     if (idx < 0 || idx >= mesh->na) {
       throw std::runtime_error("Edge index out of range: " +
