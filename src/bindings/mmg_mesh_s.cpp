@@ -786,6 +786,8 @@ MmgMeshS::SolutionField
 MmgMeshS::get_solution_field(const std::string &field_name) const {
   if (field_name == "metric") {
     return {&met, SolutionType::SCALAR, 1};
+  } else if (field_name == "levelset") {
+    return {&ls, SolutionType::SCALAR, 1};
   } else if (field_name == "tensor") {
     return {&met, SolutionType::TENSOR, 6};
   }
@@ -841,5 +843,25 @@ void MmgMeshS::remesh(const py::dict &options) {
 
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
+  }
+}
+
+void MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
+                               const py::dict &options) {
+  set_field("levelset", levelset);
+
+  py::dict ls_options = py::dict();
+  for (auto item : options) {
+    ls_options[item.first] = item.second;
+  }
+  if (!ls_options.contains("iso")) {
+    ls_options["iso"] = 1;
+  }
+
+  set_mesh_options_surface(mesh, met, ls_options);
+
+  int ret = MMGS_mmgsls(mesh, ls, met);
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error("Level-set discretization failed");
   }
 }

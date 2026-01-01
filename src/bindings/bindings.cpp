@@ -159,7 +159,20 @@ PYBIND11_MODULE(_mmgpy, m) {
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              lag: Lagrangian mode (default=1, "
           "displacement-based).\n"
-          "                   0=velocity, 1=displacement, 2=final position.");
+          "                   0=velocity, 1=displacement, 2=final position.")
+      .def(
+          "remesh_levelset",
+          [](MmgMesh &self, const py::array_t<double> &levelset,
+             py::kwargs kwargs) {
+            self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+          },
+          py::arg("levelset"),
+          "Remesh the mesh to conform to a level-set isosurface.\n\n"
+          "Args:\n"
+          "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
+          "              ls: Isovalue to discretize (default=0.0).\n"
+          "              iso: Enable level-set mode (default=1).");
 
   // Phase 4: MmgMesh2D class for 2D planar meshes
   py::class_<MmgMesh2D>(m, "MmgMesh2D")
@@ -271,7 +284,20 @@ PYBIND11_MODULE(_mmgpy, m) {
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              lag: Lagrangian mode (default=1, "
           "displacement-based).\n"
-          "                   0=velocity, 1=displacement, 2=final position.");
+          "                   0=velocity, 1=displacement, 2=final position.")
+      .def(
+          "remesh_levelset",
+          [](MmgMesh2D &self, const py::array_t<double> &levelset,
+             py::kwargs kwargs) {
+            self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+          },
+          py::arg("levelset"),
+          "Remesh the mesh to conform to a level-set isoline.\n\n"
+          "Args:\n"
+          "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
+          "              ls: Isovalue to discretize (default=0.0).\n"
+          "              iso: Enable level-set mode (default=1).");
 
   // Phase 4: MmgMeshS class for surface meshes
   py::class_<MmgMeshS>(m, "MmgMeshS")
@@ -358,7 +384,20 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
-          "hgrad, optim, verbose.");
+          "hgrad, optim, verbose.")
+      .def(
+          "remesh_levelset",
+          [](MmgMeshS &self, const py::array_t<double> &levelset,
+             py::kwargs kwargs) {
+            self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+          },
+          py::arg("levelset"),
+          "Remesh the mesh to conform to a level-set isoline.\n\n"
+          "Args:\n"
+          "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
+          "              ls: Isovalue to discretize (default=0.0).\n"
+          "              iso: Enable level-set mode (default=1).");
 
   py::class_<mmg3d>(m, "mmg3d")
       .def_static("remesh", remesh_3d, py::arg("input_mesh"),

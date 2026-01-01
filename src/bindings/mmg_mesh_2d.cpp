@@ -933,3 +933,23 @@ void MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
     throw std::runtime_error("Lagrangian motion remeshing failed");
   }
 }
+
+void MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
+                                const py::dict &options) {
+  set_field("levelset", levelset);
+
+  py::dict ls_options = py::dict();
+  for (auto item : options) {
+    ls_options[item.first] = item.second;
+  }
+  if (!ls_options.contains("iso")) {
+    ls_options["iso"] = 1;
+  }
+
+  set_mesh_options_2D(mesh, met, ls_options);
+
+  int ret = MMG2D_mmg2dls(mesh, ls, met);
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error("Level-set discretization failed");
+  }
+}
