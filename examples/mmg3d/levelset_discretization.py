@@ -17,11 +17,11 @@ to extract an implicit surface (isosurface) from a 3D mesh.
 A sphere defined by a signed distance function is extracted from a cube mesh,
 creating a high-quality mesh that exactly conforms to the zero isovalue.
 
-Key insight: The level-set discretization splits the mesh into two domains:
-- Interior (ref 3): elements where level-set < 0 (inside the sphere)
-- Exterior (ref 2): elements where level-set > 0 (outside the sphere)
+Key insight: After level-set discretization, MMG creates:
+- Element refs: 2 (exterior), 3 (interior)
+- Triangle refs: 0 (boundary), 10 (isosurface)
 
-To visualize the sphere, we extract the interior domain and show its surface.
+To visualize the sphere, extract triangles with ref 10 (the actual isosurface).
 """
 
 from pathlib import Path
@@ -65,34 +65,34 @@ def sphere_levelset(
     return (distances - radius).reshape(-1, 1)
 
 
-def extract_interior_surface(
-    mesh: MmgMesh3D,
-    interior_ref: int = 3,
-) -> pv.PolyData:
-    """Extract the surface of the interior domain (where level-set < 0).
+def extract_isosurface(mesh: MmgMesh3D, isosurface_ref: int = 10) -> pv.PolyData:
+    """Extract the isosurface triangles created by level-set discretization.
 
     After level-set discretization, MMG assigns:
-    - ref 2: exterior elements (level-set > 0)
-    - ref 3: interior elements (level-set < 0)
+    - ref 0: exterior boundary triangles (cube faces)
+    - ref 10: isosurface triangles (the sphere surface)
 
-    The surface of the interior domain is the isosurface.
+    This extracts only the actual isosurface, not domain boundaries.
     """
     vertices = mesh.get_vertices()
-    elements, refs = mesh.get_elements_with_refs()
+    triangles, refs = mesh.get_triangles_with_refs()
 
-    # Get only interior elements
-    interior_elements = elements[refs == interior_ref]
+    # Get only isosurface triangles
+    iso_triangles = triangles[refs == isosurface_ref]
 
-    if len(interior_elements) == 0:
-        msg = f"No elements with ref {interior_ref}. Refs: {np.unique(refs)}"
+    if len(iso_triangles) == 0:
+        msg = f"No triangles with ref {isosurface_ref}. Refs: {np.unique(refs)}"
         raise ValueError(msg)
 
-    # Create mesh and extract surface
-    interior_mesh = pv.UnstructuredGrid(
-        {pv.CellType.TETRA: interior_elements},
-        vertices,
-    )
-    return interior_mesh.extract_surface()
+    # Reindex vertices to only include used ones (for clean mesh)
+    used_indices = np.unique(iso_triangles.ravel())
+    new_vertices = vertices[used_indices]
+    old_to_new = {old: new for new, old in enumerate(used_indices)}
+    new_triangles = np.array([[old_to_new[v] for v in tri] for tri in iso_triangles])
+
+    # Create PolyData surface
+    faces = np.column_stack([np.full(len(new_triangles), 3), new_triangles])
+    return pv.PolyData(new_vertices, faces.ravel())
 
 
 def verify_sphere(
@@ -149,9 +149,9 @@ def main() -> None:
     ref_counts = dict(zip(*np.unique(elem_refs, return_counts=True), strict=False))
     print(f"Element refs: {ref_counts}")
 
-    # Extract the sphere surface (interior domain boundary)
-    print("\nExtracting sphere surface from interior domain...")
-    sphere_surface = extract_interior_surface(mesh, interior_ref=3)
+    # Extract the sphere isosurface (ref 10 triangles)
+    print("\nExtracting sphere isosurface...")
+    sphere_surface = extract_isosurface(mesh, isosurface_ref=10)
     n_tri, n_pts = sphere_surface.n_cells, sphere_surface.n_points
     print(f"Sphere surface: {n_tri} triangles, {n_pts} vertices")
 
@@ -211,7 +211,8 @@ def create_animation_gif() -> None:
     pl.open_gif(str(output_path), fps=8)
 
     for i, isovalue in enumerate(isovalues):
-        effective_radius = base_radius - isovalue
+        # Isosurface is at distance = base_radius + isovalue
+        effective_radius = base_radius + isovalue
         print(f"  Frame {i + 1}/{len(isovalues)}: radius = {effective_radius:.2f}")
 
         if effective_radius <= 0.15 or effective_radius >= 0.9:
@@ -227,7 +228,7 @@ def create_animation_gif() -> None:
         mesh.remesh_levelset(levelset, ls=isovalue, hmax=0.12, verbose=False)
 
         try:
-            sphere_surface = extract_interior_surface(mesh, interior_ref=3)
+            sphere_surface = extract_isosurface(mesh, isosurface_ref=10)
         except ValueError:
             continue
 
@@ -243,10 +244,8 @@ def create_animation_gif() -> None:
             f"Level-Set Sphere Extraction\nRadius: {effective_radius:.2f}",
             font_size=12,
         )
-        pl.camera_position = "iso"
-        pl.camera.azimuth = 30
-        pl.camera.elevation = 20
-        pl.camera.zoom(1.3)
+        # Fixed camera to show absolute scale (sphere inside unit cube)
+        pl.camera_position = [(2.5, 2.5, 2.5), (0, 0, 0), (0, 0, 1)]
         pl.write_frame()
 
     pl.close()
