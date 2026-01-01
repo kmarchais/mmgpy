@@ -5,6 +5,8 @@ import numpy as np
 import pyvista as pv
 from numpy.typing import NDArray
 
+from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
+
 class mmg3d:  # noqa: N801
     @staticmethod
     def remesh(
@@ -203,6 +205,7 @@ class MmgMesh3D:
     def save(self, filename: str | Path) -> None: ...
     def remesh(
         self,
+        options: Mmg3DOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -255,6 +258,9 @@ class MmgMesh3D:
         *,
         include_refs: bool = True,
     ) -> pv.UnstructuredGrid: ...
+    # Convenience methods (added by mmgpy._add_convenience_methods)
+    def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
+    def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -370,6 +376,7 @@ class MmgMesh2D:
     def save(self, filename: str | Path) -> None: ...
     def remesh(
         self,
+        options: Mmg2DOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -417,6 +424,9 @@ class MmgMesh2D:
         mesh: pv.UnstructuredGrid | pv.PolyData,
     ) -> MmgMesh2D: ...
     def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
+    # Convenience methods (added by mmgpy._add_convenience_methods)
+    def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
+    def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
 
 # Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
@@ -519,6 +529,7 @@ class MmgMeshS:
     def save(self, filename: str | Path) -> None: ...
     def remesh(
         self,
+        options: MmgSOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -553,3 +564,6 @@ class MmgMeshS:
         mesh: pv.UnstructuredGrid | pv.PolyData,
     ) -> MmgMeshS: ...
     def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
+    # Convenience methods (added by mmgpy._add_convenience_methods)
+    def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
+    def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...

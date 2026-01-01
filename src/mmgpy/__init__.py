@@ -365,6 +365,7 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
 
 
 from . import lagrangian, metrics, progress
+from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import ProgressEvent, rich_progress
 from ._pyvista import add_pyvista_methods, from_pyvista, to_pyvista
 from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
@@ -372,11 +373,119 @@ from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacem
 # Add from_pyvista/to_pyvista methods to mesh classes
 add_pyvista_methods()
 
+
+def _add_convenience_methods() -> None:
+    """Add convenience remeshing methods and wrap remesh() to accept options objects."""
+    from collections.abc import Callable  # noqa: PLC0415
+    from typing import Any  # noqa: PLC0415
+
+    # Wrap remesh() to accept options objects directly
+    _original_remesh_3d = MmgMesh3D.remesh
+    _original_remesh_2d = MmgMesh2D.remesh
+    _original_remesh_s = MmgMeshS.remesh
+
+    # Map mesh types to their expected options types
+    _options_type_map: dict[type, type] = {
+        MmgMesh3D: Mmg3DOptions,
+        MmgMesh2D: Mmg2DOptions,
+        MmgMeshS: MmgSOptions,
+    }
+
+    def _make_remesh_wrapper(
+        original_remesh: Callable[..., None],
+    ) -> Callable[..., None]:
+        def _wrapped_remesh(
+            self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+            options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
+            **kwargs: Any,  # noqa: ANN401
+        ) -> None:
+            if options is not None:
+                if kwargs:
+                    msg = (
+                        "Cannot pass both options object and keyword arguments. "
+                        "Use one or the other."
+                    )
+                    raise TypeError(msg)
+                # Validate options type matches mesh type
+                expected_type = _options_type_map[type(self)]
+                if not isinstance(options, expected_type):
+                    msg = (
+                        f"Expected {expected_type.__name__} for {type(self).__name__}, "
+                        f"got {type(options).__name__}"
+                    )
+                    raise TypeError(msg)
+                # Options object passed - convert to kwargs
+                kwargs = options.to_dict()
+            original_remesh(self, **kwargs)
+
+        return _wrapped_remesh
+
+    MmgMesh3D.remesh = _make_remesh_wrapper(_original_remesh_3d)  # type: ignore[method-assign]
+    MmgMesh2D.remesh = _make_remesh_wrapper(_original_remesh_2d)  # type: ignore[method-assign]
+    MmgMeshS.remesh = _make_remesh_wrapper(_original_remesh_s)  # type: ignore[method-assign]
+
+    def _remesh_optimize(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+        *,
+        verbose: int | None = None,
+    ) -> None:
+        """Optimize mesh quality without changing topology.
+
+        Only moves vertices to improve element quality.
+        No points are inserted or removed.
+
+        Parameters
+        ----------
+        verbose : int | None
+            Verbosity level (-1=silent, 0=errors, 1=info).
+
+        """
+        opts: dict[str, int] = {"optim": 1, "noinsert": 1}
+        if verbose is not None:
+            opts["verbose"] = verbose
+        self.remesh(**opts)  # type: ignore[arg-type]
+
+    def _remesh_uniform(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+        size: float,
+        *,
+        verbose: int | None = None,
+    ) -> None:
+        """Remesh with uniform element size.
+
+        Parameters
+        ----------
+        size : float
+            Target edge size for all elements.
+        verbose : int | None
+            Verbosity level (-1=silent, 0=errors, 1=info).
+
+        """
+        opts: dict[str, float | int] = {"hsiz": size}
+        if verbose is not None:
+            opts["verbose"] = verbose
+        self.remesh(**opts)  # type: ignore[arg-type]
+
+    MmgMesh3D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
+    MmgMesh3D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+
+    MmgMesh2D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
+    MmgMesh2D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+
+    MmgMeshS.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
+    MmgMeshS.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+
+
+_add_convenience_methods()
+
 __all__ = [
     "MMG_VERSION",
+    "Mmg2DOptions",
+    "Mmg3DOptions",
     "MmgMesh2D",
     "MmgMesh3D",
     "MmgMeshS",
+    "MmgSOptions",
     "ProgressEvent",
     "__version__",
     "detect_boundary_vertices",
