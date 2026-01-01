@@ -1,5 +1,6 @@
 #include "mmg_mesh_s.hpp"
 #include "mmg_common.hpp"
+#include <set>
 #include <stdexcept>
 
 namespace {
@@ -528,6 +529,104 @@ void MmgMeshS::set_ridge_edges(const py::array_t<int> &edge_indices) {
                                std::to_string(idx));
     }
   }
+}
+
+// Topology queries
+
+py::array_t<int> MmgMeshS::get_adjacent_elements(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nt) {
+    throw std::runtime_error("Element index out of range: " +
+                             std::to_string(idx));
+  }
+
+  MMG5_int listri[3];
+  if (!MMGS_Get_adjaTri(mesh, mmg_idx, listri)) {
+    throw std::runtime_error("Failed to get adjacent elements for index " +
+                             std::to_string(idx));
+  }
+
+  py::array_t<int> result(3);
+  auto buf = result.request();
+  int *ptr = static_cast<int *>(buf.ptr);
+
+  for (int i = 0; i < 3; i++) {
+    ptr[i] = listri[i] > 0 ? static_cast<int>(listri[i] - 1) : -1;
+  }
+
+  return result;
+}
+
+py::array_t<int> MmgMeshS::get_vertex_neighbors(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->np) {
+    throw std::runtime_error("Vertex index out of range: " +
+                             std::to_string(idx));
+  }
+
+  // Manual implementation: iterate through triangles to find neighbors
+  // since MMGS_Get_adjaVerticesFast requires adjacency tables that may not
+  // exist
+  std::set<MMG5_int> neighbors;
+
+  for (MMG5_int k = 1; k <= mesh->nt; k++) {
+    MMG5_pTria pt = &mesh->tria[k];
+    if (!pt->v[0])
+      continue;
+
+    bool found = false;
+    for (int i = 0; i < 3; i++) {
+      if (pt->v[i] == mmg_idx) {
+        found = true;
+        break;
+      }
+    }
+
+    if (found) {
+      for (int i = 0; i < 3; i++) {
+        if (pt->v[i] != mmg_idx) {
+          neighbors.insert(pt->v[i]);
+        }
+      }
+    }
+  }
+
+  py::array_t<int> result(static_cast<py::ssize_t>(neighbors.size()));
+  auto buf = result.request();
+  int *ptr = static_cast<int *>(buf.ptr);
+
+  py::ssize_t j = 0;
+  for (MMG5_int v : neighbors) {
+    ptr[j++] = static_cast<int>(v - 1);
+  }
+
+  return result;
+}
+
+double MmgMeshS::get_element_quality(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nt) {
+    throw std::runtime_error("Element index out of range: " +
+                             std::to_string(idx));
+  }
+
+  return MMGS_Get_triangleQuality(mesh, met, mmg_idx);
+}
+
+py::array_t<double> MmgMeshS::get_element_qualities() const {
+  MMG5_int nt = mesh->nt;
+  py::array_t<double> result(nt);
+  auto buf = result.request();
+  double *ptr = static_cast<double *>(buf.ptr);
+
+  for (MMG5_int i = 0; i < nt; i++) {
+    ptr[i] = MMGS_Get_triangleQuality(mesh, met, i + 1);
+  }
+
+  return result;
 }
 
 void MmgMeshS::set_field(const std::string &field_name,

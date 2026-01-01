@@ -58,6 +58,12 @@ public:
   void set_required_vertices(const py::array_t<int> &vertex_indices);
   void set_ridge_edges(const py::array_t<int> &edge_indices);
 
+  // Topology queries
+  py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
+  py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;
+  double get_element_quality(MMG5_int idx) const;
+  py::array_t<double> get_element_qualities() const;
+
   // Solution fields
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);

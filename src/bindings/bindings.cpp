@@ -109,6 +109,13 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("vertex_indices"))
       .def("set_ridge_edges", &MmgMesh::set_ridge_edges,
            py::arg("edge_indices"))
+      // Topology queries
+      .def("get_adjacent_elements", &MmgMesh::get_adjacent_elements,
+           py::arg("idx"))
+      .def("get_vertex_neighbors", &MmgMesh::get_vertex_neighbors,
+           py::arg("idx"))
+      .def("get_element_quality", &MmgMesh::get_element_quality, py::arg("idx"))
+      .def("get_element_qualities", &MmgMesh::get_element_qualities)
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)
@@ -208,6 +215,14 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("vertex_indices"))
       .def("set_required_edges", &MmgMesh2D::set_required_edges,
            py::arg("edge_indices"))
+      // Topology queries
+      .def("get_adjacent_elements", &MmgMesh2D::get_adjacent_elements,
+           py::arg("idx"))
+      .def("get_vertex_neighbors", &MmgMesh2D::get_vertex_neighbors,
+           py::arg("idx"))
+      .def("get_element_quality", &MmgMesh2D::get_element_quality,
+           py::arg("idx"))
+      .def("get_element_qualities", &MmgMesh2D::get_element_qualities)
       // Solution fields
       .def("set_field", &MmgMesh2D::set_field)
       .def("get_field", &MmgMesh2D::get_field)
@@ -297,6 +312,14 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("vertex_indices"))
       .def("set_ridge_edges", &MmgMeshS::set_ridge_edges,
            py::arg("edge_indices"))
+      // Topology queries
+      .def("get_adjacent_elements", &MmgMeshS::get_adjacent_elements,
+           py::arg("idx"))
+      .def("get_vertex_neighbors", &MmgMeshS::get_vertex_neighbors,
+           py::arg("idx"))
+      .def("get_element_quality", &MmgMeshS::get_element_quality,
+           py::arg("idx"))
+      .def("get_element_qualities", &MmgMeshS::get_element_qualities)
       // Solution fields
       .def("set_field", &MmgMeshS::set_field)
       .def("get_field", &MmgMeshS::get_field)
