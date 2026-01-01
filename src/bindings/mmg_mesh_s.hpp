@@ -53,6 +53,11 @@ public:
   py::tuple get_triangle(MMG5_int idx) const;
   py::tuple get_edge(MMG5_int idx) const;
 
+  // Element attributes
+  void set_corners(const py::array_t<int> &vertex_indices);
+  void set_required_vertices(const py::array_t<int> &vertex_indices);
+  void set_ridge_edges(const py::array_t<int> &edge_indices);
+
   // Solution fields
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);

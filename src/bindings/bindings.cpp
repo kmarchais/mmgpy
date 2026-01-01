@@ -103,6 +103,12 @@ PYBIND11_MODULE(_mmgpy, m) {
            &MmgMesh::get_quadrilaterals_with_refs)
       .def("get_tetrahedra", &MmgMesh::get_tetrahedra)
       .def("get_tetrahedra_with_refs", &MmgMesh::get_tetrahedra_with_refs)
+      // Element attributes
+      .def("set_corners", &MmgMesh::set_corners, py::arg("vertex_indices"))
+      .def("set_required_vertices", &MmgMesh::set_required_vertices,
+           py::arg("vertex_indices"))
+      .def("set_ridge_edges", &MmgMesh::set_ridge_edges,
+           py::arg("edge_indices"))
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)
@@ -196,6 +202,12 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_triangle", &MmgMesh2D::get_triangle, py::arg("idx"))
       .def("get_quadrilateral", &MmgMesh2D::get_quadrilateral, py::arg("idx"))
       .def("get_edge", &MmgMesh2D::get_edge, py::arg("idx"))
+      // Element attributes
+      .def("set_corners", &MmgMesh2D::set_corners, py::arg("vertex_indices"))
+      .def("set_required_vertices", &MmgMesh2D::set_required_vertices,
+           py::arg("vertex_indices"))
+      .def("set_required_edges", &MmgMesh2D::set_required_edges,
+           py::arg("edge_indices"))
       // Solution fields
       .def("set_field", &MmgMesh2D::set_field)
       .def("get_field", &MmgMesh2D::get_field)
@@ -279,6 +291,12 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_vertex", &MmgMeshS::get_vertex, py::arg("idx"))
       .def("get_triangle", &MmgMeshS::get_triangle, py::arg("idx"))
       .def("get_edge", &MmgMeshS::get_edge, py::arg("idx"))
+      // Element attributes
+      .def("set_corners", &MmgMeshS::set_corners, py::arg("vertex_indices"))
+      .def("set_required_vertices", &MmgMeshS::set_required_vertices,
+           py::arg("vertex_indices"))
+      .def("set_ridge_edges", &MmgMeshS::set_ridge_edges,
+           py::arg("edge_indices"))
       // Solution fields
       .def("set_field", &MmgMeshS::set_field)
       .def("get_field", &MmgMeshS::get_field)
