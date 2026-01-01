@@ -7,6 +7,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ._logging import (
+    disable_logging,
+    enable_debug,
+    get_logger,
+    set_log_level,
+)
+
+_logger = get_logger()
+
 # Handle DLL loading on Windows
 if sys.platform == "win32":
     # Get the directory containing this file
@@ -25,16 +34,12 @@ if sys.platform == "win32":
         if dll_dir.exists() and dll_dir.is_dir():
             try:
                 os.add_dll_directory(str(dll_dir))
-                # Debug: print which directories were added (only in debug mode)
-                if os.environ.get("MMGPY_DEBUG"):
-                    print(f"Added DLL directory: {dll_dir}", file=sys.stderr)
+                _logger.debug("Added DLL directory: %s", dll_dir)
             except (OSError, AttributeError):
-                # Fallback for older Python versions or if add_dll_directory fails
                 os.environ.setdefault("PATH", "")
                 if str(dll_dir) not in os.environ["PATH"]:
                     os.environ["PATH"] = str(dll_dir) + os.pathsep + os.environ["PATH"]
-                    if os.environ.get("MMGPY_DEBUG"):
-                        print(f"Added to PATH: {dll_dir}", file=sys.stderr)
+                    _logger.debug("Added to PATH: %s", dll_dir)
 
 # Let delvewheel handle the rest of the imports
 # Import after DLL setup is complete
@@ -57,24 +62,24 @@ try:
         mmgs,
     )
 
-except ImportError as e:
+except ImportError:
     if sys.platform == "win32":
-        # On Windows, provide helpful debugging information
         _module_dir = Path(__file__).absolute().parent
         available_files = list(_module_dir.glob("*"))
         lib_files = list(_module_dir.glob("**/*.dll")) + list(
             _module_dir.glob("**/*.pyd"),
         )
 
-        error_msg = (
-            f"Failed to import _mmgpy module on Windows.\n"
-            f"Error: {e}\n"
-            f"Module directory: {_module_dir}\n"
-            f"Available files: {[f.name for f in available_files]}\n"
-            f"Found DLLs/PYDs: {[str(f) for f in lib_files]}\n"
-            f"To debug, set MMGPY_DEBUG=1 environment variable."
+        _logger.exception(
+            "Failed to import _mmgpy module on Windows.\n"
+            "Module directory: %s\n"
+            "Available files: %s\n"
+            "Found DLLs/PYDs: %s\n"
+            "To debug, set MMGPY_DEBUG=1 or call mmgpy.enable_debug().",
+            _module_dir,
+            [f.name for f in available_files],
+            [str(f) for f in lib_files],
         )
-        print(error_msg, file=sys.stderr)
     raise
 
 
@@ -93,54 +98,47 @@ def _run_mmg2d() -> None:
     exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
-        # S603: This is safe - we control the executable path and only pass user args
         subprocess.run([str(exe_path)] + sys.argv[1:], check=False)
     else:
-        print(f"mmg2d_O3 executable not found at {exe_path}", file=sys.stderr)
+        _logger.error("mmg2d_O3 executable not found at %s", exe_path)
         sys.exit(1)
 
 
 def _run_mmg3d() -> None:
     """Run the mmg3d_O3 executable."""
-    # Find the executable in site-packages for installed package
     site_packages_list = site.getsitepackages()
-    # On Windows, prefer the actual site-packages over the venv root
     if sys.platform == "win32" and len(site_packages_list) > 1:
         site_packages = Path(site_packages_list[1])
     else:
         site_packages = Path(site_packages_list[0])
 
-    scripts_dir = "bin"  # Always use bin for the actual MMG executables
+    scripts_dir = "bin"
     exe_name = "mmg3d_O3.exe" if sys.platform == "win32" else "mmg3d_O3"
     exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
-        # S603: This is safe - we control the executable path and only pass user args
         subprocess.run([str(exe_path)] + sys.argv[1:], check=False)
     else:
-        print(f"mmg3d_O3 executable not found at {exe_path}", file=sys.stderr)
+        _logger.error("mmg3d_O3 executable not found at %s", exe_path)
         sys.exit(1)
 
 
 def _run_mmgs() -> None:
     """Run the mmgs_O3 executable."""
-    # Find the executable in site-packages for installed package
     site_packages_list = site.getsitepackages()
-    # On Windows, prefer the actual site-packages over the venv root
     if sys.platform == "win32" and len(site_packages_list) > 1:
         site_packages = Path(site_packages_list[1])
     else:
         site_packages = Path(site_packages_list[0])
 
-    scripts_dir = "bin"  # Always use bin for the actual MMG executables
+    scripts_dir = "bin"
     exe_name = "mmgs_O3.exe" if sys.platform == "win32" else "mmgs_O3"
     exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
-        # S603: This is safe - we control the executable path and only pass user args
         subprocess.run([str(exe_path)] + sys.argv[1:], check=False)
     else:
-        print(f"mmgs_O3 executable not found at {exe_path}", file=sys.stderr)
+        _logger.error("mmgs_O3 executable not found at %s", exe_path)
         sys.exit(1)
 
 
@@ -150,38 +148,35 @@ def _fix_rpath() -> None:
     if system == "Darwin":
         try:
             _fix_rpath_macos()
-        except (OSError, subprocess.SubprocessError) as e:
-            print(f"Error fixing RPATH: {e}", file=sys.stderr)
+        except (OSError, subprocess.SubprocessError):
+            _logger.exception("Error fixing RPATH")
             raise
     elif system == "Linux":
         try:
             _fix_rpath_linux()
-        except (OSError, subprocess.SubprocessError) as e:
-            print(f"Error fixing RPATH: {e}", file=sys.stderr)
+        except (OSError, subprocess.SubprocessError):
+            _logger.exception("Error fixing RPATH")
             raise
     else:
-        print(f"RPATH fix not needed for {system}", file=sys.stderr)
-        return
+        _logger.debug("RPATH fix not needed for %s", system)
 
 
 def _fix_rpath_macos() -> None:
     """Fix RPATH for MMG executables on macOS."""
-    # Find site-packages directory
     site_packages = Path(site.getsitepackages()[0])
-    print(f"Site packages: {site_packages}", file=sys.stderr)
+    _logger.debug("Site packages: %s", site_packages)
 
-    # Find all MMG executables
     bin_dir = site_packages / "bin"
     if not bin_dir.exists():
-        print(f"Warning: {bin_dir} does not exist", file=sys.stderr)
+        _logger.warning("Bin directory does not exist: %s", bin_dir)
         return
 
     executables = list(bin_dir.glob("mmg*_O3"))
     if not executables:
-        print("No MMG executables found", file=sys.stderr)
+        _logger.warning("No MMG executables found")
         return
 
-    print(f"Found {len(executables)} executables to fix", file=sys.stderr)
+    _logger.debug("Found %d executables to fix", len(executables))
 
     for exe in executables:
         _fix_single_executable_rpath(exe)
@@ -189,21 +184,18 @@ def _fix_rpath_macos() -> None:
 
 def _fix_single_executable_rpath(exe: "Path") -> None:
     """Fix RPATH for a single executable."""
-    print(f"Fixing RPATH for {exe.name}...", file=sys.stderr)
+    _logger.debug("Fixing RPATH for %s...", exe.name)
 
-    # Check if executable exists and is executable
     if not exe.exists() or not exe.is_file():
-        print(f"  Skipping {exe.name} - not a valid file", file=sys.stderr)
+        _logger.debug("Skipping %s - not a valid file", exe.name)
         return
 
     target_rpath = "@loader_path/../mmgpy/lib"
 
-    # Check current RPATH
     if _has_correct_rpath(exe, target_rpath):
-        print(f"  RPATH already correct for {exe.name}", file=sys.stderr)
+        _logger.debug("RPATH already correct for %s", exe.name)
         return
 
-    # Remove existing @rpath entries and add correct one
     _remove_old_rpath(exe)
     if _add_new_rpath(exe, target_rpath):
         _verify_rpath_fix(exe, target_rpath)
@@ -239,9 +231,9 @@ def _add_new_rpath(exe: "Path", target_rpath: str) -> bool:
     )
 
     if result.returncode == 0:
-        print(f"  Successfully fixed RPATH for {exe.name}", file=sys.stderr)
+        _logger.info("Successfully fixed RPATH for %s", exe.name)
         return True
-    print(f"  Failed to fix RPATH for {exe.name}: {result.stderr}", file=sys.stderr)
+    _logger.error("Failed to fix RPATH for %s: %s", exe.name, result.stderr)
     return False
 
 
@@ -255,31 +247,28 @@ def _verify_rpath_fix(exe: "Path", target_rpath: str) -> None:
     )
 
     if target_rpath in verify_result.stdout:
-        print(f"  RPATH verification successful for {exe.name}", file=sys.stderr)
+        _logger.debug("RPATH verification successful for %s", exe.name)
     else:
-        print(f"  RPATH verification failed for {exe.name}", file=sys.stderr)
+        _logger.warning("RPATH verification failed for %s", exe.name)
 
 
 def _fix_rpath_linux() -> None:
     """Fix RPATH for MMG executables on Linux using patchelf."""
-    # Find site-packages directory
     site_packages = Path(site.getsitepackages()[0])
-    print(f"Site packages: {site_packages}", file=sys.stderr)
+    _logger.debug("Site packages: %s", site_packages)
 
-    # Find all MMG executables
     bin_dir = site_packages / "bin"
     if not bin_dir.exists():
-        print(f"Warning: {bin_dir} does not exist", file=sys.stderr)
+        _logger.warning("Bin directory does not exist: %s", bin_dir)
         return
 
     executables = list(bin_dir.glob("mmg*_O3"))
     if not executables:
-        print("No MMG executables found", file=sys.stderr)
+        _logger.warning("No MMG executables found")
         return
 
-    print(f"Found {len(executables)} executables to fix", file=sys.stderr)
+    _logger.debug("Found %d executables to fix", len(executables))
 
-    # Library directories to add to RPATH
     lib_dirs = [
         str(site_packages / "lib"),
         str(site_packages / "mmgpy" / "lib"),
@@ -291,15 +280,13 @@ def _fix_rpath_linux() -> None:
 
 def _fix_single_executable_rpath_linux(exe: "Path", lib_dirs: list[str]) -> None:
     """Fix RPATH for a single executable on Linux."""
-    print(f"Fixing RPATH for {exe.name}...", file=sys.stderr)
+    _logger.debug("Fixing RPATH for %s...", exe.name)
 
-    # Check if executable exists and is executable
     if not exe.exists() or not exe.is_file():
-        print(f"  Skipping {exe.name} - not a valid file", file=sys.stderr)
+        _logger.debug("Skipping %s - not a valid file", exe.name)
         return
 
     try:
-        # Set RPATH to include both library directories
         rpath = ":".join(lib_dirs)
         result = subprocess.run(
             ["patchelf", "--set-rpath", rpath, str(exe)],  # noqa: S607
@@ -309,17 +296,13 @@ def _fix_single_executable_rpath_linux(exe: "Path", lib_dirs: list[str]) -> None
         )
 
         if result.returncode == 0:
-            print(f"  Successfully fixed RPATH for {exe.name}", file=sys.stderr)
+            _logger.info("Successfully fixed RPATH for %s", exe.name)
             _verify_rpath_fix_linux(exe, lib_dirs)
         else:
-            print(
-                f"  Failed to fix RPATH for {exe.name}: {result.stderr}",
-                file=sys.stderr,
-            )
+            _logger.error("Failed to fix RPATH for %s: %s", exe.name, result.stderr)
 
     except FileNotFoundError:
-        print("  patchelf not found - trying venv patchelf...", file=sys.stderr)
-        # Try to use the patchelf from the virtual environment
+        _logger.debug("patchelf not found - trying venv patchelf...")
         venv_patchelf = Path(sys.executable).parent / "patchelf"
         if venv_patchelf.exists():
             result = subprocess.run(
@@ -329,16 +312,17 @@ def _fix_single_executable_rpath_linux(exe: "Path", lib_dirs: list[str]) -> None
                 check=False,
             )
             if result.returncode == 0:
-                print(f"  Successfully fixed RPATH for {exe.name}", file=sys.stderr)
+                _logger.info("Successfully fixed RPATH for %s", exe.name)
             else:
-                print(
-                    f"  Failed to fix RPATH for {exe.name}: {result.stderr}",
-                    file=sys.stderr,
+                _logger.error(  # noqa: TRY400
+                    "Failed to fix RPATH for %s: %s",
+                    exe.name,
+                    result.stderr,
                 )
         else:
-            print(
-                f"  patchelf not available - RPATH fix skipped for {exe.name}",
-                file=sys.stderr,
+            _logger.warning(
+                "patchelf not available - RPATH fix skipped for %s",
+                exe.name,
             )
 
 
@@ -354,36 +338,34 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
 
         if verify_result.returncode == 0:
             current_rpath = verify_result.stdout.strip()
-            print(f"  Current RPATH: {current_rpath}", file=sys.stderr)
+            _logger.debug("Current RPATH: %s", current_rpath)
 
-            # Check if all required lib dirs are in RPATH
             rpath_dirs = current_rpath.split(":")
             missing_dirs = [d for d in lib_dirs if d not in rpath_dirs]
 
             if not missing_dirs:
-                print(
-                    f"  RPATH verification successful for {exe.name}",
-                    file=sys.stderr,
-                )
+                _logger.debug("RPATH verification successful for %s", exe.name)
             else:
-                print(
-                    f"  RPATH verification failed for {exe.name} "
-                    "- missing: {missing_dirs}",
-                    file=sys.stderr,
+                _logger.warning(
+                    "RPATH verification failed for %s - missing: %s",
+                    exe.name,
+                    missing_dirs,
                 )
         else:
-            print(
-                f"  RPATH verification failed for {exe.name}: {verify_result.stderr}",
-                file=sys.stderr,
+            _logger.warning(
+                "RPATH verification failed for %s: %s",
+                exe.name,
+                verify_result.stderr,
             )
     except FileNotFoundError:
-        print(
-            f"  Could not verify RPATH for {exe.name} - patchelf not available",
-            file=sys.stderr,
+        _logger.debug(
+            "Could not verify RPATH for %s - patchelf not available",
+            exe.name,
         )
 
 
-from . import lagrangian, metrics
+from . import lagrangian, metrics, progress
+from ._progress import ProgressEvent, rich_progress
 from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
 
 __all__ = [
@@ -391,15 +373,21 @@ __all__ = [
     "MmgMesh2D",
     "MmgMesh3D",
     "MmgMeshS",
+    "ProgressEvent",
     "__version__",
     "detect_boundary_vertices",
+    "disable_logging",
+    "enable_debug",
     "lagrangian",
     "metrics",
     "mmg2d",
     "mmg3d",
     "mmgs",
     "move_mesh",
+    "progress",
     "propagate_displacement",
+    "rich_progress",
+    "set_log_level",
 ]
 
 
@@ -448,7 +436,7 @@ def _auto_fix_rpath_on_import() -> None:
                     break
 
         if needs_fix:
-            print("Auto-fixing RPATH for MMG executables...", file=sys.stderr)
+            _logger.info("Auto-fixing RPATH for MMG executables...")
             _fix_rpath()
 
     except Exception:
