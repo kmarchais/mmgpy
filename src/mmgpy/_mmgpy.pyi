@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import overload
 
 import numpy as np
+import pyvista as pv
 from numpy.typing import NDArray
 
 class mmg3d:  # noqa: N801
@@ -243,6 +244,17 @@ class MmgMesh3D:
         iso: int | None = None,
         **kwargs: float,
     ) -> None: ...
+    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
+    @classmethod
+    def from_pyvista(
+        cls,
+        mesh: pv.UnstructuredGrid | pv.PolyData,
+    ) -> MmgMesh3D: ...
+    def to_pyvista(
+        self,
+        *,
+        include_refs: bool = True,
+    ) -> pv.UnstructuredGrid: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -398,6 +410,13 @@ class MmgMesh2D:
         iso: int | None = None,
         **kwargs: float,
     ) -> None: ...
+    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
+    @classmethod
+    def from_pyvista(
+        cls,
+        mesh: pv.UnstructuredGrid | pv.PolyData,
+    ) -> MmgMesh2D: ...
+    def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
 
 # Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
@@ -527,3 +546,10 @@ class MmgMeshS:
         iso: int | None = None,
         **kwargs: float,
     ) -> None: ...
+    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
+    @classmethod
+    def from_pyvista(
+        cls,
+        mesh: pv.UnstructuredGrid | pv.PolyData,
+    ) -> MmgMeshS: ...
+    def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
