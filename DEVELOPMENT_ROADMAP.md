@@ -14,14 +14,6 @@
 
 ### 🟠 High Priority
 
-#### Element Attributes
-
-```python
-mesh.set_corner(vertex_indices)
-mesh.set_required_vertices(indices)
-mesh.set_ridge_edges(indices)
-```
-
 #### Topology Queries
 
 ```python

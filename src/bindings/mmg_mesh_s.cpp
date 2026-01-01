@@ -456,6 +456,80 @@ py::tuple MmgMeshS::get_edge(MMG5_int idx) const {
                         static_cast<int>(pe->b - 1), pe->ref);
 }
 
+// Element attributes
+
+void MmgMeshS::set_corners(const py::array_t<int> &vertex_indices) {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  py::buffer_info buf = vertex_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  ssize_t n = buf.shape[0];
+
+  for (ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->np) {
+      throw std::runtime_error("Vertex index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMGS_Set_corner(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to set corner at vertex index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
+void MmgMeshS::set_required_vertices(const py::array_t<int> &vertex_indices) {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  py::buffer_info buf = vertex_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  ssize_t n = buf.shape[0];
+
+  for (ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->np) {
+      throw std::runtime_error("Vertex index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMGS_Set_requiredVertex(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to set required vertex at index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
+void MmgMeshS::set_ridge_edges(const py::array_t<int> &edge_indices) {
+  ensure_c_contiguous(edge_indices, "Edge indices");
+  py::buffer_info buf = edge_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Edge indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  ssize_t n = buf.shape[0];
+
+  for (ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->na) {
+      throw std::runtime_error("Edge index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMGS_Set_ridge(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to set ridge at edge index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
 void MmgMeshS::set_field(const std::string &field_name,
                          const py::array_t<double> &values) {
   auto field = get_solution_field(field_name);
