@@ -366,7 +366,11 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
 
 from . import lagrangian, metrics, progress
 from ._progress import ProgressEvent, rich_progress
+from ._pyvista import add_pyvista_methods, from_pyvista, to_pyvista
 from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
+
+# Add from_pyvista/to_pyvista methods to mesh classes
+add_pyvista_methods()
 
 __all__ = [
     "MMG_VERSION",
@@ -378,6 +382,7 @@ __all__ = [
     "detect_boundary_vertices",
     "disable_logging",
     "enable_debug",
+    "from_pyvista",
     "lagrangian",
     "metrics",
     "mmg2d",
@@ -388,6 +393,7 @@ __all__ = [
     "propagate_displacement",
     "rich_progress",
     "set_log_level",
+    "to_pyvista",
 ]
 
 

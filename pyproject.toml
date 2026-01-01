@@ -17,6 +17,7 @@ dependencies = [
     "meshio>=5.3.5",
     "numpy>=2.0.2",
     "patchelf>=0.17.2.4; sys_platform == 'linux'",
+    "pyvista>=0.46.4",
     "rich>=13.0.0",
     "scipy>=1.11.0",
     "typing-extensions>=4.0.0; python_version < '3.11'",
@@ -58,7 +59,12 @@ mmgs_O3 = "mmgpy:_run_mmgs"
 fix-mmg-rpath = "mmgpy:_fix_rpath"
 
 [dependency-groups]
-dev = ["pre-commit>=4.0.1", "pytest>=8.3.4", "pyvista>=0.46.4"]
+dev = [
+    "imageio>=2.37.2",
+    "pre-commit>=4.0.1",
+    "pytest>=8.3.4",
+    "ruff>=0.14.10",
+]
 
 [tool.ruff.lint]
 select = ["ALL"]
