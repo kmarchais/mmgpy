@@ -78,7 +78,12 @@ jobs:
     name: Publish to PyPI
     if: github.event_name == 'release' && github.event.action == 'published'
 
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mmgpy
+
     permissions:
+      id-token: write # For trusted publishing
       actions: read
 
     steps:
@@ -90,5 +95,3 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_TOKEN }}
