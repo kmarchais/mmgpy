@@ -23,29 +23,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, overload
 
 import numpy as np
+import pyvista as pv
 
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
-    import types
+    from collections.abc import Callable
 
-    import pyvista as pv
     from numpy.typing import NDArray
 
 _DIMS_2D = 2
 _DIMS_3D = 3
 _TRIANGLE_VERTS = 3
-
-
-def _check_pyvista() -> types.ModuleType:
-    """Check if PyVista is available and return the module."""
-    try:
-        import pyvista  # noqa: PLC0415
-    except ImportError as e:
-        msg = "PyVista is required. Install with: pip install pyvista"
-        raise ImportError(msg) from e
-    else:
-        return pyvista
+_2D_DETECTION_TOLERANCE = 1e-8
 
 
 def _is_2d_mesh(points: NDArray[np.floating]) -> bool:
@@ -54,14 +44,12 @@ def _is_2d_mesh(points: NDArray[np.floating]) -> bool:
         return True
     if points.shape[1] == _DIMS_3D:
         z_coords = points[:, 2]
-        return bool(np.allclose(z_coords, 0, atol=1e-10))
+        return bool(np.allclose(z_coords, 0, atol=_2D_DETECTION_TOLERANCE))
     return False
 
 
 def _extract_triangles_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32]:
     """Extract triangle connectivity from PolyData faces array."""
-    pv = _check_pyvista()
-
     if hasattr(mesh, "cells_dict") and pv.CellType.TRIANGLE in mesh.cells_dict:
         return mesh.cells_dict[pv.CellType.TRIANGLE].astype(np.int32)
 
@@ -85,8 +73,6 @@ def _extract_triangles_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32]:
 
 def _from_pyvista_to_mmg3d(mesh: pv.UnstructuredGrid) -> MmgMesh3D:
     """Convert UnstructuredGrid with tetrahedra to MmgMesh3D."""
-    pv = _check_pyvista()
-
     if pv.CellType.TETRA not in mesh.cells_dict:
         msg = "UnstructuredGrid must contain tetrahedra (CellType.TETRA)"
         raise ValueError(msg)
@@ -122,8 +108,6 @@ def _from_pyvista_with_explicit_type(
     mesh_type: type[MmgMesh3D | MmgMesh2D | MmgMeshS],
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Convert PyVista mesh to mmgpy mesh with explicit type."""
-    pv = _check_pyvista()
-
     if mesh_type is MmgMesh3D:
         if not isinstance(mesh, pv.UnstructuredGrid):
             msg = "MmgMesh3D requires UnstructuredGrid input"
@@ -150,8 +134,6 @@ def _from_pyvista_auto_detect(
     mesh: pv.UnstructuredGrid | pv.PolyData,
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Convert PyVista mesh to mmgpy mesh with auto-detection."""
-    pv = _check_pyvista()
-
     if isinstance(mesh, pv.UnstructuredGrid):
         if pv.CellType.TETRA in mesh.cells_dict:
             return _from_pyvista_to_mmg3d(mesh)
@@ -213,7 +195,6 @@ def from_pyvista(
 
     Raises:
         ValueError: If mesh type cannot be determined or is incompatible.
-        ImportError: If PyVista is not installed.
 
     Example:
         >>> import pyvista as pv
@@ -276,7 +257,6 @@ def to_pyvista(
 
     Raises:
         TypeError: If mesh is not an mmgpy mesh type.
-        ImportError: If PyVista is not installed.
 
     Example:
         >>> from mmgpy import MmgMesh3D
@@ -288,8 +268,6 @@ def to_pyvista(
         >>> grid.plot()
 
     """
-    _check_pyvista()
-
     if isinstance(mesh, MmgMesh3D):
         return _mmg3d_to_pyvista(mesh, include_refs=include_refs)
     if isinstance(mesh, MmgMesh2D):
@@ -303,8 +281,6 @@ def to_pyvista(
 
 def _mmg3d_to_pyvista(mesh: MmgMesh3D, *, include_refs: bool) -> pv.UnstructuredGrid:
     """Convert MmgMesh3D to PyVista UnstructuredGrid."""
-    pv = _check_pyvista()
-
     vertices = mesh.get_vertices()
 
     if include_refs:
@@ -323,8 +299,6 @@ def _mmg3d_to_pyvista(mesh: MmgMesh3D, *, include_refs: bool) -> pv.Unstructured
 
 def _mmg2d_to_pyvista(mesh: MmgMesh2D, *, include_refs: bool) -> pv.PolyData:
     """Convert MmgMesh2D to PyVista PolyData."""
-    pv = _check_pyvista()
-
     vertices_2d = mesh.get_vertices()
     vertices_3d = np.column_stack([vertices_2d, np.zeros(len(vertices_2d))])
 
@@ -347,8 +321,6 @@ def _mmg2d_to_pyvista(mesh: MmgMesh2D, *, include_refs: bool) -> pv.PolyData:
 
 def _mmgs_to_pyvista(mesh: MmgMeshS, *, include_refs: bool) -> pv.PolyData:
     """Convert MmgMeshS to PyVista PolyData."""
-    pv = _check_pyvista()
-
     vertices = mesh.get_vertices()
 
     if include_refs:
@@ -390,7 +362,7 @@ def _make_from_pyvista_classmethod(
 
 def _make_to_pyvista_method(
     mesh_class: type,
-) -> callable:  # type: ignore[type-arg]
+) -> Callable[..., pv.UnstructuredGrid | pv.PolyData]:
     """Create a to_pyvista instance method for a mesh class."""
 
     def to_pyvista(
