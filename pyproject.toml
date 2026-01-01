@@ -127,6 +127,7 @@ ignore = [
     "C901",   # complex functions are acceptable for RPATH fixing logic
     "RUF005", # list concatenation is fine here for subprocess args
     "PTH207", # glob usage is fine for file discovery
+    "D417",   # self parameter doesn't need documenting for methods
 ]
 "src/mmgpy/_logging.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency
