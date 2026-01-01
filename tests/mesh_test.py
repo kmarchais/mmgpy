@@ -1756,14 +1756,43 @@ def test_topology_queries_invalid_indices() -> None:
 # Level-Set Discretization Tests
 
 
+def create_dense_3d_mesh(resolution: int = 5) -> tuple[np.ndarray, np.ndarray]:
+    """Create a dense tetrahedral mesh of a unit cube for level-set testing.
+
+    Level-set discretization requires interior points to work properly.
+    Uses PyVista's delaunay_3d for better quality tetrahedra.
+    """
+    import pyvista as pv
+
+    x = np.linspace(0, 1, resolution)
+    y = np.linspace(0, 1, resolution)
+    z = np.linspace(0, 1, resolution)
+    xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
+    points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+    cloud = pv.PolyData(points)
+    tetra = cloud.delaunay_3d()
+    vertices = np.array(tetra.points, dtype=np.float64)
+    elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
+    return vertices, elements
+
+
+def create_dense_2d_mesh(resolution: int = 10) -> tuple[np.ndarray, np.ndarray]:
+    """Create a dense triangular mesh of a unit square for level-set testing."""
+    from scipy.spatial import Delaunay
+
+    x = np.linspace(0, 1, resolution)
+    y = np.linspace(0, 1, resolution)
+    xx, yy = np.meshgrid(x, y)
+    points = np.column_stack([xx.ravel(), yy.ravel()])
+    tri = Delaunay(points)
+    return points.astype(np.float64), tri.simplices.astype(np.int32)
+
+
 def test_remesh_levelset_3d() -> None:
     """Test level-set discretization for MmgMesh3D with a sphere."""
-    vertices, elements = create_test_mesh()
+    vertices, elements = create_dense_3d_mesh(resolution=5)
 
-    mesh = MmgMesh3D()
-    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
-    mesh.set_vertices(vertices)
-    mesh.set_tetrahedra(elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     center = np.array([0.5, 0.5, 0.5])
     radius = 0.3
@@ -1779,27 +1808,177 @@ def test_remesh_levelset_3d() -> None:
     assert len(new_elements) > 0
 
 
+def test_remesh_levelset_3d_element_refs() -> None:
+    """Test that level-set discretization assigns correct element refs.
+
+    After level-set discretization, MMG assigns:
+    - ref=2: exterior elements (where level-set > 0)
+    - ref=3: interior elements (where level-set < 0)
+    """
+    vertices, elements = create_dense_3d_mesh(resolution=6)
+    mesh = MmgMesh3D(vertices, elements)
+
+    # Sphere centered at (0.5, 0.5, 0.5) with radius 0.3
+    center = np.array([0.5, 0.5, 0.5])
+    radius = 0.3
+    levelset = (np.linalg.norm(vertices - center, axis=1) - radius).reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, hmax=0.15, verbose=False)
+
+    new_vertices = mesh.get_vertices()
+    _, elem_refs = mesh.get_elements_with_refs()
+
+    # Should have both interior (ref=3) and exterior (ref=2) elements
+    unique_refs = np.unique(elem_refs)
+    assert 2 in unique_refs, "Expected exterior elements (ref=2)"
+    assert 3 in unique_refs, "Expected interior elements (ref=3)"
+
+    # Verify interior elements are actually inside the sphere
+    # by checking their centroids
+    elements = mesh.get_elements()
+    interior_mask = elem_refs == 3
+    interior_elements = elements[interior_mask]
+
+    for tet in interior_elements[:10]:  # Check first 10 interior tets
+        centroid = new_vertices[tet].mean(axis=0)
+        dist_to_center = np.linalg.norm(centroid - center)
+        # Centroid should be inside or near the sphere surface
+        assert dist_to_center < radius + 0.1, (
+            f"Interior element centroid at distance {dist_to_center} "
+            f"should be inside sphere of radius {radius}"
+        )
+
+
+def test_remesh_levelset_3d_interface_conformity() -> None:
+    """Test that interface vertices lie on the level-set isosurface."""
+    vertices, elements = create_dense_3d_mesh(resolution=6)
+    mesh = MmgMesh3D(vertices, elements)
+
+    center = np.array([0.5, 0.5, 0.5])
+    radius = 0.3
+    levelset = (np.linalg.norm(vertices - center, axis=1) - radius).reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, hmax=0.1, verbose=False)
+
+    new_vertices = mesh.get_vertices()
+    elements, elem_refs = mesh.get_elements_with_refs()
+
+    # Find interface: faces shared by elements with different refs
+    # Build face-to-element mapping
+    face_elements: dict[tuple[int, ...], list[int]] = {}
+    for elem_idx, tet in enumerate(elements):
+        # 4 faces per tetrahedron
+        faces = [
+            tuple(sorted([tet[0], tet[1], tet[2]])),
+            tuple(sorted([tet[0], tet[1], tet[3]])),
+            tuple(sorted([tet[0], tet[2], tet[3]])),
+            tuple(sorted([tet[1], tet[2], tet[3]])),
+        ]
+        for face in faces:
+            if face not in face_elements:
+                face_elements[face] = []
+            face_elements[face].append(elem_idx)
+
+    # Find interface faces (shared by elements with different refs)
+    interface_vertices = set()
+    for face, elem_indices in face_elements.items():
+        if len(elem_indices) == 2:
+            ref1, ref2 = elem_refs[elem_indices[0]], elem_refs[elem_indices[1]]
+            if ref1 != ref2:
+                interface_vertices.update(face)
+
+    # Check that interface vertices lie on the sphere surface
+    tolerance = 0.05  # Allow small deviation due to mesh discretization
+    for v_idx in list(interface_vertices)[:20]:  # Check first 20 vertices
+        vertex = new_vertices[v_idx]
+        dist_to_center = np.linalg.norm(vertex - center)
+        assert abs(dist_to_center - radius) < tolerance, (
+            f"Interface vertex at distance {dist_to_center:.4f} "
+            f"should be on sphere surface at radius {radius}"
+        )
+
+
 def test_remesh_levelset_2d() -> None:
     """Test level-set discretization for MmgMesh2D with a circle."""
-    vertices, triangles = create_2d_test_mesh()
+    vertices, triangles = create_dense_2d_mesh(resolution=10)
 
-    mesh = MmgMesh2D()
-    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
-    mesh.set_vertices(vertices)
-    mesh.set_triangles(triangles)
+    mesh = MmgMesh2D(vertices, triangles)
 
     center = np.array([0.5, 0.5])
     radius = 0.3
     distances = np.linalg.norm(vertices - center, axis=1) - radius
     levelset = distances.reshape(-1, 1)
 
-    mesh.remesh_levelset(levelset, hmax=0.2, verbose=False)
+    mesh.remesh_levelset(levelset, hmax=0.15, verbose=False)
 
     new_vertices = mesh.get_vertices()
     new_triangles = mesh.get_triangles()
 
     assert len(new_vertices) > 0
     assert len(new_triangles) > 0
+
+
+def test_remesh_levelset_2d_element_refs() -> None:
+    """Test that 2D level-set discretization assigns correct triangle refs."""
+    vertices, triangles = create_dense_2d_mesh(resolution=15)
+    mesh = MmgMesh2D(vertices, triangles)
+
+    # Circle centered at (0.5, 0.5) with radius 0.3
+    center = np.array([0.5, 0.5])
+    radius = 0.3
+    levelset = (np.linalg.norm(vertices - center, axis=1) - radius).reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, hmax=0.1, verbose=False)
+
+    _, tri_refs = mesh.get_triangles_with_refs()
+
+    # Should have both interior (ref=3) and exterior (ref=2) triangles
+    unique_refs = np.unique(tri_refs)
+    assert 2 in unique_refs, "Expected exterior triangles (ref=2)"
+    assert 3 in unique_refs, "Expected interior triangles (ref=3)"
+
+
+def test_remesh_levelset_2d_interface_conformity() -> None:
+    """Test that 2D interface edges lie on the level-set isoline."""
+    vertices, triangles = create_dense_2d_mesh(resolution=15)
+    mesh = MmgMesh2D(vertices, triangles)
+
+    center = np.array([0.5, 0.5])
+    radius = 0.3
+    levelset = (np.linalg.norm(vertices - center, axis=1) - radius).reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, hmax=0.08, verbose=False)
+
+    new_vertices = mesh.get_vertices()
+    triangles, tri_refs = mesh.get_triangles_with_refs()
+
+    # Build edge-to-triangle mapping
+    edge_triangles: dict[tuple[int, int], list[int]] = {}
+    for tri_idx, tri in enumerate(triangles):
+        for i in range(3):
+            v1, v2 = tri[i], tri[(i + 1) % 3]
+            edge = (min(v1, v2), max(v1, v2))
+            if edge not in edge_triangles:
+                edge_triangles[edge] = []
+            edge_triangles[edge].append(tri_idx)
+
+    # Find interface edges
+    interface_vertices = set()
+    for edge, tri_indices in edge_triangles.items():
+        if len(tri_indices) == 2:
+            ref1, ref2 = tri_refs[tri_indices[0]], tri_refs[tri_indices[1]]
+            if ref1 != ref2:
+                interface_vertices.update(edge)
+
+    # Check that interface vertices lie on the circle
+    tolerance = 0.02
+    for v_idx in interface_vertices:
+        vertex = new_vertices[v_idx]
+        dist_to_center = np.linalg.norm(vertex - center)
+        assert abs(dist_to_center - radius) < tolerance, (
+            f"Interface vertex at distance {dist_to_center:.4f} "
+            f"should be on circle at radius {radius}"
+        )
 
 
 def test_remesh_levelset_surface() -> None:
@@ -1827,22 +2006,52 @@ def test_remesh_levelset_surface() -> None:
 
 def test_remesh_levelset_with_isovalue() -> None:
     """Test level-set discretization with custom isovalue."""
-    vertices, elements = create_test_mesh()
+    vertices, elements = create_dense_3d_mesh(resolution=5)
 
-    mesh = MmgMesh3D()
-    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
-    mesh.set_vertices(vertices)
-    mesh.set_tetrahedra(elements)
+    mesh = MmgMesh3D(vertices, elements)
 
     center = np.array([0.5, 0.5, 0.5])
     radius = 0.3
     distances = np.linalg.norm(vertices - center, axis=1) - radius
     levelset = distances.reshape(-1, 1)
 
+    # Use ls=0.05 to extract a slightly larger sphere
     mesh.remesh_levelset(levelset, ls=0.05, hmax=0.2, verbose=False)
 
     new_vertices = mesh.get_vertices()
     assert len(new_vertices) > 0
+
+
+def test_remesh_levelset_with_different_isovalues() -> None:
+    """Test that different isovalues produce different mesh regions.
+
+    With signed distance levelset = distance - radius:
+    - Interior is where levelset < isovalue
+    - Higher isovalue → larger interior region
+    """
+    vertices, elements = create_dense_3d_mesh(resolution=6)
+
+    center = np.array([0.5, 0.5, 0.5])
+    radius = 0.3
+    levelset = (np.linalg.norm(vertices - center, axis=1) - radius).reshape(-1, 1)
+
+    # Extract at default isovalue (0.0) - sphere surface
+    mesh1 = MmgMesh3D(vertices.copy(), elements.copy())
+    mesh1.remesh_levelset(levelset, ls=0.0, hmax=0.15, verbose=False)
+    _, refs1 = mesh1.get_elements_with_refs()
+    interior_count_1 = np.sum(refs1 == 3)
+
+    # Extract at positive isovalue (larger interior - includes shell around sphere)
+    mesh2 = MmgMesh3D(vertices.copy(), elements.copy())
+    mesh2.remesh_levelset(levelset, ls=0.1, hmax=0.15, verbose=False)
+    _, refs2 = mesh2.get_elements_with_refs()
+    interior_count_2 = np.sum(refs2 == 3)
+
+    # Higher isovalue means larger interior region
+    assert interior_count_2 > interior_count_1, (
+        f"Higher isovalue should yield more interior elements: "
+        f"{interior_count_2} vs {interior_count_1}"
+    )
 
 
 if __name__ == "__main__":
