@@ -244,7 +244,7 @@ class MmgMesh3D:
         iso: int | None = None,
         **kwargs: float,
     ) -> None: ...
-    # PyVista integration (added by mmgpy.pyvista.add_pyvista_methods)
+    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
     @classmethod
     def from_pyvista(
         cls,
@@ -410,7 +410,7 @@ class MmgMesh2D:
         iso: int | None = None,
         **kwargs: float,
     ) -> None: ...
-    # PyVista integration (added by mmgpy.pyvista.add_pyvista_methods)
+    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
     @classmethod
     def from_pyvista(
         cls,
@@ -546,7 +546,7 @@ class MmgMeshS:
         iso: int | None = None,
         **kwargs: float,
     ) -> None: ...
-    # PyVista integration (added by mmgpy.pyvista.add_pyvista_methods)
+    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
     @classmethod
     def from_pyvista(
         cls,
