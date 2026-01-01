@@ -17,7 +17,9 @@ dependencies = [
     "meshio>=5.3.5",
     "numpy>=2.0.2",
     "patchelf>=0.17.2.4; sys_platform == 'linux'",
+    "rich>=13.0.0",
     "scipy>=1.11.0",
+    "typing-extensions>=4.0.0; python_version < '3.11'",
 ]
 authors = [{ name = "Kevin MArchais", email = "kevinmarchais@gmail.com" }]
 license = { text = "MIT" }
@@ -113,7 +115,6 @@ ignore = [
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
-    "T201",   # print statements used for debugging MMG executable issues
     "S110",   # try-except-pass is acceptable for non-critical RPATH fixing
     "BLE001", # broad exception catching is acceptable for non-critical RPATH fixing
     "E402",   # imports inside functions are intentional for lazy loading
@@ -121,10 +122,17 @@ ignore = [
     "RUF005", # list concatenation is fine here for subprocess args
     "PTH207", # glob usage is fine for file discovery
 ]
+"src/mmgpy/_logging.py" = [
+    "PLC0415", # imports inside functions for optional Rich dependency
+]
+"src/mmgpy/_progress.py" = [
+    "PLC0415", # imports inside functions for optional Rich dependency
+]
 
 [tool.ty.src]
-# Exclude tests, scripts, and examples from type checking
-exclude = ["tests/**", "scripts/**", "examples/**"]
+# Exclude tests, scripts, examples, and progress module from type checking
+# Progress module uses union types that cause complex type inference issues
+exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time

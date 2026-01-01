@@ -50,19 +50,10 @@ mmg3d.remesh_levelset(mesh, levelset, metric)
 
 ### 🟢 Low Priority
 
-| Feature                | Description             |
-| ---------------------- | ----------------------- |
-| Progress callback      | Long operation feedback |
-| RemeshResult dataclass | Rich return values      |
-| Context manager        | `with MmgMesh() as m:`  |
-| Performance benchmarks | pytest-benchmark        |
-| ARM64 Linux wheels     | aarch64 support         |
-| ParMmg integration     | Parallel remeshing      |
-
----
-
-## Code Quality Items
-
-| Priority | Item                 | Location      |
-| -------- | -------------------- | ------------- |
-| 🟢       | Use `logging` module | `__init__.py` |
+| Feature                | Description            |
+| ---------------------- | ---------------------- |
+| RemeshResult dataclass | Rich return values     |
+| Context manager        | `with MmgMesh() as m:` |
+| Performance benchmarks | pytest-benchmark       |
+| ARM64 Linux wheels     | aarch64 support        |
+| ParMmg integration     | Parallel remeshing     |
