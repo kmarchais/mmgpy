@@ -30,4 +30,8 @@ void set_mesh_options_surface(MMG5_pMesh mesh, MMG5_pSol met,
 
 std::string path_to_string(const py::object &path);
 
+// Helper to merge options with a default value
+py::dict merge_options_with_default(const py::dict &options, const char *key,
+                                    py::object default_value);
+
 #endif // MMG_COMMON_HPP

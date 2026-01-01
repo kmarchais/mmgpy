@@ -111,6 +111,8 @@ public:
   void remesh(const py::dict &options = py::dict());
   void remesh_lagrangian(const py::array_t<double> &displacement,
                          const py::dict &options = py::dict());
+  void remesh_levelset(const py::array_t<double> &levelset,
+                       const py::dict &options = py::dict());
 
   // Delete copy constructor and assignment operator
   MmgMesh(const MmgMesh &) = delete;

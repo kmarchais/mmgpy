@@ -918,18 +918,26 @@ void MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
                                   const py::dict &options) {
   set_field("displacement", displacement);
 
-  py::dict lag_options = py::dict();
-  for (auto item : options) {
-    lag_options[item.first] = item.second;
-  }
-  if (!lag_options.contains("lag")) {
-    lag_options["lag"] = 1;
-  }
-
+  py::dict lag_options =
+      merge_options_with_default(options, "lag", py::int_(1));
   set_mesh_options_2D(mesh, met, lag_options);
 
   int ret = MMG2D_mmg2dmov(mesh, met, disp);
   if (ret != MMG5_SUCCESS) {
-    throw std::runtime_error("Lagrangian motion remeshing failed");
+    throw std::runtime_error("MMG2D Lagrangian motion remeshing failed (ret=" +
+                             std::to_string(ret) + ")");
+  }
+}
+
+void MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
+                                const py::dict &options) {
+  set_field("levelset", levelset);
+  py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
+  set_mesh_options_2D(mesh, met, ls_options);
+
+  int ret = MMG2D_mmg2dls(mesh, ls, met);
+  if (ret != MMG5_SUCCESS) {
+    throw std::runtime_error("MMG2D level-set discretization failed (ret=" +
+                             std::to_string(ret) + ")");
   }
 }

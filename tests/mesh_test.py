@@ -1753,6 +1753,98 @@ def test_topology_queries_invalid_indices() -> None:
         mesh.get_vertex_neighbors(100)
 
 
+# Level-Set Discretization Tests
+
+
+def test_remesh_levelset_3d() -> None:
+    """Test level-set discretization for MmgMesh3D with a sphere."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    center = np.array([0.5, 0.5, 0.5])
+    radius = 0.3
+    distances = np.linalg.norm(vertices - center, axis=1) - radius
+    levelset = distances.reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, hmax=0.2, verbose=False)
+
+    new_vertices = mesh.get_vertices()
+    new_elements = mesh.get_elements()
+
+    assert len(new_vertices) > 0
+    assert len(new_elements) > 0
+
+
+def test_remesh_levelset_2d() -> None:
+    """Test level-set discretization for MmgMesh2D with a circle."""
+    vertices, triangles = create_2d_test_mesh()
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    center = np.array([0.5, 0.5])
+    radius = 0.3
+    distances = np.linalg.norm(vertices - center, axis=1) - radius
+    levelset = distances.reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, hmax=0.2, verbose=False)
+
+    new_vertices = mesh.get_vertices()
+    new_triangles = mesh.get_triangles()
+
+    assert len(new_vertices) > 0
+    assert len(new_triangles) > 0
+
+
+def test_remesh_levelset_surface() -> None:
+    """Test level-set discretization for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    center = np.array([0.5, 0.5, 0.0])
+    radius = 0.3
+    distances = np.linalg.norm(vertices - center, axis=1) - radius
+    levelset = distances.reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, hmax=0.2, verbose=False)
+
+    new_vertices = mesh.get_vertices()
+    new_triangles = mesh.get_triangles()
+
+    assert len(new_vertices) > 0
+    assert len(new_triangles) > 0
+
+
+def test_remesh_levelset_with_isovalue() -> None:
+    """Test level-set discretization with custom isovalue."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    center = np.array([0.5, 0.5, 0.5])
+    radius = 0.3
+    distances = np.linalg.norm(vertices - center, axis=1) - radius
+    levelset = distances.reshape(-1, 1)
+
+    mesh.remesh_levelset(levelset, ls=0.05, hmax=0.2, verbose=False)
+
+    new_vertices = mesh.get_vertices()
+    assert len(new_vertices) > 0
+
+
 if __name__ == "__main__":
     test_mesh_construction()
     test_mmg_mesh()
