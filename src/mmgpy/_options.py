@@ -82,13 +82,13 @@ def _validate_common_options(opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions) ->
 
 
 def _options_to_dict(
-    opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions,
+    opts: _MmgOptionsBase,
 ) -> dict[str, float | int]:
     """Convert options to dictionary for passing to remesh().
 
     Parameters
     ----------
-    opts : Mmg3DOptions | Mmg2DOptions | MmgSOptions
+    opts : _MmgOptionsBase
         Options object to convert.
 
     Returns
@@ -111,45 +111,134 @@ def _options_to_dict(
 
 
 @dataclass(slots=True, kw_only=True, frozen=True)
-class Mmg3DOptions:
+class _MmgOptionsBase:
+    """Base class for MMG options with common parameters.
+
+    This class contains parameters shared by all MMG variants (2D, 3D, surface).
+    Do not instantiate directly - use the specific subclasses.
+
+    """
+
+    # Size control parameters
+    hmin: float | None = None
+    """Minimum edge size."""
+
+    hmax: float | None = None
+    """Maximum edge size."""
+
+    hsiz: float | None = None
+    """Constant edge size (overrides hmin/hmax)."""
+
+    hausd: float | None = None
+    """Hausdorff distance for geometry approximation."""
+
+    # Gradation parameters
+    hgrad: float | None = None
+    """Gradation parameter (default ~1.3). Controls size transition between
+    adjacent elements. Must be >= 1.0."""
+
+    hgradreq: float | None = None
+    """Gradation on required entities (advanced usage). Must be >= 1.0,
+    or -1 to disable gradation control on required entities."""
+
+    # Geometry detection
+    ar: float | None = None
+    """Angle detection threshold in degrees (0-180). Edges with angles
+    sharper than this are preserved as ridges."""
+
+    # Runtime parameters
+    verbose: int | None = None
+    """Verbosity level (-1=silent, 0=errors, 1=info, higher=debug)."""
+
+    mem: int | None = None
+    """Maximum memory usage in MB."""
+
+    # Optimization flags
+    optim: bool = False
+    """Enable mesh optimization mode."""
+
+    noinsert: bool = False
+    """Disable point insertion."""
+
+    noswap: bool = False
+    """Disable edge/face swapping."""
+
+    nomove: bool = False
+    """Disable point relocation."""
+
+    def to_dict(self) -> dict[str, float | int]:
+        """Convert options to dictionary for passing to remesh().
+
+        Returns
+        -------
+        dict[str, float | int]
+            Dictionary with non-None values, booleans converted to int.
+
+        """
+        return _options_to_dict(self)
+
+    @classmethod
+    def fine(cls, *, hmax: float, hausd: float | None = None) -> Self:
+        """Create options for fine mesh with tight quality control.
+
+        Parameters
+        ----------
+        hmax : float
+            Maximum edge size.
+        hausd : float | None
+            Hausdorff distance. Defaults to hmax/10.
+
+        """
+        return cls(
+            hmax=hmax,
+            hausd=hausd if hausd is not None else hmax / 10,
+            hgrad=1.2,
+        )
+
+    @classmethod
+    def coarse(cls, *, hmax: float) -> Self:
+        """Create options for coarse mesh with relaxed constraints.
+
+        Parameters
+        ----------
+        hmax : float
+            Maximum edge size.
+
+        """
+        return cls(
+            hmax=hmax,
+            hgrad=1.5,
+        )
+
+    @classmethod
+    def optimize_only(cls, *, verbose: int | None = None) -> Self:
+        """Create options for optimization without topology changes.
+
+        Only moves vertices to improve quality, no insertion/deletion.
+
+        """
+        return cls(
+            optim=True,
+            noinsert=True,
+            verbose=verbose,
+        )
+
+
+@dataclass(slots=True, kw_only=True, frozen=True)
+class Mmg3DOptions(_MmgOptionsBase):
     """Options for 3D tetrahedral mesh remeshing (MMG3D).
 
     All parameters are optional. When None, MMG uses its internal defaults.
     Options are immutable after creation.
 
-    Attributes:
-    ----------
-    hmin : float | None
-        Minimum edge size.
-    hmax : float | None
-        Maximum edge size.
-    hsiz : float | None
-        Constant edge size (overrides hmin/hmax).
-    hausd : float | None
-        Hausdorff distance for surface approximation.
-    hgrad : float | None
-        Gradation parameter (default ~1.3). Controls size transition between
-        adjacent elements. Must be >= 1.0.
-    hgradreq : float | None
-        Gradation on required entities (advanced usage). Must be >= 1.0,
-        or -1 to disable gradation control on required entities.
-    ar : float | None
-        Angle detection threshold in degrees (0-180). Edges with angles
-        sharper than this are preserved as ridges.
-    verbose : int | None
-        Verbosity level (-1=silent, 0=errors, 1=info, higher=debug).
-    mem : int | None
-        Maximum memory usage in MB.
-    optim : bool
-        Enable mesh optimization mode.
-    noinsert : bool
-        Disable point insertion.
-    noswap : bool
-        Disable edge/face swapping.
-    nomove : bool
-        Disable point relocation.
+    Inherits from _MmgOptionsBase:
+        hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
+        optim, noinsert, noswap, nomove
+
+    Additional Attributes
+    ---------------------
     nosurf : bool
-        Disable surface modifications.
+        Disable surface modifications (3D only).
 
     Example:
     -------
@@ -158,315 +247,58 @@ class Mmg3DOptions:
 
     """
 
-    hmin: float | None = None
-    hmax: float | None = None
-    hsiz: float | None = None
-    hausd: float | None = None
-    hgrad: float | None = None
-    hgradreq: float | None = None
-    ar: float | None = None
-    verbose: int | None = None
-    mem: int | None = None
-    optim: bool = False
-    noinsert: bool = False
-    noswap: bool = False
-    nomove: bool = False
     nosurf: bool = False
+    """Disable surface modifications (3D only)."""
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
         _validate_common_options(self)
 
-    def to_dict(self) -> dict[str, float | int]:
-        """Convert options to dictionary for passing to remesh().
-
-        Returns
-        -------
-        dict[str, float | int]
-            Dictionary with non-None values, booleans converted to int.
-
-        """
-        return _options_to_dict(self)
-
-    @classmethod
-    def fine(cls, *, hmax: float, hausd: float | None = None) -> Self:
-        """Create options for fine mesh with tight quality control.
-
-        Parameters
-        ----------
-        hmax : float
-            Maximum edge size.
-        hausd : float | None
-            Hausdorff distance. Defaults to hmax/10.
-
-        """
-        return cls(
-            hmax=hmax,
-            hausd=hausd if hausd is not None else hmax / 10,
-            hgrad=1.2,
-        )
-
-    @classmethod
-    def coarse(cls, *, hmax: float) -> Self:
-        """Create options for coarse mesh with relaxed constraints.
-
-        Parameters
-        ----------
-        hmax : float
-            Maximum edge size.
-
-        """
-        return cls(
-            hmax=hmax,
-            hgrad=1.5,
-        )
-
-    @classmethod
-    def optimize_only(cls, *, verbose: int | None = None) -> Self:
-        """Create options for optimization without topology changes.
-
-        Only moves vertices to improve quality, no insertion/deletion.
-
-        """
-        return cls(
-            optim=True,
-            noinsert=True,
-            verbose=verbose,
-        )
-
 
 @dataclass(slots=True, kw_only=True, frozen=True)
-class Mmg2DOptions:
+class Mmg2DOptions(_MmgOptionsBase):
     """Options for 2D triangular mesh remeshing (MMG2D).
 
     All parameters are optional. When None, MMG uses its internal defaults.
     Options are immutable after creation.
 
-    Attributes
-    ----------
-    hmin : float | None
-        Minimum edge size.
-    hmax : float | None
-        Maximum edge size.
-    hsiz : float | None
-        Constant edge size (overrides hmin/hmax).
-    hausd : float | None
-        Hausdorff distance for boundary approximation.
-    hgrad : float | None
-        Gradation parameter (default ~1.3). Controls size transition between
-        adjacent elements. Must be >= 1.0.
-    hgradreq : float | None
-        Gradation on required entities (advanced usage). Must be >= 1.0,
-        or -1 to disable gradation control on required entities.
-    ar : float | None
-        Angle detection threshold in degrees (0-180). Edges with angles
-        sharper than this are preserved as ridges.
-    verbose : int | None
-        Verbosity level (-1=silent, 0=errors, 1=info, higher=debug).
-    mem : int | None
-        Maximum memory usage in MB.
-    optim : bool
-        Enable mesh optimization mode.
-    noinsert : bool
-        Disable point insertion.
-    noswap : bool
-        Disable edge swapping.
-    nomove : bool
-        Disable point relocation.
+    Inherits from _MmgOptionsBase:
+        hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
+        optim, noinsert, noswap, nomove
+
+    Additional Attributes
+    ---------------------
+    nosurf : bool
+        Disable boundary modifications.
 
     """
 
-    hmin: float | None = None
-    hmax: float | None = None
-    hsiz: float | None = None
-    hausd: float | None = None
-    hgrad: float | None = None
-    hgradreq: float | None = None
-    ar: float | None = None
-    verbose: int | None = None
-    mem: int | None = None
-    optim: bool = False
-    noinsert: bool = False
-    noswap: bool = False
-    nomove: bool = False
+    nosurf: bool = False
+    """Disable boundary modifications."""
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
         _validate_common_options(self)
 
-    def to_dict(self) -> dict[str, float | int]:
-        """Convert options to dictionary for passing to remesh().
-
-        Returns
-        -------
-        dict[str, float | int]
-            Dictionary with non-None values, booleans converted to int.
-
-        """
-        return _options_to_dict(self)
-
-    @classmethod
-    def fine(cls, *, hmax: float, hausd: float | None = None) -> Self:
-        """Create options for fine mesh with tight quality control.
-
-        Parameters
-        ----------
-        hmax : float
-            Maximum edge size.
-        hausd : float | None
-            Hausdorff distance. Defaults to hmax/10.
-
-        """
-        return cls(
-            hmax=hmax,
-            hausd=hausd if hausd is not None else hmax / 10,
-            hgrad=1.2,
-        )
-
-    @classmethod
-    def coarse(cls, *, hmax: float) -> Self:
-        """Create options for coarse mesh with relaxed constraints.
-
-        Parameters
-        ----------
-        hmax : float
-            Maximum edge size.
-
-        """
-        return cls(
-            hmax=hmax,
-            hgrad=1.5,
-        )
-
-    @classmethod
-    def optimize_only(cls, *, verbose: int | None = None) -> Self:
-        """Create options for optimization without topology changes.
-
-        Only moves vertices to improve quality, no insertion/deletion.
-
-        """
-        return cls(
-            optim=True,
-            noinsert=True,
-            verbose=verbose,
-        )
-
 
 @dataclass(slots=True, kw_only=True, frozen=True)
-class MmgSOptions:
+class MmgSOptions(_MmgOptionsBase):
     """Options for surface mesh remeshing (MMGS).
 
     All parameters are optional. When None, MMG uses its internal defaults.
     Options are immutable after creation.
 
-    Attributes
-    ----------
-    hmin : float | None
-        Minimum edge size.
-    hmax : float | None
-        Maximum edge size.
-    hsiz : float | None
-        Constant edge size (overrides hmin/hmax).
-    hausd : float | None
-        Hausdorff distance for surface approximation.
-    hgrad : float | None
-        Gradation parameter (default ~1.3). Controls size transition between
-        adjacent elements. Must be >= 1.0.
-    hgradreq : float | None
-        Gradation on required entities (advanced usage). Must be >= 1.0,
-        or -1 to disable gradation control on required entities.
-    ar : float | None
-        Angle detection threshold in degrees (0-180). Edges with angles
-        sharper than this are preserved as ridges.
-    verbose : int | None
-        Verbosity level (-1=silent, 0=errors, 1=info, higher=debug).
-    mem : int | None
-        Maximum memory usage in MB.
-    optim : bool
-        Enable mesh optimization mode.
-    noinsert : bool
-        Disable point insertion.
-    noswap : bool
-        Disable edge swapping.
-    nomove : bool
-        Disable point relocation.
+    Inherits from _MmgOptionsBase:
+        hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
+        optim, noinsert, noswap, nomove
+
+    Note: Surface remeshing (MMGS) does not have a nosurf option.
 
     """
-
-    hmin: float | None = None
-    hmax: float | None = None
-    hsiz: float | None = None
-    hausd: float | None = None
-    hgrad: float | None = None
-    hgradreq: float | None = None
-    ar: float | None = None
-    verbose: int | None = None
-    mem: int | None = None
-    optim: bool = False
-    noinsert: bool = False
-    noswap: bool = False
-    nomove: bool = False
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
         _validate_common_options(self)
-
-    def to_dict(self) -> dict[str, float | int]:
-        """Convert options to dictionary for passing to remesh().
-
-        Returns
-        -------
-        dict[str, float | int]
-            Dictionary with non-None values, booleans converted to int.
-
-        """
-        return _options_to_dict(self)
-
-    @classmethod
-    def fine(cls, *, hmax: float, hausd: float | None = None) -> Self:
-        """Create options for fine mesh with tight quality control.
-
-        Parameters
-        ----------
-        hmax : float
-            Maximum edge size.
-        hausd : float | None
-            Hausdorff distance. Defaults to hmax/10.
-
-        """
-        return cls(
-            hmax=hmax,
-            hausd=hausd if hausd is not None else hmax / 10,
-            hgrad=1.2,
-        )
-
-    @classmethod
-    def coarse(cls, *, hmax: float) -> Self:
-        """Create options for coarse mesh with relaxed constraints.
-
-        Parameters
-        ----------
-        hmax : float
-            Maximum edge size.
-
-        """
-        return cls(
-            hmax=hmax,
-            hgrad=1.5,
-        )
-
-    @classmethod
-    def optimize_only(cls, *, verbose: int | None = None) -> Self:
-        """Create options for optimization without topology changes.
-
-        Only moves vertices to improve quality, no insertion/deletion.
-
-        """
-        return cls(
-            optim=True,
-            noinsert=True,
-            verbose=verbose,
-        )
 
 
 __all__ = ["Mmg2DOptions", "Mmg3DOptions", "MmgSOptions"]

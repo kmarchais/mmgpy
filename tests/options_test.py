@@ -95,6 +95,13 @@ class TestMmg3DOptions:
         Mmg3DOptions(hgradreq=1.0)
         Mmg3DOptions(hgradreq=1.5)
 
+    def test_validation_hmin_equals_hmax(self) -> None:
+        """Test that hmin == hmax is valid (edge case)."""
+        # This is a valid edge case for uniform mesh sizing
+        opts = Mmg3DOptions(hmin=0.1, hmax=0.1)
+        assert opts.hmin == 0.1
+        assert opts.hmax == 0.1
+
     def test_frozen_immutable(self) -> None:
         """Test that options are immutable (frozen)."""
         opts = Mmg3DOptions(hmax=0.1)
@@ -166,6 +173,7 @@ class TestMmg2DOptions:
         assert opts.hmin is None
         assert opts.hmax is None
         assert opts.optim is False
+        assert opts.nosurf is False
 
     def test_validation(self) -> None:
         """Test validation works."""
@@ -177,6 +185,13 @@ class TestMmg2DOptions:
         opts = Mmg2DOptions(hmax=0.1, optim=True)
         d = opts.to_dict()
         assert d == {"hmax": 0.1, "optim": 1}
+
+    def test_nosurf_option(self) -> None:
+        """Test nosurf option is available for 2D meshes."""
+        opts = Mmg2DOptions(nosurf=True)
+        assert opts.nosurf is True
+        d = opts.to_dict()
+        assert d == {"nosurf": 1}
 
     def test_presets(self) -> None:
         """Test factory presets exist."""
@@ -209,6 +224,14 @@ class TestMmgSOptions:
         opts = MmgSOptions(hmax=0.1, nomove=True)
         d = opts.to_dict()
         assert d == {"hmax": 0.1, "nomove": 1}
+
+    def test_no_nosurf_option(self) -> None:
+        """Test that MmgSOptions does NOT have nosurf (unlike 3D and 2D)."""
+        from dataclasses import fields
+
+        # Surface remeshing doesn't have nosurf because the whole mesh is a surface
+        field_names = [f.name for f in fields(MmgSOptions)]
+        assert "nosurf" not in field_names
 
 
 class TestConvenienceMethods:
