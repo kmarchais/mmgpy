@@ -375,7 +375,28 @@ add_pyvista_methods()
 
 
 def _add_convenience_methods() -> None:
-    """Add convenience remeshing methods to mesh classes."""
+    """Add convenience remeshing methods and wrap remesh() to accept options objects."""
+    # Wrap remesh() to accept options objects directly
+    _original_remesh_3d = MmgMesh3D.remesh
+    _original_remesh_2d = MmgMesh2D.remesh
+    _original_remesh_s = MmgMeshS.remesh
+
+    def _make_remesh_wrapper(original_remesh: object) -> object:
+        def _wrapped_remesh(
+            self: object,
+            options: object = None,
+            **kwargs: object,
+        ) -> object:
+            if options is not None:
+                # Options object passed - convert to kwargs
+                kwargs.update(options.to_dict())  # type: ignore[union-attr]
+            return original_remesh(self, **kwargs)  # type: ignore[operator]
+
+        return _wrapped_remesh
+
+    MmgMesh3D.remesh = _make_remesh_wrapper(_original_remesh_3d)  # type: ignore[method-assign]
+    MmgMesh2D.remesh = _make_remesh_wrapper(_original_remesh_2d)  # type: ignore[method-assign]
+    MmgMeshS.remesh = _make_remesh_wrapper(_original_remesh_s)  # type: ignore[method-assign]
 
     def _remesh_optimize(self: object, *, verbose: int | None = None) -> None:
         """Optimize mesh quality without changing topology.

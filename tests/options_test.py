@@ -290,6 +290,25 @@ class TestConvenienceMethods:
         """Test remesh_uniform actually runs on surface mesh."""
         meshs.remesh_uniform(0.5, verbose=-1)
 
+    def test_remesh_with_options_object_3d(self, mesh3d: MmgMesh3D) -> None:
+        """Test passing options object directly to remesh on 3D mesh."""
+        opts = Mmg3DOptions(hsiz=0.5, verbose=-1)
+        mesh3d.remesh(opts)  # Pass options directly without unpacking
+
+    def test_remesh_with_options_object_2d(self, mesh2d: MmgMesh2D) -> None:
+        """Test passing options object directly to remesh on 2D mesh."""
+        opts = Mmg2DOptions(hsiz=0.5, verbose=-1)
+        mesh2d.remesh(opts)
+
+    def test_remesh_with_options_object_s(self, meshs: MmgMeshS) -> None:
+        """Test passing options object directly to remesh on surface mesh."""
+        opts = MmgSOptions(hsiz=0.5, verbose=-1)
+        meshs.remesh(opts)
+
+    def test_remesh_with_preset_3d(self, mesh3d: MmgMesh3D) -> None:
+        """Test passing preset options directly to remesh."""
+        mesh3d.remesh(Mmg3DOptions.optimize_only(verbose=-1))
+
 
 class TestModuleExports:
     """Test that options are properly exported."""

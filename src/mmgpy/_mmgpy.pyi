@@ -5,6 +5,8 @@ import numpy as np
 import pyvista as pv
 from numpy.typing import NDArray
 
+from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
+
 class mmg3d:  # noqa: N801
     @staticmethod
     def remesh(
@@ -203,6 +205,7 @@ class MmgMesh3D:
     def save(self, filename: str | Path) -> None: ...
     def remesh(
         self,
+        options: Mmg3DOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -373,6 +376,7 @@ class MmgMesh2D:
     def save(self, filename: str | Path) -> None: ...
     def remesh(
         self,
+        options: Mmg2DOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -525,6 +529,7 @@ class MmgMeshS:
     def save(self, filename: str | Path) -> None: ...
     def remesh(
         self,
+        options: MmgSOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,

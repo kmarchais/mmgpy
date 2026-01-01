@@ -32,7 +32,7 @@ class Mmg3DOptions:
 
     All parameters are optional. When None, MMG uses its internal defaults.
 
-    Attributes
+    Attributes:
     ----------
     hmin : float | None
         Minimum edge size.
@@ -62,6 +62,11 @@ class Mmg3DOptions:
         Required gradation value.
     mem : int | None
         Maximum memory usage in MB.
+
+    Example:
+    -------
+    >>> opts = Mmg3DOptions(hmax=0.1, hausd=0.01)
+    >>> mesh.remesh(opts)  # Pass options directly
 
     """
 
