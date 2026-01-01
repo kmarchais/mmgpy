@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
-from mmgpy.pyvista import from_pyvista, to_pyvista
+from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS, from_pyvista, to_pyvista
 
 # Test fixtures
 
@@ -454,6 +453,5 @@ def test_module_exports() -> None:
 
     assert hasattr(mmgpy, "from_pyvista")
     assert hasattr(mmgpy, "to_pyvista")
-    assert hasattr(mmgpy, "pyvista")
     assert callable(mmgpy.from_pyvista)
     assert callable(mmgpy.to_pyvista)

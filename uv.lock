@@ -560,7 +560,6 @@ dev = [
     { name = "imageio" },
     { name = "pre-commit" },
     { name = "pytest" },
-    { name = "pyvista" },
     { name = "ruff" },
 ]
 
@@ -569,7 +568,7 @@ requires-dist = [
     { name = "meshio", specifier = ">=5.3.5" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "patchelf", marker = "sys_platform == 'linux'", specifier = ">=0.17.2.4" },
-    { name = "pyvista", specifier = ">=0.44.0" },
+    { name = "pyvista", specifier = ">=0.46.4" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "scipy", specifier = ">=1.11.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0" },
@@ -580,7 +579,6 @@ dev = [
     { name = "imageio", specifier = ">=2.37.2" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pyvista", specifier = ">=0.46.4" },
     { name = "ruff", specifier = ">=0.14.10" },
 ]
 
