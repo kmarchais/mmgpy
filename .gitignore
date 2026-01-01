@@ -22,4 +22,7 @@ wheels/
 !assets/**/*.sol
 !assets/**/*.stp
 !assets/**/*.png
+
+# Allow images in examples for documentation
+!examples/**/*.png
 wheelhouse/

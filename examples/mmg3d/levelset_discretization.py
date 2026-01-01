@@ -9,19 +9,21 @@
 # [tool.uv.sources]
 # mmgpy = { path = "../.." }
 # ///
-"""Level-set discretization example.
+"""Level-set discretization example: Thick Gyroid TPMS.
 
-This example demonstrates how to use the level-set discretization feature
-to extract an implicit surface (isosurface) from a 3D mesh.
+This example demonstrates how to use level-set discretization to create
+a thick gyroid TPMS (Triply Periodic Minimal Surface) from a cube mesh.
 
-A sphere defined by a signed distance function is extracted from a cube mesh,
-creating a high-quality mesh that exactly conforms to the zero isovalue.
+A gyroid is defined by: sin(kx)cos(ky) + sin(ky)cos(kz) + sin(kz)cos(kx) = 0
+
+For a "thick" gyroid shell, we use |f(x,y,z)| - thickness/2 as the level-set:
+- Large thickness (>=2.0): fills most of the cube (nearly solid)
+- Small thickness (~1.0): reveals the gyroid lattice structure
 
 Key insight: After level-set discretization, MMG creates:
-- Element refs: 2 (exterior), 3 (interior)
-- Triangle refs: 0 (boundary), 10 (isosurface)
+- Element refs: 2 (exterior/void), 3 (interior/solid)
 
-To visualize the sphere, extract triangles with ref 10 (the actual isosurface).
+To visualize the solid gyroid, extract the surface of ref=3 tetrahedra.
 """
 
 from pathlib import Path
@@ -38,224 +40,154 @@ def create_volumetric_cube_mesh(resolution: int = 10) -> tuple[np.ndarray, np.nd
     Unlike a surface mesh, this creates a grid of points throughout the volume,
     which is essential for level-set discretization to work properly.
     """
-    x = np.linspace(-1, 1, resolution)
-    y = np.linspace(-1, 1, resolution)
-    z = np.linspace(-1, 1, resolution)
+    x = np.linspace(-0.5, 0.5, resolution)
+    y = np.linspace(-0.5, 0.5, resolution)
+    z = np.linspace(-0.5, 0.5, resolution)
     xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
     points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
 
     cloud = pv.PolyData(points)
-    tetra = cloud.delaunay_3d()
+    tetra = cloud.delaunay_3d(progress_bar=True)
     vertices = np.array(tetra.points, dtype=np.float64)
     elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
     return vertices, elements
 
 
-def sphere_levelset(
+def gyroid_levelset(
     vertices: np.ndarray,
-    center: tuple[float, float, float] = (0, 0, 0),
-    radius: float = 0.7,
+    thickness: float = 0.5,
+    periods: float = 2.0,
 ) -> np.ndarray:
-    """Compute signed distance function for a sphere.
+    """Compute level-set for a thick gyroid TPMS.
 
-    Negative inside, positive outside.
-    Returns Nx1 array as required by remesh_levelset.
+    The gyroid surface is: sin(kx)cos(ky) + sin(ky)cos(kz) + sin(kz)cos(kx) = 0
+
+    For a thick shell, we use |f| - thickness/2 as the level-set:
+    - Negative inside the thick shell (solid material)
+    - Positive outside (void)
+
+    Args:
+        vertices: Nx3 array of vertex coordinates
+        thickness: Shell thickness (larger = more solid, smaller = reveals structure)
+        periods: Number of gyroid periods across the domain
+
+    Returns:
+        Nx1 array as required by remesh_levelset.
+
     """
-    distances = np.linalg.norm(vertices - np.array(center), axis=1)
-    return (distances - radius).reshape(-1, 1)
+    # Scale factor for the number of periods in [-1, 1] domain
+    k = 2.0 * np.pi * periods
+    x, y, z = vertices[:, 0] * k, vertices[:, 1] * k, vertices[:, 2] * k
+
+    # Gyroid function (ranges roughly from -1.5 to 1.5)
+    f = np.sin(x) * np.cos(y) + np.sin(y) * np.cos(z) + np.sin(z) * np.cos(x)
+
+    # Thick gyroid: |f| - thickness/2
+    # Negative inside the shell, positive outside
+    return (np.abs(f) - thickness / 2).reshape(-1, 1)
 
 
-def extract_isosurface(mesh: MmgMesh3D, isosurface_ref: int = 10) -> pv.PolyData:
-    """Extract the isosurface triangles created by level-set discretization.
+def extract_volume_surface(mesh: MmgMesh3D, element_ref: int = 3) -> pv.PolyData:
+    """Extract the surface of a volume region (tetrahedra with given ref).
 
     After level-set discretization, MMG assigns:
-    - ref 0: exterior boundary triangles (cube faces)
-    - ref 10: isosurface triangles (the sphere surface)
+    - Element ref 2: exterior (where level-set > 0, void)
+    - Element ref 3: interior (where level-set < 0, solid material)
 
-    This extracts only the actual isosurface, not domain boundaries.
+    This extracts the boundary surface of the solid material.
     """
     vertices = mesh.get_vertices()
-    triangles, refs = mesh.get_triangles_with_refs()
+    elements, elem_refs = mesh.get_elements_with_refs()
 
-    # Get only isosurface triangles
-    iso_triangles = triangles[refs == isosurface_ref]
+    # Get only tetrahedra with the target ref
+    target_tets = elements[elem_refs == element_ref]
 
-    if len(iso_triangles) == 0:
-        msg = f"No triangles with ref {isosurface_ref}. Refs: {np.unique(refs)}"
+    if len(target_tets) == 0:
+        msg = f"No elements with ref {element_ref}. Refs: {np.unique(elem_refs)}"
         raise ValueError(msg)
 
-    # Reindex vertices to only include used ones (for clean mesh)
-    used_indices = np.unique(iso_triangles.ravel())
-    new_vertices = vertices[used_indices]
-    old_to_new = {old: new for new, old in enumerate(used_indices)}
-    new_triangles = np.array([[old_to_new[v] for v in tri] for tri in iso_triangles])
-
-    # Create PolyData surface
-    faces = np.column_stack([np.full(len(new_triangles), 3), new_triangles])
-    return pv.PolyData(new_vertices, faces.ravel())
+    # Create unstructured grid and extract surface
+    grid = pv.UnstructuredGrid({pv.CellType.TETRA: target_tets}, vertices)
+    return grid.extract_surface()
 
 
-def verify_sphere(
-    surface: pv.PolyData,
-    expected_radius: float,
-    tolerance: float = 0.05,
-) -> bool:
-    """Verify that the surface is approximately a sphere of the expected radius."""
-    points = np.array(surface.points)
-    distances = np.linalg.norm(points, axis=1)
+def create_thick_gyroid(
+    vertices: np.ndarray,
+    elements: np.ndarray,
+    thickness: float,
+    periods: float = 2.0,
+    hmax: float = 0.12,
+) -> pv.PolyData:
+    """Create a thick gyroid TPMS mesh at the given thickness.
 
-    mean_dist = distances.mean()
-    std_dist = distances.std()
-
-    is_sphere = std_dist < tolerance and abs(mean_dist - expected_radius) < tolerance
-
-    print(f"Verification: mean radius = {mean_dist:.4f}, std = {std_dist:.4f}")
-    if is_sphere:
-        print(f"  SUCCESS: Surface is a sphere of radius ~{expected_radius}")
-    else:
-        print(f"  WARNING: Surface deviates from expected (r={expected_radius})")
-
-    return is_sphere
+    Returns the surface of the solid gyroid volume as a PyVista PolyData.
+    """
+    mesh = MmgMesh3D(vertices.copy(), elements.copy())
+    levelset = gyroid_levelset(vertices, thickness=thickness, periods=periods)
+    mesh.remesh_levelset(levelset, ls=0.0, hmax=hmax, verbose=True)
+    # Extract the solid material (interior, ref=3)
+    return extract_volume_surface(mesh, element_ref=3)
 
 
 def main() -> None:
-    """Demonstrate level-set discretization on a 3D mesh."""
-    radius = 0.7
+    """Demonstrate thick gyroid TPMS via level-set discretization.
+
+    Shows two gyroid structures side by side:
+    - Left: Large thickness (nearly solid cube)
+    - Right: Small thickness (reveals gyroid lattice)
+    """
+    # Thickness values to compare
+    thick = 2.0  # Large thickness - nearly solid cube
+    thin = 1.0  # Small thickness - reveals gyroid lattice structure
+    periods = 2.0  # Number of gyroid periods
 
     print("Creating volumetric cube mesh with interior points...")
-    vertices, elements = create_volumetric_cube_mesh(resolution=10)
-    print(f"Initial mesh: {len(vertices)} vertices, {len(elements)} tetrahedra")
+    vertices, elements = create_volumetric_cube_mesh(resolution=20)
+    print(f"Base mesh: {len(vertices)} vertices, {len(elements)} tetrahedra")
 
-    # Check we have interior points
-    levelset = sphere_levelset(vertices, center=(0, 0, 0), radius=radius)
-    n_inside = (levelset < 0).sum()
-    n_outside = (levelset >= 0).sum()
-    print(f"Level-set: {n_inside} vertices inside sphere, {n_outside} outside")
+    # Create thick gyroid (nearly solid)
+    print(f"\nCreating thick gyroid (thickness={thick})...")
+    thick_surface = create_thick_gyroid(vertices, elements, thick, periods)
+    n_tri, n_pts = thick_surface.n_cells, thick_surface.n_points
+    print(f"  Result: {n_tri} triangles, {n_pts} vertices")
 
-    if n_inside == 0:
-        print("ERROR: No vertices inside the sphere! Need a denser mesh.")
-        return
-
-    # Create mesh object and apply level-set discretization
-    mesh = MmgMesh3D(vertices, elements)
-    print("\nApplying level-set discretization...")
-    mesh.remesh_levelset(levelset, ls=0.0, hmax=0.1, verbose=False)
-
-    # Get results and verify
-    output_vertices = mesh.get_vertices()
-    output_elements, elem_refs = mesh.get_elements_with_refs()
-    n_verts, n_tets = len(output_vertices), len(output_elements)
-    print(f"Output mesh: {n_verts} vertices, {n_tets} tetrahedra")
-    ref_counts = dict(zip(*np.unique(elem_refs, return_counts=True), strict=False))
-    print(f"Element refs: {ref_counts}")
-
-    # Extract the sphere isosurface (ref 10 triangles)
-    print("\nExtracting sphere isosurface...")
-    sphere_surface = extract_isosurface(mesh, isosurface_ref=10)
-    n_tri, n_pts = sphere_surface.n_cells, sphere_surface.n_points
-    print(f"Sphere surface: {n_tri} triangles, {n_pts} vertices")
-
-    # Verify it's actually a sphere
-    verify_sphere(sphere_surface, radius)
+    # Create thin gyroid (lattice visible)
+    print(f"\nCreating thin gyroid (thickness={thin})...")
+    thin_surface = create_thick_gyroid(vertices, elements, thin, periods)
+    n_tri, n_pts = thin_surface.n_cells, thin_surface.n_points
+    print(f"  Result: {n_tri} triangles, {n_pts} vertices")
 
     # Visualization
-    original = pv.UnstructuredGrid({pv.CellType.TETRA: elements}, vertices)
-
-    pl = pv.Plotter(shape=(1, 2), window_size=(1200, 600))
+    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700), off_screen=True)
 
     pl.subplot(0, 0)
     pl.add_mesh(
-        original.extract_surface(),
+        thick_surface,
         show_edges=True,
-        opacity=0.3,
-        color="lightblue",
+        color="steelblue",
+        edge_color="darkblue",
+        line_width=0.5,
     )
-    pl.add_title("Original Cube Mesh")
+    pl.add_title(f"Thick Gyroid (t={thick})\nNearly solid cube")
 
     pl.subplot(0, 1)
     pl.add_mesh(
-        sphere_surface,
+        thin_surface,
         show_edges=True,
         color="coral",
+        edge_color="darkred",
+        line_width=0.5,
     )
-    pl.add_title(f"Extracted Sphere (r={radius})\nvia Level-Set Discretization")
+    pl.add_title(f"Thin Gyroid (t={thin})\nLattice structure revealed")
 
     pl.link_views()
-    pl.show()
+    pl.camera_position = [(2.5, 2.5, 2.5), (0, 0, 0), (0, 0, 1)]
 
-
-def create_animation_gif() -> None:
-    """Create animation showing sphere extraction at different isovalues."""
-    output_path = Path(__file__).parent / "levelset_animation.gif"
-
-    print("Creating animation of level-set discretization...")
-
-    # Create initial mesh - use coarser mesh for speed
-    vertices, elements = create_volumetric_cube_mesh(resolution=8)
-    print(f"Base mesh: {len(vertices)} vertices, {len(elements)} tetrahedra")
-
-    # Base sphere radius
-    base_radius = 0.5
-
-    # Fewer frames for faster generation
-    isovalues = np.concatenate(
-        [
-            np.linspace(-0.25, 0.25, 10),  # Grow
-            np.linspace(0.25, -0.25, 10),  # Shrink
-        ],
-    )
-
-    # Setup plotter
-    pl = pv.Plotter(off_screen=True, window_size=(500, 500))
-    pl.set_background("white")
-    pl.open_gif(str(output_path), fps=8)
-
-    for i, isovalue in enumerate(isovalues):
-        # Isosurface is at distance = base_radius + isovalue
-        effective_radius = base_radius + isovalue
-        print(f"  Frame {i + 1}/{len(isovalues)}: radius = {effective_radius:.2f}")
-
-        if effective_radius <= 0.15 or effective_radius >= 0.9:
-            continue
-
-        mesh = MmgMesh3D(vertices.copy(), elements.copy())
-        levelset = sphere_levelset(vertices, center=(0, 0, 0), radius=base_radius)
-
-        n_inside = (levelset < isovalue).sum()
-        if n_inside == 0 or n_inside == len(levelset):
-            continue
-
-        mesh.remesh_levelset(levelset, ls=isovalue, hmax=0.12, verbose=False)
-
-        try:
-            sphere_surface = extract_isosurface(mesh, isosurface_ref=10)
-        except ValueError:
-            continue
-
-        pl.clear()
-        pl.add_mesh(
-            sphere_surface,
-            show_edges=True,
-            color="coral",
-            edge_color="darkred",
-            line_width=0.5,
-        )
-        pl.add_title(
-            f"Level-Set Sphere Extraction\nRadius: {effective_radius:.2f}",
-            font_size=12,
-        )
-        # Fixed camera to show absolute scale (sphere inside unit cube)
-        pl.camera_position = [(2.5, 2.5, 2.5), (0, 0, 0), (0, 0, 1)]
-        pl.write_frame()
-
-    pl.close()
-    print(f"\nAnimation saved to: {output_path}")
+    # Save image
+    output_path = Path(__file__).parent / "levelset_discretization.png"
+    pl.screenshot(str(output_path))
+    print(f"\nImage saved to: {output_path}")
 
 
 if __name__ == "__main__":
-    import sys
-
-    if "--gif" in sys.argv:
-        create_animation_gif()
-    else:
-        main()
+    main()
