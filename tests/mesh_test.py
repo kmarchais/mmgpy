@@ -1319,6 +1319,200 @@ def test_mmg_mesh_2d_displacement_field() -> None:
     npt.assert_array_almost_equal(retrieved, displacement)
 
 
+# Element Attributes Tests
+
+
+def test_set_corners_3d() -> None:
+    """Test setting corner vertices for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    corner_indices = np.array([0, 2, 4, 6], dtype=np.int32)
+    mesh.set_corners(corner_indices)
+
+
+def test_set_required_vertices_3d() -> None:
+    """Test setting required vertices for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    required_indices = np.array([0, 1, 2, 3], dtype=np.int32)
+    mesh.set_required_vertices(required_indices)
+
+
+def test_set_ridge_edges_3d() -> None:
+    """Test setting ridge edges for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+
+    edges = np.array(
+        [
+            [0, 1],
+            [1, 2],
+            [2, 3],
+            [3, 0],
+        ],
+        dtype=np.int32,
+    )
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        tetrahedra=len(elements),
+        edges=len(edges),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+    mesh.set_edges(edges)
+
+    ridge_indices = np.array([0, 2], dtype=np.int32)
+    mesh.set_ridge_edges(ridge_indices)
+
+
+def test_set_corners_2d() -> None:
+    """Test setting corner vertices for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    corner_indices = np.array([0, 1, 2, 3], dtype=np.int32)
+    mesh.set_corners(corner_indices)
+
+
+def test_set_required_vertices_2d() -> None:
+    """Test setting required vertices for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    required_indices = np.array([0, 2], dtype=np.int32)
+    mesh.set_required_vertices(required_indices)
+
+
+def test_set_required_edges_2d() -> None:
+    """Test setting required edges for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+
+    edges = np.array(
+        [
+            [0, 1],
+            [1, 2],
+            [2, 3],
+            [3, 0],
+        ],
+        dtype=np.int32,
+    )
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        triangles=len(triangles),
+        edges=len(edges),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+    mesh.set_edges(edges)
+
+    required_edge_indices = np.array([0, 1], dtype=np.int32)
+    mesh.set_required_edges(required_edge_indices)
+
+
+def test_set_corners_surface() -> None:
+    """Test setting corner vertices for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    corner_indices = np.array([0, 1, 2, 3], dtype=np.int32)
+    mesh.set_corners(corner_indices)
+
+
+def test_set_required_vertices_surface() -> None:
+    """Test setting required vertices for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    required_indices = np.array([0, 2], dtype=np.int32)
+    mesh.set_required_vertices(required_indices)
+
+
+def test_set_ridge_edges_surface() -> None:
+    """Test setting ridge edges for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    edges = np.array(
+        [
+            [0, 1],
+            [1, 2],
+            [2, 3],
+            [3, 0],
+        ],
+        dtype=np.int32,
+    )
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(
+        vertices=len(vertices),
+        triangles=len(triangles),
+        edges=len(edges),
+    )
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+    mesh.set_edges(edges)
+
+    ridge_indices = np.array([0, 2], dtype=np.int32)
+    mesh.set_ridge_edges(ridge_indices)
+
+
+def test_element_attributes_invalid_indices() -> None:
+    """Test that invalid indices raise errors."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    with pytest.raises(RuntimeError, match="out of range"):
+        mesh.set_corners(np.array([100], dtype=np.int32))
+
+    with pytest.raises(RuntimeError, match="out of range"):
+        mesh.set_required_vertices(np.array([-1], dtype=np.int32))
+
+
+def test_element_attributes_empty_array() -> None:
+    """Test that empty arrays work correctly."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    mesh.set_corners(np.array([], dtype=np.int32))
+    mesh.set_required_vertices(np.array([], dtype=np.int32))
+
+
 if __name__ == "__main__":
     test_mesh_construction()
     test_mmg_mesh()
