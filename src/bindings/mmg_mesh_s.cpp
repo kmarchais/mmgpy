@@ -1,5 +1,7 @@
 #include "mmg_mesh_s.hpp"
 #include "mmg_common.hpp"
+#include <cmath>
+#include <set>
 #include <stdexcept>
 
 namespace {
@@ -528,6 +530,148 @@ void MmgMeshS::set_ridge_edges(const py::array_t<int> &edge_indices) {
                                std::to_string(idx));
     }
   }
+}
+
+// Topology queries
+
+py::array_t<int> MmgMeshS::get_adjacent_elements(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nt) {
+    throw std::runtime_error("Element index out of range: " +
+                             std::to_string(idx));
+  }
+
+  MMG5_int listri[3];
+  if (!MMGS_Get_adjaTri(mesh, mmg_idx, listri)) {
+    throw std::runtime_error("Failed to get adjacent elements for index " +
+                             std::to_string(idx));
+  }
+
+  py::array_t<int> result(3);
+  auto buf = result.request();
+  int *ptr = static_cast<int *>(buf.ptr);
+
+  for (int i = 0; i < 3; i++) {
+    ptr[i] = listri[i] > 0 ? static_cast<int>(listri[i] - 1) : -1;
+  }
+
+  return result;
+}
+
+py::array_t<int> MmgMeshS::get_vertex_neighbors(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->np) {
+    throw std::runtime_error("Vertex index out of range: " +
+                             std::to_string(idx));
+  }
+
+  // Manual implementation: iterate through triangles to find neighbors
+  // since MMGS_Get_adjaVerticesFast requires adjacency tables that may not
+  // exist
+  std::set<MMG5_int> neighbors;
+
+  for (MMG5_int k = 1; k <= mesh->nt; k++) {
+    MMG5_pTria pt = &mesh->tria[k];
+    if (!pt->v[0])
+      continue;
+
+    bool found = false;
+    for (int i = 0; i < 3; i++) {
+      if (pt->v[i] == mmg_idx) {
+        found = true;
+        break;
+      }
+    }
+
+    if (found) {
+      for (int i = 0; i < 3; i++) {
+        if (pt->v[i] != mmg_idx) {
+          neighbors.insert(pt->v[i]);
+        }
+      }
+    }
+  }
+
+  py::array_t<int> result(static_cast<py::ssize_t>(neighbors.size()));
+  auto buf = result.request();
+  int *ptr = static_cast<int *>(buf.ptr);
+
+  py::ssize_t j = 0;
+  for (MMG5_int v : neighbors) {
+    ptr[j++] = static_cast<int>(v - 1);
+  }
+
+  return result;
+}
+
+// Compute triangle quality manually since MMGS_Get_triangleQuality
+// is not properly exported on Windows DLL
+static double compute_triangle_quality(MMG5_pMesh mesh, MMG5_int k) {
+  MMG5_pTria pt = &mesh->tria[k];
+  MMG5_pPoint p0 = &mesh->point[pt->v[0]];
+  MMG5_pPoint p1 = &mesh->point[pt->v[1]];
+  MMG5_pPoint p2 = &mesh->point[pt->v[2]];
+
+  // Compute edge vectors
+  double ax = p1->c[0] - p0->c[0];
+  double ay = p1->c[1] - p0->c[1];
+  double az = p1->c[2] - p0->c[2];
+  double bx = p2->c[0] - p0->c[0];
+  double by = p2->c[1] - p0->c[1];
+  double bz = p2->c[2] - p0->c[2];
+  double cx = p2->c[0] - p1->c[0];
+  double cy = p2->c[1] - p1->c[1];
+  double cz = p2->c[2] - p1->c[2];
+
+  // Compute edge lengths squared
+  double a2 = ax * ax + ay * ay + az * az;
+  double b2 = bx * bx + by * by + bz * bz;
+  double c2 = cx * cx + cy * cy + cz * cz;
+
+  // Compute cross product for area
+  double nx = ay * bz - az * by;
+  double ny = az * bx - ax * bz;
+  double nz = ax * by - ay * bx;
+  double area2 = nx * nx + ny * ny + nz * nz;
+
+  if (area2 < 1e-30) {
+    return 0.0;
+  }
+
+  // Quality = 4 * sqrt(3) * area / (a^2 + b^2 + c^2)
+  // This is the standard triangle quality metric (ratio to equilateral)
+  double sum_edges = a2 + b2 + c2;
+  if (sum_edges < 1e-30) {
+    return 0.0;
+  }
+
+  return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
+}
+
+double MmgMeshS::get_element_quality(MMG5_int idx) const {
+  MMG5_int mmg_idx = idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nt) {
+    throw std::runtime_error("Element index out of range: " +
+                             std::to_string(idx));
+  }
+
+  return compute_triangle_quality(mesh, mmg_idx);
+}
+
+py::array_t<double> MmgMeshS::get_element_qualities() const {
+  MMG5_int nt = mesh->nt;
+  py::array_t<double> result(nt);
+  auto buf = result.request();
+  double *ptr = static_cast<double *>(buf.ptr);
+
+  for (MMG5_int i = 0; i < nt; i++) {
+    ptr[i] = compute_triangle_quality(mesh, i + 1);
+  }
+
+  return result;
 }
 
 void MmgMeshS::set_field(const std::string &field_name,

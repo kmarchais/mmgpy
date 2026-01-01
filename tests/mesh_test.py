@@ -1513,6 +1513,246 @@ def test_element_attributes_empty_array() -> None:
     mesh.set_required_vertices(np.array([], dtype=np.int32))
 
 
+# Topology Query Tests
+
+
+def test_get_adjacent_elements_3d() -> None:
+    """Test getting adjacent elements for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Test for the center tetrahedron (index 4) which shares faces with others
+    adjacent = mesh.get_adjacent_elements(4)
+    assert adjacent.shape == (4,), "Should return 4 adjacent elements (one per face)"
+    assert adjacent.dtype == np.int32
+
+    # -1 indicates boundary (no neighbor on that face)
+    # Valid neighbors are 0-based indices
+    for idx in adjacent:
+        assert idx >= -1
+        assert idx < len(elements)
+
+
+def test_get_vertex_neighbors_3d() -> None:
+    """Test getting vertex neighbors for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Test for vertex 3 which is connected to multiple tetrahedra
+    neighbors = mesh.get_vertex_neighbors(3)
+    assert neighbors.dtype == np.int32
+    assert len(neighbors) > 0, "Vertex should have neighbors"
+
+    # All neighbors should be valid vertex indices
+    for idx in neighbors:
+        assert idx >= 0
+        assert idx < len(vertices)
+
+    # Vertex 3 is not in its own neighbors
+    assert 3 not in neighbors
+
+
+def test_get_element_quality_3d() -> None:
+    """Test getting element quality for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Test quality for each element
+    for i in range(len(elements)):
+        quality = mesh.get_element_quality(i)
+        assert isinstance(quality, float)
+        # Quality should be a positive value
+        assert quality >= 0.0
+
+
+def test_get_element_qualities_3d() -> None:
+    """Test getting all element qualities for MmgMesh3D."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    qualities = mesh.get_element_qualities()
+    assert qualities.shape == (len(elements),)
+    assert qualities.dtype == np.float64
+
+    # All qualities should be non-negative
+    assert np.all(qualities >= 0.0)
+
+
+def test_get_adjacent_elements_2d() -> None:
+    """Test getting adjacent elements for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    # Test for first triangle
+    adjacent = mesh.get_adjacent_elements(0)
+    assert adjacent.shape == (3,), "Should return 3 adjacent elements (one per edge)"
+    assert adjacent.dtype == np.int32
+
+    for idx in adjacent:
+        assert idx >= -1
+        assert idx < len(triangles)
+
+
+def test_get_vertex_neighbors_2d() -> None:
+    """Test getting vertex neighbors for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    # Test for vertex 0 at corner of square
+    neighbors = mesh.get_vertex_neighbors(0)
+    assert neighbors.dtype == np.int32
+    assert len(neighbors) > 0
+
+    for idx in neighbors:
+        assert idx >= 0
+        assert idx < len(vertices)
+
+    assert 0 not in neighbors
+
+
+def test_get_element_quality_2d() -> None:
+    """Test getting element quality for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    for i in range(len(triangles)):
+        quality = mesh.get_element_quality(i)
+        assert isinstance(quality, float)
+        assert quality >= 0.0
+
+
+def test_get_element_qualities_2d() -> None:
+    """Test getting all element qualities for MmgMesh2D."""
+    vertices, triangles = create_2d_test_mesh()
+
+    mesh = MmgMesh2D()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    qualities = mesh.get_element_qualities()
+    assert qualities.shape == (len(triangles),)
+    assert qualities.dtype == np.float64
+    assert np.all(qualities >= 0.0)
+
+
+def test_get_adjacent_elements_surface() -> None:
+    """Test getting adjacent elements for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    adjacent = mesh.get_adjacent_elements(0)
+    assert adjacent.shape == (3,)
+    assert adjacent.dtype == np.int32
+
+    for idx in adjacent:
+        assert idx >= -1
+        assert idx < len(triangles)
+
+
+def test_get_vertex_neighbors_surface() -> None:
+    """Test getting vertex neighbors for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    neighbors = mesh.get_vertex_neighbors(0)
+    assert neighbors.dtype == np.int32
+    assert len(neighbors) > 0
+
+    for idx in neighbors:
+        assert idx >= 0
+        assert idx < len(vertices)
+
+    assert 0 not in neighbors
+
+
+def test_get_element_quality_surface() -> None:
+    """Test getting element quality for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    for i in range(len(triangles)):
+        quality = mesh.get_element_quality(i)
+        assert isinstance(quality, float)
+        assert quality >= 0.0
+
+
+def test_get_element_qualities_surface() -> None:
+    """Test getting all element qualities for MmgMeshS."""
+    vertices, triangles = create_surface_test_mesh()
+
+    mesh = MmgMeshS()
+    mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+    mesh.set_vertices(vertices)
+    mesh.set_triangles(triangles)
+
+    qualities = mesh.get_element_qualities()
+    assert qualities.shape == (len(triangles),)
+    assert qualities.dtype == np.float64
+    assert np.all(qualities >= 0.0)
+
+
+def test_topology_queries_invalid_indices() -> None:
+    """Test that invalid indices raise errors for topology queries."""
+    vertices, elements = create_test_mesh()
+
+    mesh = MmgMesh3D()
+    mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+    mesh.set_vertices(vertices)
+    mesh.set_tetrahedra(elements)
+
+    # Out of range element index
+    with pytest.raises(RuntimeError, match="out of range"):
+        mesh.get_adjacent_elements(100)
+
+    with pytest.raises(RuntimeError, match="out of range"):
+        mesh.get_element_quality(100)
+
+    # Out of range vertex index
+    with pytest.raises(RuntimeError, match="out of range"):
+        mesh.get_vertex_neighbors(100)
+
+
 if __name__ == "__main__":
     test_mesh_construction()
     test_mmg_mesh()

@@ -14,14 +14,6 @@
 
 ### 🟠 High Priority
 
-#### Topology Queries
-
-```python
-mesh.get_adjacent_elements(idx)
-mesh.get_vertex_neighbors(idx)
-mesh.get_element_quality(idx)
-```
-
 #### Level-Set Discretization
 
 ```python
