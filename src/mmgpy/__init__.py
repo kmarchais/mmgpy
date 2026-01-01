@@ -365,6 +365,7 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
 
 
 from . import lagrangian, metrics, progress
+from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import ProgressEvent, rich_progress
 from ._pyvista import add_pyvista_methods, from_pyvista, to_pyvista
 from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
@@ -372,11 +373,68 @@ from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacem
 # Add from_pyvista/to_pyvista methods to mesh classes
 add_pyvista_methods()
 
+
+def _add_convenience_methods() -> None:
+    """Add convenience remeshing methods to mesh classes."""
+
+    def _remesh_optimize(self: object, *, verbose: int | None = None) -> None:
+        """Optimize mesh quality without changing topology.
+
+        Only moves vertices to improve element quality.
+        No points are inserted or removed.
+
+        Parameters
+        ----------
+        verbose : int | None
+            Verbosity level (-1=silent, 0=errors, 1=info).
+
+        """
+        opts: dict[str, int] = {"optim": 1, "noinsert": 1}
+        if verbose is not None:
+            opts["verbose"] = verbose
+        self.remesh(**opts)  # type: ignore[attr-defined]
+
+    def _remesh_uniform(
+        self: object,
+        size: float,
+        *,
+        verbose: int | None = None,
+    ) -> None:
+        """Remesh with uniform element size.
+
+        Parameters
+        ----------
+        size : float
+            Target edge size for all elements.
+        verbose : int | None
+            Verbosity level (-1=silent, 0=errors, 1=info).
+
+        """
+        opts: dict[str, float | int] = {"hsiz": size}
+        if verbose is not None:
+            opts["verbose"] = verbose
+        self.remesh(**opts)  # type: ignore[attr-defined]
+
+    MmgMesh3D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
+    MmgMesh3D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+
+    MmgMesh2D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
+    MmgMesh2D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+
+    MmgMeshS.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
+    MmgMeshS.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+
+
+_add_convenience_methods()
+
 __all__ = [
     "MMG_VERSION",
+    "Mmg2DOptions",
+    "Mmg3DOptions",
     "MmgMesh2D",
     "MmgMesh3D",
     "MmgMeshS",
+    "MmgSOptions",
     "ProgressEvent",
     "__version__",
     "detect_boundary_vertices",
