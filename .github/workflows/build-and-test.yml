@@ -10,8 +10,8 @@ on:
 
 env:
   VTK_VERSION_MAJOR: 9
-  VTK_VERSION_MINOR: 3
-  VTK_VERSION_PATCH: 1
+  VTK_VERSION_MINOR: 5
+  VTK_VERSION_PATCH: 2
 
 jobs:
   build-and-test:
