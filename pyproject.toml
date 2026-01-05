@@ -148,7 +148,8 @@ unresolved-import = "ignore"
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 build = "cp310-* cp311-* cp312-* cp313-*"
-skip = "*-win32 *-manylinux_i686"
+# Skip 32-bit builds and musllinux (VTK doesn't provide musllinux wheels)
+skip = "*-win32 *-manylinux_i686 *-musllinux*"
 test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
 
@@ -173,7 +174,8 @@ before-all = [
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
     'VTK_ARCH=$(uname -m)',
     'echo "VTK_ARCH=${VTK_ARCH}"',
-    'if echo "${AUDITWHEEL_PLAT}" | grep -q musllinux; then VTK_FILE="vtk-musllinux_1_2_${VTK_ARCH}.tar.gz"; else VTK_FILE="vtk-manylinux2014_${VTK_ARCH}.tar.gz"; fi',
+    # Use manylinux2014 VTK builds (works on both 2014 and 2_28 containers)
+    'VTK_FILE="vtk-manylinux2014_${VTK_ARCH}.tar.gz"',
     'echo "VTK_FILE=${VTK_FILE}"',
     'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
     'echo "VTK_URL=${VTK_URL}"',
