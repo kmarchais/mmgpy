@@ -194,7 +194,9 @@ before-all = [
     'cd /tmp/vtk',
     'mkdir -p /tmp/vtk/include/vtk-9.5',
     'if [ -d "/tmp/vtk/vtk-9.5" ]; then cp -r /tmp/vtk/vtk-9.5/* /tmp/vtk/include/vtk-9.5/; fi',
-    'cp -r /tmp/vtk/lib64/* /tmp/lib/ 2>/dev/null || mkdir -p /tmp/lib && cp -r /tmp/vtk/lib64/* /tmp/lib/',
+    # VTK cmake config expects /tmp/lib64, so symlink it
+    'rm -rf /tmp/lib64 && ln -s /tmp/vtk/lib64 /tmp/lib64',
+    'rm -rf /tmp/lib && ln -s /tmp/vtk/lib64 /tmp/lib',
     'mkdir -p /tmp/vtk/bin',
     'ln -sf /tmp/vtk/bin /tmp/bin || echo "bin symlink already exists"',
     'ln -sf /tmp/vtk/include /tmp/include || echo "include symlink already exists"',
