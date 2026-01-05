@@ -18,7 +18,13 @@ jobs:
       matrix:
         include:
           - arch: x86_64
+            image: manylinux2014
           - arch: aarch64
+            image: manylinux2014
+          - arch: x86_64
+            image: musllinux_1_2
+          - arch: aarch64
+            image: musllinux_1_2
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -26,21 +32,22 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.arch }}
-      - name: Build ${{ matrix.arch }} wheels
+      - name: Build ${{ matrix.image }} ${{ matrix.arch }} wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
           CIBW_ARCHS_LINUX: ${{ matrix.arch }}
+          CIBW_SKIP: ${{ matrix.image == 'manylinux2014' && '*-musllinux*' || '*-manylinux*' }}
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.arch }}
+          name: wheels-linux-${{ matrix.image }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
           retention-days: 30
       - name: Report wheel sizes
         shell: bash
         run: |
-          echo "## Wheel Sizes for Linux ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Wheel Sizes for Linux ${{ matrix.image }} ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
           echo "| Wheel | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
           for wheel in wheelhouse/*.whl; do
