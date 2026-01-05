@@ -145,7 +145,13 @@ jobs:
           retention-days: 30
 
   publish-to-pypi:
-    needs: [build-wheels-linux, build-wheels-windows, build-wheels-macos, build-sdist]
+    needs:
+      [
+        build-wheels-linux,
+        build-wheels-windows,
+        build-wheels-macos,
+        build-sdist,
+      ]
     runs-on: ubuntu-latest
     name: Publish to PyPI
     if: github.event_name == 'release' && github.event.action == 'published'
