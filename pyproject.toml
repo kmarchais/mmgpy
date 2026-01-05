@@ -170,7 +170,7 @@ before-all = [
     'VTK_VERSION="9.5.2"',
     'VTK_MAJOR_MINOR="9.5"',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
-    'if [[ "${BUILD_ARCH}" == "x86_64" ]]; then VTK_ARCH="x86_64"; else VTK_ARCH="aarch64"; fi',
+    'VTK_ARCH=$(uname -m)',
     'if echo "${AUDITWHEEL_PLAT}" | grep -q musllinux; then VTK_FILE="vtk-musllinux_1_2_${VTK_ARCH}.tar.gz"; else VTK_FILE="vtk-manylinux2014_${VTK_ARCH}.tar.gz"; fi',
     'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
