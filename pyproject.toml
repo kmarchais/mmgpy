@@ -148,7 +148,7 @@ unresolved-import = "ignore"
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 build = "cp310-* cp311-* cp312-* cp313-*"
-skip = "*-win32 *-manylinux_i686 *-musllinux*"
+skip = "*-win32 *-manylinux_i686"
 test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
 
@@ -165,11 +165,13 @@ select = "*-macosx*"
 environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include" }
 
 [tool.cibuildwheel.linux]
-archs = ["x86_64"]
+archs = ["x86_64", "aarch64"]
 before-all = [
     'VTK_VERSION="9.5.2"',
+    'VTK_MAJOR_MINOR="9.5"',
     'RELEASE_TAG="VTK-${VTK_VERSION}-shared"',
-    'VTK_FILE="vtk-manylinux2014_x86_64.tar.gz"',
+    'if [[ "${BUILD_ARCH}" == "x86_64" ]]; then VTK_ARCH="x86_64"; else VTK_ARCH="aarch64"; fi',
+    'if echo "${AUDITWHEEL_PLAT}" | grep -q musllinux; then VTK_FILE="vtk-musllinux_1_2_${VTK_ARCH}.tar.gz"; else VTK_FILE="vtk-manylinux2014_${VTK_ARCH}.tar.gz"; fi',
     'VTK_URL="https://github.com/sanguinariojoe/vtk-builds/releases/download/${RELEASE_TAG}/${VTK_FILE}"',
     'curl -L -o vtk.tar.gz "${VTK_URL}"',
     'mkdir -p /tmp/vtk',
@@ -194,7 +196,7 @@ environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "
 repair-wheel-command = "if [ ! -d /tmp/vtk-filtered ]; then cp -r /tmp/vtk/lib64 /tmp/vtk-filtered && python3 /project/scripts/filter_vtk.py /tmp/vtk-filtered; fi && LD_LIBRARY_PATH=/tmp/vtk-filtered:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -c%s \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
 
 [tool.cibuildwheel.macos]
-archs = ["auto"]
+archs = ["arm64"]
 before-all = [
     'VTK_VERSION="9.5.2"',
     'VTK_ARCH=$(uname -m)',
