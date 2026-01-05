@@ -166,8 +166,6 @@ environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64", "aarch64"]
-musllinux-images = { x86_64 = "quay.io/pypa/musllinux_1_2_x86_64:2025.11.09-2", i686 = "quay.io/pypa/musllinux_1_2_i686:2025.11.09-2", aarch64 = "quay.io/pypa/musllinux_1_2_aarch64:2025.11.09-2", ppc64le = "quay.io/pypa/musllinux_1_2_ppc64le:2025.11.09-2", s390x = "quay.io/pypa/musllinux_1_2_s390x:2025.11.09-2", armv7l = "quay.io/pypa/musllinux_1_2_armv7l:2025.11.09-2", riscv64 = "quay.io/pypa/musllinux_1_2_riscv64:2025.11.09-2" }
-manylinux-images = { x86_64 = "quay.io/pypa/manylinux2014_x86_64:2025.11.09-2", i686 = "quay.io/pypa/manylinux2014_i686:2025.11.09-2", pypy_x86_64 = "quay.io/pypa/manylinux2014_x86_64:2025.11.09-2", aarch64 = "quay.io/pypa/manylinux2014_aarch64:2025.11.09-2", ppc64le = "quay.io/pypa/manylinux2014_ppc64le:2025.11.09-2", s390x = "quay.io/pypa/manylinux2014_s390x:2025.11.09-2", armv7l = "quay.io/pypa/manylinux2_31_armv7l:2025.11.09-2", riscv64 = "quay.io/pypa/manylinux2_39_riscv64:2025.11.09-2", pypy_aarch64 = "quay.io/pypa/manylinux2014_aarch64:2025.11.09-2", pypy_i686 = "quay.io/pypa/manylinux2014_i686:2025.11.09-2" }
 before-all = [
     'VTK_VERSION="9.5.2"',
     'VTK_MAJOR_MINOR="9.5"',
