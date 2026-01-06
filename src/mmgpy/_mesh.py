@@ -706,4 +706,7 @@ class Mesh:
         return self._impl.to_pyvista(include_refs=include_refs)  # type: ignore[return-value]
 
 
-__all__ = ["Mesh", "MeshKind"]
+__all__ = [
+    "Mesh",
+    "MeshKind",
+]

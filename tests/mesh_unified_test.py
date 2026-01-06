@@ -434,6 +434,73 @@ class TestReadFunction:
         assert isinstance(result, Mesh)
         assert result.kind == MeshKind.TETRAHEDRAL
 
+    def test_read_with_forced_mesh_kind(
+        self,
+        triangle_3d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test read() with forced mesh_kind parameter."""
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.vtk"
+            # This would auto-detect as TRIANGULAR_SURFACE due to 3D coords
+            meshio.Mesh(triangle_3d_vertices, [("triangle", triangle_cells)]).write(
+                filepath,
+            )
+
+            # Force it to be read as 2D (vertices will be projected to 2D)
+            result = read(filepath, mesh_kind=MeshKind.TRIANGULAR_2D)
+
+            assert isinstance(result, Mesh)
+            assert result.kind == MeshKind.TRIANGULAR_2D
+            # Vertices should be 2D
+            assert result.get_vertices().shape[1] == 2
+
+    def test_read_unsupported_element_type_raises(self) -> None:
+        """Test read() raises for unsupported element types like hexahedra."""
+        vertices = np.array(
+            [
+                [0, 0, 0],
+                [1, 0, 0],
+                [1, 1, 0],
+                [0, 1, 0],
+                [0, 0, 1],
+                [1, 0, 1],
+                [1, 1, 1],
+                [0, 1, 1],
+            ],
+            dtype=np.float64,
+        )
+        hexahedra = np.array([[0, 1, 2, 3, 4, 5, 6, 7]], dtype=np.int32)
+
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "hex_mesh.vtk"
+            meshio.Mesh(vertices, [("hexahedron", hexahedra)]).write(filepath)
+
+            with pytest.raises(ValueError, match="Unsupported element types"):
+                read(filepath)
+
+    def test_read_multiple_triangle_blocks(
+        self,
+        triangle_3d_vertices: np.ndarray,
+    ) -> None:
+        """Test read() concatenates multiple triangle blocks."""
+        # Create two separate triangle blocks
+        tri_block1 = np.array([[0, 1, 2]], dtype=np.int32)
+        tri_block2 = np.array([[0, 2, 1]], dtype=np.int32)
+
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.vtk"
+            meshio.Mesh(
+                triangle_3d_vertices,
+                [("triangle", tri_block1), ("triangle", tri_block2)],
+            ).write(filepath)
+
+            result = read(filepath)
+
+            assert isinstance(result, Mesh)
+            # Should have 2 triangles from concatenated blocks
+            assert len(result.get_triangles()) == 2
+
 
 # Module exports test
 

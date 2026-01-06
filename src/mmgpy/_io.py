@@ -21,24 +21,29 @@ Example:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import meshio
 import numpy as np
 import pyvista as pv
 
+from mmgpy._mesh import _DIMS_3D, MeshKind, _is_2d_points
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
+    from mmgpy._mesh import Mesh
 
-    from mmgpy._mesh import Mesh, MeshKind
-
-# Element types that indicate volumetric 3D meshes
+# Element types that indicate volumetric 3D meshes (only tetrahedra supported by MMG)
 _VOLUME_CELL_TYPES = frozenset(
     {
         "tetra",
         "tetra10",
+    },
+)
+
+# Element types that would be volumetric but are NOT supported by MMG
+_UNSUPPORTED_VOLUME_TYPES = frozenset(
+    {
         "hexahedron",
         "hexahedron20",
         "hexahedron27",
@@ -60,45 +65,41 @@ _SURFACE_CELL_TYPES = frozenset(
     },
 )
 
-_DIMS_2D = 2
-_DIMS_3D = 3
-_2D_DETECTION_TOLERANCE = 1e-8
 
-MeshType = Literal["2d", "3d", "surface"]
-
-
-def _is_2d_points(points: NDArray[np.floating]) -> bool:
-    """Check if points are essentially 2D (z coordinates are zero or near-zero)."""
-    if points.shape[1] == _DIMS_2D:
-        return True
-    if points.shape[1] == _DIMS_3D:
-        z_coords = points[:, 2]
-        return bool(np.allclose(z_coords, 0, atol=_2D_DETECTION_TOLERANCE))
-    return False
-
-
-def _detect_mesh_type(mesh: meshio.Mesh) -> MeshType:
-    """Detect mesh type from meshio mesh based on cell types and point dimensions.
+def _detect_mesh_kind(mesh: meshio.Mesh) -> MeshKind:
+    """Detect mesh kind from meshio mesh based on cell types and point dimensions.
 
     Returns:
-        "3d" for volumetric meshes (tetrahedra, hexahedra, etc.)
-        "surface" for 3D surface meshes (triangles in 3D space)
-        "2d" for planar 2D meshes (triangles with 2D or z≈0 coordinates)
+        MeshKind.TETRAHEDRAL for volumetric meshes with tetrahedra
+        MeshKind.TRIANGULAR_SURFACE for 3D surface meshes (triangles in 3D space)
+        MeshKind.TRIANGULAR_2D for planar 2D meshes (triangles with z≈0)
+
+    Raises:
+        ValueError: If mesh contains unsupported element types (hexahedra, etc.)
 
     """
     cell_types = {block.type for block in mesh.cells}
 
-    # Check for volumetric elements
+    # Check for unsupported volumetric elements
+    unsupported = cell_types & _UNSUPPORTED_VOLUME_TYPES
+    if unsupported:
+        msg = (
+            f"Unsupported element types: {unsupported}. "
+            "MMG only supports tetrahedral (3D), triangular (2D/surface) meshes."
+        )
+        raise ValueError(msg)
+
+    # Check for supported volumetric elements (tetrahedra)
     if cell_types & _VOLUME_CELL_TYPES:
-        return "3d"
+        return MeshKind.TETRAHEDRAL
 
     # Check for surface elements
     if cell_types & _SURFACE_CELL_TYPES:
         if _is_2d_points(mesh.points):
-            return "2d"
-        return "surface"
+            return MeshKind.TRIANGULAR_2D
+        return MeshKind.TRIANGULAR_SURFACE
 
-    msg = f"Cannot determine mesh type from cell types: {cell_types}"
+    msg = f"Cannot determine mesh kind from cell types: {cell_types}"
     raise ValueError(msg)
 
 
@@ -106,16 +107,18 @@ def _meshio_to_mmg3d(mesh: meshio.Mesh) -> MmgMesh3D:
     """Convert meshio mesh to MmgMesh3D."""
     vertices = np.ascontiguousarray(mesh.points, dtype=np.float64)
 
-    # Find tetrahedra
-    tetrahedra = None
-    for block in mesh.cells:
-        if block.type == "tetra":
-            tetrahedra = np.ascontiguousarray(block.data, dtype=np.int32)
-            break
+    # Collect all tetrahedra blocks
+    tetra_blocks = [block.data for block in mesh.cells if block.type == "tetra"]
 
-    if tetrahedra is None:
+    if not tetra_blocks:
         msg = "No tetrahedra found in mesh"
         raise ValueError(msg)
+
+    # Concatenate all tetrahedra blocks
+    tetrahedra = np.ascontiguousarray(
+        np.vstack(tetra_blocks) if len(tetra_blocks) > 1 else tetra_blocks[0],
+        dtype=np.int32,
+    )
 
     return MmgMesh3D(vertices, tetrahedra)
 
@@ -130,16 +133,18 @@ def _meshio_to_mmg2d(mesh: meshio.Mesh) -> MmgMesh2D:
     else:
         vertices = np.ascontiguousarray(points, dtype=np.float64)
 
-    # Find triangles
-    triangles = None
-    for block in mesh.cells:
-        if block.type == "triangle":
-            triangles = np.ascontiguousarray(block.data, dtype=np.int32)
-            break
+    # Collect all triangle blocks
+    tri_blocks = [block.data for block in mesh.cells if block.type == "triangle"]
 
-    if triangles is None:
+    if not tri_blocks:
         msg = "No triangles found in mesh"
         raise ValueError(msg)
+
+    # Concatenate all triangle blocks
+    triangles = np.ascontiguousarray(
+        np.vstack(tri_blocks) if len(tri_blocks) > 1 else tri_blocks[0],
+        dtype=np.int32,
+    )
 
     return MmgMesh2D(vertices, triangles)
 
@@ -148,42 +153,44 @@ def _meshio_to_mmgs(mesh: meshio.Mesh) -> MmgMeshS:
     """Convert meshio mesh to MmgMeshS."""
     vertices = np.ascontiguousarray(mesh.points, dtype=np.float64)
 
-    # Find triangles
-    triangles = None
-    for block in mesh.cells:
-        if block.type == "triangle":
-            triangles = np.ascontiguousarray(block.data, dtype=np.int32)
-            break
+    # Collect all triangle blocks
+    tri_blocks = [block.data for block in mesh.cells if block.type == "triangle"]
 
-    if triangles is None:
+    if not tri_blocks:
         msg = "No triangles found in mesh"
         raise ValueError(msg)
+
+    # Concatenate all triangle blocks
+    triangles = np.ascontiguousarray(
+        np.vstack(tri_blocks) if len(tri_blocks) > 1 else tri_blocks[0],
+        dtype=np.int32,
+    )
 
     return MmgMeshS(vertices, triangles)
 
 
 def _convert_meshio(
     mesh: meshio.Mesh,
-    mesh_type: MeshType | None,
+    mesh_kind: MeshKind | None,
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Convert meshio mesh to appropriate mmgpy mesh type."""
-    if mesh_type is None:
-        mesh_type = _detect_mesh_type(mesh)
+    if mesh_kind is None:
+        mesh_kind = _detect_mesh_kind(mesh)
 
-    if mesh_type == "3d":
+    if mesh_kind == MeshKind.TETRAHEDRAL:
         return _meshio_to_mmg3d(mesh)
-    if mesh_type == "2d":
+    if mesh_kind == MeshKind.TRIANGULAR_2D:
         return _meshio_to_mmg2d(mesh)
-    if mesh_type == "surface":
+    if mesh_kind == MeshKind.TRIANGULAR_SURFACE:
         return _meshio_to_mmgs(mesh)
 
-    msg = f"Unknown mesh_type: {mesh_type}"
+    msg = f"Unknown mesh_kind: {mesh_kind}"
     raise ValueError(msg)
 
 
 def read(
     source: str | Path | pv.UnstructuredGrid | pv.PolyData,
-    mesh_type: MeshType | None = None,
+    mesh_kind: MeshKind | None = None,
 ) -> Mesh:
     """Read a mesh from a file or PyVista object.
 
@@ -193,21 +200,21 @@ def read(
 
     Args:
         source: File path (str or Path) or PyVista mesh object.
-        mesh_type: Force a specific mesh type instead of auto-detection.
-            - "3d": Return Mesh with TETRAHEDRAL kind
-            - "2d": Return Mesh with TRIANGULAR_2D kind
-            - "surface": Return Mesh with TRIANGULAR_SURFACE kind
+        mesh_kind: Force a specific mesh kind instead of auto-detection.
+            - MeshKind.TETRAHEDRAL: 3D volumetric mesh
+            - MeshKind.TRIANGULAR_2D: 2D planar mesh
+            - MeshKind.TRIANGULAR_SURFACE: 3D surface mesh
             - None: Auto-detect based on element types and coordinates
 
     Returns:
         A Mesh instance with the appropriate kind.
 
     Raises:
-        ValueError: If mesh type cannot be determined or file cannot be read.
+        ValueError: If mesh kind cannot be determined or file cannot be read.
         TypeError: If source type is not supported.
 
     Auto-detection logic:
-        - Has tetrahedra/hexahedra → TETRAHEDRAL
+        - Has tetrahedra → TETRAHEDRAL
         - Has triangles + 3D coords → TRIANGULAR_SURFACE
         - Has triangles + 2D coords (or z≈0) → TRIANGULAR_2D
 
@@ -223,9 +230,12 @@ def read(
     Example:
         >>> import mmgpy
         >>>
-        >>> # Auto-detect mesh type from file
+        >>> # Auto-detect mesh kind from file
         >>> mesh = mmgpy.read("tetra_mesh.vtk")
         >>> mesh.kind  # MeshKind.TETRAHEDRAL
+        >>>
+        >>> # Force specific mesh kind
+        >>> mesh = mmgpy.read("mesh.vtk", mesh_kind=MeshKind.TRIANGULAR_SURFACE)
         >>>
         >>> # Read from PyVista object
         >>> import pyvista as pv
@@ -239,7 +249,7 @@ def read(
 
     # Handle PyVista objects
     if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
-        mesh_class = _mesh_type_to_class(mesh_type) if mesh_type else None
+        mesh_class = _mesh_kind_to_class(mesh_kind) if mesh_kind else None
         impl = from_pyvista(source, mesh_class)
         kind = _impl_to_kind(impl)
         return Mesh._from_impl(impl, kind)  # noqa: SLF001
@@ -252,7 +262,7 @@ def read(
             raise FileNotFoundError(msg)
 
         meshio_mesh = meshio.read(path)
-        impl = _convert_meshio(meshio_mesh, mesh_type)
+        impl = _convert_meshio(meshio_mesh, mesh_kind)
         kind = _impl_to_kind(impl)
         return Mesh._from_impl(impl, kind)  # noqa: SLF001
 
@@ -260,17 +270,17 @@ def read(
     raise TypeError(msg)
 
 
-def _mesh_type_to_class(
-    mesh_type: MeshType,
+def _mesh_kind_to_class(
+    mesh_kind: MeshKind,
 ) -> type[MmgMesh3D | MmgMesh2D | MmgMeshS]:
-    """Convert mesh_type string to mesh class."""
-    if mesh_type == "3d":
+    """Convert MeshKind enum to mesh class."""
+    if mesh_kind == MeshKind.TETRAHEDRAL:
         return MmgMesh3D
-    if mesh_type == "2d":
+    if mesh_kind == MeshKind.TRIANGULAR_2D:
         return MmgMesh2D
-    if mesh_type == "surface":
+    if mesh_kind == MeshKind.TRIANGULAR_SURFACE:
         return MmgMeshS
-    msg = f"Unknown mesh_type: {mesh_type}"
+    msg = f"Unknown mesh_kind: {mesh_kind}"
     raise ValueError(msg)
 
 
@@ -278,9 +288,6 @@ def _impl_to_kind(
     impl: MmgMesh3D | MmgMesh2D | MmgMeshS,
 ) -> MeshKind:
     """Convert implementation type to MeshKind."""
-    # Import here to avoid circular imports
-    from mmgpy._mesh import MeshKind  # noqa: PLC0415
-
     if isinstance(impl, MmgMesh3D):
         return MeshKind.TETRAHEDRAL
     if isinstance(impl, MmgMesh2D):

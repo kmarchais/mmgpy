@@ -145,15 +145,15 @@ class TestReadPyvista:
         assert len(mesh.get_triangles()) == 4
 
     def test_read_pyvista_explicit_3d(self, tetra_grid: pv.UnstructuredGrid) -> None:
-        """Test explicit mesh_type='3d'."""
-        mesh = read(tetra_grid, mesh_type="3d")
+        """Test explicit mesh_kind=TETRAHEDRAL."""
+        mesh = read(tetra_grid, mesh_kind=MeshKind.TETRAHEDRAL)
 
         assert isinstance(mesh, Mesh)
         assert mesh.kind == MeshKind.TETRAHEDRAL
 
     def test_read_pyvista_explicit_2d(self, triangle_polydata_2d: pv.PolyData) -> None:
-        """Test explicit mesh_type='2d'."""
-        mesh = read(triangle_polydata_2d, mesh_type="2d")
+        """Test explicit mesh_kind=TRIANGULAR_2D."""
+        mesh = read(triangle_polydata_2d, mesh_kind=MeshKind.TRIANGULAR_2D)
 
         assert isinstance(mesh, Mesh)
         assert mesh.kind == MeshKind.TRIANGULAR_2D
@@ -162,8 +162,8 @@ class TestReadPyvista:
         self,
         triangle_polydata_3d: pv.PolyData,
     ) -> None:
-        """Test explicit mesh_type='surface'."""
-        mesh = read(triangle_polydata_3d, mesh_type="surface")
+        """Test explicit mesh_kind=TRIANGULAR_SURFACE."""
+        mesh = read(triangle_polydata_3d, mesh_kind=MeshKind.TRIANGULAR_SURFACE)
 
         assert isinstance(mesh, Mesh)
         assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
@@ -277,12 +277,12 @@ class TestReadFile:
             assert isinstance(mesh, Mesh)
             assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
 
-    def test_read_explicit_mesh_type(
+    def test_read_explicit_mesh_kind(
         self,
         triangle_3d_vertices: np.ndarray,
         surface_triangle_cells: np.ndarray,
     ) -> None:
-        """Test explicit mesh_type parameter with file."""
+        """Test explicit mesh_kind parameter with file."""
         with TemporaryDirectory() as tmpdir:
             filepath = Path(tmpdir) / "mesh.vtk"
 
@@ -292,8 +292,8 @@ class TestReadFile:
             )
             meshio_mesh.write(filepath)
 
-            # Force surface mesh type
-            mesh = read(filepath, mesh_type="surface")
+            # Force surface mesh kind
+            mesh = read(filepath, mesh_kind=MeshKind.TRIANGULAR_SURFACE)
 
             assert isinstance(mesh, Mesh)
             assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
