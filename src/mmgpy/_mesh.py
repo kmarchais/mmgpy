@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
+    from mmgpy._result import RemeshResult
 
 _DIMS_2D = 2
 _DIMS_3D = 3
@@ -624,7 +625,7 @@ class Mesh:
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         **kwargs: Any,  # noqa: ANN401
-    ) -> None:
+    ) -> RemeshResult:
         """Remesh the mesh in-place.
 
         Parameters
@@ -634,14 +635,19 @@ class Mesh:
         **kwargs : float
             Individual remeshing parameters (hmin, hmax, hsiz, hausd, etc.).
 
+        Returns
+        -------
+        RemeshResult
+            Statistics from the remeshing operation.
+
         """
-        self._impl.remesh(options, **kwargs)  # type: ignore[arg-type]
+        return self._impl.remesh(options, **kwargs)  # type: ignore[arg-type, return-value]
 
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
         **kwargs: Any,  # noqa: ANN401
-    ) -> None:
+    ) -> RemeshResult:
         """Remesh with Lagrangian motion.
 
         Only available for TETRAHEDRAL and TRIANGULAR_2D meshes.
@@ -653,6 +659,11 @@ class Mesh:
         **kwargs : float
             Additional remeshing parameters.
 
+        Returns
+        -------
+        RemeshResult
+            Statistics from the remeshing operation.
+
         Raises
         ------
         TypeError
@@ -662,13 +673,13 @@ class Mesh:
         if self._kind == MeshKind.TRIANGULAR_SURFACE:
             msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
             raise TypeError(msg)
-        self._impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[union-attr]
+        return self._impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[union-attr, return-value]
 
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
         **kwargs: Any,  # noqa: ANN401
-    ) -> None:
+    ) -> RemeshResult:
         """Remesh with level-set discretization.
 
         Parameters
@@ -678,8 +689,13 @@ class Mesh:
         **kwargs : float
             Additional remeshing parameters.
 
+        Returns
+        -------
+        RemeshResult
+            Statistics from the remeshing operation.
+
         """
-        self._impl.remesh_levelset(levelset, **kwargs)
+        return self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[return-value]
 
     # =========================================================================
     # PyVista conversion (will be monkey-patched)

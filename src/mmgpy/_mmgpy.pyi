@@ -7,6 +7,7 @@ import pyvista as pv
 from numpy.typing import NDArray
 
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
+from ._result import RemeshResult
 
 class mmg3d:  # noqa: N801
     @staticmethod
@@ -220,7 +221,7 @@ class MmgMesh3D:
         nomove: int | None = None,
         nosurf: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
@@ -233,7 +234,7 @@ class MmgMesh3D:
         verbose: bool | int | None = None,
         lag: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -247,7 +248,7 @@ class MmgMesh3D:
         verbose: bool | int | None = None,
         iso: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
     @classmethod
     def from_pyvista(
@@ -260,8 +261,13 @@ class MmgMesh3D:
         include_refs: bool = True,
     ) -> pv.UnstructuredGrid: ...
     # Convenience methods (added by mmgpy._add_convenience_methods)
-    def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
-    def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
+    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult: ...
+    def remesh_uniform(
+        self,
+        size: float,
+        *,
+        verbose: int | None = None,
+    ) -> RemeshResult: ...
     # Local sizing methods (added by mmgpy._add_sizing_methods)
     def set_size_sphere(
         self,
@@ -419,7 +425,7 @@ class MmgMesh2D:
         noswap: int | None = None,
         nomove: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
@@ -432,7 +438,7 @@ class MmgMesh2D:
         verbose: bool | int | None = None,
         lag: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -446,7 +452,7 @@ class MmgMesh2D:
         verbose: bool | int | None = None,
         iso: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
     @classmethod
     def from_pyvista(
@@ -455,8 +461,13 @@ class MmgMesh2D:
     ) -> MmgMesh2D: ...
     def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
     # Convenience methods (added by mmgpy._add_convenience_methods)
-    def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
-    def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
+    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult: ...
+    def remesh_uniform(
+        self,
+        size: float,
+        *,
+        verbose: int | None = None,
+    ) -> RemeshResult: ...
     # Local sizing methods (added by mmgpy._add_sizing_methods)
     def set_size_sphere(
         self,
@@ -594,7 +605,7 @@ class MmgMeshS:
         noswap: int | None = None,
         nomove: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -608,7 +619,7 @@ class MmgMeshS:
         verbose: bool | int | None = None,
         iso: int | None = None,
         **kwargs: float,
-    ) -> None: ...
+    ) -> RemeshResult: ...
     # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
     @classmethod
     def from_pyvista(
@@ -617,8 +628,13 @@ class MmgMeshS:
     ) -> MmgMeshS: ...
     def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
     # Convenience methods (added by mmgpy._add_convenience_methods)
-    def remesh_optimize(self, *, verbose: int | None = None) -> None: ...
-    def remesh_uniform(self, size: float, *, verbose: int | None = None) -> None: ...
+    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult: ...
+    def remesh_uniform(
+        self,
+        size: float,
+        *,
+        verbose: int | None = None,
+    ) -> RemeshResult: ...
     # Local sizing methods (added by mmgpy._add_sizing_methods)
     def set_size_sphere(
         self,

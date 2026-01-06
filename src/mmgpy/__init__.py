@@ -389,6 +389,8 @@ def _add_convenience_methods() -> None:
     from collections.abc import Callable  # noqa: PLC0415
     from typing import Any  # noqa: PLC0415
 
+    from ._result import RemeshResult  # noqa: PLC0415
+
     # Wrap remesh() to accept options objects directly
     _original_remesh_3d = MmgMesh3D.remesh
     _original_remesh_2d = MmgMesh2D.remesh
@@ -401,14 +403,34 @@ def _add_convenience_methods() -> None:
         MmgMeshS: MmgSOptions,
     }
 
+    def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
+        """Convert C++ dict to RemeshResult dataclass."""
+        return RemeshResult(
+            vertices_before=stats["vertices_before"],
+            vertices_after=stats["vertices_after"],
+            elements_before=stats["elements_before"],
+            elements_after=stats["elements_after"],
+            triangles_before=stats["triangles_before"],
+            triangles_after=stats["triangles_after"],
+            edges_before=stats["edges_before"],
+            edges_after=stats["edges_after"],
+            quality_min_before=stats["quality_min_before"],
+            quality_min_after=stats["quality_min_after"],
+            quality_mean_before=stats["quality_mean_before"],
+            quality_mean_after=stats["quality_mean_after"],
+            duration_seconds=stats["duration_seconds"],
+            warnings=tuple(stats["warnings"]),
+            return_code=stats["return_code"],
+        )
+
     def _make_remesh_wrapper(
-        original_remesh: Callable[..., None],
-    ) -> Callable[..., None]:
+        original_remesh: Callable[..., dict[str, Any]],
+    ) -> Callable[..., RemeshResult]:
         def _wrapped_remesh(
             self: MmgMesh3D | MmgMesh2D | MmgMeshS,
             options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
             **kwargs: Any,  # noqa: ANN401
-        ) -> None:
+        ) -> RemeshResult:
             if options is not None:
                 if kwargs:
                     msg = (
@@ -426,7 +448,8 @@ def _add_convenience_methods() -> None:
                     raise TypeError(msg)
                 # Options object passed - convert to kwargs
                 kwargs = options.to_dict()
-            original_remesh(self, **kwargs)
+            stats = original_remesh(self, **kwargs)
+            return _dict_to_remesh_result(stats)
 
         return _wrapped_remesh
 
@@ -434,11 +457,72 @@ def _add_convenience_methods() -> None:
     MmgMesh2D.remesh = _make_remesh_wrapper(_original_remesh_2d)  # type: ignore[method-assign]
     MmgMeshS.remesh = _make_remesh_wrapper(_original_remesh_s)  # type: ignore[method-assign]
 
+    # Wrap remesh_lagrangian and remesh_levelset to return RemeshResult
+
+    # Store original C++ methods for 3D (returns dict, not RemeshResult)
+    _original_remesh_lagrangian_3d = MmgMesh3D.remesh_lagrangian
+    _original_remesh_levelset_3d = MmgMesh3D.remesh_levelset
+
+    def _wrapped_remesh_lagrangian_3d(
+        self: MmgMesh3D,
+        displacement: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_lagrangian_3d(self, displacement, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    def _wrapped_remesh_levelset_3d(
+        self: MmgMesh3D,
+        levelset: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_levelset_3d(self, levelset, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    MmgMesh3D.remesh_lagrangian = _wrapped_remesh_lagrangian_3d  # type: ignore[method-assign]
+    MmgMesh3D.remesh_levelset = _wrapped_remesh_levelset_3d  # type: ignore[method-assign]
+
+    # Store original C++ methods for 2D (returns dict, not RemeshResult)
+    _original_remesh_lagrangian_2d = MmgMesh2D.remesh_lagrangian
+    _original_remesh_levelset_2d = MmgMesh2D.remesh_levelset
+
+    def _wrapped_remesh_lagrangian_2d(
+        self: MmgMesh2D,
+        displacement: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_lagrangian_2d(self, displacement, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    def _wrapped_remesh_levelset_2d(
+        self: MmgMesh2D,
+        levelset: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_levelset_2d(self, levelset, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    MmgMesh2D.remesh_lagrangian = _wrapped_remesh_lagrangian_2d  # type: ignore[method-assign]
+    MmgMesh2D.remesh_levelset = _wrapped_remesh_levelset_2d  # type: ignore[method-assign]
+
+    # Store original C++ method for surface (no lagrangian for MMGS)
+    _original_remesh_levelset_s = MmgMeshS.remesh_levelset
+
+    def _wrapped_remesh_levelset_s(
+        self: MmgMeshS,
+        levelset: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_levelset_s(self, levelset, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    MmgMeshS.remesh_levelset = _wrapped_remesh_levelset_s  # type: ignore[method-assign]
+
     def _remesh_optimize(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
         *,
         verbose: int | None = None,
-    ) -> None:
+    ) -> RemeshResult:
         """Optimize mesh quality without changing topology.
 
         Only moves vertices to improve element quality.
@@ -449,18 +533,23 @@ def _add_convenience_methods() -> None:
         verbose : int | None
             Verbosity level (-1=silent, 0=errors, 1=info).
 
+        Returns
+        -------
+        RemeshResult
+            Statistics from the remeshing operation.
+
         """
         opts: dict[str, int] = {"optim": 1, "noinsert": 1}
         if verbose is not None:
             opts["verbose"] = verbose
-        self.remesh(**opts)  # type: ignore[arg-type]
+        return self.remesh(**opts)  # type: ignore[arg-type, return-value]
 
     def _remesh_uniform(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
         size: float,
         *,
         verbose: int | None = None,
-    ) -> None:
+    ) -> RemeshResult:
         """Remesh with uniform element size.
 
         Parameters
@@ -470,11 +559,16 @@ def _add_convenience_methods() -> None:
         verbose : int | None
             Verbosity level (-1=silent, 0=errors, 1=info).
 
+        Returns
+        -------
+        RemeshResult
+            Statistics from the remeshing operation.
+
         """
         opts: dict[str, float | int] = {"hsiz": size}
         if verbose is not None:
             opts["verbose"] = verbose
-        self.remesh(**opts)  # type: ignore[arg-type]
+        return self.remesh(**opts)  # type: ignore[arg-type, return-value]
 
     MmgMesh3D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
     MmgMesh3D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
@@ -495,7 +589,7 @@ _sizing_constraints_store: dict[int, list[SizingConstraint]] = {}
 _sizing_mesh_refs: dict[int, "_weakref.ref[MmgMesh3D | MmgMesh2D | MmgMeshS]"] = {}
 
 
-def _add_sizing_methods() -> None:  # noqa: PLR0915
+def _add_sizing_methods() -> None:
     """Add local sizing methods to mesh classes."""
     from collections.abc import Sequence  # noqa: PLC0415
 
@@ -822,23 +916,25 @@ def _wrap_remesh_with_sizing() -> None:
     from collections.abc import Callable  # noqa: PLC0415
     from typing import Any  # noqa: PLC0415
 
+    from ._result import RemeshResult  # noqa: PLC0415
+
     _sizing_aware_remesh_3d = MmgMesh3D.remesh
     _sizing_aware_remesh_2d = MmgMesh2D.remesh
     _sizing_aware_remesh_s = MmgMeshS.remesh
 
     def _make_sizing_wrapper(
-        wrapped_remesh: Callable[..., None],
-    ) -> Callable[..., None]:
+        wrapped_remesh: Callable[..., RemeshResult],
+    ) -> Callable[..., RemeshResult]:
         def _sizing_remesh(
             self: MmgMesh3D | MmgMesh2D | MmgMeshS,
             *args: Any,  # noqa: ANN401
             **kwargs: Any,  # noqa: ANN401
-        ) -> None:
+        ) -> RemeshResult:
             # Apply sizing constraints before remeshing
             constraints = _sizing_constraints_store.get(id(self))
             if constraints:
                 self.apply_local_sizing()  # type: ignore[attr-defined]
-            wrapped_remesh(self, *args, **kwargs)
+            return wrapped_remesh(self, *args, **kwargs)
 
         return _sizing_remesh
 
@@ -848,6 +944,8 @@ def _wrap_remesh_with_sizing() -> None:
 
 
 _wrap_remesh_with_sizing()
+
+from ._result import RemeshResult
 
 __all__ = [
     "MMG_VERSION",
@@ -863,6 +961,7 @@ __all__ = [
     "MmgSOptions",
     "PointSize",
     "ProgressEvent",
+    "RemeshResult",
     "SizingConstraint",
     "SphereSize",
     "__version__",

@@ -141,7 +141,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh &self, py::kwargs kwargs) {
-            self.remesh(kwargs_to_options(kwargs));
+            return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
           "hgrad, optim, verbose.")
@@ -149,7 +149,8 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_lagrangian",
           [](MmgMesh &self, const py::array_t<double> &displacement,
              py::kwargs kwargs) {
-            self.remesh_lagrangian(displacement, kwargs_to_options(kwargs));
+            return self.remesh_lagrangian(displacement,
+                                          kwargs_to_options(kwargs));
           },
           py::arg("displacement"),
           "Remesh the mesh following Lagrangian motion defined by a "
@@ -164,7 +165,7 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_levelset",
           [](MmgMesh &self, const py::array_t<double> &levelset,
              py::kwargs kwargs) {
-            self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
           },
           py::arg("levelset"),
           "Remesh the mesh to conform to a level-set isosurface.\n\n"
@@ -266,7 +267,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh2D &self, py::kwargs kwargs) {
-            self.remesh(kwargs_to_options(kwargs));
+            return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
           "hgrad, optim, verbose.")
@@ -274,7 +275,8 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_lagrangian",
           [](MmgMesh2D &self, const py::array_t<double> &displacement,
              py::kwargs kwargs) {
-            self.remesh_lagrangian(displacement, kwargs_to_options(kwargs));
+            return self.remesh_lagrangian(displacement,
+                                          kwargs_to_options(kwargs));
           },
           py::arg("displacement"),
           "Remesh the mesh following Lagrangian motion defined by a "
@@ -289,7 +291,7 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_levelset",
           [](MmgMesh2D &self, const py::array_t<double> &levelset,
              py::kwargs kwargs) {
-            self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
           },
           py::arg("levelset"),
           "Remesh the mesh to conform to a level-set isoline.\n\n"
@@ -381,7 +383,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMeshS &self, py::kwargs kwargs) {
-            self.remesh(kwargs_to_options(kwargs));
+            return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
           "hgrad, optim, verbose.")
@@ -389,7 +391,7 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_levelset",
           [](MmgMeshS &self, const py::array_t<double> &levelset,
              py::kwargs kwargs) {
-            self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
           },
           py::arg("levelset"),
           "Remesh the mesh to conform to a level-set isoline.\n\n"
