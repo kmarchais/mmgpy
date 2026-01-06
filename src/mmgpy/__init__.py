@@ -403,6 +403,26 @@ def _add_convenience_methods() -> None:
         MmgMeshS: MmgSOptions,
     }
 
+    def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
+        """Convert C++ dict to RemeshResult dataclass."""
+        return RemeshResult(
+            vertices_before=stats["vertices_before"],
+            vertices_after=stats["vertices_after"],
+            elements_before=stats["elements_before"],
+            elements_after=stats["elements_after"],
+            triangles_before=stats["triangles_before"],
+            triangles_after=stats["triangles_after"],
+            edges_before=stats["edges_before"],
+            edges_after=stats["edges_after"],
+            quality_min_before=stats["quality_min_before"],
+            quality_min_after=stats["quality_min_after"],
+            quality_mean_before=stats["quality_mean_before"],
+            quality_mean_after=stats["quality_mean_after"],
+            duration_seconds=stats["duration_seconds"],
+            warnings=tuple(stats["warnings"]),
+            return_code=stats["return_code"],
+        )
+
     def _make_remesh_wrapper(
         original_remesh: Callable[..., dict[str, Any]],
     ) -> Callable[..., RemeshResult]:
@@ -429,23 +449,7 @@ def _add_convenience_methods() -> None:
                 # Options object passed - convert to kwargs
                 kwargs = options.to_dict()
             stats = original_remesh(self, **kwargs)
-            return RemeshResult(
-                vertices_before=stats["vertices_before"],
-                vertices_after=stats["vertices_after"],
-                elements_before=stats["elements_before"],
-                elements_after=stats["elements_after"],
-                triangles_before=stats["triangles_before"],
-                triangles_after=stats["triangles_after"],
-                edges_before=stats["edges_before"],
-                edges_after=stats["edges_after"],
-                quality_min_before=stats["quality_min_before"],
-                quality_min_after=stats["quality_min_after"],
-                quality_mean_before=stats["quality_mean_before"],
-                quality_mean_after=stats["quality_mean_after"],
-                duration_seconds=stats["duration_seconds"],
-                warnings=tuple(stats["warnings"]),
-                return_code=stats["return_code"],
-            )
+            return _dict_to_remesh_result(stats)
 
         return _wrapped_remesh
 
@@ -454,25 +458,6 @@ def _add_convenience_methods() -> None:
     MmgMeshS.remesh = _make_remesh_wrapper(_original_remesh_s)  # type: ignore[method-assign]
 
     # Wrap remesh_lagrangian and remesh_levelset to return RemeshResult
-    def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
-        """Convert C++ dict to RemeshResult dataclass."""
-        return RemeshResult(
-            vertices_before=stats["vertices_before"],
-            vertices_after=stats["vertices_after"],
-            elements_before=stats["elements_before"],
-            elements_after=stats["elements_after"],
-            triangles_before=stats["triangles_before"],
-            triangles_after=stats["triangles_after"],
-            edges_before=stats["edges_before"],
-            edges_after=stats["edges_after"],
-            quality_min_before=stats["quality_min_before"],
-            quality_min_after=stats["quality_min_after"],
-            quality_mean_before=stats["quality_mean_before"],
-            quality_mean_after=stats["quality_mean_after"],
-            duration_seconds=stats["duration_seconds"],
-            warnings=tuple(stats["warnings"]),
-            return_code=stats["return_code"],
-        )
 
     # Store original C++ methods for 3D (returns dict, not RemeshResult)
     _original_remesh_lagrangian_3d = MmgMesh3D.remesh_lagrangian

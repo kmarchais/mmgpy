@@ -25,7 +25,9 @@ void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
 }
 
 // Compute triangle quality manually since MMGS_Get_triangleQuality
-// is not properly exported on Windows DLL
+// is not properly exported on Windows DLL.
+// Uses threshold 1e-30 for near-zero detection (well above denormal range
+// ~2e-308, but catches degenerate triangles with area or edge sum near zero).
 double compute_triangle_quality(MMG5_pMesh mesh, MMG5_int k) {
   MMG5_pTria pt = &mesh->tria[k];
   MMG5_pPoint p0 = &mesh->point[pt->v[0]];

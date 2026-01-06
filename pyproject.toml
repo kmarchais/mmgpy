@@ -128,7 +128,7 @@ ignore = [
     "RUF005", # list concatenation is fine here for subprocess args
     "PTH207", # glob usage is fine for file discovery
     "D417",   # self parameter doesn't need documenting for methods
-    "PLR0915", # convenience method wrappers require many statements
+    "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
 ]
 "src/mmgpy/_logging.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency

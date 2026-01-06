@@ -32,6 +32,10 @@ py::dict merge_options_with_default(const py::dict &options, const char *key,
 py::dict build_remesh_result(const RemeshStats &before,
                              const RemeshStats &after, double duration_seconds,
                              int return_code) {
+  // Build dictionary with remeshing statistics.
+  // Note: duration_seconds measures only the MMG library call itself,
+  // excluding stats collection (before/after) and option setup overhead.
+  // This provides the most accurate measure of actual remeshing time.
   py::dict result;
   result["vertices_before"] = before.vertices;
   result["vertices_after"] = after.vertices;
@@ -46,6 +50,8 @@ py::dict build_remesh_result(const RemeshStats &before,
   result["quality_mean_before"] = before.quality_mean;
   result["quality_mean_after"] = after.quality_mean;
   result["duration_seconds"] = duration_seconds;
+  // TODO: Capture MMG warnings by redirecting MMG's output stream and parsing
+  // warning messages. Currently always empty as MMG warnings go to stderr.
   result["warnings"] = py::tuple();
   result["return_code"] = return_code;
   return result;

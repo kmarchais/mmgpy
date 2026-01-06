@@ -40,10 +40,15 @@ class RemeshResult:
         Mean element quality after remeshing.
     duration_seconds : float
         Wall-clock time for the remeshing operation in seconds.
+        Measures only the MMG library call, excluding stats collection overhead.
     warnings : tuple[str, ...]
-        Any warnings from MMG (non-fatal issues).
+        Any warnings from MMG (non-fatal issues). Currently always empty;
+        reserved for future implementation to capture MMG warning messages.
     return_code : int
-        MMG return code (0 = success).
+        MMG return code (0 = success). Note: If remeshing fails, an exception
+        is raised before RemeshResult is created, so this will always be 0
+        for successfully returned results. Included for completeness and
+        potential future use with partial failure modes.
 
     Examples
     --------
