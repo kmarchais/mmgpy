@@ -1,5 +1,6 @@
 #include "mmg_mesh.hpp"
 #include "mmg_common.hpp"
+#include <chrono>
 #include <set>
 #include <stdexcept>
 
@@ -1192,8 +1193,30 @@ py::tuple MmgMesh::get_tetrahedra_with_refs() const {
   return get_elements_with_refs();
 }
 
-void MmgMesh::remesh(const py::dict &options) {
+py::dict MmgMesh::remesh(const py::dict &options) {
+  // Capture before state
+  MMG5_int verts_before = mesh->np;
+  MMG5_int tets_before = mesh->ne;
+  MMG5_int tris_before = mesh->nt;
+  MMG5_int edges_before = mesh->na;
+
+  // Compute quality statistics before remeshing
+  double quality_min_before = 1.0;
+  double quality_sum_before = 0.0;
+  if (tets_before > 0) {
+    for (MMG5_int i = 1; i <= tets_before; i++) {
+      double q = MMG3D_Get_tetrahedronQuality(mesh, met, i);
+      quality_sum_before += q;
+      if (q < quality_min_before)
+        quality_min_before = q;
+    }
+  }
+  double quality_mean_before =
+      tets_before > 0 ? quality_sum_before / tets_before : 0.0;
+
   set_mesh_options_3D(mesh, met, options);
+
+  auto start = std::chrono::high_resolution_clock::now();
 
   int ret;
   const char *mode_name;
@@ -1208,34 +1231,202 @@ void MmgMesh::remesh(const py::dict &options) {
     mode_name = "MMG3D_mmg3dlib (standard remeshing)";
   }
 
+  auto end = std::chrono::high_resolution_clock::now();
+  double duration = std::chrono::duration<double>(end - start).count();
+
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
+
+  // Capture after state
+  MMG5_int verts_after = mesh->np;
+  MMG5_int tets_after = mesh->ne;
+  MMG5_int tris_after = mesh->nt;
+  MMG5_int edges_after = mesh->na;
+
+  // Compute quality statistics after remeshing
+  double quality_min_after = 1.0;
+  double quality_sum_after = 0.0;
+  if (tets_after > 0) {
+    for (MMG5_int i = 1; i <= tets_after; i++) {
+      double q = MMG3D_Get_tetrahedronQuality(mesh, met, i);
+      quality_sum_after += q;
+      if (q < quality_min_after)
+        quality_min_after = q;
+    }
+  }
+  double quality_mean_after =
+      tets_after > 0 ? quality_sum_after / tets_after : 0.0;
+
+  py::dict result;
+  result["vertices_before"] = static_cast<int>(verts_before);
+  result["vertices_after"] = static_cast<int>(verts_after);
+  result["elements_before"] = static_cast<int>(tets_before);
+  result["elements_after"] = static_cast<int>(tets_after);
+  result["triangles_before"] = static_cast<int>(tris_before);
+  result["triangles_after"] = static_cast<int>(tris_after);
+  result["edges_before"] = static_cast<int>(edges_before);
+  result["edges_after"] = static_cast<int>(edges_after);
+  result["quality_min_before"] = quality_min_before;
+  result["quality_min_after"] = quality_min_after;
+  result["quality_mean_before"] = quality_mean_before;
+  result["quality_mean_after"] = quality_mean_after;
+  result["duration_seconds"] = duration;
+  result["warnings"] = py::tuple();
+  result["return_code"] = ret;
+
+  return result;
 }
 
-void MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
-                                const py::dict &options) {
+py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
+                                    const py::dict &options) {
+  // Capture before state
+  MMG5_int verts_before = mesh->np;
+  MMG5_int tets_before = mesh->ne;
+  MMG5_int tris_before = mesh->nt;
+  MMG5_int edges_before = mesh->na;
+
+  // Compute quality statistics before remeshing
+  double quality_min_before = 1.0;
+  double quality_sum_before = 0.0;
+  if (tets_before > 0) {
+    for (MMG5_int i = 1; i <= tets_before; i++) {
+      double q = MMG3D_Get_tetrahedronQuality(mesh, met, i);
+      quality_sum_before += q;
+      if (q < quality_min_before)
+        quality_min_before = q;
+    }
+  }
+  double quality_mean_before =
+      tets_before > 0 ? quality_sum_before / tets_before : 0.0;
+
   set_field("displacement", displacement);
   py::dict lag_options =
       merge_options_with_default(options, "lag", py::int_(1));
   set_mesh_options_3D(mesh, met, lag_options);
 
+  auto start = std::chrono::high_resolution_clock::now();
   int ret = MMG3D_mmg3dmov(mesh, met, disp);
+  auto end = std::chrono::high_resolution_clock::now();
+  double duration = std::chrono::duration<double>(end - start).count();
+
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error("MMG3D Lagrangian motion remeshing failed (ret=" +
                              std::to_string(ret) + ")");
   }
+
+  // Capture after state
+  MMG5_int verts_after = mesh->np;
+  MMG5_int tets_after = mesh->ne;
+  MMG5_int tris_after = mesh->nt;
+  MMG5_int edges_after = mesh->na;
+
+  // Compute quality statistics after remeshing
+  double quality_min_after = 1.0;
+  double quality_sum_after = 0.0;
+  if (tets_after > 0) {
+    for (MMG5_int i = 1; i <= tets_after; i++) {
+      double q = MMG3D_Get_tetrahedronQuality(mesh, met, i);
+      quality_sum_after += q;
+      if (q < quality_min_after)
+        quality_min_after = q;
+    }
+  }
+  double quality_mean_after =
+      tets_after > 0 ? quality_sum_after / tets_after : 0.0;
+
+  py::dict result;
+  result["vertices_before"] = static_cast<int>(verts_before);
+  result["vertices_after"] = static_cast<int>(verts_after);
+  result["elements_before"] = static_cast<int>(tets_before);
+  result["elements_after"] = static_cast<int>(tets_after);
+  result["triangles_before"] = static_cast<int>(tris_before);
+  result["triangles_after"] = static_cast<int>(tris_after);
+  result["edges_before"] = static_cast<int>(edges_before);
+  result["edges_after"] = static_cast<int>(edges_after);
+  result["quality_min_before"] = quality_min_before;
+  result["quality_min_after"] = quality_min_after;
+  result["quality_mean_before"] = quality_mean_before;
+  result["quality_mean_after"] = quality_mean_after;
+  result["duration_seconds"] = duration;
+  result["warnings"] = py::tuple();
+  result["return_code"] = ret;
+
+  return result;
 }
 
-void MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
-                              const py::dict &options) {
+py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
+                                  const py::dict &options) {
+  // Capture before state
+  MMG5_int verts_before = mesh->np;
+  MMG5_int tets_before = mesh->ne;
+  MMG5_int tris_before = mesh->nt;
+  MMG5_int edges_before = mesh->na;
+
+  // Compute quality statistics before remeshing
+  double quality_min_before = 1.0;
+  double quality_sum_before = 0.0;
+  if (tets_before > 0) {
+    for (MMG5_int i = 1; i <= tets_before; i++) {
+      double q = MMG3D_Get_tetrahedronQuality(mesh, met, i);
+      quality_sum_before += q;
+      if (q < quality_min_before)
+        quality_min_before = q;
+    }
+  }
+  double quality_mean_before =
+      tets_before > 0 ? quality_sum_before / tets_before : 0.0;
+
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
   set_mesh_options_3D(mesh, met, ls_options);
 
+  auto start = std::chrono::high_resolution_clock::now();
   int ret = MMG3D_mmg3dls(mesh, ls, met);
+  auto end = std::chrono::high_resolution_clock::now();
+  double duration = std::chrono::duration<double>(end - start).count();
+
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error("MMG3D level-set discretization failed (ret=" +
                              std::to_string(ret) + ")");
   }
+
+  // Capture after state
+  MMG5_int verts_after = mesh->np;
+  MMG5_int tets_after = mesh->ne;
+  MMG5_int tris_after = mesh->nt;
+  MMG5_int edges_after = mesh->na;
+
+  // Compute quality statistics after remeshing
+  double quality_min_after = 1.0;
+  double quality_sum_after = 0.0;
+  if (tets_after > 0) {
+    for (MMG5_int i = 1; i <= tets_after; i++) {
+      double q = MMG3D_Get_tetrahedronQuality(mesh, met, i);
+      quality_sum_after += q;
+      if (q < quality_min_after)
+        quality_min_after = q;
+    }
+  }
+  double quality_mean_after =
+      tets_after > 0 ? quality_sum_after / tets_after : 0.0;
+
+  py::dict result;
+  result["vertices_before"] = static_cast<int>(verts_before);
+  result["vertices_after"] = static_cast<int>(verts_after);
+  result["elements_before"] = static_cast<int>(tets_before);
+  result["elements_after"] = static_cast<int>(tets_after);
+  result["triangles_before"] = static_cast<int>(tris_before);
+  result["triangles_after"] = static_cast<int>(tris_after);
+  result["edges_before"] = static_cast<int>(edges_before);
+  result["edges_after"] = static_cast<int>(edges_after);
+  result["quality_min_before"] = quality_min_before;
+  result["quality_min_after"] = quality_min_after;
+  result["quality_mean_before"] = quality_mean_before;
+  result["quality_mean_after"] = quality_mean_after;
+  result["duration_seconds"] = duration;
+  result["warnings"] = py::tuple();
+  result["return_code"] = ret;
+
+  return result;
 }
