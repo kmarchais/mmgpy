@@ -22,6 +22,31 @@ void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
         " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
   }
 }
+
+// Collect mesh statistics for 2D triangular mesh
+RemeshStats collect_mesh_stats_2d(MMG5_pMesh mesh, MMG5_pSol met) {
+  RemeshStats stats;
+  stats.vertices = mesh->np;
+  stats.elements = mesh->nt; // triangles are primary elements in 2D
+  stats.triangles = mesh->nt;
+  stats.edges = mesh->na;
+
+  stats.quality_min = 1.0;
+  double quality_sum = 0.0;
+  if (stats.triangles > 0) {
+    for (MMG5_int i = 1; i <= stats.triangles; i++) {
+      double q = MMG2D_Get_triangleQuality(mesh, met, i);
+      quality_sum += q;
+      if (q < stats.quality_min)
+        stats.quality_min = q;
+    }
+    stats.quality_mean = quality_sum / stats.triangles;
+  } else {
+    stats.quality_mean = 0.0;
+  }
+
+  return stats;
+}
 } // namespace
 
 MmgMesh2D::MmgMesh2D() {
@@ -892,24 +917,7 @@ void MmgMesh2D::cleanup() {
 }
 
 py::dict MmgMesh2D::remesh(const py::dict &options) {
-  // Capture before state
-  MMG5_int verts_before = mesh->np;
-  MMG5_int tris_before = mesh->nt;
-  MMG5_int edges_before = mesh->na;
-
-  // Compute quality statistics before remeshing
-  double quality_min_before = 1.0;
-  double quality_sum_before = 0.0;
-  if (tris_before > 0) {
-    for (MMG5_int i = 1; i <= tris_before; i++) {
-      double q = MMG2D_Get_triangleQuality(mesh, met, i);
-      quality_sum_before += q;
-      if (q < quality_min_before)
-        quality_min_before = q;
-    }
-  }
-  double quality_mean_before =
-      tris_before > 0 ? quality_sum_before / tris_before : 0.0;
+  RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_mesh_options_2D(mesh, met, options);
 
@@ -938,65 +946,14 @@ py::dict MmgMesh2D::remesh(const py::dict &options) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 
-  // Capture after state
-  MMG5_int verts_after = mesh->np;
-  MMG5_int tris_after = mesh->nt;
-  MMG5_int edges_after = mesh->na;
+  RemeshStats after = collect_mesh_stats_2d(mesh, met);
 
-  // Compute quality statistics after remeshing
-  double quality_min_after = 1.0;
-  double quality_sum_after = 0.0;
-  if (tris_after > 0) {
-    for (MMG5_int i = 1; i <= tris_after; i++) {
-      double q = MMG2D_Get_triangleQuality(mesh, met, i);
-      quality_sum_after += q;
-      if (q < quality_min_after)
-        quality_min_after = q;
-    }
-  }
-  double quality_mean_after =
-      tris_after > 0 ? quality_sum_after / tris_after : 0.0;
-
-  py::dict result;
-  result["vertices_before"] = verts_before;
-  result["vertices_after"] = verts_after;
-  result["elements_before"] = tris_before;
-  result["elements_after"] = tris_after;
-  result["triangles_before"] = tris_before;
-  result["triangles_after"] = tris_after;
-  result["edges_before"] = edges_before;
-  result["edges_after"] = edges_after;
-  result["quality_min_before"] = quality_min_before;
-  result["quality_min_after"] = quality_min_after;
-  result["quality_mean_before"] = quality_mean_before;
-  result["quality_mean_after"] = quality_mean_after;
-  result["duration_seconds"] = duration;
-  result["warnings"] = py::tuple();
-  result["return_code"] = ret;
-
-  return result;
+  return build_remesh_result(before, after, duration, ret);
 }
 
 py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
                                       const py::dict &options) {
-  // Capture before state
-  MMG5_int verts_before = mesh->np;
-  MMG5_int tris_before = mesh->nt;
-  MMG5_int edges_before = mesh->na;
-
-  // Compute quality statistics before remeshing
-  double quality_min_before = 1.0;
-  double quality_sum_before = 0.0;
-  if (tris_before > 0) {
-    for (MMG5_int i = 1; i <= tris_before; i++) {
-      double q = MMG2D_Get_triangleQuality(mesh, met, i);
-      quality_sum_before += q;
-      if (q < quality_min_before)
-        quality_min_before = q;
-    }
-  }
-  double quality_mean_before =
-      tris_before > 0 ? quality_sum_before / tris_before : 0.0;
+  RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_field("displacement", displacement);
 
@@ -1014,65 +971,14 @@ py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
                              std::to_string(ret) + ")");
   }
 
-  // Capture after state
-  MMG5_int verts_after = mesh->np;
-  MMG5_int tris_after = mesh->nt;
-  MMG5_int edges_after = mesh->na;
+  RemeshStats after = collect_mesh_stats_2d(mesh, met);
 
-  // Compute quality statistics after remeshing
-  double quality_min_after = 1.0;
-  double quality_sum_after = 0.0;
-  if (tris_after > 0) {
-    for (MMG5_int i = 1; i <= tris_after; i++) {
-      double q = MMG2D_Get_triangleQuality(mesh, met, i);
-      quality_sum_after += q;
-      if (q < quality_min_after)
-        quality_min_after = q;
-    }
-  }
-  double quality_mean_after =
-      tris_after > 0 ? quality_sum_after / tris_after : 0.0;
-
-  py::dict result;
-  result["vertices_before"] = verts_before;
-  result["vertices_after"] = verts_after;
-  result["elements_before"] = tris_before;
-  result["elements_after"] = tris_after;
-  result["triangles_before"] = tris_before;
-  result["triangles_after"] = tris_after;
-  result["edges_before"] = edges_before;
-  result["edges_after"] = edges_after;
-  result["quality_min_before"] = quality_min_before;
-  result["quality_min_after"] = quality_min_after;
-  result["quality_mean_before"] = quality_mean_before;
-  result["quality_mean_after"] = quality_mean_after;
-  result["duration_seconds"] = duration;
-  result["warnings"] = py::tuple();
-  result["return_code"] = ret;
-
-  return result;
+  return build_remesh_result(before, after, duration, ret);
 }
 
 py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
                                     const py::dict &options) {
-  // Capture before state
-  MMG5_int verts_before = mesh->np;
-  MMG5_int tris_before = mesh->nt;
-  MMG5_int edges_before = mesh->na;
-
-  // Compute quality statistics before remeshing
-  double quality_min_before = 1.0;
-  double quality_sum_before = 0.0;
-  if (tris_before > 0) {
-    for (MMG5_int i = 1; i <= tris_before; i++) {
-      double q = MMG2D_Get_triangleQuality(mesh, met, i);
-      quality_sum_before += q;
-      if (q < quality_min_before)
-        quality_min_before = q;
-    }
-  }
-  double quality_mean_before =
-      tris_before > 0 ? quality_sum_before / tris_before : 0.0;
+  RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
@@ -1088,41 +994,7 @@ py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
                              std::to_string(ret) + ")");
   }
 
-  // Capture after state
-  MMG5_int verts_after = mesh->np;
-  MMG5_int tris_after = mesh->nt;
-  MMG5_int edges_after = mesh->na;
+  RemeshStats after = collect_mesh_stats_2d(mesh, met);
 
-  // Compute quality statistics after remeshing
-  double quality_min_after = 1.0;
-  double quality_sum_after = 0.0;
-  if (tris_after > 0) {
-    for (MMG5_int i = 1; i <= tris_after; i++) {
-      double q = MMG2D_Get_triangleQuality(mesh, met, i);
-      quality_sum_after += q;
-      if (q < quality_min_after)
-        quality_min_after = q;
-    }
-  }
-  double quality_mean_after =
-      tris_after > 0 ? quality_sum_after / tris_after : 0.0;
-
-  py::dict result;
-  result["vertices_before"] = verts_before;
-  result["vertices_after"] = verts_after;
-  result["elements_before"] = tris_before;
-  result["elements_after"] = tris_after;
-  result["triangles_before"] = tris_before;
-  result["triangles_after"] = tris_after;
-  result["edges_before"] = edges_before;
-  result["edges_after"] = edges_after;
-  result["quality_min_before"] = quality_min_before;
-  result["quality_min_after"] = quality_min_after;
-  result["quality_mean_before"] = quality_mean_before;
-  result["quality_mean_after"] = quality_mean_after;
-  result["duration_seconds"] = duration;
-  result["warnings"] = py::tuple();
-  result["return_code"] = ret;
-
-  return result;
+  return build_remesh_result(before, after, duration, ret);
 }

@@ -23,6 +23,75 @@ void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
         " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
   }
 }
+
+// Compute triangle quality manually since MMGS_Get_triangleQuality
+// is not properly exported on Windows DLL
+double compute_triangle_quality(MMG5_pMesh mesh, MMG5_int k) {
+  MMG5_pTria pt = &mesh->tria[k];
+  MMG5_pPoint p0 = &mesh->point[pt->v[0]];
+  MMG5_pPoint p1 = &mesh->point[pt->v[1]];
+  MMG5_pPoint p2 = &mesh->point[pt->v[2]];
+
+  // Compute edge vectors
+  double ax = p1->c[0] - p0->c[0];
+  double ay = p1->c[1] - p0->c[1];
+  double az = p1->c[2] - p0->c[2];
+  double bx = p2->c[0] - p0->c[0];
+  double by = p2->c[1] - p0->c[1];
+  double bz = p2->c[2] - p0->c[2];
+  double cx = p2->c[0] - p1->c[0];
+  double cy = p2->c[1] - p1->c[1];
+  double cz = p2->c[2] - p1->c[2];
+
+  // Compute edge lengths squared
+  double a2 = ax * ax + ay * ay + az * az;
+  double b2 = bx * bx + by * by + bz * bz;
+  double c2 = cx * cx + cy * cy + cz * cz;
+
+  // Compute cross product for area
+  double nx = ay * bz - az * by;
+  double ny = az * bx - ax * bz;
+  double nz = ax * by - ay * bx;
+  double area2 = nx * nx + ny * ny + nz * nz;
+
+  if (area2 < 1e-30) {
+    return 0.0;
+  }
+
+  // Quality = 4 * sqrt(3) * area / (a^2 + b^2 + c^2)
+  // This is the standard triangle quality metric (ratio to equilateral)
+  double sum_edges = a2 + b2 + c2;
+  if (sum_edges < 1e-30) {
+    return 0.0;
+  }
+
+  return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
+}
+
+// Collect mesh statistics for surface mesh
+RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh) {
+  RemeshStats stats;
+  stats.vertices = mesh->np;
+  stats.elements = mesh->nt; // triangles are primary elements for surface mesh
+  stats.triangles = mesh->nt;
+  stats.edges = mesh->na;
+
+  stats.quality_min = 1.0;
+  double quality_sum = 0.0;
+  if (stats.triangles > 0) {
+    for (MMG5_int i = 1; i <= stats.triangles; i++) {
+      double q = compute_triangle_quality(mesh, i);
+      quality_sum += q;
+      if (q < stats.quality_min)
+        stats.quality_min = q;
+    }
+    stats.quality_mean = quality_sum / stats.triangles;
+  } else {
+    stats.quality_mean = 0.0;
+  }
+
+  return stats;
+}
 } // namespace
 
 MmgMeshS::MmgMeshS() {
@@ -607,50 +676,6 @@ py::array_t<int> MmgMeshS::get_vertex_neighbors(MMG5_int idx) const {
   return result;
 }
 
-// Compute triangle quality manually since MMGS_Get_triangleQuality
-// is not properly exported on Windows DLL
-static double compute_triangle_quality(MMG5_pMesh mesh, MMG5_int k) {
-  MMG5_pTria pt = &mesh->tria[k];
-  MMG5_pPoint p0 = &mesh->point[pt->v[0]];
-  MMG5_pPoint p1 = &mesh->point[pt->v[1]];
-  MMG5_pPoint p2 = &mesh->point[pt->v[2]];
-
-  // Compute edge vectors
-  double ax = p1->c[0] - p0->c[0];
-  double ay = p1->c[1] - p0->c[1];
-  double az = p1->c[2] - p0->c[2];
-  double bx = p2->c[0] - p0->c[0];
-  double by = p2->c[1] - p0->c[1];
-  double bz = p2->c[2] - p0->c[2];
-  double cx = p2->c[0] - p1->c[0];
-  double cy = p2->c[1] - p1->c[1];
-  double cz = p2->c[2] - p1->c[2];
-
-  // Compute edge lengths squared
-  double a2 = ax * ax + ay * ay + az * az;
-  double b2 = bx * bx + by * by + bz * bz;
-  double c2 = cx * cx + cy * cy + cz * cz;
-
-  // Compute cross product for area
-  double nx = ay * bz - az * by;
-  double ny = az * bx - ax * bz;
-  double nz = ax * by - ay * bx;
-  double area2 = nx * nx + ny * ny + nz * nz;
-
-  if (area2 < 1e-30) {
-    return 0.0;
-  }
-
-  // Quality = 4 * sqrt(3) * area / (a^2 + b^2 + c^2)
-  // This is the standard triangle quality metric (ratio to equilateral)
-  double sum_edges = a2 + b2 + c2;
-  if (sum_edges < 1e-30) {
-    return 0.0;
-  }
-
-  return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
-}
-
 double MmgMeshS::get_element_quality(MMG5_int idx) const {
   MMG5_int mmg_idx = idx + 1;
 
@@ -827,26 +852,7 @@ void MmgMeshS::cleanup() {
 }
 
 py::dict MmgMeshS::remesh(const py::dict &options) {
-  // Capture before state
-  MMG5_int verts_before = mesh->np;
-  MMG5_int tris_before = mesh->nt;
-  MMG5_int edges_before = mesh->na;
-
-  // Compute quality statistics before remeshing
-  // Note: Using compute_triangle_quality instead of MMGS_Get_triangleQuality
-  // because the latter is not exported from MMG DLL on Windows
-  double quality_min_before = 1.0;
-  double quality_sum_before = 0.0;
-  if (tris_before > 0) {
-    for (MMG5_int i = 1; i <= tris_before; i++) {
-      double q = compute_triangle_quality(mesh, i);
-      quality_sum_before += q;
-      if (q < quality_min_before)
-        quality_min_before = q;
-    }
-  }
-  double quality_mean_before =
-      tris_before > 0 ? quality_sum_before / tris_before : 0.0;
+  RemeshStats before = collect_mesh_stats_surface(mesh);
 
   set_mesh_options_surface(mesh, met, options);
 
@@ -872,65 +878,14 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 
-  // Capture after state
-  MMG5_int verts_after = mesh->np;
-  MMG5_int tris_after = mesh->nt;
-  MMG5_int edges_after = mesh->na;
+  RemeshStats after = collect_mesh_stats_surface(mesh);
 
-  // Compute quality statistics after remeshing
-  double quality_min_after = 1.0;
-  double quality_sum_after = 0.0;
-  if (tris_after > 0) {
-    for (MMG5_int i = 1; i <= tris_after; i++) {
-      double q = compute_triangle_quality(mesh, i);
-      quality_sum_after += q;
-      if (q < quality_min_after)
-        quality_min_after = q;
-    }
-  }
-  double quality_mean_after =
-      tris_after > 0 ? quality_sum_after / tris_after : 0.0;
-
-  py::dict result;
-  result["vertices_before"] = verts_before;
-  result["vertices_after"] = verts_after;
-  result["elements_before"] = tris_before;
-  result["elements_after"] = tris_after;
-  result["triangles_before"] = tris_before;
-  result["triangles_after"] = tris_after;
-  result["edges_before"] = edges_before;
-  result["edges_after"] = edges_after;
-  result["quality_min_before"] = quality_min_before;
-  result["quality_min_after"] = quality_min_after;
-  result["quality_mean_before"] = quality_mean_before;
-  result["quality_mean_after"] = quality_mean_after;
-  result["duration_seconds"] = duration;
-  result["warnings"] = py::tuple();
-  result["return_code"] = ret;
-
-  return result;
+  return build_remesh_result(before, after, duration, ret);
 }
 
 py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                                    const py::dict &options) {
-  // Capture before state
-  MMG5_int verts_before = mesh->np;
-  MMG5_int tris_before = mesh->nt;
-  MMG5_int edges_before = mesh->na;
-
-  // Compute quality statistics before remeshing
-  double quality_min_before = 1.0;
-  double quality_sum_before = 0.0;
-  if (tris_before > 0) {
-    for (MMG5_int i = 1; i <= tris_before; i++) {
-      double q = compute_triangle_quality(mesh, i);
-      quality_sum_before += q;
-      if (q < quality_min_before)
-        quality_min_before = q;
-    }
-  }
-  double quality_mean_before =
-      tris_before > 0 ? quality_sum_before / tris_before : 0.0;
+  RemeshStats before = collect_mesh_stats_surface(mesh);
 
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
@@ -946,41 +901,7 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                              std::to_string(ret) + ")");
   }
 
-  // Capture after state
-  MMG5_int verts_after = mesh->np;
-  MMG5_int tris_after = mesh->nt;
-  MMG5_int edges_after = mesh->na;
+  RemeshStats after = collect_mesh_stats_surface(mesh);
 
-  // Compute quality statistics after remeshing
-  double quality_min_after = 1.0;
-  double quality_sum_after = 0.0;
-  if (tris_after > 0) {
-    for (MMG5_int i = 1; i <= tris_after; i++) {
-      double q = compute_triangle_quality(mesh, i);
-      quality_sum_after += q;
-      if (q < quality_min_after)
-        quality_min_after = q;
-    }
-  }
-  double quality_mean_after =
-      tris_after > 0 ? quality_sum_after / tris_after : 0.0;
-
-  py::dict result;
-  result["vertices_before"] = verts_before;
-  result["vertices_after"] = verts_after;
-  result["elements_before"] = tris_before;
-  result["elements_after"] = tris_after;
-  result["triangles_before"] = tris_before;
-  result["triangles_after"] = tris_after;
-  result["edges_before"] = edges_before;
-  result["edges_after"] = edges_after;
-  result["quality_min_before"] = quality_min_before;
-  result["quality_min_after"] = quality_min_after;
-  result["quality_mean_before"] = quality_mean_before;
-  result["quality_mean_after"] = quality_mean_after;
-  result["duration_seconds"] = duration;
-  result["warnings"] = py::tuple();
-  result["return_code"] = ret;
-
-  return result;
+  return build_remesh_result(before, after, duration, ret);
 }
