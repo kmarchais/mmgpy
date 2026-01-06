@@ -22,7 +22,7 @@ dependencies = [
     "scipy>=1.11.0",
     "typing-extensions>=4.0.0; python_version < '3.11'",
 ]
-authors = [{ name = "Kevin MArchais", email = "kevinmarchais@gmail.com" }]
+authors = [{ name = "Kevin Marchais", email = "kevinmarchais@gmail.com" }]
 license = { text = "MIT" }
 classifiers = [
     "Development Status :: 4 - Beta",

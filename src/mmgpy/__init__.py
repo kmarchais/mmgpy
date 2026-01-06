@@ -365,6 +365,8 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
 
 
 from . import lagrangian, metrics, progress, sizing
+from ._io import read
+from ._mesh import Mesh, MeshKind
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import ProgressEvent, rich_progress
 from ._pyvista import add_pyvista_methods, from_pyvista, to_pyvista
@@ -749,6 +751,68 @@ def _add_sizing_methods() -> None:  # noqa: PLR0915
     MmgMeshS.get_local_sizing_count = _get_local_sizing_count  # type: ignore[attr-defined]
     MmgMeshS.apply_local_sizing = _apply_local_sizing  # type: ignore[attr-defined]
 
+    # Add sizing methods to unified Mesh class (delegate to _impl)
+    def _mesh_set_size_sphere(
+        self: Mesh,
+        center: Sequence[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+    ) -> None:
+        self._impl.set_size_sphere(center, radius, size)  # type: ignore[attr-defined]
+
+    def _mesh_set_size_box(
+        self: Mesh,
+        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
+        size: float,
+    ) -> None:
+        self._impl.set_size_box(bounds, size)  # type: ignore[attr-defined]
+
+    def _mesh_set_size_cylinder(
+        self: Mesh,
+        point1: Sequence[float] | NDArray[np.float64],
+        point2: Sequence[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+    ) -> None:
+        # Only available for 3D and surface meshes
+        from ._mesh import MeshKind  # noqa: PLC0415
+
+        if self.kind == MeshKind.TRIANGULAR_2D:
+            msg = "set_size_cylinder() is not available for TRIANGULAR_2D meshes"
+            raise TypeError(msg)
+        self._impl.set_size_cylinder(point1, point2, radius, size)  # type: ignore[attr-defined]
+
+    def _mesh_set_size_from_point(
+        self: Mesh,
+        point: Sequence[float] | NDArray[np.float64],
+        near_size: float,
+        far_size: float,
+        influence_radius: float,
+    ) -> None:
+        self._impl.set_size_from_point(  # type: ignore[attr-defined]
+            point,
+            near_size,
+            far_size,
+            influence_radius,
+        )
+
+    def _mesh_clear_local_sizing(self: Mesh) -> None:
+        self._impl.clear_local_sizing()  # type: ignore[attr-defined]
+
+    def _mesh_get_local_sizing_count(self: Mesh) -> int:
+        return self._impl.get_local_sizing_count()  # type: ignore[attr-defined]
+
+    def _mesh_apply_local_sizing(self: Mesh) -> None:
+        self._impl.apply_local_sizing()  # type: ignore[attr-defined]
+
+    Mesh.set_size_sphere = _mesh_set_size_sphere  # type: ignore[attr-defined]
+    Mesh.set_size_box = _mesh_set_size_box  # type: ignore[attr-defined]
+    Mesh.set_size_cylinder = _mesh_set_size_cylinder  # type: ignore[attr-defined]
+    Mesh.set_size_from_point = _mesh_set_size_from_point  # type: ignore[attr-defined]
+    Mesh.clear_local_sizing = _mesh_clear_local_sizing  # type: ignore[attr-defined]
+    Mesh.get_local_sizing_count = _mesh_get_local_sizing_count  # type: ignore[attr-defined]
+    Mesh.apply_local_sizing = _mesh_apply_local_sizing  # type: ignore[attr-defined]
+
 
 _add_sizing_methods()
 
@@ -789,6 +853,8 @@ __all__ = [
     "MMG_VERSION",
     "BoxSize",
     "CylinderSize",
+    "Mesh",
+    "MeshKind",
     "Mmg2DOptions",
     "Mmg3DOptions",
     "MmgMesh2D",
@@ -812,6 +878,7 @@ __all__ = [
     "move_mesh",
     "progress",
     "propagate_displacement",
+    "read",
     "rich_progress",
     "set_log_level",
     "sizing",
