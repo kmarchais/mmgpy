@@ -1,5 +1,6 @@
 #include "mmg_mesh.hpp"
 #include "mmg_common.hpp"
+#include <chrono>
 #include <set>
 #include <stdexcept>
 
@@ -20,6 +21,31 @@ void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
         name +
         " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
   }
+}
+
+// Collect mesh statistics for 3D tetrahedral mesh
+RemeshStats collect_mesh_stats_3d(MMG5_pMesh mesh, MMG5_pSol met) {
+  RemeshStats stats;
+  stats.vertices = mesh->np;
+  stats.elements = mesh->ne; // tetrahedra
+  stats.triangles = mesh->nt;
+  stats.edges = mesh->na;
+
+  stats.quality_min = 1.0;
+  double quality_sum = 0.0;
+  if (stats.elements > 0) {
+    for (MMG5_int i = 1; i <= stats.elements; i++) {
+      double q = MMG3D_Get_tetrahedronQuality(mesh, met, i);
+      quality_sum += q;
+      if (q < stats.quality_min)
+        stats.quality_min = q;
+    }
+    stats.quality_mean = quality_sum / stats.elements;
+  } else {
+    stats.quality_mean = 0.0;
+  }
+
+  return stats;
 }
 } // namespace
 
@@ -1192,8 +1218,12 @@ py::tuple MmgMesh::get_tetrahedra_with_refs() const {
   return get_elements_with_refs();
 }
 
-void MmgMesh::remesh(const py::dict &options) {
+py::dict MmgMesh::remesh(const py::dict &options) {
+  RemeshStats before = collect_mesh_stats_3d(mesh, met);
+
   set_mesh_options_3D(mesh, met, options);
+
+  auto start = std::chrono::high_resolution_clock::now();
 
   int ret;
   const char *mode_name;
@@ -1208,34 +1238,61 @@ void MmgMesh::remesh(const py::dict &options) {
     mode_name = "MMG3D_mmg3dlib (standard remeshing)";
   }
 
+  auto end = std::chrono::high_resolution_clock::now();
+  double duration = std::chrono::duration<double>(end - start).count();
+
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
+
+  RemeshStats after = collect_mesh_stats_3d(mesh, met);
+
+  return build_remesh_result(before, after, duration, ret);
 }
 
-void MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
-                                const py::dict &options) {
+py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
+                                    const py::dict &options) {
+  RemeshStats before = collect_mesh_stats_3d(mesh, met);
+
   set_field("displacement", displacement);
   py::dict lag_options =
       merge_options_with_default(options, "lag", py::int_(1));
   set_mesh_options_3D(mesh, met, lag_options);
 
+  auto start = std::chrono::high_resolution_clock::now();
   int ret = MMG3D_mmg3dmov(mesh, met, disp);
+  auto end = std::chrono::high_resolution_clock::now();
+  double duration = std::chrono::duration<double>(end - start).count();
+
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error("MMG3D Lagrangian motion remeshing failed (ret=" +
                              std::to_string(ret) + ")");
   }
+
+  RemeshStats after = collect_mesh_stats_3d(mesh, met);
+
+  return build_remesh_result(before, after, duration, ret);
 }
 
-void MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
-                              const py::dict &options) {
+py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
+                                  const py::dict &options) {
+  RemeshStats before = collect_mesh_stats_3d(mesh, met);
+
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
   set_mesh_options_3D(mesh, met, ls_options);
 
+  auto start = std::chrono::high_resolution_clock::now();
   int ret = MMG3D_mmg3dls(mesh, ls, met);
+  auto end = std::chrono::high_resolution_clock::now();
+  double duration = std::chrono::duration<double>(end - start).count();
+
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error("MMG3D level-set discretization failed (ret=" +
                              std::to_string(ret) + ")");
   }
+
+  RemeshStats after = collect_mesh_stats_3d(mesh, met);
+
+  return build_remesh_result(before, after, duration, ret);
 }
