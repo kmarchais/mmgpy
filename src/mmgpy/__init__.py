@@ -453,6 +453,86 @@ def _add_convenience_methods() -> None:
     MmgMesh2D.remesh = _make_remesh_wrapper(_original_remesh_2d)  # type: ignore[method-assign]
     MmgMeshS.remesh = _make_remesh_wrapper(_original_remesh_s)  # type: ignore[method-assign]
 
+    # Wrap remesh_lagrangian and remesh_levelset to return RemeshResult
+    def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
+        """Convert C++ dict to RemeshResult dataclass."""
+        return RemeshResult(
+            vertices_before=stats["vertices_before"],
+            vertices_after=stats["vertices_after"],
+            elements_before=stats["elements_before"],
+            elements_after=stats["elements_after"],
+            triangles_before=stats["triangles_before"],
+            triangles_after=stats["triangles_after"],
+            edges_before=stats["edges_before"],
+            edges_after=stats["edges_after"],
+            quality_min_before=stats["quality_min_before"],
+            quality_min_after=stats["quality_min_after"],
+            quality_mean_before=stats["quality_mean_before"],
+            quality_mean_after=stats["quality_mean_after"],
+            duration_seconds=stats["duration_seconds"],
+            warnings=tuple(stats["warnings"]),
+            return_code=stats["return_code"],
+        )
+
+    # Store original C++ methods for 3D (returns dict, not RemeshResult)
+    _original_remesh_lagrangian_3d = MmgMesh3D.remesh_lagrangian
+    _original_remesh_levelset_3d = MmgMesh3D.remesh_levelset
+
+    def _wrapped_remesh_lagrangian_3d(
+        self: MmgMesh3D,
+        displacement: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_lagrangian_3d(self, displacement, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    def _wrapped_remesh_levelset_3d(
+        self: MmgMesh3D,
+        levelset: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_levelset_3d(self, levelset, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    MmgMesh3D.remesh_lagrangian = _wrapped_remesh_lagrangian_3d  # type: ignore[method-assign]
+    MmgMesh3D.remesh_levelset = _wrapped_remesh_levelset_3d  # type: ignore[method-assign]
+
+    # Store original C++ methods for 2D (returns dict, not RemeshResult)
+    _original_remesh_lagrangian_2d = MmgMesh2D.remesh_lagrangian
+    _original_remesh_levelset_2d = MmgMesh2D.remesh_levelset
+
+    def _wrapped_remesh_lagrangian_2d(
+        self: MmgMesh2D,
+        displacement: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_lagrangian_2d(self, displacement, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    def _wrapped_remesh_levelset_2d(
+        self: MmgMesh2D,
+        levelset: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_levelset_2d(self, levelset, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    MmgMesh2D.remesh_lagrangian = _wrapped_remesh_lagrangian_2d  # type: ignore[method-assign]
+    MmgMesh2D.remesh_levelset = _wrapped_remesh_levelset_2d  # type: ignore[method-assign]
+
+    # Store original C++ method for surface (no lagrangian for MMGS)
+    _original_remesh_levelset_s = MmgMeshS.remesh_levelset
+
+    def _wrapped_remesh_levelset_s(
+        self: MmgMeshS,
+        levelset: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        stats = _original_remesh_levelset_s(self, levelset, **kwargs)
+        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+
+    MmgMeshS.remesh_levelset = _wrapped_remesh_levelset_s  # type: ignore[method-assign]
+
     def _remesh_optimize(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
         *,
@@ -524,7 +604,7 @@ _sizing_constraints_store: dict[int, list[SizingConstraint]] = {}
 _sizing_mesh_refs: dict[int, "_weakref.ref[MmgMesh3D | MmgMesh2D | MmgMeshS]"] = {}
 
 
-def _add_sizing_methods() -> None:  # noqa: PLR0915
+def _add_sizing_methods() -> None:
     """Add local sizing methods to mesh classes."""
     from collections.abc import Sequence  # noqa: PLC0415
 

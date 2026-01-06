@@ -833,11 +833,13 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
   MMG5_int edges_before = mesh->na;
 
   // Compute quality statistics before remeshing
+  // Note: Using compute_triangle_quality instead of MMGS_Get_triangleQuality
+  // because the latter is not exported from MMG DLL on Windows
   double quality_min_before = 1.0;
   double quality_sum_before = 0.0;
   if (tris_before > 0) {
     for (MMG5_int i = 1; i <= tris_before; i++) {
-      double q = MMGS_Get_triangleQuality(mesh, met, i);
+      double q = compute_triangle_quality(mesh, i);
       quality_sum_before += q;
       if (q < quality_min_before)
         quality_min_before = q;
@@ -880,7 +882,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
   double quality_sum_after = 0.0;
   if (tris_after > 0) {
     for (MMG5_int i = 1; i <= tris_after; i++) {
-      double q = MMGS_Get_triangleQuality(mesh, met, i);
+      double q = compute_triangle_quality(mesh, i);
       quality_sum_after += q;
       if (q < quality_min_after)
         quality_min_after = q;
@@ -890,14 +892,14 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
       tris_after > 0 ? quality_sum_after / tris_after : 0.0;
 
   py::dict result;
-  result["vertices_before"] = static_cast<int>(verts_before);
-  result["vertices_after"] = static_cast<int>(verts_after);
-  result["elements_before"] = static_cast<int>(tris_before);
-  result["elements_after"] = static_cast<int>(tris_after);
-  result["triangles_before"] = static_cast<int>(tris_before);
-  result["triangles_after"] = static_cast<int>(tris_after);
-  result["edges_before"] = static_cast<int>(edges_before);
-  result["edges_after"] = static_cast<int>(edges_after);
+  result["vertices_before"] = verts_before;
+  result["vertices_after"] = verts_after;
+  result["elements_before"] = tris_before;
+  result["elements_after"] = tris_after;
+  result["triangles_before"] = tris_before;
+  result["triangles_after"] = tris_after;
+  result["edges_before"] = edges_before;
+  result["edges_after"] = edges_after;
   result["quality_min_before"] = quality_min_before;
   result["quality_min_after"] = quality_min_after;
   result["quality_mean_before"] = quality_mean_before;
@@ -921,7 +923,7 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
   double quality_sum_before = 0.0;
   if (tris_before > 0) {
     for (MMG5_int i = 1; i <= tris_before; i++) {
-      double q = MMGS_Get_triangleQuality(mesh, met, i);
+      double q = compute_triangle_quality(mesh, i);
       quality_sum_before += q;
       if (q < quality_min_before)
         quality_min_before = q;
@@ -954,7 +956,7 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
   double quality_sum_after = 0.0;
   if (tris_after > 0) {
     for (MMG5_int i = 1; i <= tris_after; i++) {
-      double q = MMGS_Get_triangleQuality(mesh, met, i);
+      double q = compute_triangle_quality(mesh, i);
       quality_sum_after += q;
       if (q < quality_min_after)
         quality_min_after = q;
@@ -964,14 +966,14 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
       tris_after > 0 ? quality_sum_after / tris_after : 0.0;
 
   py::dict result;
-  result["vertices_before"] = static_cast<int>(verts_before);
-  result["vertices_after"] = static_cast<int>(verts_after);
-  result["elements_before"] = static_cast<int>(tris_before);
-  result["elements_after"] = static_cast<int>(tris_after);
-  result["triangles_before"] = static_cast<int>(tris_before);
-  result["triangles_after"] = static_cast<int>(tris_after);
-  result["edges_before"] = static_cast<int>(edges_before);
-  result["edges_after"] = static_cast<int>(edges_after);
+  result["vertices_before"] = verts_before;
+  result["vertices_after"] = verts_after;
+  result["elements_before"] = tris_before;
+  result["elements_after"] = tris_after;
+  result["triangles_before"] = tris_before;
+  result["triangles_after"] = tris_after;
+  result["edges_before"] = edges_before;
+  result["edges_after"] = edges_after;
   result["quality_min_before"] = quality_min_before;
   result["quality_min_after"] = quality_min_after;
   result["quality_mean_before"] = quality_mean_before;

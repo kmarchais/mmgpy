@@ -101,9 +101,15 @@ class RemeshResult:
 
     @property
     def quality_improvement(self) -> float:
-        """Quality improvement ratio (mean_after / mean_before)."""
+        """Quality improvement ratio (mean_after / mean_before).
+
+        Returns 1.0 if both values are zero (no change), inf if only
+        before is zero, and the actual ratio otherwise.
+        """
         if self.quality_mean_before == 0:
-            return float("inf") if self.quality_mean_after > 0 else 0.0
+            if self.quality_mean_after == 0:
+                return 1.0  # No change (both zero)
+            return float("inf")  # Improved from zero
         return self.quality_mean_after / self.quality_mean_before
 
     @property

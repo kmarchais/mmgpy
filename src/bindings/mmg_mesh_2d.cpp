@@ -958,14 +958,14 @@ py::dict MmgMesh2D::remesh(const py::dict &options) {
       tris_after > 0 ? quality_sum_after / tris_after : 0.0;
 
   py::dict result;
-  result["vertices_before"] = static_cast<int>(verts_before);
-  result["vertices_after"] = static_cast<int>(verts_after);
-  result["elements_before"] = static_cast<int>(tris_before);
-  result["elements_after"] = static_cast<int>(tris_after);
-  result["triangles_before"] = static_cast<int>(tris_before);
-  result["triangles_after"] = static_cast<int>(tris_after);
-  result["edges_before"] = static_cast<int>(edges_before);
-  result["edges_after"] = static_cast<int>(edges_after);
+  result["vertices_before"] = verts_before;
+  result["vertices_after"] = verts_after;
+  result["elements_before"] = tris_before;
+  result["elements_after"] = tris_after;
+  result["triangles_before"] = tris_before;
+  result["triangles_after"] = tris_after;
+  result["edges_before"] = edges_before;
+  result["edges_after"] = edges_after;
   result["quality_min_before"] = quality_min_before;
   result["quality_min_after"] = quality_min_after;
   result["quality_mean_before"] = quality_mean_before;
@@ -1034,14 +1034,14 @@ py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
       tris_after > 0 ? quality_sum_after / tris_after : 0.0;
 
   py::dict result;
-  result["vertices_before"] = static_cast<int>(verts_before);
-  result["vertices_after"] = static_cast<int>(verts_after);
-  result["elements_before"] = static_cast<int>(tris_before);
-  result["elements_after"] = static_cast<int>(tris_after);
-  result["triangles_before"] = static_cast<int>(tris_before);
-  result["triangles_after"] = static_cast<int>(tris_after);
-  result["edges_before"] = static_cast<int>(edges_before);
-  result["edges_after"] = static_cast<int>(edges_after);
+  result["vertices_before"] = verts_before;
+  result["vertices_after"] = verts_after;
+  result["elements_before"] = tris_before;
+  result["elements_after"] = tris_after;
+  result["triangles_before"] = tris_before;
+  result["triangles_after"] = tris_after;
+  result["edges_before"] = edges_before;
+  result["edges_after"] = edges_after;
   result["quality_min_before"] = quality_min_before;
   result["quality_min_after"] = quality_min_after;
   result["quality_mean_before"] = quality_mean_before;
@@ -1108,14 +1108,14 @@ py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
       tris_after > 0 ? quality_sum_after / tris_after : 0.0;
 
   py::dict result;
-  result["vertices_before"] = static_cast<int>(verts_before);
-  result["vertices_after"] = static_cast<int>(verts_after);
-  result["elements_before"] = static_cast<int>(tris_before);
-  result["elements_after"] = static_cast<int>(tris_after);
-  result["triangles_before"] = static_cast<int>(tris_before);
-  result["triangles_after"] = static_cast<int>(tris_after);
-  result["edges_before"] = static_cast<int>(edges_before);
-  result["edges_after"] = static_cast<int>(edges_after);
+  result["vertices_before"] = verts_before;
+  result["vertices_after"] = verts_after;
+  result["elements_before"] = tris_before;
+  result["elements_after"] = tris_after;
+  result["triangles_before"] = tris_before;
+  result["triangles_after"] = tris_after;
+  result["edges_before"] = edges_before;
+  result["edges_after"] = edges_after;
   result["quality_min_before"] = quality_min_before;
   result["quality_min_after"] = quality_min_after;
   result["quality_mean_before"] = quality_mean_before;
