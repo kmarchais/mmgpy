@@ -1,7 +1,12 @@
 # mmgpy
 
-This is a Python package that provides bindings for the [MMG software](https://www.mmgtools.org) for mesh generation and optimization.
-The goal in the end is to provide a pythonic interface to mmg's capabilities.
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://kmarchais.github.io/mmgpy)
+[![PyPI](https://img.shields.io/pypi/v/mmgpy)](https://pypi.org/project/mmgpy/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+Python bindings for the [MMG](https://www.mmgtools.org) mesh generation and optimization library.
+
+**[Documentation](https://kmarchais.github.io/mmgpy)** | **[API Reference](https://kmarchais.github.io/mmgpy/api/)** | **[Examples](https://kmarchais.github.io/mmgpy/examples/)**
 
 Example from [`examples/mmgs/mechanical_piece_remeshing.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/mechanical_piece_remeshing.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-mechanical-piece-remeshing)):
 ![Mechanical piece remeshing](assets/mechanical_piece_remeshing.png)
