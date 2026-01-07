@@ -73,7 +73,8 @@ echo "Fixing VTK library symlinks..."
 cd "${LIB_DIR}"
 
 if [ "${PLATFORM}" = "linux" ]; then
-    for lib in *.so 2>/dev/null; do
+    for lib in *.so; do
+        [ -e "$lib" ] || continue  # Skip if no match
         if [[ "$lib" == *"-9.5.9.5.so" ]]; then
             base=$(echo "$lib" | sed "s/-9.5.9.5.so//g")
             rm -f "${base}-9.5.2.so" "${base}-9.5.so" 2>/dev/null || true
@@ -82,7 +83,8 @@ if [ "${PLATFORM}" = "linux" ]; then
         fi
     done
 elif [ "${PLATFORM}" = "macos" ] || [ "${PLATFORM}" = "darwin" ]; then
-    for lib in *.dylib 2>/dev/null; do
+    for lib in *.dylib; do
+        [ -e "$lib" ] || continue  # Skip if no match
         if [[ "$lib" == *"-9.5.9.5.dylib" ]]; then
             base=$(echo "$lib" | sed "s/-9.5.9.5.dylib//g")
             rm -f "${base}-9.5.2.dylib" "${base}-9.5.dylib" 2>/dev/null || true
@@ -167,7 +169,8 @@ is_essential() {
 }
 
 # Remove non-essential VTK libraries
-for lib in libvtk*.${LIB_EXT}* 2>/dev/null; do
+for lib in libvtk*.${LIB_EXT}*; do
+    [ -e "$lib" ] || continue  # Skip if no match
     if ! is_essential "$lib"; then
         rm -f "$lib"
     fi
