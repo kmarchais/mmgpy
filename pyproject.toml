@@ -144,7 +144,6 @@ ignore = [
     "S607",    # partial executable paths are intentional for benchmarks
     "PLC0415", # imports in functions are fine for benchmarks
     "T201",    # print statements used for timing reports
-    "E501",    # long lines acceptable in benchmark output formatting
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
@@ -152,7 +151,6 @@ ignore = [
     "BLE001", # broad exception catching is acceptable for non-critical RPATH fixing
     "E402",   # imports inside functions are intentional for lazy loading
     "C901",   # complex functions are acceptable for RPATH fixing logic
-    "RUF005", # list concatenation is fine here for subprocess args
     "PTH207", # glob usage is fine for file discovery
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
