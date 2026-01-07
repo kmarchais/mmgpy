@@ -74,7 +74,7 @@ def generated_meshes(
         "-v",
         str(verbose),
     ]
-    subprocess.run(command, check=True)  # noqa: S603
+    subprocess.run(command, check=True)
 
     # Load meshes with PyVista
     test_mesh: pv.DataSet = pv.read(test_path)

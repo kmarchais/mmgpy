@@ -57,9 +57,9 @@ try:
         MmgMesh2D,
         MmgMesh3D,
         MmgMeshS,
-        mmg2d,
-        mmg3d,
-        mmgs,
+        mmg2d,  # noqa: F401  # Available for advanced users
+        mmg3d,  # noqa: F401  # Available for advanced users
+        mmgs,  # noqa: F401  # Available for advanced users
     )
 
 except ImportError:
@@ -140,6 +140,103 @@ def _run_mmgs() -> None:
     else:
         _logger.error("mmgs_O3 executable not found at %s", exe_path)
         sys.exit(1)
+
+
+def _run_mmg() -> None:
+    """Run the appropriate mmg executable based on auto-detected mesh type.
+
+    This unified command automatically detects the mesh type from the input file
+    and delegates to the appropriate mmg2d_O3, mmg3d_O3, or mmgs_O3 executable.
+    """
+    import meshio  # noqa: PLC0415
+
+    from ._io import _detect_mesh_kind  # noqa: PLC0415
+    from ._mesh import MeshKind  # noqa: PLC0415
+
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help"):
+        print(  # noqa: T201
+            "mmg - Unified mesh remeshing tool with auto-detection\n\n"
+            "Usage: mmg <input_mesh> [options]\n\n"
+            "This command automatically detects the mesh type and delegates to:\n"
+            "  - mmg2d (or mmg2d_O3) for 2D planar meshes (triangles with z~=0)\n"
+            "  - mmg3d (or mmg3d_O3) for 3D volumetric meshes (tetrahedra)\n"
+            "  - mmgs (or mmgs_O3) for 3D surface meshes (triangles in 3D space)\n\n"
+            "All standard mmg options are passed through to the executable.\n"
+            "Run 'mmg3d -h', 'mmg2d -h', or 'mmgs -h' for specific options.",
+        )
+        sys.exit(0)
+
+    if args[0] in ("-v", "--version"):
+        print(f"mmgpy {__version__}")  # noqa: T201
+        print(f"MMG   {MMG_VERSION}")  # noqa: T201
+        sys.exit(0)
+
+    # MMG flags that take an argument (skip the next arg when detecting input file)
+    flags_with_args = {
+        "-o",
+        "-out",
+        "-sol",
+        "-met",
+        "-ls",
+        "-lag",
+        "-ar",
+        "-nr",
+        "-hmin",
+        "-hmax",
+        "-hsiz",
+        "-hausd",
+        "-hgrad",
+        "-hgradreq",
+        "-m",
+        "-v",
+        "-xreg",
+        "-nreg",
+        "-nsd",
+    }
+
+    # Find the input mesh file (first positional argument that's a file)
+    input_mesh = None
+    skip_next = False
+    for arg in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg in flags_with_args:
+            skip_next = True
+            continue
+        if not arg.startswith("-") and Path(arg).exists():
+            input_mesh = arg
+            break
+
+    if input_mesh is None:
+        _logger.error("No input mesh file found in arguments")
+        sys.exit(1)
+
+    # Detect mesh type
+    try:
+        meshio_mesh = meshio.read(input_mesh)
+        mesh_kind = _detect_mesh_kind(meshio_mesh)
+    except Exception:
+        _logger.exception(
+            "Failed to detect mesh type from '%s'. "
+            "Try using a specific command instead: mmg3d, mmg2d, or mmgs",
+            input_mesh,
+        )
+        sys.exit(1)
+
+    # Map mesh kind to executable
+    exe_map = {
+        MeshKind.TETRAHEDRAL: ("mmg3d_O3", _run_mmg3d),
+        MeshKind.TRIANGULAR_2D: ("mmg2d_O3", _run_mmg2d),
+        MeshKind.TRIANGULAR_SURFACE: ("mmgs_O3", _run_mmgs),
+    }
+
+    exe_name, run_func = exe_map[mesh_kind]
+    _logger.info("Detected %s mesh, using %s", mesh_kind.value, exe_name)
+
+    # Delegate to the appropriate executable
+    run_func()
 
 
 def _fix_rpath() -> None:
@@ -1061,12 +1158,6 @@ __all__ = [
     "IssueSeverity",
     "Mesh",
     "MeshKind",
-    "Mmg2DOptions",
-    "Mmg3DOptions",
-    "MmgMesh2D",
-    "MmgMesh3D",
-    "MmgMeshS",
-    "MmgSOptions",
     "PointSize",
     "ProgressEvent",
     "QualityStats",
@@ -1083,9 +1174,6 @@ __all__ = [
     "from_pyvista",
     "lagrangian",
     "metrics",
-    "mmg2d",
-    "mmg3d",
-    "mmgs",
     "move_mesh",
     "progress",
     "propagate_displacement",

@@ -122,19 +122,30 @@ result = mesh.remesh(hmax=0.1, verbose=-1)
 
 ## PyVista Visualization
 
-Visualize meshes with PyVista:
+Visualize meshes with the built-in `plot()` method:
 
 ```python
 import mmgpy
-import pyvista as pv
 
 # Load and remesh
 mesh = mmgpy.read("input.mesh")
 mesh.remesh(hmax=0.1)
 
-# Convert to PyVista and visualize
-pv_mesh = mesh.to_pyvista()
-pv_mesh.plot(show_edges=True)
+# Quick visualization with edges
+mesh.plot()
+
+# Or customize with PyVista options
+mesh.plot(color="lightblue", opacity=0.8)
+```
+
+For custom plotters, use the `vtk` property:
+
+```python
+import pyvista as pv
+
+plotter = pv.Plotter()
+plotter.add_mesh(mesh.vtk, show_edges=True)
+plotter.show()
 ```
 
 Load from PyVista:
@@ -151,7 +162,7 @@ mesh = mmgpy.from_pyvista(sphere, mesh_type="surface")
 
 # Remesh and visualize
 mesh.remesh(hmax=0.1)
-mesh.to_pyvista().plot(show_edges=True)
+mesh.plot()
 ```
 
 ## Mesh Validation

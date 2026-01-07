@@ -72,7 +72,7 @@ def _detect_mesh_kind(mesh: meshio.Mesh) -> MeshKind:
     Returns:
         MeshKind.TETRAHEDRAL for volumetric meshes with tetrahedra
         MeshKind.TRIANGULAR_SURFACE for 3D surface meshes (triangles in 3D space)
-        MeshKind.TRIANGULAR_2D for planar 2D meshes (triangles with z≈0)
+        MeshKind.TRIANGULAR_2D for planar 2D meshes (triangles with z~=0)
 
     Raises:
         ValueError: If mesh contains unsupported element types (hexahedra, etc.)
@@ -216,7 +216,7 @@ def read(
     Auto-detection logic:
         - Has tetrahedra → TETRAHEDRAL
         - Has triangles + 3D coords → TRIANGULAR_SURFACE
-        - Has triangles + 2D coords (or z≈0) → TRIANGULAR_2D
+        - Has triangles + 2D coords (or z~=0) -> TRIANGULAR_2D
 
     Supported file formats (via meshio):
         - VTK: .vtk, .vtu, .vtp

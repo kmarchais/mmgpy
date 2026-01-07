@@ -44,11 +44,12 @@
 
 ### 🟢 Low Priority
 
-| Feature                | Description            |
-| ---------------------- | ---------------------- |
-| Context manager        | `with MmgMesh() as m:` |
-| Performance benchmarks | pytest-benchmark       |
-| ParMmg integration     | Parallel remeshing     |
+| Feature                      | Description                                                      |
+| ---------------------------- | ---------------------------------------------------------------- |
+| Simplify executable wrappers | Install MMG executables directly to venv/bin instead of wrappers |
+| Context manager              | `with MmgMesh() as m:`                                           |
+| Performance benchmarks       | pytest-benchmark                                                 |
+| ParMmg integration           | Parallel remeshing                                               |
 
 ---
 

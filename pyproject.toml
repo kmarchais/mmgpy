@@ -53,8 +53,12 @@ sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 
 # Scripts entry points for development installs
 [project.scripts]
+mmg = "mmgpy:_run_mmg"
+mmg2d = "mmgpy:_run_mmg2d"
 mmg2d_O3 = "mmgpy:_run_mmg2d"
+mmg3d = "mmgpy:_run_mmg3d"
 mmg3d_O3 = "mmgpy:_run_mmg3d"
+mmgs = "mmgpy:_run_mmgs"
 mmgs_O3 = "mmgpy:_run_mmgs"
 fix-mmg-rpath = "mmgpy:_fix_rpath"
 
@@ -89,6 +93,9 @@ ignore = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "PLR2004", # magic values allowed in tests
     "NPY002",  # legacy numpy random is fine for tests
+    "S603",    # subprocess calls allowed in tests
+    "S607",    # partial executable paths allowed in tests
+    "TC003",   # pathlib import in runtime allowed for test fixtures
 ]
 "src/mmgpy/metrics.py" = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math

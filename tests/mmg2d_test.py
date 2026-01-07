@@ -70,7 +70,7 @@ def generated_meshes(
         "-verbose",
         str(verbose),
     ]
-    subprocess.check_call(command)  # noqa: S603
+    subprocess.check_call(command)
 
     # Load meshes with PyVista
     test_mesh: pv.PolyData = pv.read(test_path)
