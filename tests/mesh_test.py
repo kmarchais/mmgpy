@@ -1311,7 +1311,8 @@ def test_mmg_mesh_2d_displacement_field() -> None:
     mesh = MmgMesh2D(vertices, triangles)
 
     n_vertices = vertices.shape[0]
-    displacement = np.random.rand(n_vertices, 2).astype(np.float64) * 0.1
+    rng = np.random.default_rng(42)
+    displacement = rng.random((n_vertices, 2)).astype(np.float64) * 0.1
 
     mesh["displacement"] = displacement
     retrieved = mesh["displacement"]
