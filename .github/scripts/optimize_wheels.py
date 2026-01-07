@@ -49,24 +49,44 @@ def is_vtk_library(filename):
     )
 
 
-def is_versioned_duplicate(filename):
+def get_base_library_name(filename):
+    """Get the base library name without version suffix.
+
+    Examples:
+    - libvtkCommonCore-9.5.so.1    -> libvtkCommonCore-9.5.so
+    - libvtkCommonCore-9.5.so.9.5  -> libvtkCommonCore-9.5.so
+    - libmmg2d.so.5                -> libmmg2d.so
+    - libfoo.dylib.1               -> libfoo.dylib
+    """
+    import re
+
+    # Pattern matches .so.X, .so.X.Y, .dylib.X, etc.
+    versioned_pattern = re.compile(r"(\.(so|dylib))\.\d+.*$")
+    match = versioned_pattern.search(filename)
+    if match:
+        # Return base name (everything up to and including .so/.dylib)
+        return filename[: match.end(1)]
+    return None
+
+
+def is_versioned_duplicate(filename, existing_files):
     """Check if file is a versioned duplicate that can be removed.
 
     Auditwheel converts symlinks to real files, creating duplicates like:
     - libvtkCommonCore-9.5.so      (keep this one)
-    - libvtkCommonCore-9.5.so.1    (duplicate, remove)
-    - libvtkCommonCore-9.5.so.9.5  (duplicate, remove)
-    - libmmg3d.so                  (keep this one)
-    - libmmg3d.so.5                (duplicate, remove)
-    - libmmg3d.so.5.8.0            (duplicate, remove)
+    - libvtkCommonCore-9.5.so.1    (duplicate, remove if base exists)
+    - libvtkCommonCore-9.5.so.9.5  (duplicate, remove if base exists)
 
-    We keep the base .so and remove versioned variants.
+    BUT for MMG libraries:
+    - libmmg2d.so.5                (keep - no base .so exists!)
+
+    We only remove versioned files if the base .so/.dylib exists.
     """
-    import re
-
-    # Match patterns like .so.1, .so.9.5, .so.9.5.2, .dylib.9.5, etc.
-    versioned_pattern = re.compile(r"\.(so|dylib)\.\d+")
-    return bool(versioned_pattern.search(filename))
+    base_name = get_base_library_name(filename)
+    if base_name is None:
+        return False
+    # Only a duplicate if the base file exists
+    return base_name in existing_files
 
 
 def update_record(wheel_dir):
@@ -140,6 +160,11 @@ def optimize_wheel(wheel_path):
                         f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)",
                     )
 
+        # First pass: collect all filenames to check for base library existence
+        all_filenames = set()
+        for root, _dirs, files in os.walk(temp_dir):
+            all_filenames.update(files)
+
         # Walk through all files and remove unwanted ones
         for root, dirs, files in os.walk(temp_dir, topdown=False):
             # Remove development directories
@@ -156,8 +181,8 @@ def optimize_wheel(wheel_path):
                 filepath = os.path.join(root, f)
                 relpath = os.path.relpath(filepath, temp_dir)
 
-                # Remove versioned duplicates for ALL .so files (.so.1, .so.9.5, etc.)
-                if is_versioned_duplicate(f):
+                # Remove versioned duplicates (e.g., .so.1, .so.9.5) only if base .so exists
+                if is_versioned_duplicate(f, all_filenames):
                     os.remove(filepath)
                     vtk_duplicates_removed += 1
                     continue
