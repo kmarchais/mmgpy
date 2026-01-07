@@ -66,11 +66,19 @@ dev = [
     "imageio>=2.37.2",
     "pre-commit>=4.0.1",
     "pytest>=8.3.4",
+    "pytest-benchmark>=5.0.0",
     "ruff>=0.14.10",
 ]
 docs = [
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py", "bench_*.py"]
+markers = [
+    "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
 
 [tool.ruff.lint]
@@ -131,6 +139,19 @@ ignore = [
     "E501",    # long lines allowed in scripts
     "D401",    # docstring mood not enforced in scripts
     "PLC0415", # imports in functions allowed in scripts
+]
+"benchmarks/**/*.py" = [
+    "S101",    # asserts allowed in benchmarks
+    "PLR2004", # magic values allowed in benchmarks
+    "INP001",  # benchmarks directory is not a package
+    "NPY002",  # legacy numpy random is fine for benchmarks
+    "TC002",   # third-party imports in runtime for type annotations
+    "TC003",   # stdlib imports in runtime for type annotations
+    "S603",    # subprocess calls are safe (calling our own executables)
+    "S607",    # partial executable paths are intentional for benchmarks
+    "PLC0415", # imports in functions are fine for benchmarks
+    "T201",    # print statements used for timing reports
+    "E501",    # long lines acceptable in benchmark output formatting
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
