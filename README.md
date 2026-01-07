@@ -129,6 +129,10 @@ The `_O3` suffix variants (`mmg3d_O3`, etc.) are also available for compatibilit
 - [API Reference](https://kmarchais.github.io/mmgpy/api/)
 - [Examples](https://kmarchais.github.io/mmgpy/examples/)
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and the pull request process.
+
 ## License
 
 MIT
