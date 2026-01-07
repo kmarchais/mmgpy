@@ -159,12 +159,10 @@ class TestRemesh3DComparison:
         print("RESULT VALIDATION:")
         print(f"  Vertices:    exe={exe_n_vertices}, api={api_n_vertices}")
         print(f"  Tetrahedra:  exe={exe_n_tetrahedra}, api={api_n_tetrahedra}")
-        print(
-            f"  Quality min: exe={exe_qualities.min():.3f}, api={api_qualities.min():.3f}",
-        )
-        print(
-            f"  Quality avg: exe={exe_qualities.mean():.3f}, api={api_qualities.mean():.3f}",
-        )
+        exe_min, api_min = exe_qualities.min(), api_qualities.min()
+        exe_avg, api_avg = exe_qualities.mean(), api_qualities.mean()
+        print(f"  Quality min: exe={exe_min:.3f}, api={api_min:.3f}")
+        print(f"  Quality avg: exe={exe_avg:.3f}, api={api_avg:.3f}")
         print("=" * 60)
 
         # Verify results are equivalent (within 5% tolerance)
@@ -174,8 +172,8 @@ class TestRemesh3DComparison:
         assert abs(exe_n_tetrahedra - api_n_tetrahedra) / exe_n_tetrahedra < 0.05, (
             f"Tetrahedra count differs: exe={exe_n_tetrahedra}, api={api_n_tetrahedra}"
         )
-        assert abs(exe_qualities.mean() - api_qualities.mean()) < 0.05, (
-            f"Quality differs: exe={exe_qualities.mean():.3f}, api={api_qualities.mean():.3f}"
+        assert abs(exe_avg - api_avg) < 0.05, (
+            f"Quality differs: exe={exe_avg:.3f}, api={api_avg:.3f}"
         )
 
         # Basic assertion - API shouldn't be drastically slower
@@ -442,16 +440,16 @@ class TestAutoDetectionOverhead:
         print("EXECUTABLE (subprocess):")
         print(f"  mmg3d_O3 (direct): {exe_direct_avg:.3f}s")
         print(f"  mmg (autodetect):  {exe_auto_avg:.3f}s")
-        print(
-            f"  Overhead:          {(exe_auto_avg - exe_direct_avg) * 1000:.1f}ms ({(exe_auto_avg / exe_direct_avg - 1) * 100:.1f}%)",
-        )
+        exe_oh_ms = (exe_auto_avg - exe_direct_avg) * 1000
+        exe_oh_pct = (exe_auto_avg / exe_direct_avg - 1) * 100
+        print(f"  Overhead:          {exe_oh_ms:.1f}ms ({exe_oh_pct:.1f}%)")
         print("-" * 60)
         print("PYTHON API (in-memory):")
         print(f"  MmgMesh3D (direct): {api_direct_avg:.3f}s")
         print(f"  Mesh (autodetect):  {api_auto_avg:.3f}s")
-        print(
-            f"  Overhead:           {(api_auto_avg - api_direct_avg) * 1000:.1f}ms ({(api_auto_avg / api_direct_avg - 1) * 100:.1f}%)",
-        )
+        api_oh_ms = (api_auto_avg - api_direct_avg) * 1000
+        api_oh_pct = (api_auto_avg / api_direct_avg - 1) * 100
+        print(f"  Overhead:           {api_oh_ms:.1f}ms ({api_oh_pct:.1f}%)")
         print("=" * 60)
 
 

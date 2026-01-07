@@ -98,7 +98,7 @@ def _run_mmg2d() -> None:
     exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
-        subprocess.run([str(exe_path)] + sys.argv[1:], check=False)
+        subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
     else:
         _logger.error("mmg2d_O3 executable not found at %s", exe_path)
         sys.exit(1)
@@ -117,7 +117,7 @@ def _run_mmg3d() -> None:
     exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
-        subprocess.run([str(exe_path)] + sys.argv[1:], check=False)
+        subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
     else:
         _logger.error("mmg3d_O3 executable not found at %s", exe_path)
         sys.exit(1)
@@ -136,7 +136,7 @@ def _run_mmgs() -> None:
     exe_path = site_packages / scripts_dir / exe_name
 
     if exe_path.exists():
-        subprocess.run([str(exe_path)] + sys.argv[1:], check=False)
+        subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
     else:
         _logger.error("mmgs_O3 executable not found at %s", exe_path)
         sys.exit(1)
