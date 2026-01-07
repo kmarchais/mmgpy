@@ -343,7 +343,7 @@ def test_programmatic_mesh_construction() -> None:
     mesh.set_triangles(triangles)
 
     # Verify mesh construction
-    np_v, ne, nprism, nt, nquad, na = mesh.get_mesh_size()
+    np_v, ne, _nprism, nt, _nquad, _na = mesh.get_mesh_size()
     assert np_v == len(vertices)
     assert ne == len(tetrahedra)
     assert nt == len(triangles)
