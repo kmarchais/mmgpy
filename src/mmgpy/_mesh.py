@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
     from mmgpy._result import RemeshResult
+    from mmgpy._validation import ValidationReport
 
 _DIMS_2D = 2
 _DIMS_3D = 3
@@ -720,6 +721,68 @@ class Mesh:
 
         """
         return self._impl.to_pyvista(include_refs=include_refs)  # type: ignore[return-value]
+
+    # =========================================================================
+    # Validation
+    # =========================================================================
+
+    def validate(  # noqa: PLR0913
+        self,
+        *,
+        detailed: bool = False,
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> bool | ValidationReport:
+        """Validate the mesh and check for issues.
+
+        Parameters
+        ----------
+        detailed : bool
+            If True, return a ValidationReport with detailed information.
+            If False, return a simple boolean.
+        strict : bool
+            If True, raise ValidationError on any issue (including warnings).
+        check_geometry : bool
+            Check for geometric issues (inverted/degenerate elements).
+        check_topology : bool
+            Check for topological issues (orphan vertices, non-manifold edges).
+        check_quality : bool
+            Check element quality against threshold.
+        min_quality : float
+            Minimum acceptable element quality (0-1).
+
+        Returns
+        -------
+        bool | ValidationReport
+            If detailed=False, returns True if valid, False otherwise.
+            If detailed=True, returns full ValidationReport.
+
+        Raises
+        ------
+        ValidationError
+            If strict=True and any issues are found.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> if mesh.validate():
+        ...     print("Mesh is valid")
+
+        >>> report = mesh.validate(detailed=True)
+        >>> print(f"Quality: {report.quality.mean:.3f}")
+
+        """
+        return self._impl.validate(  # type: ignore[attr-defined, return-value]
+            detailed=detailed,
+            strict=strict,
+            check_geometry=check_geometry,
+            check_topology=check_topology,
+            check_quality=check_quality,
+            min_quality=min_quality,
+        )
 
 
 __all__ = [

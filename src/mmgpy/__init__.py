@@ -946,11 +946,119 @@ def _wrap_remesh_with_sizing() -> None:
 _wrap_remesh_with_sizing()
 
 from ._result import RemeshResult
+from ._validation import (
+    IssueSeverity,
+    QualityStats,
+    ValidationError,
+    ValidationIssue,
+    ValidationReport,
+    validate_mesh_2d,
+    validate_mesh_3d,
+    validate_mesh_surface,
+)
+
+
+def _add_validation_methods() -> None:
+    """Add validate() method to mesh classes."""
+    from collections.abc import Callable  # noqa: PLC0415
+    from typing import Any  # noqa: PLC0415
+
+    def _make_validate_method(
+        validate_func: Callable[..., ValidationReport],
+    ) -> Callable[..., bool | ValidationReport]:
+        """Create a validate method for a mesh class.
+
+        Parameters
+        ----------
+        validate_func : Callable
+            The underlying validation function (validate_mesh_3d, etc.).
+
+        Returns
+        -------
+        Callable
+            A validate method to be attached to a mesh class.
+
+        """
+
+        def _validate(  # noqa: PLR0913
+            self: Any,  # noqa: ANN401
+            *,
+            detailed: bool = False,
+            strict: bool = False,
+            check_geometry: bool = True,
+            check_topology: bool = True,
+            check_quality: bool = True,
+            min_quality: float = 0.1,
+        ) -> bool | ValidationReport:
+            """Validate the mesh and check for issues.
+
+            Parameters
+            ----------
+            detailed : bool
+                If True, return a ValidationReport with detailed information.
+                If False, return a simple boolean.
+            strict : bool
+                If True, raise ValidationError on any issue (including warnings).
+            check_geometry : bool
+                Check for geometric issues (inverted/degenerate elements).
+            check_topology : bool
+                Check for topological issues (orphan vertices, non-manifold edges).
+            check_quality : bool
+                Check element quality against threshold.
+            min_quality : float
+                Minimum acceptable element quality (0-1).
+
+            Returns
+            -------
+            bool | ValidationReport
+                If detailed=False, returns True if valid, False otherwise.
+                If detailed=True, returns full ValidationReport.
+
+            Raises
+            ------
+            ValidationError
+                If strict=True and any issues are found.
+
+            Examples
+            --------
+            >>> if mesh.validate():
+            ...     print("Mesh is valid")
+
+            >>> report = mesh.validate(detailed=True)
+            >>> print(f"Quality: {report.quality.mean:.3f}")
+
+            >>> mesh.validate(strict=True)  # Raises if invalid
+
+            """
+            report = validate_func(
+                self,
+                check_geometry=check_geometry,
+                check_topology=check_topology,
+                check_quality=check_quality,
+                min_quality=min_quality,
+            )
+
+            if strict and report.issues:
+                raise ValidationError(report)
+
+            if detailed:
+                return report
+            return report.is_valid
+
+        return _validate
+
+    MmgMesh3D.validate = _make_validate_method(validate_mesh_3d)  # type: ignore[attr-defined]
+    MmgMesh2D.validate = _make_validate_method(validate_mesh_2d)  # type: ignore[attr-defined]
+    MmgMeshS.validate = _make_validate_method(validate_mesh_surface)  # type: ignore[attr-defined]
+
+
+_add_validation_methods()
 
 __all__ = [
     "MMG_VERSION",
     "BoxSize",
     "CylinderSize",
+    "IssueSeverity",
     "Mesh",
     "MeshKind",
     "Mmg2DOptions",
@@ -961,9 +1069,13 @@ __all__ = [
     "MmgSOptions",
     "PointSize",
     "ProgressEvent",
+    "QualityStats",
     "RemeshResult",
     "SizingConstraint",
     "SphereSize",
+    "ValidationError",
+    "ValidationIssue",
+    "ValidationReport",
     "__version__",
     "detect_boundary_vertices",
     "disable_logging",

@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import overload
+from typing import Literal, overload
 
 import numpy as np
 import pyvista as pv
@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._result import RemeshResult
+from ._validation import ValidationReport
 
 class mmg3d:  # noqa: N801
     @staticmethod
@@ -297,6 +298,29 @@ class MmgMesh3D:
     def clear_local_sizing(self) -> None: ...
     def get_local_sizing_count(self) -> int: ...
     def apply_local_sizing(self) -> None: ...
+    # Validation methods (added by mmgpy._add_validation_methods)
+    @overload
+    def validate(
+        self,
+        *,
+        detailed: Literal[False] = ...,
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> bool: ...
+    @overload
+    def validate(
+        self,
+        *,
+        detailed: Literal[True],
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> ValidationReport: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -490,6 +514,29 @@ class MmgMesh2D:
     def clear_local_sizing(self) -> None: ...
     def get_local_sizing_count(self) -> int: ...
     def apply_local_sizing(self) -> None: ...
+    # Validation methods (added by mmgpy._add_validation_methods)
+    @overload
+    def validate(
+        self,
+        *,
+        detailed: Literal[False] = ...,
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> bool: ...
+    @overload
+    def validate(
+        self,
+        *,
+        detailed: Literal[True],
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> ValidationReport: ...
 
 # Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
@@ -664,3 +711,26 @@ class MmgMeshS:
     def clear_local_sizing(self) -> None: ...
     def get_local_sizing_count(self) -> int: ...
     def apply_local_sizing(self) -> None: ...
+    # Validation methods (added by mmgpy._add_validation_methods)
+    @overload
+    def validate(
+        self,
+        *,
+        detailed: Literal[False] = ...,
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> bool: ...
+    @overload
+    def validate(
+        self,
+        *,
+        detailed: Literal[True],
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> ValidationReport: ...
