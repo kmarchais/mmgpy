@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import overload
+from typing import Literal, overload
 
 import numpy as np
 import pyvista as pv
@@ -303,26 +303,24 @@ class MmgMesh3D:
     def validate(
         self,
         *,
-        detailed: bool = False,
+        detailed: Literal[False] = ...,
         strict: bool = False,
         check_geometry: bool = True,
         check_topology: bool = True,
         check_quality: bool = True,
-        check_references: bool = True,
         min_quality: float = 0.1,
     ) -> bool: ...
     @overload
     def validate(
         self,
         *,
-        detailed: bool,
+        detailed: Literal[True],
         strict: bool = False,
         check_geometry: bool = True,
         check_topology: bool = True,
         check_quality: bool = True,
-        check_references: bool = True,
         min_quality: float = 0.1,
-    ) -> bool | ValidationReport: ...
+    ) -> ValidationReport: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -521,26 +519,24 @@ class MmgMesh2D:
     def validate(
         self,
         *,
-        detailed: bool = False,
+        detailed: Literal[False] = ...,
         strict: bool = False,
         check_geometry: bool = True,
         check_topology: bool = True,
         check_quality: bool = True,
-        check_references: bool = True,
         min_quality: float = 0.1,
     ) -> bool: ...
     @overload
     def validate(
         self,
         *,
-        detailed: bool,
+        detailed: Literal[True],
         strict: bool = False,
         check_geometry: bool = True,
         check_topology: bool = True,
         check_quality: bool = True,
-        check_references: bool = True,
         min_quality: float = 0.1,
-    ) -> bool | ValidationReport: ...
+    ) -> ValidationReport: ...
 
 # Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
@@ -720,23 +716,21 @@ class MmgMeshS:
     def validate(
         self,
         *,
-        detailed: bool = False,
+        detailed: Literal[False] = ...,
         strict: bool = False,
         check_geometry: bool = True,
         check_topology: bool = True,
         check_quality: bool = True,
-        check_references: bool = True,
         min_quality: float = 0.1,
     ) -> bool: ...
     @overload
     def validate(
         self,
         *,
-        detailed: bool,
+        detailed: Literal[True],
         strict: bool = False,
         check_geometry: bool = True,
         check_topology: bool = True,
         check_quality: bool = True,
-        check_references: bool = True,
         min_quality: float = 0.1,
-    ) -> bool | ValidationReport: ...
+    ) -> ValidationReport: ...

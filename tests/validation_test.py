@@ -546,6 +546,187 @@ class TestValidationEdgeCases:
         # High threshold should produce at least as many warnings
         assert len(low_quality_warnings_high) >= len(low_quality_warnings_low)
 
+    def test_orphan_vertices_detection(self) -> None:
+        """Test that orphan vertices are detected."""
+        # Create a mesh with an extra unused vertex
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+                [10.0, 10.0, 10.0],  # Orphan vertex - not used by any element
+            ],
+            dtype=np.float64,
+        )
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(tetrahedra)
+
+        report = mesh.validate(detailed=True)
+        orphan_warnings = [w for w in report.warnings if "orphan" in w.check_name]
+        assert len(orphan_warnings) > 0
+        # Check that vertex 4 is identified as orphan
+        assert 4 in orphan_warnings[0].element_ids
+
+    def test_non_manifold_edge_detection_2d(self) -> None:
+        """Test that non-manifold edges are detected in 2D meshes."""
+        # Create a mesh where one edge is shared by 3 triangles (non-manifold)
+        vertices = np.array(
+            [
+                [0.0, 0.0],  # 0: center
+                [1.0, 0.0],  # 1: right
+                [0.0, 1.0],  # 2: top
+                [-1.0, 0.0],  # 3: left
+                [0.0, -1.0],  # 4: bottom
+            ],
+            dtype=np.float64,
+        )
+        # Edge 0-1 is shared by triangles 0 and 2 (and would be shared by more)
+        # Create 3 triangles sharing the center vertex
+        triangles = np.array(
+            [
+                [0, 1, 2],  # top-right
+                [0, 2, 3],  # top-left
+                [0, 3, 4],  # bottom-left
+                [0, 4, 1],  # bottom-right (this creates edge 0-1 shared by 2 faces)
+            ],
+            dtype=np.int32,
+        )
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        # This mesh should validate without non-manifold issues
+        # (each edge has max 2 faces)
+        report = mesh.validate(detailed=True)
+        non_manifold_errors = [
+            e for e in report.errors if "non_manifold" in e.check_name
+        ]
+        # No non-manifold edges expected in this valid mesh
+        assert len(non_manifold_errors) == 0
+
+
+# =============================================================================
+# Tests for QualityStats edge cases
+# =============================================================================
+
+
+class TestQualityStatsEdgeCases:
+    """Tests for QualityStats edge cases."""
+
+    def test_below_threshold_empty_histogram(self) -> None:
+        """Test below_threshold with empty histogram."""
+        stats = QualityStats(
+            min=0.0,
+            max=0.0,
+            mean=0.0,
+            std=0.0,
+            histogram=(),
+        )
+        # Should return 0 for empty histogram
+        assert stats.below_threshold(0.5) == 0
+
+    def test_below_threshold_all_below(self) -> None:
+        """Test below_threshold when all elements are below threshold."""
+        stats = QualityStats(
+            min=0.1,
+            max=0.3,
+            mean=0.2,
+            std=0.05,
+            histogram=(
+                ("0.0-0.1", 5),
+                ("0.1-0.2", 10),
+                ("0.2-0.3", 5),
+                ("0.3-0.4", 0),
+                ("0.4-0.5", 0),
+                ("0.5-0.6", 0),
+                ("0.6-0.7", 0),
+                ("0.7-0.8", 0),
+                ("0.8-0.9", 0),
+                ("0.9-1.0", 0),
+            ),
+        )
+        # below_threshold counts bins where bin_upper <= threshold
+        # For threshold=0.3: bins 0.0-0.1 (5), 0.1-0.2 (10), 0.2-0.3 (5) all count
+        assert stats.below_threshold(0.3) == 20  # 5 + 10 + 5 (all three bins)
+        assert stats.below_threshold(0.2) == 15  # 5 + 10 (bins 0.0-0.1 and 0.1-0.2)
+
+
+# =============================================================================
+# Tests for ValidationReport str representation
+# =============================================================================
+
+
+class TestValidationReportStr:
+    """Tests for ValidationReport string representation."""
+
+    def test_str_truncation_with_many_issues(self) -> None:
+        """Test that str representation truncates when >10 issues."""
+        # Create a report with more than 10 issues
+        issues = tuple(
+            ValidationIssue(
+                severity=IssueSeverity.WARNING,
+                check_name=f"test_check_{i}",
+                message=f"Test message {i}",
+                element_ids=(),
+            )
+            for i in range(15)
+        )
+
+        report = ValidationReport(
+            is_valid=True,
+            issues=issues,
+            quality=None,
+            mesh_type="TestMesh",
+        )
+
+        report_str = str(report)
+
+        # Should contain truncation message
+        assert "... and 5 more" in report_str
+
+        # Should show first 10 issues
+        assert "Test message 0" in report_str
+        assert "Test message 9" in report_str
+
+        # Should NOT show issues beyond 10
+        assert "Test message 10" not in report_str
+        assert "Test message 14" not in report_str
+
+    def test_str_no_truncation_with_few_issues(self) -> None:
+        """Test that str representation doesn't truncate when <=10 issues."""
+        issues = tuple(
+            ValidationIssue(
+                severity=IssueSeverity.WARNING,
+                check_name=f"test_check_{i}",
+                message=f"Test message {i}",
+                element_ids=(),
+            )
+            for i in range(5)
+        )
+
+        report = ValidationReport(
+            is_valid=True,
+            issues=issues,
+            quality=None,
+            mesh_type="TestMesh",
+        )
+
+        report_str = str(report)
+
+        # Should NOT contain truncation message
+        assert "... and" not in report_str
+
+        # Should show all issues
+        for i in range(5):
+            assert f"Test message {i}" in report_str
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -734,7 +734,6 @@ class Mesh:
         check_geometry: bool = True,
         check_topology: bool = True,
         check_quality: bool = True,
-        check_references: bool = True,
         min_quality: float = 0.1,
     ) -> bool | ValidationReport:
         """Validate the mesh and check for issues.
@@ -752,8 +751,6 @@ class Mesh:
             Check for topological issues (orphan vertices, non-manifold edges).
         check_quality : bool
             Check element quality against threshold.
-        check_references : bool
-            Check for reference value issues.
         min_quality : float
             Minimum acceptable element quality (0-1).
 
@@ -784,7 +781,6 @@ class Mesh:
             check_geometry=check_geometry,
             check_topology=check_topology,
             check_quality=check_quality,
-            check_references=check_references,
             min_quality=min_quality,
         )
 

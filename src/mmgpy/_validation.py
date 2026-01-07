@@ -223,40 +223,43 @@ def _check_geometry_3d(
     if len(elements) == 0:
         return
 
-    # Check for degenerate/inverted tetrahedra by computing volumes
-    inverted_elements = []
-    degenerate_elements = []
+    # Vectorized volume computation for all tetrahedra
+    # Get vertices for each tetrahedron: shape (n_elements, 4, 3)
+    tet_verts = vertices[elements]
+    v0, v1, v2, v3 = tet_verts[:, 0], tet_verts[:, 1], tet_verts[:, 2], tet_verts[:, 3]
 
-    for i, tet in enumerate(elements):
-        v0, v1, v2, v3 = vertices[tet]
-        # Compute signed volume using determinant
-        mat = np.array([v1 - v0, v2 - v0, v3 - v0])
-        volume = np.linalg.det(mat) / 6.0
+    # Build edge vectors: shape (n_elements, 3, 3)
+    edge_matrices = np.stack([v1 - v0, v2 - v0, v3 - v0], axis=-1)
 
-        if volume < -_GEOMETRY_TOLERANCE:
-            inverted_elements.append(i)
-        elif abs(volume) < _GEOMETRY_TOLERANCE:
-            degenerate_elements.append(i)
+    # Compute signed volumes using determinant
+    volumes = np.linalg.det(edge_matrices) / 6.0
 
-    if inverted_elements:
+    # Find inverted and degenerate elements
+    inverted_mask = volumes < -_GEOMETRY_TOLERANCE
+    degenerate_mask = np.abs(volumes) < _GEOMETRY_TOLERANCE
+
+    inverted_indices = np.where(inverted_mask)[0]
+    degenerate_indices = np.where(degenerate_mask)[0]
+
+    if len(inverted_indices) > 0:
         issues.append(
             ValidationIssue(
                 severity=IssueSeverity.ERROR,
                 check_name="inverted_elements",
-                message=f"Found {len(inverted_elements)} inverted tetrahedra "
+                message=f"Found {len(inverted_indices)} inverted tetrahedra "
                 f"with negative volume",
-                element_ids=tuple(inverted_elements[:100]),
+                element_ids=tuple(int(i) for i in inverted_indices[:100]),
             ),
         )
 
-    if degenerate_elements:
+    if len(degenerate_indices) > 0:
         issues.append(
             ValidationIssue(
                 severity=IssueSeverity.WARNING,
                 check_name="degenerate_elements",
-                message=f"Found {len(degenerate_elements)} degenerate tetrahedra "
+                message=f"Found {len(degenerate_indices)} degenerate tetrahedra "
                 f"with near-zero volume",
-                element_ids=tuple(degenerate_elements[:100]),
+                element_ids=tuple(int(i) for i in degenerate_indices[:100]),
             ),
         )
 
@@ -272,39 +275,43 @@ def _check_geometry_2d(
     if len(triangles) == 0:
         return
 
-    inverted_elements = []
-    degenerate_elements = []
+    # Vectorized area computation for all triangles
+    # Get vertices for each triangle: shape (n_elements, 3, 2)
+    tri_verts = vertices[triangles]
+    v0, v1, v2 = tri_verts[:, 0], tri_verts[:, 1], tri_verts[:, 2]
 
-    for i, tri in enumerate(triangles):
-        v0, v1, v2 = vertices[tri]
-        # Compute signed area using cross product (2D)
-        cross_z = (v1[0] - v0[0]) * (v2[1] - v0[1]) - (v2[0] - v0[0]) * (v1[1] - v0[1])
-        area = 0.5 * cross_z
+    # Compute signed area using cross product (2D)
+    cross_z = (v1[:, 0] - v0[:, 0]) * (v2[:, 1] - v0[:, 1]) - (v2[:, 0] - v0[:, 0]) * (
+        v1[:, 1] - v0[:, 1]
+    )
+    areas = 0.5 * cross_z
 
-        if area < -_GEOMETRY_TOLERANCE:
-            inverted_elements.append(i)
-        elif abs(area) < _GEOMETRY_TOLERANCE:
-            degenerate_elements.append(i)
+    # Find inverted and degenerate elements
+    inverted_mask = areas < -_GEOMETRY_TOLERANCE
+    degenerate_mask = np.abs(areas) < _GEOMETRY_TOLERANCE
 
-    if inverted_elements:
+    inverted_indices = np.where(inverted_mask)[0]
+    degenerate_indices = np.where(degenerate_mask)[0]
+
+    if len(inverted_indices) > 0:
         issues.append(
             ValidationIssue(
                 severity=IssueSeverity.ERROR,
                 check_name="inverted_elements",
-                message=f"Found {len(inverted_elements)} inverted triangles "
+                message=f"Found {len(inverted_indices)} inverted triangles "
                 f"with negative area",
-                element_ids=tuple(inverted_elements[:100]),
+                element_ids=tuple(int(i) for i in inverted_indices[:100]),
             ),
         )
 
-    if degenerate_elements:
+    if len(degenerate_indices) > 0:
         issues.append(
             ValidationIssue(
                 severity=IssueSeverity.WARNING,
                 check_name="degenerate_elements",
-                message=f"Found {len(degenerate_elements)} degenerate triangles "
+                message=f"Found {len(degenerate_indices)} degenerate triangles "
                 f"with near-zero area",
-                element_ids=tuple(degenerate_elements[:100]),
+                element_ids=tuple(int(i) for i in degenerate_indices[:100]),
             ),
         )
 
@@ -320,27 +327,29 @@ def _check_geometry_surface(
     if len(triangles) == 0:
         return
 
-    degenerate_elements = []
+    # Vectorized area computation for all triangles
+    # Get vertices for each triangle: shape (n_elements, 3, 3)
+    tri_verts = vertices[triangles]
+    v0, v1, v2 = tri_verts[:, 0], tri_verts[:, 1], tri_verts[:, 2]
 
-    for i, tri in enumerate(triangles):
-        v0, v1, v2 = vertices[tri]
-        # Compute area using cross product (3D)
-        edge1 = v1 - v0
-        edge2 = v2 - v0
-        cross = np.cross(edge1, edge2)
-        area = 0.5 * np.linalg.norm(cross)
+    # Compute area using cross product (3D)
+    edge1 = v1 - v0
+    edge2 = v2 - v0
+    cross = np.cross(edge1, edge2)
+    areas = 0.5 * np.linalg.norm(cross, axis=1)
 
-        if area < _GEOMETRY_TOLERANCE:
-            degenerate_elements.append(i)
+    # Find degenerate elements
+    degenerate_mask = areas < _GEOMETRY_TOLERANCE
+    degenerate_indices = np.where(degenerate_mask)[0]
 
-    if degenerate_elements:
+    if len(degenerate_indices) > 0:
         issues.append(
             ValidationIssue(
                 severity=IssueSeverity.WARNING,
                 check_name="degenerate_elements",
-                message=f"Found {len(degenerate_elements)} degenerate triangles "
+                message=f"Found {len(degenerate_indices)} degenerate triangles "
                 f"with near-zero area",
-                element_ids=tuple(degenerate_elements[:100]),
+                element_ids=tuple(int(i) for i in degenerate_indices[:100]),
             ),
         )
 
@@ -454,25 +463,32 @@ def _check_duplicate_vertices(
     issues: list[ValidationIssue],
     tolerance: float = 1e-10,
 ) -> None:
-    """Check for duplicate (coincident) vertices."""
+    """Check for duplicate (coincident) vertices using spatial sorting."""
     if len(vertices) < _MIN_VERTICES_FOR_DUPLICATE_CHECK:
         return
 
-    # Use a simple O(n log n) approach for large meshes
-    # Sort by x coordinate and check nearby vertices
     n_verts = len(vertices)
 
     if n_verts > _MAX_VERTICES_FOR_DUPLICATE_CHECK:
-        # For large meshes, skip expensive O(n^2) check
+        # For large meshes, skip expensive check
         return
 
-    # For smaller meshes, do pairwise comparison
+    # Sort vertices by x-coordinate for efficient neighbor search
+    # This allows O(n log n) detection instead of O(n^2)
+    sort_indices = np.argsort(vertices[:, 0])
+    sorted_verts = vertices[sort_indices]
+
     duplicates = []
-    for i in range(n_verts):
-        for j in range(i + 1, min(i + 100, n_verts)):  # Check nearby vertices
-            dist = np.linalg.norm(vertices[i] - vertices[j])
+    for i in range(n_verts - 1):
+        # Only check subsequent vertices within x-tolerance
+        j = i + 1
+        while j < n_verts and (sorted_verts[j, 0] - sorted_verts[i, 0]) < tolerance:
+            dist = np.linalg.norm(sorted_verts[i] - sorted_verts[j])
             if dist < tolerance:
-                duplicates.append((i, j))
+                # Map back to original indices
+                orig_i, orig_j = int(sort_indices[i]), int(sort_indices[j])
+                duplicates.append((min(orig_i, orig_j), max(orig_i, orig_j)))
+            j += 1
 
     if duplicates:
         issues.append(
@@ -486,13 +502,12 @@ def _check_duplicate_vertices(
         )
 
 
-def validate_mesh_3d(  # noqa: PLR0913
+def validate_mesh_3d(
     mesh: MmgMesh3D,
     *,
     check_geometry: bool = True,
     check_topology: bool = True,
     check_quality: bool = True,
-    check_references: bool = True,  # noqa: ARG001 - reserved for future use
     min_quality: float = 0.1,
 ) -> ValidationReport:
     """Validate a 3D tetrahedral mesh.
@@ -507,8 +522,6 @@ def validate_mesh_3d(  # noqa: PLR0913
         Check for topological issues (orphan vertices).
     check_quality : bool
         Check element quality against threshold.
-    check_references : bool
-        Check for reference value issues (currently unused).
     min_quality : float
         Minimum acceptable element quality (0-1).
 
@@ -546,13 +559,12 @@ def validate_mesh_3d(  # noqa: PLR0913
     )
 
 
-def validate_mesh_2d(  # noqa: PLR0913
+def validate_mesh_2d(
     mesh: MmgMesh2D,
     *,
     check_geometry: bool = True,
     check_topology: bool = True,
     check_quality: bool = True,
-    check_references: bool = True,  # noqa: ARG001 - reserved for future use
     min_quality: float = 0.1,
 ) -> ValidationReport:
     """Validate a 2D planar mesh.
@@ -567,8 +579,6 @@ def validate_mesh_2d(  # noqa: PLR0913
         Check for topological issues (orphan vertices, non-manifold edges).
     check_quality : bool
         Check element quality against threshold.
-    check_references : bool
-        Check for reference value issues (currently unused).
     min_quality : float
         Minimum acceptable element quality (0-1).
 
@@ -607,13 +617,12 @@ def validate_mesh_2d(  # noqa: PLR0913
     )
 
 
-def validate_mesh_surface(  # noqa: PLR0913
+def validate_mesh_surface(
     mesh: MmgMeshS,
     *,
     check_geometry: bool = True,
     check_topology: bool = True,
     check_quality: bool = True,
-    check_references: bool = True,  # noqa: ARG001 - reserved for future use
     min_quality: float = 0.1,
 ) -> ValidationReport:
     """Validate a surface mesh.
@@ -628,8 +637,6 @@ def validate_mesh_surface(  # noqa: PLR0913
         Check for topological issues (orphan vertices, non-manifold edges).
     check_quality : bool
         Check element quality against threshold.
-    check_references : bool
-        Check for reference value issues (currently unused).
     min_quality : float
         Minimum acceptable element quality (0-1).
 

@@ -960,198 +960,96 @@ from ._validation import (
 
 def _add_validation_methods() -> None:
     """Add validate() method to mesh classes."""
+    from collections.abc import Callable  # noqa: PLC0415
+    from typing import Any  # noqa: PLC0415
 
-    def _validate_3d(  # noqa: PLR0913
-        self: MmgMesh3D,
-        *,
-        detailed: bool = False,
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        check_references: bool = True,
-        min_quality: float = 0.1,
-    ) -> bool | ValidationReport:
-        """Validate the mesh and check for issues.
+    def _make_validate_method(
+        validate_func: Callable[..., ValidationReport],
+    ) -> Callable[..., bool | ValidationReport]:
+        """Create a validate method for a mesh class.
 
         Parameters
         ----------
-        detailed : bool
-            If True, return a ValidationReport with detailed information.
-            If False, return a simple boolean.
-        strict : bool
-            If True, raise ValidationError on any issue (including warnings).
-        check_geometry : bool
-            Check for geometric issues (inverted/degenerate elements).
-        check_topology : bool
-            Check for topological issues (orphan vertices).
-        check_quality : bool
-            Check element quality against threshold.
-        check_references : bool
-            Check for reference value issues.
-        min_quality : float
-            Minimum acceptable element quality (0-1).
+        validate_func : Callable
+            The underlying validation function (validate_mesh_3d, etc.).
 
         Returns
         -------
-        bool | ValidationReport
-            If detailed=False, returns True if valid, False otherwise.
-            If detailed=True, returns full ValidationReport.
-
-        Raises
-        ------
-        ValidationError
-            If strict=True and any issues are found.
-
-        Examples
-        --------
-        >>> mesh = MmgMesh3D(vertices, tetrahedra)
-        >>> if mesh.validate():
-        ...     print("Mesh is valid")
-
-        >>> report = mesh.validate(detailed=True)
-        >>> print(f"Quality: {report.quality.mean:.3f}")
-
-        >>> mesh.validate(strict=True)  # Raises if invalid
+        Callable
+            A validate method to be attached to a mesh class.
 
         """
-        report = validate_mesh_3d(
-            self,
-            check_geometry=check_geometry,
-            check_topology=check_topology,
-            check_quality=check_quality,
-            check_references=check_references,
-            min_quality=min_quality,
-        )
 
-        if strict and report.issues:
-            raise ValidationError(report)
+        def _validate(  # noqa: PLR0913
+            self: Any,  # noqa: ANN401
+            *,
+            detailed: bool = False,
+            strict: bool = False,
+            check_geometry: bool = True,
+            check_topology: bool = True,
+            check_quality: bool = True,
+            min_quality: float = 0.1,
+        ) -> bool | ValidationReport:
+            """Validate the mesh and check for issues.
 
-        if detailed:
-            return report
-        return report.is_valid
+            Parameters
+            ----------
+            detailed : bool
+                If True, return a ValidationReport with detailed information.
+                If False, return a simple boolean.
+            strict : bool
+                If True, raise ValidationError on any issue (including warnings).
+            check_geometry : bool
+                Check for geometric issues (inverted/degenerate elements).
+            check_topology : bool
+                Check for topological issues (orphan vertices, non-manifold edges).
+            check_quality : bool
+                Check element quality against threshold.
+            min_quality : float
+                Minimum acceptable element quality (0-1).
 
-    def _validate_2d(  # noqa: PLR0913
-        self: MmgMesh2D,
-        *,
-        detailed: bool = False,
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        check_references: bool = True,
-        min_quality: float = 0.1,
-    ) -> bool | ValidationReport:
-        """Validate the mesh and check for issues.
+            Returns
+            -------
+            bool | ValidationReport
+                If detailed=False, returns True if valid, False otherwise.
+                If detailed=True, returns full ValidationReport.
 
-        Parameters
-        ----------
-        detailed : bool
-            If True, return a ValidationReport with detailed information.
-            If False, return a simple boolean.
-        strict : bool
-            If True, raise ValidationError on any issue (including warnings).
-        check_geometry : bool
-            Check for geometric issues (inverted/degenerate elements).
-        check_topology : bool
-            Check for topological issues (orphan vertices, non-manifold edges).
-        check_quality : bool
-            Check element quality against threshold.
-        check_references : bool
-            Check for reference value issues.
-        min_quality : float
-            Minimum acceptable element quality (0-1).
+            Raises
+            ------
+            ValidationError
+                If strict=True and any issues are found.
 
-        Returns
-        -------
-        bool | ValidationReport
-            If detailed=False, returns True if valid, False otherwise.
-            If detailed=True, returns full ValidationReport.
+            Examples
+            --------
+            >>> if mesh.validate():
+            ...     print("Mesh is valid")
 
-        Raises
-        ------
-        ValidationError
-            If strict=True and any issues are found.
+            >>> report = mesh.validate(detailed=True)
+            >>> print(f"Quality: {report.quality.mean:.3f}")
 
-        """
-        report = validate_mesh_2d(
-            self,
-            check_geometry=check_geometry,
-            check_topology=check_topology,
-            check_quality=check_quality,
-            check_references=check_references,
-            min_quality=min_quality,
-        )
+            >>> mesh.validate(strict=True)  # Raises if invalid
 
-        if strict and report.issues:
-            raise ValidationError(report)
+            """
+            report = validate_func(
+                self,
+                check_geometry=check_geometry,
+                check_topology=check_topology,
+                check_quality=check_quality,
+                min_quality=min_quality,
+            )
 
-        if detailed:
-            return report
-        return report.is_valid
+            if strict and report.issues:
+                raise ValidationError(report)
 
-    def _validate_s(  # noqa: PLR0913
-        self: MmgMeshS,
-        *,
-        detailed: bool = False,
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        check_references: bool = True,
-        min_quality: float = 0.1,
-    ) -> bool | ValidationReport:
-        """Validate the mesh and check for issues.
+            if detailed:
+                return report
+            return report.is_valid
 
-        Parameters
-        ----------
-        detailed : bool
-            If True, return a ValidationReport with detailed information.
-            If False, return a simple boolean.
-        strict : bool
-            If True, raise ValidationError on any issue (including warnings).
-        check_geometry : bool
-            Check for geometric issues (degenerate elements).
-        check_topology : bool
-            Check for topological issues (orphan vertices, non-manifold edges).
-        check_quality : bool
-            Check element quality against threshold.
-        check_references : bool
-            Check for reference value issues.
-        min_quality : float
-            Minimum acceptable element quality (0-1).
+        return _validate
 
-        Returns
-        -------
-        bool | ValidationReport
-            If detailed=False, returns True if valid, False otherwise.
-            If detailed=True, returns full ValidationReport.
-
-        Raises
-        ------
-        ValidationError
-            If strict=True and any issues are found.
-
-        """
-        report = validate_mesh_surface(
-            self,
-            check_geometry=check_geometry,
-            check_topology=check_topology,
-            check_quality=check_quality,
-            check_references=check_references,
-            min_quality=min_quality,
-        )
-
-        if strict and report.issues:
-            raise ValidationError(report)
-
-        if detailed:
-            return report
-        return report.is_valid
-
-    MmgMesh3D.validate = _validate_3d  # type: ignore[attr-defined]
-    MmgMesh2D.validate = _validate_2d  # type: ignore[attr-defined]
-    MmgMeshS.validate = _validate_s  # type: ignore[attr-defined]
+    MmgMesh3D.validate = _make_validate_method(validate_mesh_3d)  # type: ignore[attr-defined]
+    MmgMesh2D.validate = _make_validate_method(validate_mesh_2d)  # type: ignore[attr-defined]
+    MmgMeshS.validate = _make_validate_method(validate_mesh_surface)  # type: ignore[attr-defined]
 
 
 _add_validation_methods()
