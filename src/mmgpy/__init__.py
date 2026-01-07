@@ -463,7 +463,7 @@ def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
 
 from . import lagrangian, metrics, progress, sizing
 from ._io import read
-from ._mesh import Mesh, MeshKind
+from ._mesh import Mesh, MeshCheckpoint, MeshKind
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import ProgressEvent, rich_progress
 from ._pyvista import add_pyvista_methods, from_pyvista, to_pyvista
@@ -1157,6 +1157,7 @@ __all__ = [
     "CylinderSize",
     "IssueSeverity",
     "Mesh",
+    "MeshCheckpoint",
     "MeshKind",
     "PointSize",
     "ProgressEvent",

@@ -15,13 +15,29 @@ Example:
     >>> mesh.remesh(hmax=0.1)
     >>> mesh.save("output.vtk")
 
+    >>> # Context manager usage
+    >>> with Mesh(vertices, cells) as mesh:
+    ...     mesh.remesh(hmax=0.1)
+    ...     mesh.save("output.vtk")
+
+    >>> # Transactional modifications with checkpoint
+    >>> mesh = Mesh(vertices, cells)
+    >>> with mesh.checkpoint() as snapshot:
+    ...     mesh.remesh(hmax=0.01)
+    ...     if mesh.validate():
+    ...         snapshot.commit()
+    ...     else:
+    ...         snapshot.rollback()
+
 """
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self, cast
 
 import numpy as np
 import pyvista as pv
@@ -29,6 +45,9 @@ import pyvista as pv
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+    from types import TracebackType
+
     from numpy.typing import NDArray
 
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
@@ -148,6 +167,119 @@ def _create_impl(
 
     msg = f"Unknown mesh kind: {kind}"
     raise ValueError(msg)
+
+
+@dataclass
+class MeshCheckpoint:
+    """Snapshot of mesh state for rollback.
+
+    This class is returned by `Mesh.checkpoint()` and provides transactional
+    semantics for mesh modifications. Changes are automatically rolled back
+    on context exit unless `commit()` is called.
+
+    Parameters
+    ----------
+    mesh : Mesh
+        The mesh to checkpoint.
+
+    Examples
+    --------
+    >>> mesh = Mesh(vertices, cells)
+    >>> with mesh.checkpoint() as snapshot:
+    ...     mesh.remesh(hmax=0.01)
+    ...     if mesh.validate():
+    ...         snapshot.commit()  # Keep changes
+    ...     # Otherwise, changes are automatically rolled back
+
+    >>> # Automatic rollback on exception
+    >>> with mesh.checkpoint():
+    ...     mesh.remesh(hmax=0.01)
+    ...     raise ValueError("Something went wrong")
+    >>> # mesh is restored to original state
+
+    """
+
+    _mesh: Mesh
+    _vertices: NDArray[np.float64] = field(repr=False)
+    _vertex_refs: NDArray[np.int64] = field(repr=False)
+    _triangles: NDArray[np.int32] = field(repr=False)
+    _triangle_refs: NDArray[np.int64] = field(repr=False)
+    _edges: NDArray[np.int32] = field(repr=False)
+    _edge_refs: NDArray[np.int64] = field(repr=False)
+    _tetrahedra: NDArray[np.int32] | None = field(default=None, repr=False)
+    _tetrahedra_refs: NDArray[np.int64] | None = field(default=None, repr=False)
+    _committed: bool = field(default=False, repr=False)
+
+    def commit(self) -> None:
+        """Keep the current mesh state.
+
+        Call this method to prevent rollback when the context manager exits.
+        """
+        self._committed = True
+
+    def rollback(self) -> None:
+        """Restore the mesh to its checkpoint state.
+
+        This is called automatically on context exit if `commit()` was not called,
+        or if an exception occurred. Can also be called manually.
+        """
+        mesh = self._mesh
+        kind = mesh._kind  # noqa: SLF001
+
+        if kind == MeshKind.TETRAHEDRAL:
+            if self._tetrahedra is None or self._tetrahedra_refs is None:
+                msg = "Tetrahedra data missing in checkpoint"
+                raise RuntimeError(msg)
+            impl = cast("MmgMesh3D", mesh._impl)  # noqa: SLF001
+            impl.set_mesh_size(
+                vertices=len(self._vertices),
+                tetrahedra=len(self._tetrahedra),
+                triangles=len(self._triangles),
+                edges=len(self._edges),
+            )
+            impl.set_vertices(self._vertices, self._vertex_refs)
+            impl.set_tetrahedra(self._tetrahedra, self._tetrahedra_refs)
+            if len(self._triangles) > 0:
+                impl.set_triangles(self._triangles, self._triangle_refs)
+            if len(self._edges) > 0:
+                impl.set_edges(self._edges, self._edge_refs)
+        elif kind == MeshKind.TRIANGULAR_2D:
+            impl_2d = cast("MmgMesh2D", mesh._impl)  # noqa: SLF001
+            impl_2d.set_mesh_size(
+                vertices=len(self._vertices),
+                triangles=len(self._triangles),
+                edges=len(self._edges),
+            )
+            impl_2d.set_vertices(self._vertices, self._vertex_refs)
+            impl_2d.set_triangles(self._triangles, self._triangle_refs)
+            if len(self._edges) > 0:
+                impl_2d.set_edges(self._edges, self._edge_refs)
+        else:  # TRIANGULAR_SURFACE
+            impl_s = cast("MmgMeshS", mesh._impl)  # noqa: SLF001
+            impl_s.set_mesh_size(
+                vertices=len(self._vertices),
+                triangles=len(self._triangles),
+                edges=len(self._edges),
+            )
+            impl_s.set_vertices(self._vertices, self._vertex_refs)
+            impl_s.set_triangles(self._triangles, self._triangle_refs)
+            if len(self._edges) > 0:
+                impl_s.set_edges(self._edges, self._edge_refs)
+
+    def __enter__(self) -> Self:
+        """Enter the context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
+        """Exit the context manager, rolling back if not committed or on exception."""
+        if exc_type is not None or not self._committed:
+            self.rollback()
+        return False
 
 
 class Mesh:
@@ -830,8 +962,210 @@ class Mesh:
             min_quality=min_quality,
         )
 
+    # =========================================================================
+    # Context manager support
+    # =========================================================================
+
+    def __enter__(self) -> Self:
+        """Enter the context manager.
+
+        Returns
+        -------
+        Self
+            The mesh instance.
+
+        Examples
+        --------
+        >>> with Mesh(vertices, cells) as mesh:
+        ...     mesh.remesh(hmax=0.1)
+        ...     mesh.save("output.vtk")
+
+        """
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
+        """Exit the context manager.
+
+        Currently performs no cleanup, but provides a consistent API
+        for resource management patterns.
+
+        Returns
+        -------
+        bool
+            False, to not suppress any exceptions.
+
+        """
+        return False
+
+    def checkpoint(self) -> MeshCheckpoint:
+        """Create a checkpoint for transactional modifications.
+
+        Returns a context manager that captures the current mesh state.
+        On exit, if `commit()` was not called or an exception occurred,
+        the mesh is automatically rolled back to its checkpoint state.
+
+        Returns
+        -------
+        MeshCheckpoint
+            A context manager for transactional mesh modifications.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> with mesh.checkpoint() as snapshot:
+        ...     mesh.remesh(hmax=0.01)
+        ...     if mesh.validate():
+        ...         snapshot.commit()  # Keep changes
+        ...     # If not committed, changes are rolled back
+
+        >>> # Automatic rollback on exception
+        >>> with mesh.checkpoint():
+        ...     mesh.remesh(hmax=0.01)
+        ...     raise ValueError("Simulated failure")
+        >>> # mesh is restored to original state
+
+        """
+        vertices, vertex_refs = self._impl.get_vertices_with_refs()
+        triangles, triangle_refs = self._impl.get_triangles_with_refs()
+        edges, edge_refs = self._impl.get_edges_with_refs()
+
+        tetrahedra = None
+        tetrahedra_refs = None
+        if self._kind == MeshKind.TETRAHEDRAL:
+            impl_3d = cast("MmgMesh3D", self._impl)
+            tetrahedra, tetrahedra_refs = impl_3d.get_tetrahedra_with_refs()
+
+        return MeshCheckpoint(
+            _mesh=self,
+            _vertices=vertices.copy(),
+            _vertex_refs=vertex_refs.copy(),
+            _triangles=triangles.copy(),
+            _triangle_refs=triangle_refs.copy(),
+            _edges=edges.copy(),
+            _edge_refs=edge_refs.copy(),
+            _tetrahedra=tetrahedra.copy() if tetrahedra is not None else None,
+            _tetrahedra_refs=(
+                tetrahedra_refs.copy() if tetrahedra_refs is not None else None
+            ),
+        )
+
+    @contextmanager
+    def copy(self) -> Generator[Mesh, None, None]:
+        """Create a working copy that is discarded on exit.
+
+        Returns a context manager that yields a copy of the mesh.
+        The copy can be freely modified without affecting the original.
+        Use `update_from()` to apply changes from the copy to the original.
+
+        Yields
+        ------
+        Mesh
+            A copy of this mesh.
+
+        Examples
+        --------
+        >>> original = Mesh(vertices, cells)
+        >>> with original.copy() as working:
+        ...     working.remesh(hmax=0.1)
+        ...     if len(working.get_vertices()) < len(original.get_vertices()) * 2:
+        ...         original.update_from(working)
+        >>> # working is discarded on exit
+
+        """
+        vertices = self._impl.get_vertices().copy()
+
+        if self._kind == MeshKind.TETRAHEDRAL:
+            impl_3d = cast("MmgMesh3D", self._impl)
+            cells = impl_3d.get_tetrahedra().copy()
+        else:
+            cells = self._impl.get_triangles().copy()
+
+        working = Mesh(vertices, cells)
+
+        try:
+            yield working
+        finally:
+            pass
+
+    def update_from(self, other: Mesh) -> None:
+        """Update this mesh from another mesh's state.
+
+        Replaces the vertices and elements of this mesh with those from
+        the other mesh. Both meshes must be of the same kind.
+
+        Parameters
+        ----------
+        other : Mesh
+            The mesh to copy state from.
+
+        Raises
+        ------
+        TypeError
+            If the meshes are of different kinds.
+
+        Examples
+        --------
+        >>> original = Mesh(vertices, cells)
+        >>> with original.copy() as working:
+        ...     working.remesh(hmax=0.1)
+        ...     original.update_from(working)
+
+        """
+        if self._kind != other._kind:
+            msg = f"Cannot update {self._kind.value} mesh from {other._kind.value} mesh"
+            raise TypeError(msg)
+
+        vertices, vertex_refs = other._impl.get_vertices_with_refs()
+        triangles, triangle_refs = other._impl.get_triangles_with_refs()
+        edges, edge_refs = other._impl.get_edges_with_refs()
+
+        if self._kind == MeshKind.TETRAHEDRAL:
+            other_impl = cast("MmgMesh3D", other._impl)
+            self_impl = cast("MmgMesh3D", self._impl)
+            tetrahedra, tetrahedra_refs = other_impl.get_tetrahedra_with_refs()
+            self_impl.set_mesh_size(
+                vertices=len(vertices),
+                tetrahedra=len(tetrahedra),
+                triangles=len(triangles),
+                edges=len(edges),
+            )
+            self_impl.set_vertices(vertices, vertex_refs)
+            self_impl.set_tetrahedra(tetrahedra, tetrahedra_refs)
+            if len(triangles) > 0:
+                self_impl.set_triangles(triangles, triangle_refs)
+            if len(edges) > 0:
+                self_impl.set_edges(edges, edge_refs)
+        elif self._kind == MeshKind.TRIANGULAR_2D:
+            impl_2d = cast("MmgMesh2D", self._impl)
+            impl_2d.set_mesh_size(
+                vertices=len(vertices),
+                triangles=len(triangles),
+                edges=len(edges),
+            )
+            impl_2d.set_vertices(vertices, vertex_refs)
+            impl_2d.set_triangles(triangles, triangle_refs)
+            if len(edges) > 0:
+                impl_2d.set_edges(edges, edge_refs)
+        else:  # TRIANGULAR_SURFACE
+            impl_s = cast("MmgMeshS", self._impl)
+            impl_s.set_mesh_size(
+                vertices=len(vertices),
+                triangles=len(triangles),
+                edges=len(edges),
+            )
+            impl_s.set_vertices(vertices, vertex_refs)
+            impl_s.set_triangles(triangles, triangle_refs)
+            if len(edges) > 0:
+                impl_s.set_edges(edges, edge_refs)
+
 
 __all__ = [
     "Mesh",
+    "MeshCheckpoint",
     "MeshKind",
 ]
