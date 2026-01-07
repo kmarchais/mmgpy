@@ -269,6 +269,93 @@ class TestCheckpointRefsPreservation:
         npt.assert_array_equal(refs_after, tet_refs)
 
 
+class TestCheckpointFieldPreservation:
+    """Tests that solution fields are preserved during rollback."""
+
+    def test_checkpoint_preserves_metric_field(self) -> None:
+        """Test that metric field is preserved on rollback."""
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+
+        # Set a metric field (scalar per vertex, shape (N, 1))
+        original_metric = np.ones((n_verts, 1), dtype=np.float64) * 0.1
+        mesh.set_field("metric", original_metric)
+
+        with mesh.checkpoint():
+            # Remesh using the metric (can't use hsiz with metric)
+            mesh.remesh(verbose=-1)
+            # No commit - should rollback
+
+        # After rollback, metric should be restored
+        restored_metric = mesh.get_field("metric")
+        npt.assert_array_equal(restored_metric, original_metric)
+
+    def test_checkpoint_preserves_vector_field(self) -> None:
+        """Test that vector field (displacement) is preserved on rollback."""
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+
+        # Set a displacement field (3D vector per vertex)
+        original_disp = np.zeros((n_verts, 3), dtype=np.float64)
+        original_disp[:, 0] = 0.01  # Small x displacement
+        mesh.set_field("displacement", original_disp)
+
+        with mesh.checkpoint():
+            mesh.remesh(hmax=0.5, verbose=-1)
+            # No commit - should rollback
+
+        restored_disp = mesh.get_field("displacement")
+        npt.assert_array_equal(restored_disp, original_disp)
+
+    def test_checkpoint_commit_does_not_restore_fields(self) -> None:
+        """Test that commit keeps the new mesh state without restoring fields."""
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+
+        original_metric = np.ones((n_verts, 1), dtype=np.float64) * 0.1
+        mesh.set_field("metric", original_metric)
+
+        with mesh.checkpoint() as snap:
+            # Remesh using the metric (can't use hsiz with metric)
+            mesh.remesh(verbose=-1)
+            snap.commit()
+
+        # After commit, mesh should have different number of vertices
+        assert len(mesh.get_vertices()) != n_verts
+
+    def test_checkpoint_preserves_2d_metric(self) -> None:
+        """Test that metric field is preserved on 2D mesh rollback."""
+        mesh = create_2d_mesh()
+        n_verts = len(mesh.get_vertices())
+
+        original_metric = np.ones((n_verts, 1), dtype=np.float64) * 0.2
+        mesh.set_field("metric", original_metric)
+
+        with mesh.checkpoint():
+            # Remesh using the metric
+            mesh.remesh(verbose=-1)
+            # No commit
+
+        restored_metric = mesh.get_field("metric")
+        npt.assert_array_equal(restored_metric, original_metric)
+
+    def test_checkpoint_preserves_surface_metric(self) -> None:
+        """Test that metric field is preserved on surface mesh rollback."""
+        mesh = create_surface_mesh()
+        n_verts = len(mesh.get_vertices())
+
+        original_metric = np.ones((n_verts, 1), dtype=np.float64) * 0.15
+        mesh.set_field("metric", original_metric)
+
+        with mesh.checkpoint():
+            # Remesh using the metric
+            mesh.remesh(verbose=-1)
+            # No commit
+
+        restored_metric = mesh.get_field("metric")
+        npt.assert_array_equal(restored_metric, original_metric)
+
+
 class TestCopyContextManager:
     """Tests for the copy() context manager."""
 

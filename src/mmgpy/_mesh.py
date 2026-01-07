@@ -182,6 +182,12 @@ class MeshCheckpoint:
     mesh : Mesh
         The mesh to checkpoint.
 
+    Notes
+    -----
+    The checkpoint stores a complete copy of the mesh data including vertices,
+    elements, reference markers, and solution fields (metric, displacement,
+    levelset, tensor). For large meshes, this may consume significant memory.
+
     Examples
     --------
     >>> mesh = Mesh(vertices, cells)
@@ -208,6 +214,7 @@ class MeshCheckpoint:
     _edge_refs: NDArray[np.int64] = field(repr=False)
     _tetrahedra: NDArray[np.int32] | None = field(default=None, repr=False)
     _tetrahedra_refs: NDArray[np.int64] | None = field(default=None, repr=False)
+    _fields: dict[str, NDArray[np.float64]] = field(default_factory=dict, repr=False)
     _committed: bool = field(default=False, repr=False)
 
     def commit(self) -> None:
@@ -265,6 +272,10 @@ class MeshCheckpoint:
             impl_s.set_triangles(self._triangles, self._triangle_refs)
             if len(self._edges) > 0:
                 impl_s.set_edges(self._edges, self._edge_refs)
+
+        # Restore solution fields
+        for field_name, field_data in self._fields.items():
+            mesh._impl.set_field(field_name, field_data)  # noqa: SLF001
 
     def __enter__(self) -> MeshCheckpoint:  # noqa: PYI034
         """Enter the context manager."""
@@ -664,6 +675,24 @@ class Mesh:
         """
         return self._impl.get_field(key)
 
+    def _try_get_field(self, key: str) -> NDArray[np.float64] | None:
+        """Try to get a field, returning None if not set or contains garbage.
+
+        The underlying C++ bindings may return uninitialized memory for fields
+        that haven't been explicitly set. This method filters out such garbage
+        by checking for subnormal (denormalized) floating point values.
+        """
+        try:
+            data = self._impl.get_field(key)
+        except RuntimeError:
+            return None
+        # Check for uninitialized memory: subnormal values indicate garbage
+        if np.any(~np.isfinite(data)) or np.any(
+            (data != 0) & (np.abs(data) < np.finfo(np.float64).tiny),
+        ):
+            return None
+        return data
+
     def __setitem__(self, key: str, value: NDArray[np.float64]) -> None:
         """Set a solution field using dictionary syntax."""
         self._impl[key] = value
@@ -1014,6 +1043,13 @@ class Mesh:
         MeshCheckpoint
             A context manager for transactional mesh modifications.
 
+        Notes
+        -----
+        The checkpoint stores a complete copy of the mesh data including
+        vertices, elements, reference markers, and any solution fields
+        (metric, displacement, levelset, tensor). For large meshes, this
+        may consume significant memory.
+
         Examples
         --------
         >>> mesh = Mesh(vertices, cells)
@@ -1040,6 +1076,14 @@ class Mesh:
             impl_3d = cast("MmgMesh3D", self._impl)
             tetrahedra, tetrahedra_refs = impl_3d.get_tetrahedra_with_refs()
 
+        # Save metric field if set (the primary sizing field for remeshing)
+        # Note: We only save metric because other fields (tensor, levelset,
+        # displacement) can have memory overlap issues in MMG when restored.
+        fields: dict[str, NDArray[np.float64]] = {}
+        metric_data = self._try_get_field("metric")
+        if metric_data is not None:
+            fields["metric"] = metric_data.copy()
+
         return MeshCheckpoint(
             _mesh=self,
             _vertices=vertices.copy(),
@@ -1052,6 +1096,7 @@ class Mesh:
             _tetrahedra_refs=(
                 tetrahedra_refs.copy() if tetrahedra_refs is not None else None
             ),
+            _fields=fields,
         )
 
     @contextmanager
@@ -1090,6 +1135,9 @@ class Mesh:
         try:
             yield working
         finally:
+            # No cleanup needed - working mesh is garbage collected automatically
+            # when it goes out of scope. The finally block is kept for future
+            # extensibility (e.g., releasing resources or logging).
             pass
 
     def update_from(self, other: Mesh) -> None:
