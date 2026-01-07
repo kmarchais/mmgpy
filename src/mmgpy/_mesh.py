@@ -722,6 +722,52 @@ class Mesh:
         """
         return self._impl.to_pyvista(include_refs=include_refs)  # type: ignore[return-value]
 
+    @property
+    def vtk(self) -> pv.UnstructuredGrid | pv.PolyData:
+        """Get the PyVista mesh representation.
+
+        This property provides direct access to the PyVista mesh for use with
+        custom plotters or other PyVista operations.
+
+        Returns
+        -------
+        pv.UnstructuredGrid | pv.PolyData
+            PyVista mesh object.
+
+        Examples
+        --------
+        >>> plotter = pv.Plotter()
+        >>> plotter.add_mesh(mesh.vtk, show_edges=True)
+        >>> plotter.show()
+
+        """
+        return self.to_pyvista()
+
+    def plot(
+        self,
+        *,
+        show_edges: bool = True,
+        **kwargs: Any,  # noqa: ANN401
+    ) -> None:
+        """Plot the mesh using PyVista.
+
+        Parameters
+        ----------
+        show_edges : bool
+            Show mesh edges (default: True).
+        **kwargs : Any
+            Additional arguments passed to PyVista's plot() method.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> mesh.plot()  # Simple plot with edges
+
+        >>> mesh.plot(color="blue", opacity=0.8)  # Custom styling
+
+        """
+        self.to_pyvista().plot(show_edges=show_edges, **kwargs)
+
     # =========================================================================
     # Validation
     # =========================================================================
