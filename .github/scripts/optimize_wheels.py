@@ -49,44 +49,29 @@ def is_vtk_library(filename):
     )
 
 
-def get_base_library_name(filename):
-    """Get the base library name without version suffix.
+def is_full_version_duplicate(filename):
+    """Check if file is a full-version duplicate that can be removed.
+
+    Library versioning structure:
+    - libvtkXXX-9.5.so       (linker name, keep)
+    - libvtkXXX-9.5.so.1     (SONAME, keep - loader needs this!)
+    - libvtkXXX-9.5.so.9.5   (full version, can remove if SONAME exists)
+
+    We only remove files with multi-component versions (X.Y or X.Y.Z after .so),
+    NOT single-digit SONAME versions (.so.1).
 
     Examples:
-    - libvtkCommonCore-9.5.so.1    -> libvtkCommonCore-9.5.so
-    - libvtkCommonCore-9.5.so.9.5  -> libvtkCommonCore-9.5.so
-    - libmmg2d.so.5                -> libmmg2d.so
-    - libfoo.dylib.1               -> libfoo.dylib
+    - libvtkCommonCore-9.5.so.9.5   -> True (remove)
+    - libvtkCommonCore-9.5.so.9.5.2 -> True (remove)
+    - libvtkCommonCore-9.5.so.1     -> False (keep - SONAME)
+    - libvtkCommonCore-9.5.so       -> False (keep - linker name)
     """
     import re
 
-    # Pattern matches .so.X, .so.X.Y, .dylib.X, etc.
-    versioned_pattern = re.compile(r"(\.(so|dylib))\.\d+.*$")
-    match = versioned_pattern.search(filename)
-    if match:
-        # Return base name (everything up to and including .so/.dylib)
-        return filename[: match.end(1)]
-    return None
-
-
-def is_versioned_duplicate(filename, existing_files):
-    """Check if file is a versioned duplicate that can be removed.
-
-    Auditwheel converts symlinks to real files, creating duplicates like:
-    - libvtkCommonCore-9.5.so      (keep this one)
-    - libvtkCommonCore-9.5.so.1    (duplicate, remove if base exists)
-    - libvtkCommonCore-9.5.so.9.5  (duplicate, remove if base exists)
-
-    BUT for MMG libraries:
-    - libmmg2d.so.5                (keep - no base .so exists!)
-
-    We only remove versioned files if the base .so/.dylib exists.
-    """
-    base_name = get_base_library_name(filename)
-    if base_name is None:
-        return False
-    # Only a duplicate if the base file exists
-    return base_name in existing_files
+    # Only match multi-component versions: .so.X.Y or .so.X.Y.Z
+    # This preserves .so.1 (SONAME) while removing .so.9.5 (full version)
+    full_version_pattern = re.compile(r"\.(so|dylib)\.\d+\.\d+")
+    return bool(full_version_pattern.search(filename))
 
 
 def update_record(wheel_dir):
@@ -160,11 +145,6 @@ def optimize_wheel(wheel_path):
                         f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)",
                     )
 
-        # First pass: collect all filenames to check for base library existence
-        all_filenames = set()
-        for root, _dirs, files in os.walk(temp_dir):
-            all_filenames.update(files)
-
         # Walk through all files and remove unwanted ones
         for root, dirs, files in os.walk(temp_dir, topdown=False):
             # Remove development directories
@@ -183,9 +163,8 @@ def optimize_wheel(wheel_path):
 
                 # Check if it's a VTK library
                 if is_vtk_library(f):
-                    # Remove versioned duplicates (e.g., .so.1, .so.9.5) only if base exists
-                    # Only for VTK libs - don't touch MMG libs like libmmg2d.so.5
-                    if is_versioned_duplicate(f, all_filenames):
+                    # Remove full-version duplicates (.so.9.5) but keep SONAME (.so.1)
+                    if is_full_version_duplicate(f):
                         os.remove(filepath)
                         vtk_duplicates_removed += 1
                         continue
