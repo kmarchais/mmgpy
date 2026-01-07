@@ -49,6 +49,43 @@ def is_vtk_library(filename):
     )
 
 
+def is_removable_vtk_duplicate(filename, existing_files):
+    """Check if VTK file is a duplicate that can be removed.
+
+    Library versioning structure:
+    Linux:
+    - libvtkXXX-9.5.so       (linker name - remove if .so.1 exists)
+    - libvtkXXX-9.5.so.1     (SONAME - KEEP, loader needs this!)
+    - libvtkXXX-9.5.so.9.5   (full version - remove)
+
+    macOS:
+    - libvtkXXX-9.5.dylib       (base - KEEP)
+    - libvtkXXX-9.5.9.5.dylib   (versioned - remove)
+
+    Returns:
+        True if file can be safely removed
+    """
+    import re
+
+    # Linux: Full version files (.so.X.Y) - always removable
+    if re.search(r"\.so\.\d+\.\d+", filename):
+        return True
+
+    # macOS: Versioned dylib files (X.Y.dylib where X.Y is version) - remove
+    # Pattern: libvtkXXX-9.5.9.5.dylib (has extra .X.Y before .dylib)
+    if re.search(r"-\d+\.\d+\.\d+\.\d+\.dylib$", filename):
+        return True
+
+    # Linux: Base .so files - removable if SONAME version exists
+    # e.g., libvtkCommonCore-9.5.so -> remove if libvtkCommonCore-9.5.so.1 exists
+    if filename.endswith(".so"):
+        soname_pattern = filename + ".1"
+        if soname_pattern in existing_files:
+            return True
+
+    return False
+
+
 def update_record(wheel_dir):
     """Regenerate RECORD file after wheel modifications.
 
@@ -102,6 +139,7 @@ def optimize_wheel(wheel_path):
             zf.extractall(temp_dir)
 
         vtk_removed = 0
+        vtk_duplicates_removed = 0
         other_removed = 0
         libs_removed = 0
 
@@ -118,6 +156,11 @@ def optimize_wheel(wheel_path):
                     print(
                         f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)",
                     )
+
+        # Collect all filenames for duplicate detection
+        all_filenames = set()
+        for root, _dirs, files in os.walk(temp_dir):
+            all_filenames.update(files)
 
         # Walk through all files and remove unwanted ones
         for root, dirs, files in os.walk(temp_dir, topdown=False):
@@ -137,11 +180,18 @@ def optimize_wheel(wheel_path):
 
                 # Check if it's a VTK library
                 if is_vtk_library(f):
+                    # Remove duplicates (Linux: .so if .so.1 exists, .so.9.5)
+                    # macOS: remove versioned dylibs like -9.5.9.5.dylib
+                    if is_removable_vtk_duplicate(f, all_filenames):
+                        os.remove(filepath)
+                        vtk_duplicates_removed += 1
+                        continue
+
+                    # Filter non-essential VTK modules (both Linux and macOS)
                     module = get_vtk_module_name(f)
                     if module and module not in ESSENTIAL_VTK_MODULES:
                         os.remove(filepath)
                         vtk_removed += 1
-                        # Only print first few to avoid spam
                         if vtk_removed <= 10:
                             print(f"  Removed VTK: {f} (module: {module})")
                         elif vtk_removed == 11:
@@ -168,8 +218,8 @@ def optimize_wheel(wheel_path):
                     pass
 
         print(
-            f"  Removed {vtk_removed} VTK libraries, {libs_removed} auditwheel duplicates, "
-            f"{other_removed} other files",
+            f"  Removed {vtk_removed} non-essential VTK, {vtk_duplicates_removed} versioned duplicates, "
+            f"{libs_removed} auditwheel duplicates, {other_removed} other files",
         )
 
         # Regenerate RECORD file to match actual wheel contents

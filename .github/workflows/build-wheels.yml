@@ -11,42 +11,83 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-wheels-linux:
+  build-wheels-linux-x86_64:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # x86_64: manylinux2014 (glibc 2.17) - compatible with PyPI VTK manylinux_2_17
-          - arch: x86_64
-            image: manylinux2014
-          # aarch64: manylinux_2_28 (glibc 2.28) - matches PyPI VTK manylinux_2_28_aarch64
-          - arch: aarch64
-            image: manylinux_2_28
+    env:
+      VTK_VERSION: "9.5.2"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Cache VTK
+        id: cache-vtk
+        uses: actions/cache@v4
         with:
-          platforms: ${{ matrix.arch }}
-      - name: Build ${{ matrix.image }} ${{ matrix.arch }} wheels
+          path: vtk-cache
+          key: vtk-${{ env.VTK_VERSION }}-linux-x86_64-v1
+      - name: Download and prepare VTK
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        run: ./.github/scripts/download_vtk.sh linux x86_64 ./vtk-cache
+      - name: Build manylinux2014 x86_64 wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
-          CIBW_ARCHS_LINUX: ${{ matrix.arch }}
+          CIBW_ARCHS_LINUX: x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.image }}-${{ matrix.arch }}
+          name: wheels-linux-x86_64
           path: wheelhouse/*.whl
           retention-days: 30
       - name: Report wheel sizes
         shell: bash
         run: |
-          echo "## Wheel Sizes for Linux ${{ matrix.image }} ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Wheel Sizes for Linux x86_64" >> $GITHUB_STEP_SUMMARY
+          echo "| Wheel | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
+          for wheel in wheelhouse/*.whl; do
+            if [ -f "$wheel" ]; then
+              size=$(du -h "$wheel" | cut -f1)
+              name=$(basename "$wheel")
+              echo "| $name | $size |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total wheelhouse size:** $(du -sh wheelhouse/ | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  build-wheels-linux-aarch64:
+    runs-on: ubuntu-24.04-arm # Native ARM runner (no QEMU needed)
+    env:
+      VTK_VERSION: "9.5.2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Cache VTK
+        id: cache-vtk
+        uses: actions/cache@v4
+        with:
+          path: vtk-cache
+          key: vtk-${{ env.VTK_VERSION }}-linux-aarch64-v1
+      - name: Download and prepare VTK
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        run: ./.github/scripts/download_vtk.sh linux aarch64 ./vtk-cache
+      - name: Build manylinux_2_28 aarch64 wheels
+        env:
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_ARCHS_LINUX: aarch64
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+        uses: pypa/cibuildwheel@v3.0
+      - name: Upload wheels as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-aarch64
+          path: wheelhouse/*.whl
+          retention-days: 30
+      - name: Report wheel sizes
+        shell: bash
+        run: |
+          echo "## Wheel Sizes for Linux aarch64" >> $GITHUB_STEP_SUMMARY
           echo "| Wheel | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
           for wheel in wheelhouse/*.whl; do
@@ -94,9 +135,20 @@ jobs:
 
   build-wheels-macos:
     runs-on: macos-latest
+    env:
+      VTK_VERSION: "9.5.2"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Cache VTK
+        id: cache-vtk
+        uses: actions/cache@v4
+        with:
+          path: vtk-cache
+          key: vtk-${{ env.VTK_VERSION }}-macos-arm64-v1
+      - name: Download and prepare VTK
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        run: ./.github/scripts/download_vtk.sh macos arm64 ./vtk-cache
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
@@ -125,7 +177,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
   build-sdist:
-    needs: [build-wheels-linux, build-wheels-windows, build-wheels-macos]
+    needs:
+      [
+        build-wheels-linux-x86_64,
+        build-wheels-linux-aarch64,
+        build-wheels-windows,
+        build-wheels-macos,
+      ]
     runs-on: ubuntu-latest
     name: Build source distribution
 
@@ -146,7 +204,8 @@ jobs:
   publish-to-pypi:
     needs:
       [
-        build-wheels-linux,
+        build-wheels-linux-x86_64,
+        build-wheels-linux-aarch64,
         build-wheels-windows,
         build-wheels-macos,
         build-sdist,
