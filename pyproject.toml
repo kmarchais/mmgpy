@@ -147,6 +147,9 @@ ignore = [
     "NPY002",  # legacy numpy random is fine for benchmarks
     "TC002",   # third-party imports in runtime for type annotations
     "TC003",   # stdlib imports in runtime for type annotations
+    "S603",    # subprocess calls are safe (calling our own executables)
+    "S607",    # partial executable paths are intentional for benchmarks
+    "PLC0415", # imports in functions are fine for benchmarks
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
