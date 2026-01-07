@@ -159,7 +159,7 @@ def _run_mmg() -> None:
             "mmg - Unified mesh remeshing tool with auto-detection\n\n"
             "Usage: mmg <input_mesh> [options]\n\n"
             "This command automatically detects the mesh type and delegates to:\n"
-            "  - mmg2d (or mmg2d_O3) for 2D planar meshes (triangles with z≈0)\n"
+            "  - mmg2d (or mmg2d_O3) for 2D planar meshes (triangles with z~=0)\n"
             "  - mmg3d (or mmg3d_O3) for 3D volumetric meshes (tetrahedra)\n"
             "  - mmgs (or mmgs_O3) for 3D surface meshes (triangles in 3D space)\n\n"
             "All standard mmg options are passed through to the executable.\n"

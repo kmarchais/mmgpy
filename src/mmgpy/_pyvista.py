@@ -184,7 +184,7 @@ def from_pyvista(
         mesh: PyVista mesh (UnstructuredGrid or PolyData).
         mesh_type: Target mesh class. If None, auto-detects based on:
             - UnstructuredGrid with tetrahedra → MmgMesh3D
-            - PolyData with 2D points (z≈0) → MmgMesh2D
+            - PolyData with 2D points (z~=0) -> MmgMesh2D
             - PolyData with 3D points → MmgMeshS
 
     Returns:
