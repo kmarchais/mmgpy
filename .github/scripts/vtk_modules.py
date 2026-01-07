@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
 """Shared VTK module definitions for wheel optimization scripts."""
+
+from __future__ import annotations
 
 import os
 import re
 
 
-def get_vtk_major_minor():
+def get_vtk_major_minor() -> str:
     """Get VTK major.minor version from environment or auto-detect.
 
     Uses VTK_VERSION environment variable (e.g., "9.4.1" -> "9.4").
@@ -15,15 +18,12 @@ def get_vtk_major_minor():
         match = re.match(r"(\d+\.\d+)", vtk_version)
         if match:
             return match.group(1)
-    return "9.4"  # Fallback default
+    return "9.4"
 
 
-# VTK major.minor version string (e.g., "9.4", "9.5")
-VTK_MAJOR_MINOR = get_vtk_major_minor()
+VTK_MAJOR_MINOR: str = get_vtk_major_minor()
 
-# VTK modules required for MMG I/O (matching Windows minimal set)
-# This list is shared between filter_vtk.py and optimize_wheels.py
-ESSENTIAL_VTK_MODULES = {
+ESSENTIAL_VTK_MODULES: set[str] = {
     "CommonColor",
     "CommonComputationalGeometry",
     "CommonCore",

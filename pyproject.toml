@@ -105,7 +105,12 @@ ignore = [
     "TC003",   # pathlib import in runtime allowed for test fixtures
 ]
 ".github/scripts/**/*.py" = [
-    "ALL",     # CI scripts don't need full linting
+    "INP001",  # CI scripts are not a package
+    "T201",    # print statements needed for CI output
+    "PLR2004", # magic values (like argument counts) are fine in scripts
+    "C901",    # complex wheel optimization function is acceptable
+    "PLR0912", # many branches in wheel optimization is acceptable
+    "PLR0915", # many statements in wheel optimization is acceptable
 ]
 "src/mmgpy/metrics.py" = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
@@ -126,19 +131,8 @@ ignore = [
 "scripts/**/*.py" = [
     "INP001",  # scripts are not a package
     "T201",    # print statements allowed in scripts
-    "ANN",     # annotations not required in scripts
     "EXE001",  # shebang is fine in scripts
-    "PTH",     # pathlib not required in scripts
-    "F841",    # unused variables allowed in scripts
     "PLR2004", # magic values allowed in scripts
-    "RET504",  # unnecessary assignment allowed in scripts
-    "C901",    # complex functions allowed in scripts
-    "PLR0912", # many branches allowed in scripts
-    "PLR0915", # many statements allowed in scripts
-    "B007",    # unused loop variables allowed in scripts
-    "E501",    # long lines allowed in scripts
-    "D401",    # docstring mood not enforced in scripts
-    "PLC0415", # imports in functions allowed in scripts
 ]
 "benchmarks/**/*.py" = [
     "S101",    # asserts allowed in benchmarks

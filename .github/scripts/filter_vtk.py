@@ -5,13 +5,15 @@ This script runs BEFORE auditwheel to reduce the number of libraries
 it needs to process, significantly speeding up wheel repair.
 """
 
-import os
+from __future__ import annotations
+
 import sys
+from pathlib import Path
 
 from vtk_modules import ESSENTIAL_VTK_MODULES, VTK_MAJOR_MINOR
 
 
-def get_vtk_module_name(filename):
+def get_vtk_module_name(filename: str) -> str | None:
     """Extract VTK module name from library filename.
 
     Handles patterns like:
@@ -29,55 +31,50 @@ def get_vtk_module_name(filename):
     return name.split(version_marker)[0]
 
 
-def is_vtk_shared_library(filename):
+def is_vtk_shared_library(filename: str) -> bool:
     """Check if file is a VTK shared library (Linux .so or macOS .dylib)."""
     return filename.startswith("libvtk") and (".so" in filename or ".dylib" in filename)
 
 
-def filter_vtk_libs(vtk_lib_dir):
+def filter_vtk_libs(vtk_lib_dir: str) -> None:
     """Remove non-essential VTK libraries from the given directory.
 
     Handles both real files and symlinks properly to avoid leaving
     dangling symlinks behind.
     """
-    if not os.path.isdir(vtk_lib_dir):
+    lib_path = Path(vtk_lib_dir)
+    if not lib_path.is_dir():
         print(f"ERROR: VTK lib directory not found: {vtk_lib_dir}")
         sys.exit(1)
 
     print(f"VTK filter: using VTK version {VTK_MAJOR_MINOR}")
 
-    # Collect files to remove (process symlinks first to avoid dangling refs)
-    to_remove_symlinks = []
-    to_remove_files = []
+    to_remove_symlinks: list[Path] = []
+    to_remove_files: list[Path] = []
     kept = 0
 
-    for filename in os.listdir(vtk_lib_dir):
-        filepath = os.path.join(vtk_lib_dir, filename)
-
-        # Skip directories
-        if os.path.isdir(filepath) and not os.path.islink(filepath):
+    for filepath in lib_path.iterdir():
+        if filepath.is_dir() and not filepath.is_symlink():
             continue
 
-        # Only process VTK shared libraries (.so on Linux, .dylib on macOS)
-        if not is_vtk_shared_library(filename):
+        if not is_vtk_shared_library(filepath.name):
             continue
 
-        module = get_vtk_module_name(filename)
+        module = get_vtk_module_name(filepath.name)
         if module is None:
             continue
 
         if module in ESSENTIAL_VTK_MODULES:
             kept += 1
-        elif os.path.islink(filepath):
+        elif filepath.is_symlink():
             to_remove_symlinks.append(filepath)
         else:
             to_remove_files.append(filepath)
 
-    # Remove symlinks first, then real files (avoids dangling symlink issues)
     for filepath in to_remove_symlinks:
-        os.remove(filepath)
+        filepath.unlink()
     for filepath in to_remove_files:
-        os.remove(filepath)
+        filepath.unlink()
 
     removed = len(to_remove_symlinks) + len(to_remove_files)
     print(
@@ -86,7 +83,7 @@ def filter_vtk_libs(vtk_lib_dir):
     )
 
 
-def main():
+def main() -> None:
     """Filter VTK libraries in the specified directory."""
     if len(sys.argv) < 2:
         print("Usage: filter_vtk.py <vtk_lib_directory>")

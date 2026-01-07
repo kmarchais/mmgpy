@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """Analyze wheel contents to understand structure."""
 
-import os
+from __future__ import annotations
+
 import sys
-import tempfile
 import zipfile
+from pathlib import Path
 
 
-def analyze_wheel(wheel_path):
+def analyze_wheel(wheel_path: str) -> None:
     """Analyze a wheel to understand its contents."""
+    path = Path(wheel_path)
     print(f"Analyzing {wheel_path}")
-    print(f"Wheel size: {os.path.getsize(wheel_path) // 1024 // 1024}MB")
+    print(f"Wheel size: {path.stat().st_size // 1024 // 1024}MB")
 
-    with tempfile.mkdtemp() as temp_dir, zipfile.ZipFile(wheel_path, "r") as zf:
-        # List all files
+    with zipfile.ZipFile(wheel_path, "r") as zf:
         all_files = zf.namelist()
         print(f"Total files in wheel: {len(all_files)}")
 
-        # Analyze file types and sizes
         lib_files = [
             f for f in all_files if any(x in f for x in [".so", ".dylib", ".dll"])
         ]
@@ -28,7 +28,6 @@ def analyze_wheel(wheel_path):
         print(f"VTK files: {len(vtk_files)}")
         print(f"MMG files: {len(mmg_files)}")
 
-        # Show largest files
         file_sizes = []
         for filename in all_files:
             info = zf.getinfo(filename)
@@ -45,10 +44,9 @@ def analyze_wheel(wheel_path):
 
         print(f"\nTop 20 files account for: {total_size / (1024 * 1024):.1f}MB")
 
-        # Show VTK files specifically
         if vtk_files:
             print("\nVTK files found:")
-            for vtk_file in vtk_files[:10]:  # Show first 10
+            for vtk_file in vtk_files[:10]:
                 info = zf.getinfo(vtk_file)
                 size_mb = info.file_size / (1024 * 1024)
                 print(f"  {vtk_file}: {size_mb:.1f}MB")
@@ -57,8 +55,7 @@ def analyze_wheel(wheel_path):
         else:
             print("\nNo VTK files found!")
 
-        # Show directory structure
-        dirs = set()
+        dirs: set[str] = set()
         for f in all_files:
             parts = f.split("/")
             for i in range(1, len(parts)):
