@@ -15,8 +15,10 @@ def get_vtk_module_name(filename):
     """Extract VTK module name from library filename.
 
     Handles patterns like:
-    - libvtkCommonCore-9.4.so (symlink)
-    - libvtkCommonCore-9.4.so.1 (real file)
+    - libvtkCommonCore-9.4.so (Linux symlink)
+    - libvtkCommonCore-9.4.so.1 (Linux real file)
+    - libvtkCommonCore-9.4.dylib (macOS)
+    - libvtkCommonCore-9.4.9.4.dylib (macOS versioned)
     """
     if not filename.startswith("libvtk"):
         return None
@@ -25,6 +27,11 @@ def get_vtk_module_name(filename):
     if version_marker not in name:
         return None
     return name.split(version_marker)[0]
+
+
+def is_vtk_shared_library(filename):
+    """Check if file is a VTK shared library (Linux .so or macOS .dylib)."""
+    return filename.startswith("libvtk") and (".so" in filename or ".dylib" in filename)
 
 
 def filter_vtk_libs(vtk_lib_dir):
@@ -51,8 +58,8 @@ def filter_vtk_libs(vtk_lib_dir):
         if os.path.isdir(filepath) and not os.path.islink(filepath):
             continue
 
-        # Only process VTK shared libraries
-        if not (filename.startswith("libvtk") and ".so" in filename):
+        # Only process VTK shared libraries (.so on Linux, .dylib on macOS)
+        if not is_vtk_shared_library(filename):
             continue
 
         module = get_vtk_module_name(filename)

@@ -109,22 +109,6 @@ import mmgpy
 mmgpy.enable_debug()
 ```
 
-### RPATH Issues on macOS/Linux
-
-If the bundled executables (`mmg2d_O3`, `mmg3d_O3`, `mmgs_O3`) fail to run:
-
-```bash
-# Run the RPATH fix utility
-fix-mmg-rpath
-```
-
-Or from Python:
-
-```python
-from mmgpy import _fix_rpath
-_fix_rpath()
-```
-
 ### Debug Logging
 
 Enable detailed logging to diagnose issues:

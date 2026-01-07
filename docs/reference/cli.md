@@ -71,8 +71,4 @@ For complete documentation on MMG command-line options, parameters, and usage, r
 
 ## Troubleshooting
 
-On macOS and Linux, if the executables fail to find libraries:
-
-```bash
-fix-mmg-rpath
-```
+RPATH issues on macOS and Linux are automatically fixed when you `import mmgpy`. If executables still fail to find libraries, ensure you've imported mmgpy at least once in your Python environment.
