@@ -1,9 +1,17 @@
-"""Benchmarks comparing executable, CLI script, and Python API performance."""
+"""Benchmarks comparing executable, CLI script, and Python API performance.
+
+Note on timing methodology:
+- Executable benchmarks measure wall-clock time including subprocess overhead
+- "internal" benchmarks parse MMG's reported ELAPSED TIME for fair comparison
+- API benchmarks measure direct library call time
+"""
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,6 +23,18 @@ if TYPE_CHECKING:
     import numpy as np
     from numpy.typing import NDArray
     from pytest_benchmark.fixture import BenchmarkFixture
+
+
+def _parse_mmg_elapsed_time(output: str) -> float | None:
+    """Parse MMG's internal elapsed time from output.
+
+    Looks for pattern like "ELAPSED TIME  0.362s" in MMG output.
+    Returns time in seconds, or None if not found.
+    """
+    match = re.search(r"ELAPSED TIME\s+([\d.]+)s", output)
+    if match:
+        return float(match.group(1))
+    return None
 
 
 class TestRemesh3DComparison:
@@ -33,13 +53,13 @@ class TestRemesh3DComparison:
         mesh.save(str(input_path))
         return input_path
 
-    @pytest.mark.benchmark(group="comparison-3d")
-    def test_mmg3d_executable(
+    @pytest.mark.benchmark(group="comparison-3d-wallclock")
+    def test_mmg3d_executable_wallclock(
         self,
         benchmark: BenchmarkFixture,
         mesh_file: Path,
     ) -> None:
-        """Benchmark mmg3d_O3 executable directly."""
+        """Benchmark mmg3d_O3 executable (wall-clock, includes subprocess overhead)."""
 
         def run_executable() -> None:
             with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
@@ -62,6 +82,60 @@ class TestRemesh3DComparison:
             Path(output_path).unlink(missing_ok=True)
 
         benchmark(run_executable)
+
+    def test_timing_comparison_report(
+        self,
+        mesh_file: Path,
+        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
+        tmp_path: Path,
+    ) -> None:
+        """Report timing comparison: executable internal time vs API time.
+
+        This is not a benchmark - it runs once and prints a comparison.
+        """
+        output_path = tmp_path / "output.mesh"
+
+        # Run executable and parse internal time
+        result = subprocess.run(
+            [
+                "mmg3d_O3",
+                "-in",
+                str(mesh_file),
+                "-out",
+                str(output_path),
+                "-hmax",
+                "0.15",
+                "-v",
+                "1",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        exe_internal_time = _parse_mmg_elapsed_time(result.stdout + result.stderr)
+
+        # Run Python API and measure time
+        vertices, tetrahedra = mesh_3d_medium
+        mesh = MmgMesh3D(vertices, tetrahedra)
+
+        start = time.perf_counter()
+        mesh.remesh(hmax=0.15, verbose=-1)
+        api_time = time.perf_counter() - start
+
+        # Report comparison
+        print("\n" + "=" * 60)
+        print("TIMING COMPARISON (3D remeshing, ~5000 elements)")
+        print("=" * 60)
+        print(f"mmg3d_O3 internal time:  {exe_internal_time:.3f}s")
+        print(f"Python API time:         {api_time:.3f}s")
+        if exe_internal_time:
+            ratio = api_time / exe_internal_time
+            print(f"Ratio (API/exe):         {ratio:.2f}x")
+        print("=" * 60)
+
+        # Basic assertion - API shouldn't be drastically slower
+        if exe_internal_time:
+            assert api_time < exe_internal_time * 2, "API is >2x slower than exe"
 
     @pytest.mark.benchmark(group="comparison-3d")
     def test_mmg_script(

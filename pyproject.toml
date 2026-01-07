@@ -150,6 +150,7 @@ ignore = [
     "S603",    # subprocess calls are safe (calling our own executables)
     "S607",    # partial executable paths are intentional for benchmarks
     "PLC0415", # imports in functions are fine for benchmarks
+    "T201",    # print statements used for timing reports
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
