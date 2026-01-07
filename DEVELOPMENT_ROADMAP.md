@@ -6,6 +6,8 @@
 
 | Feature                | PR  | Description                                                   |
 | ---------------------- | --- | ------------------------------------------------------------- |
+| CI optimization        | #91 | Native ARM64 runner (~90→15 min), VTK caching                 |
+| Wheel size reduction   | #91 | Linux 87→31 MB, macOS 150→66 MB via VTK filtering             |
 | UX improvements        | #90 | `mesh.plot()`, `mesh.vtk`, unified `mmg` command              |
 | API documentation      | #89 | MkDocs site with tutorials, API reference, examples           |
 | Mesh validation        | #88 | `mesh.validate()` with geometry, topology, and quality checks |
@@ -22,16 +24,14 @@
 
 ## Open GitHub Issues
 
-| Issue                                               | Description                                      |
-| --------------------------------------------------- | ------------------------------------------------ |
-| [#86](https://github.com/kmarchais/mmgpy/issues/86) | CAD-to-mesh workflow (CadQuery + TetGen)         |
-| [#84](https://github.com/kmarchais/mmgpy/issues/84) | Optimize CI build times (aarch64: 90min → 15min) |
-| [#80](https://github.com/kmarchais/mmgpy/issues/80) | ParMmg integration for parallel remeshing        |
-| [#78](https://github.com/kmarchais/mmgpy/issues/78) | Performance benchmarks with pytest-benchmark     |
-| [#77](https://github.com/kmarchais/mmgpy/issues/77) | Context manager support (`with mesh:`)           |
-| [#75](https://github.com/kmarchais/mmgpy/issues/75) | CONTRIBUTING.md guide                            |
-| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores                   |
-| [#41](https://github.com/kmarchais/mmgpy/issues/41) | Optimize wheel sizes (Linux 86MB → ~20MB)        |
+| Issue                                               | Description                                  |
+| --------------------------------------------------- | -------------------------------------------- |
+| [#86](https://github.com/kmarchais/mmgpy/issues/86) | CAD-to-mesh workflow (CadQuery + TetGen)     |
+| [#80](https://github.com/kmarchais/mmgpy/issues/80) | ParMmg integration for parallel remeshing    |
+| [#78](https://github.com/kmarchais/mmgpy/issues/78) | Performance benchmarks with pytest-benchmark |
+| [#77](https://github.com/kmarchais/mmgpy/issues/77) | Context manager support (`with mesh:`)       |
+| [#75](https://github.com/kmarchais/mmgpy/issues/75) | CONTRIBUTING.md guide                        |
+| [#44](https://github.com/kmarchais/mmgpy/issues/44) | Reduce pre-commit rule ignores               |
 
 ---
 
@@ -51,12 +51,10 @@
 
 ### 🟠 High Priority
 
-| Feature              | Issue | Description                                    |
-| -------------------- | ----- | ---------------------------------------------- |
-| Python 3.14 support  | —     | Blocked by VTK 9.5; awaiting VTK 9.6 release   |
-| CONTRIBUTING guide   | #75   | Enable community contributions                 |
-| CI optimization      | #84   | Faster builds, especially aarch64 (quick wins) |
-| Wheel size reduction | #41   | Match Windows ~20MB by filtering VTK modules   |
+| Feature             | Issue | Description                                  |
+| ------------------- | ----- | -------------------------------------------- |
+| Python 3.14 support | —     | Blocked by VTK 9.5; awaiting VTK 9.6 release |
+| CONTRIBUTING guide  | #75   | Enable community contributions               |
 
 ### 🟡 Medium Priority
 
@@ -77,8 +75,6 @@
 
 ## Recommended Next: Quick Wins
 
-Three small-to-medium tasks that improve developer and user experience:
-
 ### 1. CONTRIBUTING.md (#75)
 
 **Why:** Enables community contributions, low effort.
@@ -90,25 +86,15 @@ Three small-to-medium tasks that improve developer and user experience:
 - PR process and checklist
 - C++ bindings development guide
 
-### 2. CI Optimization Phase 1 (#84)
+### 2. Performance Benchmarks (#78)
 
-**Why:** aarch64 builds take 90 minutes; quick wins can cut 15-20 minutes.
+**Why:** Track performance regressions across releases.
 
-**Quick wins (no infrastructure changes):**
+**Scope:**
 
-- Cache VTK downloads between jobs
-- Share VTK artifacts across matrix
-- Set `CMAKE_BUILD_PARALLEL_LEVEL`
-
-### 3. Wheel Size Reduction (#41)
-
-**Why:** Linux wheels are 86MB vs Windows 19MB. Same VTK filtering logic needed.
-
-**Approach:**
-
-- Reduce `ESSENTIAL_VTK_MODULES` in `scripts/optimize_wheels.py`
-- Match Windows delvewheel's minimal set (~20 modules vs 55)
-- Verify all mesh I/O tests still pass
+- Add pytest-benchmark for key operations
+- CI integration to detect regressions
+- Baseline metrics for remeshing operations
 
 ---
 
