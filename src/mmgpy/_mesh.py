@@ -37,7 +37,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import pyvista as pv
@@ -266,7 +266,7 @@ class MeshCheckpoint:
             if len(self._edges) > 0:
                 impl_s.set_edges(self._edges, self._edge_refs)
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> MeshCheckpoint:  # noqa: PYI034
         """Enter the context manager."""
         return self
 
@@ -966,12 +966,12 @@ class Mesh:
     # Context manager support
     # =========================================================================
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> Mesh:  # noqa: PYI034
         """Enter the context manager.
 
         Returns
         -------
-        Self
+        Mesh
             The mesh instance.
 
         Examples
