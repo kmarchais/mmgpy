@@ -1,51 +1,119 @@
 # mmgpy
 
-This is a Python package that provides bindings for the [MMG software](https://www.mmgtools.org) for mesh generation and optimization.
-The goal in the end is to provide a pythonic interface to mmg's capabilities.
+[![PyPI](https://img.shields.io/pypi/v/mmgpy)](https://pypi.org/project/mmgpy/)
+[![Python](https://img.shields.io/pypi/pyversions/mmgpy)](https://pypi.org/project/mmgpy/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://kmarchais.github.io/mmgpy)
 
-Example from [`examples/mmgs/mechanical_piece_remeshing.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/mechanical_piece_remeshing.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-mechanical-piece-remeshing)):
+**mmgpy** brings the power of [MMG](https://www.mmgtools.org) mesh adaptation to Python. Generate, optimize, and refine 2D, 3D, and surface meshes with a clean API.
+
+```python
+import mmgpy
+
+mesh = mmgpy.read("input.vtk")
+mesh.remesh(hmax=0.1)
+mesh.save("output.vtk")
+```
+
 ![Mechanical piece remeshing](assets/mechanical_piece_remeshing.png)
 
-Example from [`examples/mmgs/smooth_surface_remeshing.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/smooth_surface_remeshing.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmgs/mmg-remesher-smooth-surface-remeshing)):
-![Smooth surface remeshing](assets/smooth_surface_remeshing.png)
-
-Example from [`examples/mmg3d/mesh_quality_improvement.py`](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/mesh_quality_improvement.py) ([original tutorial](https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials/mmg-remesher-mmg3d/mesh-quality-improvement-with-mean-edge-lengths-preservation)):
-![Mesh quality improvement with mean edge lengths preservation](assets/3d_mesh.png)
-
 ## Installation
-
-Install from PyPI (Windows, macOS, and Linux):
 
 ```bash
 pip install mmgpy
 ```
 
-Or with `uv`:
+Using [uv](https://docs.astral.sh/uv/)?
 
 ```bash
-uv pip install mmgpy
+uv pip install mmgpy   # install in current environment
+uv add mmgpy           # add to project dependencies
+uv tool install mmgpy  # install mmg2d_O3, mmg3d_O3, mmgs_O3 globally
 ```
 
-To install directly from the repository:
+## Features
+
+- **Multi-dimensional** — 2D triangular, 3D tetrahedral, and surface meshes
+- **Local refinement** — Control mesh density with spheres, boxes, cylinders
+- **Anisotropic adaptation** — Metric tensors for directional refinement
+- **Level-set discretization** — Extract isosurfaces from implicit functions
+- **Lagrangian motion** — Remesh while tracking displacement fields
+- **PyVista integration** — Visualize and convert meshes seamlessly
+- **40+ file formats** — VTK, STL, OBJ, GMSH, and more
+
+## Usage
+
+### Basic Remeshing
+
+```python
+import mmgpy
+
+mesh = mmgpy.read("input.mesh")
+result = mesh.remesh(hmax=0.1)
+
+print(f"Quality: {result.quality_mean_before:.2f} → {result.quality_mean_after:.2f}")
+mesh.save("output.vtk")
+```
+
+### Local Sizing
+
+```python
+mesh = mmgpy.read("input.mesh")
+
+# Fine mesh near a point
+mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
+
+# Fine mesh in a region
+mesh.set_size_box(bounds=[[0, 0, 0], [0.3, 0.3, 0.3]], size=0.02)
+
+mesh.remesh(hmax=0.1)
+```
+
+### Typed Options
+
+```python
+from mmgpy import Mmg3DOptions
+
+opts = Mmg3DOptions(hmin=0.01, hmax=0.1, hausd=0.001)
+mesh.remesh(opts)
+
+# Or use presets
+mesh.remesh(Mmg3DOptions.fine())
+```
+
+### Visualization
+
+```python
+mesh.to_pyvista().plot(show_edges=True)
+```
+
+## Command Line
+
+MMG executables are included and available after installation:
 
 ```bash
-pip install git+https://github.com/kmarchais/mmgpy.git
+mmg3d_O3 input.mesh -o output.mesh -hmax 0.1
+mmgs_O3 surface.stl -o refined.mesh -hausd 0.001
+mmg2d_O3 domain.mesh -o refined.mesh -hmax 0.05
 ```
 
-## Build dependencies
+## Gallery
 
-- pybind11: Used for Python bindings
-  - BSD 3-Clause License
-  - Copyright (c) 2016 Wenzel Jakob <wenzel.jakob@epfl.ch>
+![Surface remeshing](assets/mechanical_piece_remeshing.png)
 
-- CMake (>= 3.0): Build system
-  - BSD 3-Clause License
-  - Copyright 2000-2024 Kitware, Inc. and Contributors
+![Smooth surface optimization](assets/smooth_surface_remeshing.png)
 
-- scikit-build: Python build system integration
-  - MIT License
-  - Copyright (c) 2014 Mike Sarahan
+![3D quality improvement](assets/3d_mesh.png)
 
-- pytest: Testing framework
-  - MIT License
-  - Copyright (c) 2004 Holger Krekel and others
+## Documentation
+
+**[kmarchais.github.io/mmgpy](https://kmarchais.github.io/mmgpy)**
+
+- [Quick Start](https://kmarchais.github.io/mmgpy/getting-started/quickstart/)
+- [Tutorials](https://kmarchais.github.io/mmgpy/tutorials/basic-remeshing/)
+- [API Reference](https://kmarchais.github.io/mmgpy/api/)
+- [Examples](https://kmarchais.github.io/mmgpy/examples/)
+
+## License
+
+MIT
