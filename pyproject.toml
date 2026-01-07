@@ -65,6 +65,10 @@ dev = [
     "pytest>=8.3.4",
     "ruff>=0.14.10",
 ]
+docs = [
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+]
 
 [tool.ruff.lint]
 select = ["ALL"]

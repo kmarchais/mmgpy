@@ -1,0 +1,118 @@
+site_name: mmgpy
+site_description: Python bindings for the MMG remeshing library
+site_url: https://kmarchais.github.io/mmgpy
+repo_url: https://github.com/kmarchais/mmgpy
+repo_name: kmarchais/mmgpy
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2024-2026 Kevin Marchais
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: red
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep-orange
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            docstring_section_style: list
+            show_root_heading: true
+            show_source: false
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 88
+            members_order: source
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+      - Core Concepts: getting-started/concepts.md
+  - Tutorials:
+      - Basic Remeshing: tutorials/basic-remeshing.md
+      - Surface Remeshing: tutorials/surface-remeshing.md
+      - Adaptive Sizing: tutorials/adaptive-sizing.md
+      - PyVista Integration: tutorials/pyvista-integration.md
+      - Level-Set Extraction: tutorials/levelset-extraction.md
+  - Examples:
+      - Gallery: examples/index.md
+  - API Reference:
+      - Overview: api/index.md
+      - Mesh Classes: api/mesh-classes.md
+      - Options: api/options.md
+      - Results & Validation: api/results-validation.md
+      - Sizing Constraints: api/sizing.md
+      - Metrics: api/metrics.md
+      - I/O Functions: api/io.md
+      - Lagrangian Motion: api/lagrangian.md
+  - Reference:
+      - CLI Tools: reference/cli.md
+      - File Formats: reference/file-formats.md
+      - MMG Parameters: reference/mmg-parameters.md
+  - Changelog: changelog.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kmarchais/mmgpy
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/mmgpy/
