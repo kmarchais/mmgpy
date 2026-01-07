@@ -208,8 +208,8 @@ before-all = [
     'echo "VTK ready: $(ls /tmp/vtk/lib/libvtk*.dylib 2>/dev/null | wc -l) libraries"',
 ]
 environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
-# Skip delocate due to VTK install_name issues; VTK installed at runtime via pip
-repair-wheel-command = "cp {wheel} {dest_dir}/"
+# Skip delocate due to VTK install_name issues; optimize wheel and copy
+repair-wheel-command = "python3 $PWD/.github/scripts/optimize_wheels.py {wheel} && cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]

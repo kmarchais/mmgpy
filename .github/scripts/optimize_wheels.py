@@ -49,29 +49,43 @@ def is_vtk_library(filename):
     )
 
 
-def is_full_version_duplicate(filename):
-    """Check if file is a full-version duplicate that can be removed.
+def is_removable_vtk_duplicate(filename, existing_files):
+    """Check if VTK file is a duplicate that can be removed.
 
     Library versioning structure:
-    - libvtkXXX-9.5.so       (linker name, keep)
-    - libvtkXXX-9.5.so.1     (SONAME, keep - loader needs this!)
-    - libvtkXXX-9.5.so.9.5   (full version, can remove if SONAME exists)
+    - libvtkXXX-9.5.so       (linker name - remove if .so.1 exists)
+    - libvtkXXX-9.5.so.1     (SONAME - KEEP, loader needs this!)
+    - libvtkXXX-9.5.so.9.5   (full version - remove)
 
-    We only remove files with multi-component versions (X.Y or X.Y.Z after .so),
-    NOT single-digit SONAME versions (.so.1).
+    At runtime, only SONAME (.so.1) is needed. Linker names (.so) are
+    only for compile-time linking. Full versions (.so.X.Y) are duplicates.
 
-    Examples:
-    - libvtkCommonCore-9.5.so.9.5   -> True (remove)
-    - libvtkCommonCore-9.5.so.9.5.2 -> True (remove)
-    - libvtkCommonCore-9.5.so.1     -> False (keep - SONAME)
-    - libvtkCommonCore-9.5.so       -> False (keep - linker name)
+    Returns:
+        True if file can be safely removed
     """
     import re
 
-    # Only match multi-component versions: .so.X.Y or .so.X.Y.Z
-    # This preserves .so.1 (SONAME) while removing .so.9.5 (full version)
-    full_version_pattern = re.compile(r"\.(so|dylib)\.\d+\.\d+")
-    return bool(full_version_pattern.search(filename))
+    # Full version files (.so.X.Y) - always removable
+    if re.search(r"\.(so|dylib)\.\d+\.\d+", filename):
+        return True
+
+    # Base .so files - removable if SONAME version exists
+    # e.g., libvtkCommonCore-9.5.so -> remove if libvtkCommonCore-9.5.so.1 exists
+    if filename.endswith(".so"):
+        soname_pattern = filename + ".1"
+        if soname_pattern in existing_files:
+            return True
+
+    # Base .dylib files - removable if versioned exists
+    if filename.endswith(".dylib"):
+        # Check for patterns like .9.5.dylib when we have .dylib
+        base = filename[:-6]  # Remove .dylib
+        for f in existing_files:
+            if f.startswith(base) and f.endswith(".dylib") and f != filename:
+                if re.search(r"\.\d+\.dylib$", f):
+                    return True
+
+    return False
 
 
 def update_record(wheel_dir):
@@ -145,6 +159,11 @@ def optimize_wheel(wheel_path):
                         f"  Removed auditwheel duplicates: {item}/ ({libs_count} files)",
                     )
 
+        # Collect all filenames for duplicate detection
+        all_filenames = set()
+        for root, _dirs, files in os.walk(temp_dir):
+            all_filenames.update(files)
+
         # Walk through all files and remove unwanted ones
         for root, dirs, files in os.walk(temp_dir, topdown=False):
             # Remove development directories
@@ -163,8 +182,9 @@ def optimize_wheel(wheel_path):
 
                 # Check if it's a VTK library
                 if is_vtk_library(f):
-                    # Remove full-version duplicates (.so.9.5) but keep SONAME (.so.1)
-                    if is_full_version_duplicate(f):
+                    # Remove duplicates: .so (if .so.1 exists), .so.9.5 (full version)
+                    # Keep only .so.1 (SONAME) which the loader needs at runtime
+                    if is_removable_vtk_duplicate(f, all_filenames):
                         os.remove(filepath)
                         vtk_duplicates_removed += 1
                         continue
