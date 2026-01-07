@@ -196,4 +196,4 @@ for exe in vtkWrapHierarchy vtkWrapPython vtkWrapPythonInit vtkParseJava vtkWrap
 done
 
 echo "=== VTK ${VTK_VERSION} prepared in ${OUTPUT_DIR}/vtk ==="
-du -sh "${OUTPUT_DIR}/vtk"
+du -sh .
