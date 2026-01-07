@@ -208,8 +208,8 @@ before-all = [
     'echo "VTK ready: $(ls /tmp/vtk/lib/libvtk*.dylib 2>/dev/null | wc -l) libraries"',
 ]
 environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
-# Filter VTK to essential modules before delocate (CMake needs all libs during build)
-repair-wheel-command = "if [ ! -d /tmp/vtk-filtered ]; then cp -r /tmp/vtk/lib /tmp/vtk-filtered && python3 $PWD/.github/scripts/filter_vtk.py /tmp/vtk-filtered; fi && rm -f /tmp/lib && ln -sf /tmp/vtk-filtered /tmp/lib && delocate-wheel --require-archs arm64 -w {dest_dir} {wheel} && python3 $PWD/.github/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -f%z \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
+# Run delocate with full VTK (needs all deps), then optimize_wheels.py filters after
+repair-wheel-command = "delocate-wheel --require-archs arm64 -L /tmp/vtk/lib -w {dest_dir} {wheel} && python3 $PWD/.github/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -f%z \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]

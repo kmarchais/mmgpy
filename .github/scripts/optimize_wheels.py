@@ -181,14 +181,16 @@ def optimize_wheel(wheel_path):
                 filepath = os.path.join(root, f)
                 relpath = os.path.relpath(filepath, temp_dir)
 
-                # Remove versioned duplicates (e.g., .so.1, .so.9.5) only if base .so exists
-                if is_versioned_duplicate(f, all_filenames):
-                    os.remove(filepath)
-                    vtk_duplicates_removed += 1
-                    continue
-
-                # Check if it's a VTK library and filter non-essential modules
+                # Check if it's a VTK library
                 if is_vtk_library(f):
+                    # Remove versioned duplicates (e.g., .so.1, .so.9.5) only if base exists
+                    # Only for VTK libs - don't touch MMG libs like libmmg2d.so.5
+                    if is_versioned_duplicate(f, all_filenames):
+                        os.remove(filepath)
+                        vtk_duplicates_removed += 1
+                        continue
+
+                    # Filter non-essential VTK modules
                     module = get_vtk_module_name(f)
                     if module and module not in ESSENTIAL_VTK_MODULES:
                         os.remove(filepath)
