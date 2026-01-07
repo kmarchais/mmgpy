@@ -94,90 +94,11 @@ elif [ "${PLATFORM}" = "macos" ] || [ "${PLATFORM}" = "darwin" ]; then
     done
 fi
 
-BEFORE_COUNT=$(ls -1 libvtk*.${LIB_EXT}* 2>/dev/null | wc -l)
-echo "Before filtering: ${BEFORE_COUNT} VTK libraries"
+# Note: VTK filtering happens in repair-wheel-command after the build,
+# not here. CMake needs all VTK libraries during configuration.
 
-# Filter to essential modules only
-# Essential modules list (matches scripts/vtk_modules.py)
-ESSENTIAL_MODULES=(
-    "CommonColor"
-    "CommonComputationalGeometry"
-    "CommonCore"
-    "CommonDataModel"
-    "CommonExecutionModel"
-    "CommonMath"
-    "CommonMisc"
-    "CommonSystem"
-    "CommonTransforms"
-    "DICOMParser"
-    "FiltersCellGrid"
-    "FiltersCore"
-    "FiltersExtraction"
-    "FiltersGeneral"
-    "FiltersGeometry"
-    "FiltersHybrid"
-    "FiltersHyperTree"
-    "FiltersModeling"
-    "FiltersParallel"
-    "FiltersReduction"
-    "FiltersSources"
-    "FiltersStatistics"
-    "FiltersTexture"
-    "FiltersVerdict"
-    "IOCellGrid"
-    "IOCore"
-    "IOGeometry"
-    "IOImage"
-    "IOLegacy"
-    "IOParallel"
-    "IOParallelXML"
-    "IOXML"
-    "IOXMLParser"
-    "ImagingCore"
-    "ImagingSources"
-    "ParallelCore"
-    "ParallelDIY"
-    "RenderingCore"
-    "doubleconversion"
-    "expat"
-    "fmt"
-    "jpeg"
-    "jsoncpp"
-    "kissfft"
-    "loguru"
-    "lz4"
-    "lzma"
-    "metaio"
-    "png"
-    "pugixml"
-    "sys"
-    "tiff"
-    "token"
-    "verdict"
-    "zlib"
-)
-
-# Build regex pattern for essential modules
-is_essential() {
-    local filename="$1"
-    for module in "${ESSENTIAL_MODULES[@]}"; do
-        if [[ "$filename" == *"vtk${module}-"* ]] || [[ "$filename" == *"vtk${module}."* ]]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-# Remove non-essential VTK libraries
-for lib in libvtk*.${LIB_EXT}*; do
-    [ -e "$lib" ] || continue  # Skip if no match
-    if ! is_essential "$lib"; then
-        rm -f "$lib"
-    fi
-done
-
-AFTER_COUNT=$(ls -1 libvtk*.${LIB_EXT}* 2>/dev/null | wc -l)
-echo "After filtering: ${AFTER_COUNT} VTK libraries (removed $((BEFORE_COUNT - AFTER_COUNT)))"
+LIB_COUNT=$(ls -1 libvtk*.${LIB_EXT}* 2>/dev/null | wc -l)
+echo "VTK libraries available: ${LIB_COUNT}"
 
 # Go back to vtk root
 cd ..

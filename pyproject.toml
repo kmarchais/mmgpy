@@ -190,8 +190,8 @@ before-all = [
     'echo "VTK ready: $(ls /tmp/vtk/lib64/libvtk*.so 2>/dev/null | wc -l) libraries"',
 ]
 environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
-# VTK is pre-filtered in download script, so we use it directly
-repair-wheel-command = "LD_LIBRARY_PATH=/tmp/vtk/lib64:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -c%s \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
+# Filter VTK to essential modules before auditwheel (CMake needs all libs during build)
+repair-wheel-command = "if [ ! -d /tmp/vtk-filtered ]; then cp -r /tmp/vtk/lib64 /tmp/vtk-filtered && python3 /project/scripts/filter_vtk.py /tmp/vtk-filtered; fi && LD_LIBRARY_PATH=/tmp/vtk-filtered:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -c%s \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64"]
