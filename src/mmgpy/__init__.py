@@ -172,9 +172,39 @@ def _run_mmg() -> None:
         print(f"MMG   {MMG_VERSION}")  # noqa: T201
         sys.exit(0)
 
+    # MMG flags that take an argument (skip the next arg when detecting input file)
+    flags_with_args = {
+        "-o",
+        "-out",
+        "-sol",
+        "-met",
+        "-ls",
+        "-lag",
+        "-ar",
+        "-nr",
+        "-hmin",
+        "-hmax",
+        "-hsiz",
+        "-hausd",
+        "-hgrad",
+        "-hgradreq",
+        "-m",
+        "-v",
+        "-xreg",
+        "-nreg",
+        "-nsd",
+    }
+
     # Find the input mesh file (first positional argument that's a file)
     input_mesh = None
+    skip_next = False
     for arg in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg in flags_with_args:
+            skip_next = True
+            continue
         if not arg.startswith("-") and Path(arg).exists():
             input_mesh = arg
             break
@@ -188,7 +218,11 @@ def _run_mmg() -> None:
         meshio_mesh = meshio.read(input_mesh)
         mesh_kind = _detect_mesh_kind(meshio_mesh)
     except Exception:
-        _logger.exception("Failed to detect mesh type")
+        _logger.exception(
+            "Failed to detect mesh type from '%s'. "
+            "Try using a specific command instead: mmg3d, mmg2d, or mmgs",
+            input_mesh,
+        )
         sys.exit(1)
 
     # Map mesh kind to executable

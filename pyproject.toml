@@ -93,6 +93,9 @@ ignore = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "PLR2004", # magic values allowed in tests
     "NPY002",  # legacy numpy random is fine for tests
+    "S603",    # subprocess calls allowed in tests
+    "S607",    # partial executable paths allowed in tests
+    "TC003",   # pathlib import in runtime allowed for test fixtures
 ]
 "src/mmgpy/metrics.py" = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
