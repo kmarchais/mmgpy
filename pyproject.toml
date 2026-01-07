@@ -96,7 +96,6 @@ ignore = [
     "SLF001",  # accessing private members allowed in tests
     "BLE001",  # broad exception catching allowed in tests
     "PLC0415", # imports inside functions are intentional for fixtures
-    "RUF059",  # unused unpacked variables are intentional fixtures
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "PLR2004", # magic values allowed in tests
     "NPY002",  # legacy numpy random is fine for tests

@@ -187,7 +187,7 @@ class TestValidateMetricTensor:
         """Test that anisotropic positive-definite metric is valid."""
         sizes = np.array([0.1, 0.5, 1.0])
         tensor = metrics.create_anisotropic_metric(sizes)
-        is_valid, msg = metrics.validate_metric_tensor(tensor)
+        is_valid, _msg = metrics.validate_metric_tensor(tensor)
         assert is_valid
 
     def test_invalid_negative_diagonal(self) -> None:
@@ -206,7 +206,7 @@ class TestValidateMetricTensor:
     def test_batch_validation(self) -> None:
         """Test validating multiple tensors at once."""
         tensors = metrics.create_isotropic_metric(0.1, 5, dim=3)
-        is_valid, msg = metrics.validate_metric_tensor(tensors)
+        is_valid, _msg = metrics.validate_metric_tensor(tensors)
         assert is_valid
 
 
@@ -217,7 +217,7 @@ class TestComputeMetricEigenpairs:
         """Test eigenpair extraction from isotropic metric."""
         h = 0.1
         tensor = metrics.create_isotropic_metric(h, 1, dim=3)[0]
-        sizes, directions = metrics.compute_metric_eigenpairs(tensor)
+        sizes, _directions = metrics.compute_metric_eigenpairs(tensor)
 
         # All sizes should be h
         npt.assert_array_almost_equal(sizes, [h, h, h])
