@@ -850,13 +850,11 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-benchmark = [
-    { name = "pytest-benchmark" },
-]
 dev = [
     { name = "imageio" },
     { name = "pre-commit" },
     { name = "pytest" },
+    { name = "pytest-benchmark" },
     { name = "ruff" },
 ]
 docs = [
@@ -876,11 +874,11 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-benchmark = [{ name = "pytest-benchmark", specifier = ">=5.0.0" }]
 dev = [
     { name = "imageio", specifier = ">=2.37.2" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "ruff", specifier = ">=0.14.10" },
 ]
 docs = [

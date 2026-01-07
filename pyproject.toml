@@ -66,18 +66,16 @@ dev = [
     "imageio>=2.37.2",
     "pre-commit>=4.0.1",
     "pytest>=8.3.4",
+    "pytest-benchmark>=5.0.0",
     "ruff>=0.14.10",
 ]
 docs = [
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
 ]
-benchmark = [
-    "pytest-benchmark>=5.0.0",
-]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "benchmarks"]
+testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py", "bench_*.py"]
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
