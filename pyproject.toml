@@ -98,7 +98,6 @@ ignore = [
     "PLC0415", # imports inside functions are intentional for fixtures
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "PLR2004", # magic values allowed in tests
-    "NPY002",  # legacy numpy random is fine for tests
     "S603",    # subprocess calls allowed in tests
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
@@ -116,7 +115,6 @@ ignore = [
     "N803",    # uppercase argument names for matrices standard in math
     "PLR2004", # magic values (2, 3, 6) are dimension constants in math code
     "C901",    # complex functions acceptable for mathematical algorithms
-    "E501",    # long lines acceptable in docstrings
 ]
 "examples/**/*.py" = [
     "T201",    # print statements essential for example output
@@ -151,7 +149,6 @@ ignore = [
     "BLE001", # broad exception catching is acceptable for non-critical RPATH fixing
     "E402",   # imports inside functions are intentional for lazy loading
     "C901",   # complex functions are acceptable for RPATH fixing logic
-    "PTH207", # glob usage is fine for file discovery
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
 ]

@@ -112,7 +112,8 @@ class TestPropagateDisplacement:
         n = len(vertices)
 
         boundary_mask = np.ones(n, dtype=bool)
-        displacement = np.random.rand(n, 2).astype(np.float64)
+        rng = np.random.default_rng(42)
+        displacement = rng.random((n, 2)).astype(np.float64)
 
         result = propagate_displacement(
             vertices,
@@ -128,7 +129,8 @@ class TestPropagateDisplacement:
         n = len(vertices)
 
         boundary_mask = np.zeros(n, dtype=bool)
-        displacement = np.random.rand(n, 2).astype(np.float64)
+        rng = np.random.default_rng(42)
+        displacement = rng.random((n, 2)).astype(np.float64)
 
         result = propagate_displacement(
             vertices,
@@ -217,7 +219,8 @@ class TestPropagateDisplacement:
         n = len(vertices)
 
         boundary_mask = np.ones(n, dtype=bool)
-        displacement = np.random.rand(n, 2).astype(np.float64)
+        rng = np.random.default_rng(42)
+        displacement = rng.random((n, 2)).astype(np.float64)
 
         # Wrong boundary_mask size
         with pytest.raises(ValueError, match="boundary_mask length"):

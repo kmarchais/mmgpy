@@ -5,7 +5,8 @@ metric tensors used in anisotropic mesh adaptation with MMG.
 
 Metric tensors define the desired element size and shape at each vertex:
 - **Isotropic metric**: Single scalar h → equilateral elements of size h
-- **Anisotropic metric**: Symmetric tensor → stretched elements aligned with principal directions
+- **Anisotropic metric**: Symmetric tensor → stretched elements aligned with
+  principal directions
 
 Tensor storage format (row-major, upper triangular):
 - **3D**: [m11, m12, m13, m22, m23, m33] (6 components)
