@@ -86,7 +86,6 @@ class TestRemesh3DComparison:
     def test_timing_comparison_report(
         self,
         mesh_file: Path,
-        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
         tmp_path: Path,
     ) -> None:
         """Report timing comparison: executable internal time vs API time.
@@ -119,9 +118,9 @@ class TestRemesh3DComparison:
         )
         exe_internal_time = _parse_mmg_elapsed_time(result.stdout + result.stderr)
 
-        # Run Python API with same verbosity (output captured via redirect)
-        vertices, tetrahedra = mesh_3d_medium
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        # Run Python API from SAME file to ensure identical input
+        # (avoids floating-point differences from file I/O vs direct arrays)
+        mesh = MmgMesh3D(str(mesh_file))
 
         import io
         import sys
