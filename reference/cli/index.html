@@ -1684,9 +1684,7 @@
 <li><a href="https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-tutorials">MMG Tutorials</a></li>
 </ul>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<p>On macOS and Linux, if the executables fail to find libraries:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>fix-mmg-rpath
-</span></code></pre></div>
+<p>RPATH issues on macOS and Linux are automatically fixed when you <code>import mmgpy</code>. If executables still fail to find libraries, ensure you've imported mmgpy at least once in your Python environment.</p>
 
 
 

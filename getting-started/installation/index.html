@@ -652,17 +652,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rpath-issues-on-macoslinux" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RPATH Issues on macOS/Linux
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#debug-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1619,17 +1608,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rpath-issues-on-macoslinux" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RPATH Issues on macOS/Linux
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#debug-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1831,22 +1809,13 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">enable_debug</span><span class="p">()</span>
 </span></code></pre></div>
-<h3 id="rpath-issues-on-macoslinux">RPATH Issues on macOS/Linux<a class="headerlink" href="#rpath-issues-on-macoslinux" title="Permanent link">&para;</a></h3>
-<p>If the bundled executables (<code>mmg2d_O3</code>, <code>mmg3d_O3</code>, <code>mmgs_O3</code>) fail to run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Run the RPATH fix utility</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>fix-mmg-rpath
-</span></code></pre></div>
-<p>Or from Python:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">_fix_rpath</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">_fix_rpath</span><span class="p">()</span>
-</span></code></pre></div>
 <h3 id="debug-logging">Debug Logging<a class="headerlink" href="#debug-logging" title="Permanent link">&para;</a></h3>
 <p>Enable detailed logging to diagnose issues:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">enable_debug</span><span class="p">()</span>  <span class="c1"># Show all debug messages</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># or</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>  <span class="c1"># Equivalent</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">enable_debug</span><span class="p">()</span>  <span class="c1"># Show all debug messages</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># or</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>  <span class="c1"># Equivalent</span>
 </span></code></pre></div>
 
 
