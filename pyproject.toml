@@ -60,7 +60,6 @@ mmg3d = "mmgpy:_run_mmg3d"
 mmg3d_O3 = "mmgpy:_run_mmg3d"
 mmgs = "mmgpy:_run_mmgs"
 mmgs_O3 = "mmgpy:_run_mmgs"
-fix-mmg-rpath = "mmgpy:_fix_rpath"
 
 [dependency-groups]
 dev = [
