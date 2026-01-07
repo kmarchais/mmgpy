@@ -42,7 +42,7 @@ def test_rpath_fix_utility() -> None:  # noqa: PLR0912, C901
             continue
 
         # Check RPATH using otool
-        result = subprocess.run(  # noqa: S603
+        result = subprocess.run(
             ["/usr/bin/otool", "-l", str(exe)],
             capture_output=True,
             text=True,
@@ -73,7 +73,7 @@ def test_mmg_executable_can_run() -> None:
 
     # Try to run the executable with --help to see if RPATH works
     try:
-        result = subprocess.run(  # noqa: S603
+        result = subprocess.run(
             [exe, "--help"],
             capture_output=True,
             text=True,

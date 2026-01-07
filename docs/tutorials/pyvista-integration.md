@@ -11,9 +11,44 @@ PyVista is a powerful 3D visualization library for Python. mmgpy provides seamle
 - Quality inspection and comparison
 - Integration with PyVista workflows
 
+## Quick Visualization
+
+The simplest way to visualize a mesh is using the built-in `plot()` method:
+
+```python
+import mmgpy
+
+mesh = mmgpy.read("input.mesh")
+mesh.remesh(hmax=0.1)
+
+# One-liner visualization with edges shown by default
+mesh.plot()
+
+# Customize with any PyVista plot options
+mesh.plot(color="lightblue", opacity=0.8, show_edges=False)
+```
+
+## Custom Plotter Integration
+
+For more complex visualizations, use the `vtk` property to access the PyVista mesh:
+
+```python
+import mmgpy
+import pyvista as pv
+
+mesh = mmgpy.read("input.mesh")
+mesh.remesh(hmax=0.1)
+
+# Use mesh.vtk with any PyVista plotter
+plotter = pv.Plotter()
+plotter.add_mesh(mesh.vtk, show_edges=True, color="lightblue")
+plotter.add_mesh(other_mesh.vtk, color="red", opacity=0.5)
+plotter.show()
+```
+
 ## Converting to PyVista
 
-Convert any mmgpy mesh to PyVista:
+For full control, convert to a PyVista object with `to_pyvista()`:
 
 ```python
 import mmgpy
@@ -23,7 +58,7 @@ import pyvista as pv
 mesh = mmgpy.read("input.mesh")
 mesh.remesh(hmax=0.1)
 
-# Convert to PyVista
+# Convert to PyVista (same as mesh.vtk)
 pv_mesh = mesh.to_pyvista()
 
 # Visualize
@@ -65,7 +100,7 @@ Mesh type options:
 import mmgpy
 
 mesh = mmgpy.read("input.mesh")
-mesh.to_pyvista().plot(show_edges=True)
+mesh.plot()  # Simple one-liner with edges
 ```
 
 ### Side-by-Side Comparison

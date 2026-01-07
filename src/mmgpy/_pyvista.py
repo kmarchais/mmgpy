@@ -184,7 +184,7 @@ def from_pyvista(
         mesh: PyVista mesh (UnstructuredGrid or PolyData).
         mesh_type: Target mesh class. If None, auto-detects based on:
             - UnstructuredGrid with tetrahedra → MmgMesh3D
-            - PolyData with 2D points (z≈0) → MmgMesh2D
+            - PolyData with 2D points (z~=0) -> MmgMesh2D
             - PolyData with 3D points → MmgMeshS
 
     Returns:
@@ -401,6 +401,48 @@ def _mmgs_to_pyvista_method(
     return _mmgs_to_pyvista(self, include_refs=include_refs)
 
 
+def _plot_mesh(  # noqa: D417
+    self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    *,
+    show_edges: bool = True,
+    **kwargs: object,
+) -> None:
+    """Plot the mesh using PyVista.
+
+    Parameters
+    ----------
+    show_edges : bool
+        Show mesh edges (default: True).
+    **kwargs : object
+        Additional arguments passed to PyVista's plot() method.
+
+    """
+    self.to_pyvista().plot(show_edges=show_edges, **kwargs)
+
+
+def _vtk_property(
+    self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+) -> pv.UnstructuredGrid | pv.PolyData:
+    """Get the PyVista mesh representation.
+
+    This property provides direct access to the PyVista mesh for use with
+    custom plotters or other PyVista operations.
+
+    Returns
+    -------
+    pv.UnstructuredGrid | pv.PolyData
+        PyVista mesh representation.
+
+    Examples
+    --------
+    >>> plotter = pv.Plotter()
+    >>> plotter.add_mesh(mesh.vtk, show_edges=True)
+    >>> plotter.show()
+
+    """
+    return self.to_pyvista()
+
+
 def add_pyvista_methods() -> None:
     """Add PyVista methods to mesh classes.
 
@@ -418,6 +460,11 @@ def add_pyvista_methods() -> None:
     MmgMesh3D.to_pyvista = _mmg3d_to_pyvista_method  # type: ignore[attr-defined]
     MmgMesh2D.to_pyvista = _mmg2d_to_pyvista_method  # type: ignore[attr-defined]
     MmgMeshS.to_pyvista = _mmgs_to_pyvista_method  # type: ignore[attr-defined]
+
+    # Add plot() method and vtk property to all mesh classes
+    for mesh_class in (MmgMesh3D, MmgMesh2D, MmgMeshS):
+        mesh_class.plot = _plot_mesh  # type: ignore[attr-defined]
+        mesh_class.vtk = property(_vtk_property)  # type: ignore[attr-defined]
 
 
 __all__ = ["add_pyvista_methods", "from_pyvista", "to_pyvista"]

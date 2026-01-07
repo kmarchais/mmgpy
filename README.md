@@ -28,7 +28,7 @@ Using [uv](https://docs.astral.sh/uv/)?
 ```bash
 uv pip install mmgpy   # install in current environment
 uv add mmgpy           # add to project dependencies
-uv tool install mmgpy  # install mmg2d_O3, mmg3d_O3, mmgs_O3 globally
+uv tool install mmgpy  # install mmg, mmg2d, mmg3d, mmgs globally
 ```
 
 ## Features
@@ -84,7 +84,13 @@ mesh.remesh(Mmg3DOptions.fine())
 ### Visualization
 
 ```python
-mesh.to_pyvista().plot(show_edges=True)
+mesh.plot()  # Quick plot with edges
+
+# Or for custom plotting:
+import pyvista as pv
+plotter = pv.Plotter()
+plotter.add_mesh(mesh.vtk, show_edges=True, color="lightblue")
+plotter.show()
 ```
 
 ## Command Line
@@ -92,10 +98,19 @@ mesh.to_pyvista().plot(show_edges=True)
 MMG executables are included and available after installation:
 
 ```bash
-mmg3d_O3 input.mesh -o output.mesh -hmax 0.1
-mmgs_O3 surface.stl -o refined.mesh -hausd 0.001
-mmg2d_O3 domain.mesh -o refined.mesh -hmax 0.05
+# Auto-detect mesh type
+mmg input.mesh -o output.mesh -hmax 0.1
+
+# Or use specific commands
+mmg3d input.mesh -o output.mesh -hmax 0.1
+mmgs surface.stl -o refined.mesh -hausd 0.001
+mmg2d domain.mesh -o refined.mesh -hmax 0.05
+
+# Check versions
+mmg --version
 ```
+
+The `_O3` suffix variants (`mmg3d_O3`, etc.) are also available for compatibility.
 
 ## Gallery
 
