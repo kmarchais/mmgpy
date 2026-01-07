@@ -1288,6 +1288,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#unified-mmg-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unified mmg Command
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unified mmg Command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#version-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1457,6 +1485,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#unified-mmg-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unified mmg Command
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unified mmg Command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#version-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1568,15 +1624,19 @@
 </thead>
 <tbody>
 <tr>
-<td><code>mmg2d_O3</code></td>
+<td><code>mmg</code></td>
+<td>Auto-detect mesh type and remesh</td>
+</tr>
+<tr>
+<td><code>mmg2d</code> / <code>mmg2d_O3</code></td>
 <td>2D remeshing</td>
 </tr>
 <tr>
-<td><code>mmg3d_O3</code></td>
+<td><code>mmg3d</code> / <code>mmg3d_O3</code></td>
 <td>3D remeshing</td>
 </tr>
 <tr>
-<td><code>mmgs_O3</code></td>
+<td><code>mmgs</code> / <code>mmgs_O3</code></td>
 <td>Surface remeshing</td>
 </tr>
 </tbody>
@@ -1588,10 +1648,33 @@
 <p>If you only need the CLI tools (no Python API):</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>mmgpy
 </span></code></pre></div>
+<h2 id="unified-mmg-command">Unified <code>mmg</code> Command<a class="headerlink" href="#unified-mmg-command" title="Permanent link">&para;</a></h2>
+<p>The <code>mmg</code> command automatically detects the mesh type and delegates to the appropriate executable:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mmg<span class="w"> </span>input.mesh<span class="w"> </span>-o<span class="w"> </span>output.mesh<span class="w"> </span>-hmax<span class="w"> </span><span class="m">0</span>.1
+</span></code></pre></div>
+<p>This is equivalent to running <code>mmg3d</code>, <code>mmg2d</code>, or <code>mmgs</code> depending on the input mesh:</p>
+<ul>
+<li><strong>Tetrahedra</strong> → <code>mmg3d</code></li>
+<li><strong>2D triangles</strong> (z ≈ 0) → <code>mmg2d</code></li>
+<li><strong>3D surface triangles</strong> → <code>mmgs</code></li>
+</ul>
+<h3 id="version-information">Version Information<a class="headerlink" href="#version-information" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mmg<span class="w"> </span>--version
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># mmgpy 0.4.0</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># MMG   5.8.0</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>mmg<span class="w"> </span>--help
+</span></code></pre></div>
 <h2 id="quick-examples">Quick Examples<a class="headerlink" href="#quick-examples" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mmg3d_O3 input.mesh -o output.mesh -hmax 0.1
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>mmgs_O3 surface.stl -o refined.mesh -hausd 0.001
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>mmg2d_O3 domain.mesh -o refined.mesh -hmax 0.05
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Auto-detect mesh type</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>mmg<span class="w"> </span>input.mesh<span class="w"> </span>-o<span class="w"> </span>output.mesh<span class="w"> </span>-hmax<span class="w"> </span><span class="m">0</span>.1
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Specific commands (with or without _O3 suffix)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>mmg3d<span class="w"> </span>input.mesh<span class="w"> </span>-o<span class="w"> </span>output.mesh<span class="w"> </span>-hmax<span class="w"> </span><span class="m">0</span>.1
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>mmg3d_O3<span class="w"> </span>input.mesh<span class="w"> </span>-o<span class="w"> </span>output.mesh<span class="w"> </span>-hmax<span class="w"> </span><span class="m">0</span>.1<span class="w">  </span><span class="c1"># Same as above</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>mmgs<span class="w"> </span>surface.stl<span class="w"> </span>-o<span class="w"> </span>refined.mesh<span class="w"> </span>-hausd<span class="w"> </span><span class="m">0</span>.001
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>mmg2d<span class="w"> </span>domain.mesh<span class="w"> </span>-o<span class="w"> </span>refined.mesh<span class="w"> </span>-hmax<span class="w"> </span><span class="m">0</span>.05
 </span></code></pre></div>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 <p>For complete documentation on MMG command-line options, parameters, and usage, refer to the official MMG documentation:</p>
@@ -1602,7 +1685,7 @@
 </ul>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <p>On macOS and Linux, if the executables fail to find libraries:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>fix-mmg-rpath
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>fix-mmg-rpath
 </span></code></pre></div>
 
 

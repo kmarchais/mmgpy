@@ -1990,7 +1990,7 @@ PyVista mesh objects.</p>
   <ul>
 <li>Has tetrahedra → TETRAHEDRAL</li>
 <li>Has triangles + 3D coords → TRIANGULAR_SURFACE</li>
-<li>Has triangles + 2D coords (or z≈0) → TRIANGULAR_2D</li>
+<li>Has triangles + 2D coords (or z~=0) -&gt; TRIANGULAR_2D</li>
 </ul>
 </details>        <p>Supported file formats (via meshio):
     - VTK: .vtk, .vtu, .vtp
@@ -2168,7 +2168,7 @@ show_root_heading: true</p>
           <div class="doc-md-description">
             <p>Target mesh class. If None, auto-detects based on:
 - UnstructuredGrid with tetrahedra → MmgMesh3D
-- PolyData with 2D points (z≈0) → MmgMesh2D
+- PolyData with 2D points (z~=0) -&gt; MmgMesh2D
 - PolyData with 3D points → MmgMeshS</p>
           </div>
         </li>
