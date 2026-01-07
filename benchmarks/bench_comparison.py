@@ -136,6 +136,17 @@ class TestRemesh3DComparison:
         finally:
             sys.stdout = old_stdout
 
+        # Load exe output mesh for comparison
+        exe_mesh = MmgMesh3D(str(output_path))
+        exe_n_vertices = len(exe_mesh.get_vertices())
+        exe_n_tetrahedra = len(exe_mesh.get_tetrahedra())
+        exe_qualities = exe_mesh.get_element_qualities()
+
+        # Get API mesh stats
+        api_n_vertices = len(mesh.get_vertices())
+        api_n_tetrahedra = len(mesh.get_tetrahedra())
+        api_qualities = mesh.get_element_qualities()
+
         # Report comparison
         print("\n" + "=" * 60)
         print("TIMING COMPARISON (3D remeshing, ~5000 elements)")
@@ -145,7 +156,28 @@ class TestRemesh3DComparison:
         if exe_internal_time:
             ratio = api_time / exe_internal_time
             print(f"Ratio (API/exe):         {ratio:.2f}x")
+        print("-" * 60)
+        print("RESULT VALIDATION:")
+        print(f"  Vertices:    exe={exe_n_vertices}, api={api_n_vertices}")
+        print(f"  Tetrahedra:  exe={exe_n_tetrahedra}, api={api_n_tetrahedra}")
+        print(
+            f"  Quality min: exe={exe_qualities.min():.3f}, api={api_qualities.min():.3f}",
+        )
+        print(
+            f"  Quality avg: exe={exe_qualities.mean():.3f}, api={api_qualities.mean():.3f}",
+        )
         print("=" * 60)
+
+        # Verify results are equivalent (within 5% tolerance)
+        assert abs(exe_n_vertices - api_n_vertices) / exe_n_vertices < 0.05, (
+            f"Vertex count differs: exe={exe_n_vertices}, api={api_n_vertices}"
+        )
+        assert abs(exe_n_tetrahedra - api_n_tetrahedra) / exe_n_tetrahedra < 0.05, (
+            f"Tetrahedra count differs: exe={exe_n_tetrahedra}, api={api_n_tetrahedra}"
+        )
+        assert abs(exe_qualities.mean() - api_qualities.mean()) < 0.05, (
+            f"Quality differs: exe={exe_qualities.mean():.3f}, api={api_qualities.mean():.3f}"
+        )
 
         # Basic assertion - API shouldn't be drastically slower
         if exe_internal_time:
