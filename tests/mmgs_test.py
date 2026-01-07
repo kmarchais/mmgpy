@@ -99,7 +99,7 @@ def generated_meshes(
 
 def test_mesh_files_exist(mesh_paths: tuple[Path, Path, Path]) -> None:
     """Test that input mesh file exists."""
-    input_mesh, test_path, ref_path = mesh_paths
+    input_mesh, _test_path, _ref_path = mesh_paths
     assert input_mesh.exists(), f"Input mesh file not found: {input_mesh}"
 
 
@@ -109,7 +109,7 @@ def test_mesh_generation(
 ) -> None:
     """Test that both meshes are generated successfully."""
     test_mesh, ref_mesh = generated_meshes
-    input_mesh, test_path, ref_path = mesh_paths
+    _input_mesh, test_path, ref_path = mesh_paths
 
     # Check files were created
     assert test_path.exists(), f"Test mesh file not created: {test_path}"
