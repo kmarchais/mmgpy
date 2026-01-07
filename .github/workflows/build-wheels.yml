@@ -26,7 +26,7 @@ jobs:
           key: vtk-${{ env.VTK_VERSION }}-linux-x86_64-v1
       - name: Download and prepare VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
-        run: ./scripts/download_vtk.sh linux x86_64 ./vtk-cache
+        run: ./.github/scripts/download_vtk.sh linux x86_64 ./vtk-cache
       - name: Build manylinux2014 x86_64 wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
@@ -71,7 +71,7 @@ jobs:
           key: vtk-${{ env.VTK_VERSION }}-linux-aarch64-v1
       - name: Download and prepare VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
-        run: ./scripts/download_vtk.sh linux aarch64 ./vtk-cache
+        run: ./.github/scripts/download_vtk.sh linux aarch64 ./vtk-cache
       - name: Build manylinux_2_28 aarch64 wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
@@ -148,7 +148,7 @@ jobs:
           key: vtk-${{ env.VTK_VERSION }}-macos-arm64-v1
       - name: Download and prepare VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
-        run: ./scripts/download_vtk.sh macos arm64 ./vtk-cache
+        run: ./.github/scripts/download_vtk.sh macos arm64 ./vtk-cache
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}

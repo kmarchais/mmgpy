@@ -49,6 +49,26 @@ def is_vtk_library(filename):
     )
 
 
+def is_versioned_duplicate(filename):
+    """Check if file is a versioned duplicate that can be removed.
+
+    Auditwheel converts symlinks to real files, creating duplicates like:
+    - libvtkCommonCore-9.5.so      (keep this one)
+    - libvtkCommonCore-9.5.so.1    (duplicate, remove)
+    - libvtkCommonCore-9.5.so.9.5  (duplicate, remove)
+    - libmmg3d.so                  (keep this one)
+    - libmmg3d.so.5                (duplicate, remove)
+    - libmmg3d.so.5.8.0            (duplicate, remove)
+
+    We keep the base .so and remove versioned variants.
+    """
+    import re
+
+    # Match patterns like .so.1, .so.9.5, .so.9.5.2, .dylib.9.5, etc.
+    versioned_pattern = re.compile(r"\.(so|dylib)\.\d+")
+    return bool(versioned_pattern.search(filename))
+
+
 def update_record(wheel_dir):
     """Regenerate RECORD file after wheel modifications.
 
@@ -102,6 +122,7 @@ def optimize_wheel(wheel_path):
             zf.extractall(temp_dir)
 
         vtk_removed = 0
+        vtk_duplicates_removed = 0
         other_removed = 0
         libs_removed = 0
 
@@ -135,7 +156,13 @@ def optimize_wheel(wheel_path):
                 filepath = os.path.join(root, f)
                 relpath = os.path.relpath(filepath, temp_dir)
 
-                # Check if it's a VTK library
+                # Remove versioned duplicates for ALL .so files (.so.1, .so.9.5, etc.)
+                if is_versioned_duplicate(f):
+                    os.remove(filepath)
+                    vtk_duplicates_removed += 1
+                    continue
+
+                # Check if it's a VTK library and filter non-essential modules
                 if is_vtk_library(f):
                     module = get_vtk_module_name(f)
                     if module and module not in ESSENTIAL_VTK_MODULES:
@@ -168,8 +195,8 @@ def optimize_wheel(wheel_path):
                     pass
 
         print(
-            f"  Removed {vtk_removed} VTK libraries, {libs_removed} auditwheel duplicates, "
-            f"{other_removed} other files",
+            f"  Removed {vtk_removed} non-essential VTK, {vtk_duplicates_removed} versioned duplicates, "
+            f"{libs_removed} auditwheel duplicates, {other_removed} other files",
         )
 
         # Regenerate RECORD file to match actual wheel contents

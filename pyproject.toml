@@ -96,6 +96,9 @@ ignore = [
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
 ]
+".github/scripts/**/*.py" = [
+    "ALL",     # CI scripts don't need full linting
+]
 "src/mmgpy/metrics.py" = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "N803",    # uppercase argument names for matrices standard in math
@@ -181,7 +184,7 @@ archs = ["x86_64", "aarch64"]
 before-all = [
     'echo "AUDITWHEEL_PLAT=${AUDITWHEEL_PLAT}"',
     # Use pre-downloaded VTK from CI cache, or download if not available (local dev)
-    'if [ -d "/project/vtk-cache/vtk" ]; then echo "Using cached VTK from /project/vtk-cache/vtk"; cp -r /project/vtk-cache/vtk /tmp/vtk; else echo "Downloading VTK..."; /project/scripts/download_vtk.sh linux $(uname -m) /tmp && mv /tmp/vtk-cache/vtk /tmp/vtk; fi',
+    'if [ -d "/project/vtk-cache/vtk" ]; then echo "Using cached VTK from /project/vtk-cache/vtk"; cp -r /project/vtk-cache/vtk /tmp/vtk; else echo "Downloading VTK..."; /project/.github/scripts/download_vtk.sh linux $(uname -m) /tmp && mv /tmp/vtk-cache/vtk /tmp/vtk; fi',
     # Set up symlinks expected by CMake
     'rm -rf /tmp/lib64 && ln -s /tmp/vtk/lib64 /tmp/lib64',
     'rm -rf /tmp/lib && ln -s /tmp/vtk/lib64 /tmp/lib',
@@ -191,13 +194,13 @@ before-all = [
 ]
 environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/usr/lib:/usr/local/lib:/opt" }
 # Filter VTK to essential modules before auditwheel (CMake needs all libs during build)
-repair-wheel-command = "if [ ! -d /tmp/vtk-filtered ]; then cp -r /tmp/vtk/lib64 /tmp/vtk-filtered && python3 /project/scripts/filter_vtk.py /tmp/vtk-filtered; fi && LD_LIBRARY_PATH=/tmp/vtk-filtered:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -c%s \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
+repair-wheel-command = "if [ ! -d /tmp/vtk-filtered ]; then cp -r /tmp/vtk/lib64 /tmp/vtk-filtered && python3 /project/.github/scripts/filter_vtk.py /tmp/vtk-filtered; fi && LD_LIBRARY_PATH=/tmp/vtk-filtered:$LD_LIBRARY_PATH auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel} && python3 /project/.github/scripts/optimize_wheels.py {dest_dir}/*.whl && for whl in {dest_dir}/*.whl; do size=$(stat -c%s \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64"]
 before-all = [
     # Use pre-downloaded VTK from CI cache, or download if not available (local dev)
-    'if [ -d "./vtk-cache/vtk" ]; then echo "Using cached VTK from ./vtk-cache/vtk"; cp -r ./vtk-cache/vtk /tmp/vtk; else echo "Downloading VTK..."; ./scripts/download_vtk.sh macos $(uname -m) /tmp && mv /tmp/vtk-cache/vtk /tmp/vtk; fi',
+    'if [ -d "./vtk-cache/vtk" ]; then echo "Using cached VTK from ./vtk-cache/vtk"; cp -r ./vtk-cache/vtk /tmp/vtk; else echo "Downloading VTK..."; ./.github/scripts/download_vtk.sh macos $(uname -m) /tmp && mv /tmp/vtk-cache/vtk /tmp/vtk; fi',
     # Set up symlinks expected by CMake
     'ln -sf /tmp/vtk/lib /tmp/lib || true',
     'ln -sf /tmp/vtk/bin /tmp/bin || true',
@@ -205,7 +208,7 @@ before-all = [
     'echo "VTK ready: $(ls /tmp/vtk/lib/libvtk*.dylib 2>/dev/null | wc -l) libraries"',
 ]
 environment = { "VTK_VERSION" = "9.5.2", "VTK_DIR" = "/tmp/vtk/cmake/vtk-9.5", "CMAKE_PREFIX_PATH" = "/tmp/vtk:/tmp", "CMAKE_IGNORE_PATH" = "/opt/homebrew:/opt/homebrew/lib:/opt/homebrew/include:/usr/local:/usr/local/lib:/usr/local/include", "MACOSX_DEPLOYMENT_TARGET" = "10.15" }
-repair-wheel-command = "python3 $PWD/scripts/optimize_wheels.py {wheel} && cp {wheel} {dest_dir}/ && for whl in {dest_dir}/*.whl; do size=$(stat -f%z \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
+repair-wheel-command = "python3 $PWD/.github/scripts/optimize_wheels.py {wheel} && cp {wheel} {dest_dir}/ && for whl in {dest_dir}/*.whl; do size=$(stat -f%z \"$whl\"); if [ \"$size\" -gt 104857600 ]; then echo \"ERROR: Wheel exceeds 100MB PyPI limit: $whl ($size bytes)\"; exit 1; fi; done"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
