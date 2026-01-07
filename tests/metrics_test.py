@@ -112,7 +112,8 @@ class TestCreateAnisotropicMetric:
     def test_batch_metrics(self) -> None:
         """Test creating multiple metrics at once."""
         n_vertices = 10
-        sizes = np.random.uniform(0.1, 1.0, (n_vertices, 3))
+        rng = np.random.default_rng(42)
+        sizes = rng.uniform(0.1, 1.0, (n_vertices, 3))
         metric = metrics.create_anisotropic_metric(sizes)
 
         assert metric.shape == (n_vertices, 6)
@@ -165,7 +166,8 @@ class TestTensorMatrixConversion:
 
     def test_batch_conversion(self) -> None:
         """Test batch tensor/matrix conversion."""
-        tensors = np.random.uniform(0.1, 2.0, (5, 6))
+        rng = np.random.default_rng(42)
+        tensors = rng.uniform(0.1, 2.0, (5, 6))
         matrices = metrics.tensor_to_matrix(tensors)
         assert matrices.shape == (5, 3, 3)
 
