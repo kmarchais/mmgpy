@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from mmgpy import MmgMesh3D, mmg3d
+from mmgpy import Mesh, MmgMesh3D, mmg3d
 
 if TYPE_CHECKING:
     import numpy as np
@@ -248,6 +248,211 @@ class TestRemesh3DComparison:
 
         result = benchmark(run_api_memory)
         assert len(result.get_tetrahedra()) > 0
+
+
+class TestAutoDetectionOverhead:
+    """Measure overhead of automatic mesh type detection."""
+
+    @pytest.fixture
+    def mesh_file_3d(
+        self,
+        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
+        tmp_path: Path,
+    ) -> Path:
+        """Create a temporary 3D mesh file."""
+        vertices, tetrahedra = mesh_3d_medium
+        mesh = MmgMesh3D(vertices, tetrahedra)
+        input_path = tmp_path / "input_3d.mesh"
+        mesh.save(str(input_path))
+        return input_path
+
+    @pytest.mark.benchmark(group="autodetect-exe")
+    def test_mmg3d_executable_direct(
+        self,
+        benchmark: BenchmarkFixture,
+        mesh_file_3d: Path,
+    ) -> None:
+        """Benchmark mmg3d_O3 executable directly (no auto-detection)."""
+
+        def run_direct() -> None:
+            with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
+                output_path = f.name
+            subprocess.run(
+                [
+                    "mmg3d_O3",
+                    "-in",
+                    str(mesh_file_3d),
+                    "-out",
+                    output_path,
+                    "-hmax",
+                    "0.15",
+                    "-v",
+                    "-1",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            Path(output_path).unlink(missing_ok=True)
+
+        benchmark(run_direct)
+
+    @pytest.mark.benchmark(group="autodetect-exe")
+    def test_mmg_script_autodetect(
+        self,
+        benchmark: BenchmarkFixture,
+        mesh_file_3d: Path,
+    ) -> None:
+        """Benchmark mmg unified script (with auto-detection)."""
+
+        def run_autodetect() -> None:
+            with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
+                output_path = f.name
+            subprocess.run(
+                [
+                    "mmg",
+                    "-in",
+                    str(mesh_file_3d),
+                    "-out",
+                    output_path,
+                    "-hmax",
+                    "0.15",
+                    "-v",
+                    "-1",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            Path(output_path).unlink(missing_ok=True)
+
+        benchmark(run_autodetect)
+
+    @pytest.mark.benchmark(group="autodetect-api")
+    def test_mmgmesh3d_direct(
+        self,
+        benchmark: BenchmarkFixture,
+        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
+    ) -> None:
+        """Benchmark MmgMesh3D directly (no auto-detection)."""
+        vertices, tetrahedra = mesh_3d_medium
+
+        def run_direct() -> MmgMesh3D:
+            mesh = MmgMesh3D(vertices, tetrahedra)
+            mesh.remesh(hmax=0.15, verbose=-1)
+            return mesh
+
+        result = benchmark(run_direct)
+        assert len(result.get_tetrahedra()) > 0
+
+    @pytest.mark.benchmark(group="autodetect-api")
+    def test_mesh_autodetect(
+        self,
+        benchmark: BenchmarkFixture,
+        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
+    ) -> None:
+        """Benchmark Mesh with auto-detection."""
+        vertices, tetrahedra = mesh_3d_medium
+
+        def run_autodetect() -> Mesh:
+            mesh = Mesh(vertices, tetrahedra)
+            mesh.remesh(hmax=0.15, verbose=-1)
+            return mesh
+
+        result = benchmark(run_autodetect)
+        assert len(result.get_elements()) > 0
+
+    def test_autodetection_overhead_report(
+        self,
+        mesh_file_3d: Path,
+        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
+    ) -> None:
+        """Report auto-detection overhead for both exe and API."""
+        vertices, tetrahedra = mesh_3d_medium
+
+        # Measure executable times
+        exe_times_direct: list[float] = []
+        exe_times_auto: list[float] = []
+
+        for _ in range(3):
+            with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
+                output_path = f.name
+
+            start = time.perf_counter()
+            subprocess.run(
+                [
+                    "mmg3d_O3",
+                    "-in",
+                    str(mesh_file_3d),
+                    "-out",
+                    output_path,
+                    "-hmax",
+                    "0.15",
+                    "-v",
+                    "-1",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            exe_times_direct.append(time.perf_counter() - start)
+            Path(output_path).unlink(missing_ok=True)
+
+            start = time.perf_counter()
+            subprocess.run(
+                [
+                    "mmg",
+                    "-in",
+                    str(mesh_file_3d),
+                    "-out",
+                    output_path,
+                    "-hmax",
+                    "0.15",
+                    "-v",
+                    "-1",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            exe_times_auto.append(time.perf_counter() - start)
+            Path(output_path).unlink(missing_ok=True)
+
+        # Measure API times
+        api_times_direct: list[float] = []
+        api_times_auto: list[float] = []
+
+        for _ in range(3):
+            start = time.perf_counter()
+            mesh = MmgMesh3D(vertices, tetrahedra)
+            mesh.remesh(hmax=0.15, verbose=-1)
+            api_times_direct.append(time.perf_counter() - start)
+
+            start = time.perf_counter()
+            mesh = Mesh(vertices, tetrahedra)
+            mesh.remesh(hmax=0.15, verbose=-1)
+            api_times_auto.append(time.perf_counter() - start)
+
+        # Calculate averages
+        exe_direct_avg = sum(exe_times_direct) / len(exe_times_direct)
+        exe_auto_avg = sum(exe_times_auto) / len(exe_times_auto)
+        api_direct_avg = sum(api_times_direct) / len(api_times_direct)
+        api_auto_avg = sum(api_times_auto) / len(api_times_auto)
+
+        # Report
+        print("\n" + "=" * 60)
+        print("AUTO-DETECTION OVERHEAD (3D remeshing)")
+        print("=" * 60)
+        print("EXECUTABLE (subprocess):")
+        print(f"  mmg3d_O3 (direct): {exe_direct_avg:.3f}s")
+        print(f"  mmg (autodetect):  {exe_auto_avg:.3f}s")
+        print(
+            f"  Overhead:          {(exe_auto_avg - exe_direct_avg) * 1000:.1f}ms ({(exe_auto_avg / exe_direct_avg - 1) * 100:.1f}%)",
+        )
+        print("-" * 60)
+        print("PYTHON API (in-memory):")
+        print(f"  MmgMesh3D (direct): {api_direct_avg:.3f}s")
+        print(f"  Mesh (autodetect):  {api_auto_avg:.3f}s")
+        print(
+            f"  Overhead:           {(api_auto_avg - api_direct_avg) * 1000:.1f}ms ({(api_auto_avg / api_direct_avg - 1) * 100:.1f}%)",
+        )
+        print("=" * 60)
 
 
 class TestRemesh2DComparison:
