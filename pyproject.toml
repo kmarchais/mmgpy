@@ -78,6 +78,7 @@ benchmark = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "benchmarks"]
+python_files = ["test_*.py", "*_test.py", "bench_*.py"]
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
