@@ -92,10 +92,15 @@ class TestRemesh3DComparison:
         """Report timing comparison: executable internal time vs API time.
 
         This is not a benchmark - it runs once and prints a comparison.
+
+        Note on verbosity:
+        - Executable uses -v 1 to get the internal timing output
+        - MMG's "ELAPSED TIME" is measured internally before output is printed
+        - API uses verbose=1 to match conditions (output captured)
         """
         output_path = tmp_path / "output.mesh"
 
-        # Run executable and parse internal time
+        # Run executable with verbose=1 to get internal timing
         result = subprocess.run(
             [
                 "mmg3d_O3",
@@ -114,20 +119,29 @@ class TestRemesh3DComparison:
         )
         exe_internal_time = _parse_mmg_elapsed_time(result.stdout + result.stderr)
 
-        # Run Python API and measure time
+        # Run Python API with same verbosity (output captured via redirect)
         vertices, tetrahedra = mesh_3d_medium
         mesh = MmgMesh3D(vertices, tetrahedra)
 
-        start = time.perf_counter()
-        mesh.remesh(hmax=0.15, verbose=-1)
-        api_time = time.perf_counter() - start
+        import io
+        import sys
+
+        # Capture stdout to match exe conditions (both produce output)
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            start = time.perf_counter()
+            mesh.remesh(hmax=0.15, verbose=1)
+            api_time = time.perf_counter() - start
+        finally:
+            sys.stdout = old_stdout
 
         # Report comparison
         print("\n" + "=" * 60)
         print("TIMING COMPARISON (3D remeshing, ~5000 elements)")
         print("=" * 60)
-        print(f"mmg3d_O3 internal time:  {exe_internal_time:.3f}s")
-        print(f"Python API time:         {api_time:.3f}s")
+        print(f"mmg3d_O3 internal time:  {exe_internal_time:.3f}s (verbose=1)")
+        print(f"Python API time:         {api_time:.3f}s (verbose=1)")
         if exe_internal_time:
             ratio = api_time / exe_internal_time
             print(f"Ratio (API/exe):         {ratio:.2f}x")
