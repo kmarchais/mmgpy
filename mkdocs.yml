@@ -1,9 +1,10 @@
 site_name: mmgpy
-site_description: Python bindings for the MMG mesh generation and optimization library
+site_description: Python bindings for the MMG remeshing library
 site_url: https://kmarchais.github.io/mmgpy
 repo_url: https://github.com/kmarchais/mmgpy
 repo_name: kmarchais/mmgpy
-copyright: Copyright &copy; 2024-2025 Kevin Marchais
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2024-2026 Kevin Marchais
 
 theme:
   name: material
@@ -21,18 +22,19 @@ theme:
     - content.code.copy
     - content.code.select
     - content.tabs.link
+    - content.tooltips
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: red
+      accent: amber
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: deep-orange
+      accent: amber
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -69,6 +71,9 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.details
   - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - admonition
   - attr_list
   - md_in_html

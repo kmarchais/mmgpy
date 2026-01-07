@@ -1,55 +1,27 @@
 # mmgpy
 
-Python bindings for the [MMG](https://www.mmgtools.org) mesh generation and optimization library.
+Python bindings for the [MMG](https://www.mmgtools.org) remeshing library.
 
-<div class="grid cards" markdown>
+[Get Started :material-arrow-right:](getting-started/quickstart.md){ .md-button .md-button--primary }
+[API Reference :material-arrow-right:](api/index.md){ .md-button }
 
-- :material-rocket-launch:{ .lg .middle } **Quick Start**
-
-  ***
-
-  Get started with mmgpy in under 5 minutes
-
-  [:octicons-arrow-right-24: Getting started](getting-started/quickstart.md)
-
-- :material-book-open-variant:{ .lg .middle } **Tutorials**
-
-  ***
-
-  Step-by-step guides for common workflows
-
-  [:octicons-arrow-right-24: Tutorials](tutorials/basic-remeshing.md)
-
-- :material-code-tags:{ .lg .middle } **API Reference**
-
-  ***
-
-  Complete API documentation with examples
-
-  [:octicons-arrow-right-24: API Reference](api/index.md)
-
-- :material-cube-outline:{ .lg .middle } **Examples**
-
-  ***
-
-  Real-world examples and use cases
-
-  [:octicons-arrow-right-24: Examples](examples/index.md)
-
-</div>
+---
 
 ## Features
 
-- **3D Volume Meshing** - Tetrahedral mesh generation and optimization with `MmgMesh3D`
-- **2D Meshing** - Triangular mesh generation for planar domains with `MmgMesh2D`
-- **Surface Meshing** - 3D surface mesh remeshing with `MmgMeshS`
-- **PyVista Integration** - Seamless conversion to/from PyVista for visualization
-- **40+ File Formats** - Load meshes from VTK, STL, OBJ, GMSH, and many more via meshio
-- **Local Sizing Control** - Sphere, box, cylinder, and point-based mesh refinement
-- **Metric Fields** - Anisotropic mesh adaptation with custom metric tensors
-- **Validation** - Comprehensive mesh quality checks and statistics
+|                                                   |                                                   |
+| ------------------------------------------------- | ------------------------------------------------- |
+| :material-cube-outline: **3D Volume Meshing**     | Tetrahedral remeshing                             |
+| :material-triangle-outline: **2D Meshing**        | Triangular remeshing for planar domains           |
+| :material-shape-outline: **Surface Meshing**      | 3D surface remeshing and optimization             |
+| :material-resize: **Local Sizing**                | Sphere, box, cylinder, and point-based refinement |
+| :material-chart-line: **Anisotropic Metrics**     | Custom metric tensors for directional adaptation  |
+| :material-layers-outline: **Level-Set**           | Extract isosurfaces from implicit functions       |
+| :material-arrow-expand-all: **Lagrangian Motion** | Remesh while preserving displacement fields       |
+| :material-eye: **PyVista Integration**            | Seamless conversion for visualization             |
+| :material-file-multiple: **40+ File Formats**     | VTK, STL, OBJ, GMSH, and more via meshio          |
 
-## Basic Usage
+## Quick Start
 
 ```python
 import mmgpy
@@ -59,7 +31,7 @@ mesh = mmgpy.read("input.mesh")
 
 # Remesh with target edge size
 result = mesh.remesh(hmax=0.1)
-print(f"Quality improved: {result.quality_mean_before:.2f} -> {result.quality_mean_after:.2f}")
+print(f"Quality: {result.quality_mean_before:.2f} → {result.quality_mean_after:.2f}")
 
 # Save the result
 mesh.save("output.vtk")
@@ -77,27 +49,24 @@ mesh.save("output.vtk")
 
     ```bash
     uv pip install mmgpy
-    ```
-
-=== "From source"
-
-    ```bash
-    pip install git+https://github.com/kmarchais/mmgpy.git
+    # or: uv add mmgpy (project dependency)
+    # or: uv tool install mmgpy (mmg2d_O3, mmg3d_O3, mmgs_O3 globally)
     ```
 
 ## Gallery
 
-<figure markdown>
-  ![Mechanical piece remeshing](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/mechanical_piece_remeshing.png){ width="600" }
-  <figcaption>Surface remeshing of a mechanical part</figcaption>
-</figure>
+![Mechanical piece remeshing](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/mechanical_piece_remeshing.png)
+_Surface remeshing of a mechanical part_
 
-<figure markdown>
-  ![Smooth surface remeshing](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/smooth_surface_remeshing.png){ width="600" }
-  <figcaption>Smooth surface mesh optimization</figcaption>
-</figure>
+![Smooth surface remeshing](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/smooth_surface_remeshing.png)
+_Smooth surface mesh optimization_
 
-<figure markdown>
-  ![3D mesh quality improvement](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/3d_mesh.png){ width="600" }
-  <figcaption>3D volumetric mesh quality improvement</figcaption>
-</figure>
+![3D mesh quality improvement](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/3d_mesh.png)
+_3D volumetric mesh quality improvement_
+
+## Learn More
+
+- **[Quick Start](getting-started/quickstart.md)** — Get started in 5 minutes
+- **[Tutorials](tutorials/basic-remeshing.md)** — Step-by-step guides
+- **[API Reference](api/index.md)** — Complete documentation
+- **[Examples](examples/index.md)** — Real-world use cases
