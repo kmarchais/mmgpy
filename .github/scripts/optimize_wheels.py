@@ -180,19 +180,28 @@ def optimize_wheel(wheel_path):
 
                 # Check if it's a VTK library
                 if is_vtk_library(f):
-                    # Remove duplicates: .so (if .so.1 exists), .so.9.5 (full version)
-                    # Keep only .so.1 (SONAME) which the loader needs at runtime
+                    # On macOS (.dylib), remove ALL VTK - it's provided by pip vtk package
+                    # On Linux (.so), keep essential modules bundled via auditwheel
+                    if ".dylib" in f:
+                        os.remove(filepath)
+                        vtk_removed += 1
+                        if vtk_removed <= 5:
+                            print(f"  Removed VTK (macOS): {f}")
+                        elif vtk_removed == 6:
+                            print("  ... (removing all VTK dylibs)")
+                        continue
+
+                    # Linux: Remove duplicates (.so if .so.1 exists, .so.9.5)
                     if is_removable_vtk_duplicate(f, all_filenames):
                         os.remove(filepath)
                         vtk_duplicates_removed += 1
                         continue
 
-                    # Filter non-essential VTK modules
+                    # Linux: Filter non-essential VTK modules
                     module = get_vtk_module_name(f)
                     if module and module not in ESSENTIAL_VTK_MODULES:
                         os.remove(filepath)
                         vtk_removed += 1
-                        # Only print first few to avoid spam
                         if vtk_removed <= 10:
                             print(f"  Removed VTK: {f} (module: {module})")
                         elif vtk_removed == 11:
