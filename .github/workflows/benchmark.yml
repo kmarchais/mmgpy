@@ -15,7 +15,6 @@ env:
 permissions:
   contents: write
   deployments: write
-  pull-requests: write
 
 jobs:
   benchmark:
@@ -40,20 +39,16 @@ jobs:
         run: uv sync -v
 
       - name: Run benchmarks
-        id: benchmarks
-        continue-on-error: true
         run: |
           uv run pytest benchmarks/ \
             --benchmark-only \
             --benchmark-json=benchmark-results.json \
             --benchmark-group-by=group \
-            --benchmark-sort=mean \
-            --junitxml=benchmark-junit.xml \
-            -o junit_family=legacy
+            --benchmark-sort=mean
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name != 'pull_request' && steps.benchmarks.outcome == 'success'
+        if: github.event_name != 'pull_request'
         with:
           tool: "pytest"
           output-file-path: benchmark-results.json
@@ -65,7 +60,7 @@ jobs:
 
       - name: Compare benchmarks (PR only)
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'pull_request' && steps.benchmarks.outcome == 'success'
+        if: github.event_name == 'pull_request'
         with:
           tool: "pytest"
           output-file-path: benchmark-results.json
@@ -76,91 +71,8 @@ jobs:
           fail-on-alert: false
 
       - name: Upload benchmark results
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: |
-            benchmark-results.json
-            benchmark-junit.xml
+          path: benchmark-results.json
           retention-days: 30
-
-      - name: Post benchmark failure comment
-        if: github.event_name == 'pull_request' && steps.benchmarks.outcome == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-
-            // Parse JUnit XML for failures
-            const xml = fs.readFileSync('benchmark-junit.xml', 'utf8');
-            const failures = [];
-
-            // Extract failed testcases with their failure messages
-            const testcaseRegex = /<testcase[^>]*name="([^"]*)"[^>]*classname="([^"]*)"[^>]*>[\s\S]*?<failure[^>]*message="([^"]*)"[^>]*>([\s\S]*?)<\/failure>[\s\S]*?<\/testcase>/g;
-            let match;
-            while ((match = testcaseRegex.exec(xml)) !== null) {
-              failures.push({
-                name: match[1],
-                classname: match[2],
-                message: match[3],
-                details: match[4].trim().substring(0, 500) // Limit details length
-              });
-            }
-
-            // Also check for errors (not just failures)
-            const errorRegex = /<testcase[^>]*name="([^"]*)"[^>]*classname="([^"]*)"[^>]*>[\s\S]*?<error[^>]*message="([^"]*)"[^>]*>([\s\S]*?)<\/error>[\s\S]*?<\/testcase>/g;
-            while ((match = errorRegex.exec(xml)) !== null) {
-              failures.push({
-                name: match[1],
-                classname: match[2],
-                message: match[3],
-                details: match[4].trim().substring(0, 500)
-              });
-            }
-
-            if (failures.length === 0) {
-              console.log('No failures found in JUnit XML');
-              return;
-            }
-
-            // Build comment body
-            let body = '## ❌ Benchmark Failures\n\n';
-            body += `**${failures.length} benchmark(s) failed** on commit \`${context.sha.substring(0, 7)}\`\n\n`;
-
-            for (const f of failures) {
-              body += `### \`${f.name}\`\n`;
-              body += `**Class:** \`${f.classname}\`\n\n`;
-              body += `**Error:** ${f.message}\n\n`;
-              if (f.details) {
-                body += '<details><summary>Stack trace</summary>\n\n```\n' + f.details + '\n```\n\n</details>\n\n';
-              }
-            }
-
-            // Find existing comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const botComment = comments.find(c => c.user.type === 'Bot' && c.body.includes('## ❌ Benchmark Failures'));
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body,
-              });
-            }
-
-      - name: Fail if benchmarks failed
-        if: steps.benchmarks.outcome == 'failure'
-        run: exit 1
