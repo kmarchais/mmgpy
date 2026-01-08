@@ -89,7 +89,7 @@ jobs:
       - run: uv sync -v
       - run: uv run python -c "import mmgpy"
       - name: Run tests with coverage
-        run: uv run pytest --cov=src/mmgpy --cov-report=term-missing --cov-report=xml
+        run: uv run pytest --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
@@ -98,3 +98,10 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: junit.xml
