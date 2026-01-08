@@ -241,9 +241,35 @@ class SizingEditor:
         self._setup_picking()
         self._setup_sliders()
         self._setup_buttons()
+        self._setup_help_panel()
         self._setup_instructions()
 
         self._plotter.show()
+
+    def _setup_help_panel(self) -> None:
+        """Set up help text panel."""
+        if self._plotter is None:
+            return
+
+        help_text = (
+            "HOW TO USE:\n"
+            "1. Select a tool (colored buttons, bottom-left)\n"
+            "2. Adjust sliders (bottom) for size/radius\n"
+            "3. Click on mesh to place constraints\n"
+            "4. Close window when done\n"
+            "\n"
+            "TOOLS:\n"
+            "  Sphere: Click once for center\n"
+            "  Box: Click twice for corners\n"
+            "  Cylinder: Click twice for axis\n"
+            "  Point: Click for gradual refinement"
+        )
+        self._plotter.add_text(
+            help_text,
+            position="upper_left",
+            font_size=9,
+            name="help_panel",
+        )
 
     def _setup_picking(self) -> None:
         """Set up point picking callback."""
@@ -378,20 +404,38 @@ class SizingEditor:
         if self._plotter is None:
             return
 
-        mode_instructions = {
-            ConstraintMode.NONE: "Select a tool to begin",
-            ConstraintMode.SPHERE: "Click to place sphere center",
-            ConstraintMode.BOX: "Click to set first corner",
-            ConstraintMode.CYLINDER: "Click to set first axis point",
-            ConstraintMode.POINT: "Click to place reference point",
+        self._update_instructions()
+
+    def _get_status_text(self) -> str:
+        """Get current status text including mode and constraint count."""
+        mode_names = {
+            ConstraintMode.NONE: "None",
+            ConstraintMode.SPHERE: "SPHERE",
+            ConstraintMode.BOX: "BOX",
+            ConstraintMode.CYLINDER: "CYLINDER",
+            ConstraintMode.POINT: "POINT",
         }
+        mode_instructions = {
+            ConstraintMode.NONE: "Select a tool below",
+            ConstraintMode.SPHERE: "Click mesh to place sphere",
+            ConstraintMode.BOX: (
+                "Click mesh for second corner"
+                if self._state.first_point is not None
+                else "Click mesh for first corner"
+            ),
+            ConstraintMode.CYLINDER: (
+                "Click mesh for second axis point"
+                if self._state.first_point is not None
+                else "Click mesh for first axis point"
+            ),
+            ConstraintMode.POINT: "Click mesh to place point",
+        }
+
+        mode = mode_names.get(self._state.mode, "")
         instruction = mode_instructions.get(self._state.mode, "")
-        self._plotter.add_text(
-            instruction,
-            position="upper_right",
-            font_size=12,
-            name="instructions",
-        )
+        count = len(self._constraints)
+
+        return f"Mode: {mode}\n{instruction}\n\nConstraints: {count}"
 
     def _set_mode(self, mode: ConstraintMode) -> None:
         """Set the current interaction mode."""
@@ -405,27 +449,10 @@ class SizingEditor:
         if self._plotter is None:
             return
 
-        mode_instructions = {
-            ConstraintMode.NONE: "Select a tool to begin",
-            ConstraintMode.SPHERE: "Click to place sphere center",
-            ConstraintMode.BOX: (
-                "Click to set second corner"
-                if self._state.first_point is not None
-                else "Click to set first corner"
-            ),
-            ConstraintMode.CYLINDER: (
-                "Click to set second axis point"
-                if self._state.first_point is not None
-                else "Click to set first axis point"
-            ),
-            ConstraintMode.POINT: "Click to place reference point",
-        }
-
-        instruction = mode_instructions.get(self._state.mode, "")
         self._plotter.add_text(
-            instruction,
+            self._get_status_text(),
             position="upper_right",
-            font_size=12,
+            font_size=11,
             name="instructions",
         )
 
@@ -469,6 +496,7 @@ class SizingEditor:
         )
         self._constraints.append(constraint)
         self._visualize_constraint(constraint)
+        self._update_instructions()
 
     def _handle_box_click(self, point: NDArray[np.float64]) -> None:
         """Handle click in box mode."""
@@ -542,6 +570,7 @@ class SizingEditor:
         )
         self._constraints.append(constraint)
         self._visualize_constraint(constraint)
+        self._update_instructions()
 
     def _visualize_constraint(self, constraint: SizingConstraint) -> None:
         """Add visual representation of a constraint."""
