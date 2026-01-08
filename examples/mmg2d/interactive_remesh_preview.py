@@ -17,7 +17,7 @@ remeshing parameters in real-time.
 Features demonstrated:
 - Live mesh updates while dragging sliders
 - Movable refinement region (drag the red sphere)
-- Custom metric field for local size control
+- Per-vertex metric field for local size control
 - Visual feedback with influence radius circle
 
 Controls:
@@ -32,20 +32,33 @@ import pyvista as pv
 
 from mmgpy import MmgMesh2D
 
+# Cache for the base uniform mesh (created once)
+_BASE_MESH_CACHE: dict[str, MmgMesh2D] = {}
 
-def create_circle_mesh(n: int = 16) -> MmgMesh2D:
-    """Create a circular mesh with n boundary segments."""
+
+def create_base_mesh() -> MmgMesh2D:
+    """Create a simple circle mesh for initial remeshing."""
+    n = 32
     vertices = [[0.0, 0.0]]
     for i in range(n):
         theta = 2 * np.pi * i / n
         vertices.append([np.cos(theta), np.sin(theta)])
     vertices = np.array(vertices, dtype=np.float64)
 
-    triangles = []
-    for i in range(n):
-        triangles.append([0, 1 + i, 1 + (i + 1) % n])
-
+    triangles = [[0, 1 + i, 1 + (i + 1) % n] for i in range(n)]
     return MmgMesh2D(vertices, np.array(triangles, dtype=np.int32))
+
+
+def get_uniform_mesh(hmax: float = 0.15) -> MmgMesh2D:
+    """Get a uniformly meshed circle (cached for performance)."""
+    cache_key = f"{hmax:.4f}"
+    if cache_key not in _BASE_MESH_CACHE:
+        mesh = create_base_mesh()
+        mesh.remesh(hmax=hmax, hausd=0.01, verbose=-1)
+        _BASE_MESH_CACHE[cache_key] = mesh
+    # Return a copy so we don't modify the cached mesh
+    cached = _BASE_MESH_CACHE[cache_key]
+    return MmgMesh2D(cached.get_vertices().copy(), cached.get_triangles().copy())
 
 
 def mesh_to_pyvista(mesh: MmgMesh2D) -> pv.PolyData:
@@ -55,26 +68,6 @@ def mesh_to_pyvista(mesh: MmgMesh2D) -> pv.PolyData:
     tris = mesh.get_triangles()
     faces = np.column_stack([np.full(len(tris), 3), tris]).ravel()
     return pv.PolyData(verts_3d, faces)
-
-
-def compute_size_field(
-    vertices: np.ndarray,
-    center: np.ndarray,
-    local_size: float,
-    far_size: float,
-    radius: float,
-) -> np.ndarray:
-    """Compute size field based on distance from center.
-
-    Returns sizes that vary linearly from local_size at center
-    to far_size at radius distance.
-    """
-    distances = np.sqrt(
-        (vertices[:, 0] - center[0]) ** 2 + (vertices[:, 1] - center[1]) ** 2,
-    )
-    t = np.clip(distances / radius, 0, 1)
-    sizes = local_size + t * (far_size - local_size)
-    return sizes.reshape(-1, 1)
 
 
 class InteractiveRemeshPreview:
@@ -90,27 +83,24 @@ class InteractiveRemeshPreview:
 
     def update(self, _: float | None = None) -> None:
         """Remesh and update the display."""
-        mesh = create_circle_mesh()
+        # Start from a uniformly distributed mesh (cached)
+        mesh = get_uniform_mesh(hmax=self.hmax)
         vertices = mesh.get_vertices()
 
-        sizes = compute_size_field(
-            vertices,
-            self.center[:2],
-            self.local_size,
-            self.hmax,
-            self.radius,
-        )
-
-        mesh["metric"] = sizes
+        # Compute per-vertex size field based on distance from center
+        distances = np.linalg.norm(vertices - self.center[:2], axis=1)
+        t = np.clip(distances / self.radius, 0, 1)
+        sizes = self.local_size + t * (self.hmax - self.local_size)
+        mesh["metric"] = sizes.reshape(-1, 1)
 
         try:
             mesh.remesh(hausd=0.01, verbose=-1)
             n_verts = len(mesh.get_vertices())
             n_tris = len(mesh.get_triangles())
             status = f"{n_verts} verts | {n_tris} tris"
-        except RuntimeError:
-            status = "remesh failed"
-            mesh = create_circle_mesh()
+        except RuntimeError as e:
+            status = f"remesh failed: {e}"
+            mesh = get_uniform_mesh(hmax=self.hmax)
 
         pv_mesh = mesh_to_pyvista(mesh)
         self.plotter.add_mesh(
