@@ -321,6 +321,14 @@ class MmgMesh3D:
         check_quality: bool = True,
         min_quality: float = 0.1,
     ) -> ValidationReport: ...
+    # Interactive sizing methods (added by mmgpy._add_interactive_methods)
+    def edit_sizing(
+        self,
+        *,
+        mode: str = "sphere",
+        default_size: float = 0.01,
+        default_radius: float = 0.1,
+    ) -> None: ...
 
 # Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
@@ -537,6 +545,14 @@ class MmgMesh2D:
         check_quality: bool = True,
         min_quality: float = 0.1,
     ) -> ValidationReport: ...
+    # Interactive sizing methods (added by mmgpy._add_interactive_methods)
+    def edit_sizing(
+        self,
+        *,
+        mode: str = "sphere",
+        default_size: float = 0.01,
+        default_radius: float = 0.1,
+    ) -> None: ...
 
 # Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
@@ -734,3 +750,11 @@ class MmgMeshS:
         check_quality: bool = True,
         min_quality: float = 0.1,
     ) -> ValidationReport: ...
+    # Interactive sizing methods (added by mmgpy._add_interactive_methods)
+    def edit_sizing(
+        self,
+        *,
+        mode: str = "sphere",
+        default_size: float = 0.01,
+        default_radius: float = 0.1,
+    ) -> None: ...

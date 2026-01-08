@@ -467,7 +467,7 @@ def _verify_rpath_fix_linux(  # pragma: no cover
         )
 
 
-from . import lagrangian, metrics, progress, sizing
+from . import interactive, lagrangian, metrics, progress, sizing
 from ._io import read
 from ._mesh import Mesh, MeshCheckpoint, MeshKind
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
@@ -1157,6 +1157,95 @@ def _add_validation_methods() -> None:
 
 _add_validation_methods()
 
+
+def _add_interactive_methods() -> None:
+    """Add interactive sizing methods to mesh classes."""
+
+    def _edit_sizing(
+        self: MmgMesh3D | MmgMesh2D | MmgMeshS,
+        *,
+        mode: str = "sphere",
+        default_size: float = 0.01,
+        default_radius: float = 0.1,
+    ) -> None:
+        """Launch interactive sizing editor.
+
+        Opens a PyVista window for visually defining local sizing
+        constraints by clicking on the mesh.
+
+        Parameters
+        ----------
+        mode : str
+            Initial interaction mode: "sphere", "box", "cylinder", or "point".
+        default_size : float
+            Default target edge size for constraints.
+        default_radius : float
+            Default radius for sphere and cylinder constraints.
+
+        Examples
+        --------
+        >>> mesh = MmgMesh3D.from_file("model.mesh")
+        >>> mesh.edit_sizing()  # Opens interactive editor
+        >>> mesh.remesh()  # Uses interactively defined sizing
+
+        """
+        from mmgpy.interactive import SizingEditor  # noqa: PLC0415
+
+        editor = SizingEditor(self)
+        editor._current_size = default_size  # noqa: SLF001
+        editor._current_radius = default_radius  # noqa: SLF001
+
+        mode_map = {
+            "sphere": editor.add_sphere_tool,
+            "box": editor.add_box_tool,
+            "cylinder": editor.add_cylinder_tool,
+            "point": editor.add_point_tool,
+        }
+
+        if mode in mode_map:
+            mode_map[mode]()
+
+        editor.run()
+        editor.apply_to_mesh()
+
+    MmgMesh3D.edit_sizing = _edit_sizing  # type: ignore[attr-defined]
+    MmgMesh2D.edit_sizing = _edit_sizing  # type: ignore[attr-defined]
+    MmgMeshS.edit_sizing = _edit_sizing  # type: ignore[attr-defined]
+
+    # Also add to unified Mesh class
+    def _mesh_edit_sizing(
+        self: Mesh,
+        *,
+        mode: str = "sphere",
+        default_size: float = 0.01,
+        default_radius: float = 0.1,
+    ) -> None:
+        """Launch interactive sizing editor.
+
+        Opens a PyVista window for visually defining local sizing
+        constraints by clicking on the mesh.
+
+        Parameters
+        ----------
+        mode : str
+            Initial interaction mode: "sphere", "box", "cylinder", or "point".
+        default_size : float
+            Default target edge size for constraints.
+        default_radius : float
+            Default radius for sphere and cylinder constraints.
+
+        """
+        self._impl.edit_sizing(  # type: ignore[attr-defined]
+            mode=mode,
+            default_size=default_size,
+            default_radius=default_radius,
+        )
+
+    Mesh.edit_sizing = _mesh_edit_sizing  # type: ignore[attr-defined]
+
+
+_add_interactive_methods()
+
 __all__ = [
     "MMG_VERSION",
     "BoxSize",
@@ -1179,6 +1268,7 @@ __all__ = [
     "disable_logging",
     "enable_debug",
     "from_pyvista",
+    "interactive",
     "lagrangian",
     "metrics",
     "move_mesh",
