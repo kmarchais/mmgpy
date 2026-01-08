@@ -238,6 +238,7 @@ source = ["src/mmgpy"]
 branch = true
 omit = [
     "*/_mmgpy*",
+    "*/interactive/*",  # PyVista UI code requires display, hard to test in CI
 ]
 
 [tool.coverage.report]
