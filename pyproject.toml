@@ -158,11 +158,15 @@ ignore = [
 "src/mmgpy/_progress.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency
 ]
+"src/mmgpy/interactive/*.py" = [
+    "PLC0415", # imports inside functions to avoid circular imports
+]
 
 [tool.ty.src]
-# Exclude tests, scripts, examples, and progress module from type checking
+# Exclude tests, scripts, examples, and certain modules from type checking
 # Progress module uses union types that cause complex type inference issues
-exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py"]
+# Interactive module uses PyVista types that have incomplete stubs
+exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time
