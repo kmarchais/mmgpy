@@ -67,6 +67,7 @@ dev = [
     "pre-commit>=4.0.1",
     "pytest>=8.3.4",
     "pytest-benchmark>=5.0.0",
+    "pytest-cov>=4.1.0",
     "ruff>=0.14.10",
 ]
 docs = [
@@ -227,3 +228,19 @@ before-all = [
 ]
 environment = { VTK_VERSION = "9.5.2", VTK_DIR = "C:/vtk/cmake/vtk-9.5" }
 repair-wheel-command = "uvx delvewheel repair -w {dest_dir} {wheel} --add-path C:/bin --ignore-in-wheel && powershell -Command \"Get-ChildItem '{dest_dir}/*.whl' | ForEach-Object { if ($_.Length -gt 104857600) { throw ('Wheel exceeds 100MB PyPI limit: ' + $_.Name + ' (' + $_.Length + ' bytes)') } }\""
+
+[tool.coverage.run]
+source = ["src/mmgpy"]
+branch = true
+omit = [
+    "*/_mmgpy*",
+]
+
+[tool.coverage.report]
+fail_under = 70
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
