@@ -15,6 +15,7 @@ env:
 permissions:
   contents: write
   deployments: write
+  pull-requests: write
 
 jobs:
   benchmark:
@@ -76,3 +77,60 @@ jobs:
           name: benchmark-results
           path: benchmark-results.json
           retention-days: 30
+
+      - name: Post benchmark summary comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('benchmark-results.json', 'utf8'));
+
+            // Group benchmarks by group
+            const groups = {};
+            for (const bench of data.benchmarks) {
+              const group = bench.group || 'ungrouped';
+              if (!groups[group]) groups[group] = [];
+              groups[group].push(bench);
+            }
+
+            // Build markdown table
+            let body = '## 📊 Benchmark Results\n\n';
+            body += `Commit: \`${context.sha.substring(0, 7)}\` | Python ${data.machine_info?.python_version || 'N/A'}\n\n`;
+
+            for (const [group, benchmarks] of Object.entries(groups).sort()) {
+              body += `### ${group}\n\n`;
+              body += '| Test | Mean | StdDev | Min | Max | Rounds |\n';
+              body += '|------|-----:|-------:|----:|----:|-------:|\n';
+
+              for (const b of benchmarks.sort((a, b) => a.name.localeCompare(b.name))) {
+                const s = b.stats;
+                const fmt = (v) => v < 0.001 ? `${(v * 1e6).toFixed(1)}µs` : v < 1 ? `${(v * 1e3).toFixed(2)}ms` : `${v.toFixed(3)}s`;
+                body += `| ${b.name.replace('test_', '')} | ${fmt(s.mean)} | ±${fmt(s.stddev)} | ${fmt(s.min)} | ${fmt(s.max)} | ${s.rounds} |\n`;
+              }
+              body += '\n';
+            }
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(c => c.user.type === 'Bot' && c.body.includes('## 📊 Benchmark Results'));
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }
