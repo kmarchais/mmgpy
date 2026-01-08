@@ -42,47 +42,66 @@ GitHub Actions runner variability affects benchmark timing. Expected variance by
 
 **CV** = Coefficient of Variation (standard deviation / mean × 100%)
 
-## CI Alert Threshold
+## How Benchmark Comparison Works
 
-The CI uses a **200% alert threshold** to account for runner variability. This means:
+The benchmark system uses **per-benchmark thresholds** based on statistical analysis:
 
-- A benchmark is flagged only if it's >2x slower than baseline
-- This reduces false positives from CI noise
-- True regressions (actual code issues) will still trigger alerts
+1. **Calibration** runs benchmarks 10+ times on CI to measure variance
+2. Each benchmark gets a threshold: `mean + 3σ` (captures 99.7% of normal variance)
+3. **PR comparisons** check each benchmark against its specific threshold
+4. Regressions are reported only when a benchmark exceeds its calibrated threshold
 
-### Rationale
+This approach reduces false positives because high-variance benchmarks (like remeshing) get appropriately higher thresholds.
 
-Based on statistical analysis using the μ + 3σ (mean plus 3 standard deviations) approach:
+## Calibration Workflow
 
-- Most benchmarks have CV < 15%
-- Remeshing operations can have CV up to 25-30%
-- A 200% threshold captures ~99.7% of normal variance
+### Initial Setup (run once, then periodically)
 
-## Calibration
+1. Go to **Actions → Benchmarks → Run workflow**
+2. Select **"calibrate"** mode
+3. Set runs to **10+** (more runs = better statistics)
+4. Wait for calibration to complete
+5. Download `calibration-results` artifact
+6. Copy `benchmarks/thresholds.json` to your repo and commit it
 
-To recalibrate thresholds based on current CI runner behavior:
+### For PRs (automatic)
 
-1. **Via GitHub Actions** (recommended):
-   - Go to Actions → Benchmarks → Run workflow
-   - Select "calibrate" mode
-   - Set number of runs (10+ recommended)
-   - Download `calibration-results.json` from artifacts
+Once `benchmarks/thresholds.json` is committed:
 
-2. **Locally**:
+- PRs automatically run benchmarks once
+- Each benchmark is compared against its calibrated threshold
+- PR comment shows summary + any regressions
 
-   ```bash
-   # Run calibration (10 iterations)
-   uv run python scripts/calibrate_benchmarks.py --runs 10
+### Recalibration
 
-   # Analyze results
-   uv run python scripts/analyze_benchmark_variance.py calibration-results.json
-   ```
+Recalibrate when:
 
-The analysis script outputs:
+- Adding new benchmarks (they won't have thresholds)
+- Significant changes to benchmark infrastructure
+- Periodically (every few months) as CI runners change
 
-- Variance distribution by benchmark group
-- Recommended threshold based on statistical analysis
-- High-variance benchmarks that may need attention
+## Local Calibration
+
+```bash
+# Run calibration (10 iterations)
+uv run python benchmarks/scripts/calibrate_benchmarks.py --runs 10
+
+# Analyze results
+uv run python benchmarks/scripts/analyze_benchmark_variance.py calibration-results.json
+
+# Compare current results against thresholds
+uv run python benchmarks/scripts/compare_benchmarks.py \
+    --results benchmark-results.json \
+    --thresholds benchmarks/thresholds.json
+```
+
+## Scripts
+
+| Script                                  | Purpose                                                |
+| --------------------------------------- | ------------------------------------------------------ |
+| `scripts/calibrate_benchmarks.py`       | Run benchmarks N times, collect variance statistics    |
+| `scripts/analyze_benchmark_variance.py` | Analyze calibration results, show recommendations      |
+| `scripts/compare_benchmarks.py`         | Compare results against thresholds, report regressions |
 
 ## Best Practices
 
@@ -97,3 +116,4 @@ The analysis script outputs:
 2. Use `@pytest.mark.benchmark(group="group-name")` decorator
 3. Use fixtures from `conftest.py` for consistent test data
 4. Follow existing patterns for setup/teardown
+5. **Run calibration** to generate thresholds for new benchmarks

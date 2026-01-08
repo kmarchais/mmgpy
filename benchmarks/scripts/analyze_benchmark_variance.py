@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Analyze benchmark calibration results and recommend thresholds.
 
 This script processes the output from calibrate_benchmarks.py and generates

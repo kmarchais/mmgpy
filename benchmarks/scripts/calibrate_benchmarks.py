@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Run benchmarks multiple times to collect variance statistics.
 
 This script is used to calibrate benchmark thresholds by running the
@@ -138,6 +137,23 @@ def categorize_variance(stats: dict[str, dict[str, float]]) -> dict[str, list[st
     return categories
 
 
+def generate_thresholds(
+    stats: dict[str, dict[str, float]],
+) -> dict[str, dict[str, float]]:
+    """Generate per-benchmark thresholds for comparison."""
+    thresholds: dict[str, dict[str, float]] = {}
+
+    for name, s in stats.items():
+        thresholds[name] = {
+            "threshold_seconds": s["threshold_3sigma"],
+            "baseline_mean": s["mean"],
+            "baseline_std": s["std"],
+            "cv_percent": s["cv_percent"],
+        }
+
+    return thresholds
+
+
 def main() -> None:
     """Run benchmark calibration."""
     parser = argparse.ArgumentParser(
@@ -154,6 +170,12 @@ def main() -> None:
         type=Path,
         default=Path("calibration-results.json"),
         help="Output file for calibration results (default: calibration-results.json)",
+    )
+    parser.add_argument(
+        "--thresholds-output",
+        type=Path,
+        default=Path("benchmarks/thresholds.json"),
+        help="Output file for thresholds (default: benchmarks/thresholds.json)",
     )
     parser.add_argument(
         "--benchmark-dir",
@@ -190,8 +212,13 @@ def main() -> None:
     with args.output.open("w") as f:
         json.dump(results, f, indent=2)
 
+    thresholds = generate_thresholds(stats)
+    with args.thresholds_output.open("w") as f:
+        json.dump(thresholds, f, indent=2)
+
     print()
     print(f"Results saved to {args.output}")
+    print(f"Thresholds saved to {args.thresholds_output}")
     print()
     print("=" * 70)
     print("CALIBRATION SUMMARY")

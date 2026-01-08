@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       calibration_runs:
-        description: "Number of calibration runs (only for calibration mode)"
+        description: "Number of calibration runs (10+ recommended)"
         required: false
         default: "10"
       mode:
@@ -24,11 +24,6 @@ env:
   VTK_VERSION_MAJOR: 9
   VTK_VERSION_MINOR: 5
   VTK_VERSION_PATCH: 2
-  # Alert threshold calibrated for CI runner variance
-  # Based on statistical analysis: μ + 3σ approach with safety margin
-  # Higher thresholds reduce false positives from runner variability
-  # Remeshing operations have highest variance (15-30% CV typical)
-  BENCHMARK_ALERT_THRESHOLD: "200%"
 
 permissions:
   contents: write
@@ -68,6 +63,21 @@ jobs:
             --benchmark-warmup=on \
             --benchmark-min-rounds=3
 
+      - name: Compare against thresholds
+        id: compare
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f benchmarks/thresholds.json ]; then
+            uv run python benchmarks/scripts/compare_benchmarks.py \
+              --results benchmark-results.json \
+              --thresholds benchmarks/thresholds.json \
+              --github-output comparison-report.md
+            echo "has_thresholds=true" >> $GITHUB_OUTPUT
+          else
+            echo "No thresholds.json found. Run calibration to enable per-benchmark comparison."
+            echo "has_thresholds=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         if: github.event_name != 'pull_request'
@@ -76,7 +86,7 @@ jobs:
           output-file-path: benchmark-results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
-          alert-threshold: ${{ env.BENCHMARK_ALERT_THRESHOLD }}
+          alert-threshold: "200%"
           comment-on-alert: true
           fail-on-alert: false
 
@@ -88,7 +98,7 @@ jobs:
           output-file-path: benchmark-results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
-          alert-threshold: ${{ env.BENCHMARK_ALERT_THRESHOLD }}
+          alert-threshold: "200%"
           comment-on-alert: true
           fail-on-alert: false
           comment-always: false
@@ -100,6 +110,7 @@ jobs:
           python3 << 'EOF'
           import json
           import os
+          from pathlib import Path
 
           with open("benchmark-results.json") as f:
               data = json.load(f)
@@ -128,10 +139,12 @@ jobs:
               summary_lines.append(f"| {group} | {len(benches)} | {min_t:.2f}ms - {max_t:.2f}ms |")
 
           summary_lines.append(f"\n*Total: {len(benchmarks)} benchmarks*")
-          summary_lines.append(f"\n<details><summary>Alert threshold: {os.environ.get('BENCHMARK_ALERT_THRESHOLD', '200%')}</summary>")
-          summary_lines.append("\nThis threshold accounts for GitHub Actions runner variability.")
-          summary_lines.append("See `benchmarks/README.md` for calibration details.")
-          summary_lines.append("</details>")
+
+          # Add comparison results if available
+          comparison_file = Path("comparison-report.md")
+          if comparison_file.exists():
+              summary_lines.append("\n---\n")
+              summary_lines.append(comparison_file.read_text())
 
           summary = "\n".join(summary_lines)
           print(summary)
@@ -209,17 +222,33 @@ jobs:
 
       - name: Run benchmark calibration
         run: |
-          uv run python scripts/calibrate_benchmarks.py \
+          uv run python benchmarks/scripts/calibrate_benchmarks.py \
             --runs ${{ github.event.inputs.calibration_runs || '10' }} \
-            --output calibration-results.json
+            --output calibration-results.json \
+            --thresholds-output benchmarks/thresholds.json
 
       - name: Analyze calibration results
         run: |
-          uv run python scripts/analyze_benchmark_variance.py calibration-results.json
+          uv run python benchmarks/scripts/analyze_benchmark_variance.py calibration-results.json
 
       - name: Upload calibration results
         uses: actions/upload-artifact@v4
         with:
           name: calibration-results
-          path: calibration-results.json
+          path: |
+            calibration-results.json
+            benchmarks/thresholds.json
           retention-days: 90
+
+      - name: Show next steps
+        run: |
+          echo "=============================================="
+          echo "CALIBRATION COMPLETE"
+          echo "=============================================="
+          echo ""
+          echo "Next steps:"
+          echo "1. Download the 'calibration-results' artifact"
+          echo "2. Copy benchmarks/thresholds.json to your local repo"
+          echo "3. Commit and push thresholds.json to enable per-benchmark comparison"
+          echo ""
+          echo "Or create a PR with the thresholds file to update them."
