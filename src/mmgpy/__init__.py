@@ -17,7 +17,7 @@ from ._logging import (
 _logger = get_logger()
 
 # Handle DLL loading on Windows
-if sys.platform == "win32":
+if sys.platform == "win32":  # pragma: no cover
     # Get the directory containing this file
     _module_dir = Path(__file__).absolute().parent
 
@@ -62,7 +62,7 @@ try:
         mmgs,  # noqa: F401  # Available for advanced users
     )
 
-except ImportError:
+except ImportError:  # pragma: no cover
     if sys.platform == "win32":
         _module_dir = Path(__file__).absolute().parent
         available_files = list(_module_dir.glob("*"))
@@ -83,7 +83,7 @@ except ImportError:
     raise
 
 
-def _run_mmg2d() -> None:
+def _run_mmg2d() -> None:  # pragma: no cover
     """Run the mmg2d_O3 executable."""
     # Find the executable in site-packages for installed package
     site_packages_list = site.getsitepackages()
@@ -104,7 +104,7 @@ def _run_mmg2d() -> None:
         sys.exit(1)
 
 
-def _run_mmg3d() -> None:
+def _run_mmg3d() -> None:  # pragma: no cover
     """Run the mmg3d_O3 executable."""
     site_packages_list = site.getsitepackages()
     if sys.platform == "win32" and len(site_packages_list) > 1:
@@ -123,7 +123,7 @@ def _run_mmg3d() -> None:
         sys.exit(1)
 
 
-def _run_mmgs() -> None:
+def _run_mmgs() -> None:  # pragma: no cover
     """Run the mmgs_O3 executable."""
     site_packages_list = site.getsitepackages()
     if sys.platform == "win32" and len(site_packages_list) > 1:
@@ -142,7 +142,7 @@ def _run_mmgs() -> None:
         sys.exit(1)
 
 
-def _run_mmg() -> None:
+def _run_mmg() -> None:  # pragma: no cover
     """Run the appropriate mmg executable based on auto-detected mesh type.
 
     This unified command automatically detects the mesh type from the input file
@@ -239,7 +239,7 @@ def _run_mmg() -> None:
     run_func()
 
 
-def _fix_rpath() -> None:
+def _fix_rpath() -> None:  # pragma: no cover
     """Fix RPATH for MMG executables - post-install utility."""
     system = platform.system()
     if system == "Darwin":
@@ -258,7 +258,7 @@ def _fix_rpath() -> None:
         _logger.debug("RPATH fix not needed for %s", system)
 
 
-def _fix_rpath_macos() -> None:
+def _fix_rpath_macos() -> None:  # pragma: no cover
     """Fix RPATH for MMG executables on macOS."""
     site_packages = Path(site.getsitepackages()[0])
     _logger.debug("Site packages: %s", site_packages)
@@ -279,7 +279,7 @@ def _fix_rpath_macos() -> None:
         _fix_single_executable_rpath(exe)
 
 
-def _fix_single_executable_rpath(exe: "Path") -> None:
+def _fix_single_executable_rpath(exe: "Path") -> None:  # pragma: no cover
     """Fix RPATH for a single executable."""
     _logger.debug("Fixing RPATH for %s...", exe.name)
 
@@ -298,7 +298,7 @@ def _fix_single_executable_rpath(exe: "Path") -> None:
         _verify_rpath_fix(exe, target_rpath)
 
 
-def _has_correct_rpath(exe: "Path", target_rpath: str) -> bool:
+def _has_correct_rpath(exe: "Path", target_rpath: str) -> bool:  # pragma: no cover
     """Check if executable has the correct RPATH."""
     result = subprocess.run(
         ["/usr/bin/otool", "-l", str(exe)],
@@ -309,7 +309,7 @@ def _has_correct_rpath(exe: "Path", target_rpath: str) -> bool:
     return result.returncode == 0 and target_rpath in result.stdout
 
 
-def _remove_old_rpath(exe: "Path") -> None:
+def _remove_old_rpath(exe: "Path") -> None:  # pragma: no cover
     """Remove existing @rpath entries from executable."""
     subprocess.run(
         ["/usr/bin/install_name_tool", "-delete_rpath", "@rpath", str(exe)],
@@ -318,7 +318,7 @@ def _remove_old_rpath(exe: "Path") -> None:
     )
 
 
-def _add_new_rpath(exe: "Path", target_rpath: str) -> bool:
+def _add_new_rpath(exe: "Path", target_rpath: str) -> bool:  # pragma: no cover
     """Add new RPATH to executable. Returns True if successful."""
     result = subprocess.run(
         ["/usr/bin/install_name_tool", "-add_rpath", target_rpath, str(exe)],
@@ -334,7 +334,7 @@ def _add_new_rpath(exe: "Path", target_rpath: str) -> bool:
     return False
 
 
-def _verify_rpath_fix(exe: "Path", target_rpath: str) -> None:
+def _verify_rpath_fix(exe: "Path", target_rpath: str) -> None:  # pragma: no cover
     """Verify that RPATH fix was successful."""
     verify_result = subprocess.run(
         ["/usr/bin/otool", "-l", str(exe)],
@@ -349,7 +349,7 @@ def _verify_rpath_fix(exe: "Path", target_rpath: str) -> None:
         _logger.warning("RPATH verification failed for %s", exe.name)
 
 
-def _fix_rpath_linux() -> None:
+def _fix_rpath_linux() -> None:  # pragma: no cover
     """Fix RPATH for MMG executables on Linux using patchelf."""
     site_packages = Path(site.getsitepackages()[0])
     _logger.debug("Site packages: %s", site_packages)
@@ -375,7 +375,10 @@ def _fix_rpath_linux() -> None:
         _fix_single_executable_rpath_linux(exe, lib_dirs)
 
 
-def _fix_single_executable_rpath_linux(exe: "Path", lib_dirs: list[str]) -> None:
+def _fix_single_executable_rpath_linux(  # pragma: no cover
+    exe: "Path",
+    lib_dirs: list[str],
+) -> None:
     """Fix RPATH for a single executable on Linux."""
     _logger.debug("Fixing RPATH for %s...", exe.name)
 
@@ -423,7 +426,10 @@ def _fix_single_executable_rpath_linux(exe: "Path", lib_dirs: list[str]) -> None
             )
 
 
-def _verify_rpath_fix_linux(exe: "Path", lib_dirs: list[str]) -> None:
+def _verify_rpath_fix_linux(  # pragma: no cover
+    exe: "Path",
+    lib_dirs: list[str],
+) -> None:
     """Verify that RPATH fix was successful on Linux."""
     try:
         verify_result = subprocess.run(
@@ -1187,7 +1193,7 @@ __all__ = [
 
 
 # Auto-fix RPATH on import if needed (macOS only)
-def _auto_fix_rpath_on_import() -> None:
+def _auto_fix_rpath_on_import() -> None:  # pragma: no cover
     """Automatically fix RPATH on import if executables need it."""
     # Skip RPATH fixing on Windows entirely
     if sys.platform == "win32":

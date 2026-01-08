@@ -4,6 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/mmgpy)](https://pypi.org/project/mmgpy/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://kmarchais.github.io/mmgpy)
+[![codecov](https://codecov.io/gh/kmarchais/mmgpy/graph/badge.svg)](https://codecov.io/gh/kmarchais/mmgpy)
 
 **mmgpy** brings the power of [MMG](https://www.mmgtools.org) mesh adaptation to Python. Generate, optimize, and refine 2D, 3D, and surface meshes with a clean API.
 
