@@ -131,6 +131,7 @@ ignore = [
     "T201",    # print statements allowed in scripts
     "EXE001",  # shebang is fine in scripts
     "PLR2004", # magic values allowed in scripts
+    "S603",    # subprocess calls are safe (calling our own executables)
 ]
 "benchmarks/**/*.py" = [
     "S101",    # asserts allowed in benchmarks

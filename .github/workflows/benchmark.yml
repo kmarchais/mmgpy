@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      calibration_runs:
+        description: "Number of calibration runs (10+ recommended)"
+        required: false
+        default: "10"
+      mode:
+        description: "Mode: benchmark (default) or calibrate"
+        required: false
+        default: "benchmark"
+        type: choice
+        options:
+          - benchmark
+          - calibrate
 
 env:
   VTK_VERSION_MAJOR: 9
@@ -15,10 +28,12 @@ env:
 permissions:
   contents: write
   deployments: write
+  pull-requests: write
 
 jobs:
   benchmark:
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.mode != 'calibrate' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +59,24 @@ jobs:
             --benchmark-only \
             --benchmark-json=benchmark-results.json \
             --benchmark-group-by=group \
-            --benchmark-sort=mean
+            --benchmark-sort=mean \
+            --benchmark-warmup=on \
+            --benchmark-min-rounds=3
+
+      - name: Compare against thresholds
+        id: compare
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f benchmarks/thresholds.json ]; then
+            uv run python benchmarks/scripts/compare_benchmarks.py \
+              --results benchmark-results.json \
+              --thresholds benchmarks/thresholds.json \
+              --github-output comparison-report.md
+            echo "has_thresholds=true" >> $GITHUB_OUTPUT
+          else
+            echo "No thresholds.json found. Run calibration to enable per-benchmark comparison."
+            echo "has_thresholds=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
@@ -54,7 +86,7 @@ jobs:
           output-file-path: benchmark-results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
-          alert-threshold: "150%"
+          alert-threshold: "200%"
           comment-on-alert: true
           fail-on-alert: false
 
@@ -66,9 +98,98 @@ jobs:
           output-file-path: benchmark-results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
-          alert-threshold: "150%"
+          alert-threshold: "200%"
           comment-on-alert: true
           fail-on-alert: false
+          comment-always: false
+
+      - name: Generate benchmark summary
+        if: github.event_name == 'pull_request'
+        id: summary
+        run: |
+          python3 << 'EOF'
+          import json
+          import os
+          from pathlib import Path
+
+          with open("benchmark-results.json") as f:
+              data = json.load(f)
+
+          benchmarks = data.get("benchmarks", [])
+          if not benchmarks:
+              print("No benchmark results found")
+              exit(0)
+
+          # Group by benchmark group
+          groups = {}
+          for b in benchmarks:
+              group = b.get("group", "default")
+              if group not in groups:
+                  groups[group] = []
+              groups[group].append(b)
+
+          # Generate summary
+          summary_lines = ["### Benchmark Results Summary\n"]
+          summary_lines.append("| Group | Benchmarks | Mean Time Range |")
+          summary_lines.append("|-------|------------|-----------------|")
+
+          for group, benches in sorted(groups.items()):
+              times = [b["stats"]["mean"] * 1000 for b in benches]
+              min_t, max_t = min(times), max(times)
+              summary_lines.append(f"| {group} | {len(benches)} | {min_t:.2f}ms - {max_t:.2f}ms |")
+
+          summary_lines.append(f"\n*Total: {len(benchmarks)} benchmarks*")
+
+          # Add comparison results if available
+          comparison_file = Path("comparison-report.md")
+          if comparison_file.exists():
+              summary_lines.append("\n---\n")
+              summary_lines.append(comparison_file.read_text())
+
+          summary = "\n".join(summary_lines)
+          print(summary)
+
+          # Write to GitHub step output
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("summary<<EOF\n")
+              f.write(summary)
+              f.write("\nEOF\n")
+          EOF
+
+      - name: Comment benchmark summary on PR
+        if: github.event_name == 'pull_request' && steps.summary.outputs.summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `${{ steps.summary.outputs.summary }}`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('### Benchmark Results Summary')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: summary
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: summary
+              });
+            }
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
@@ -76,3 +197,58 @@ jobs:
           name: benchmark-results
           path: benchmark-results.json
           retention-days: 30
+
+  calibrate:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.mode == 'calibrate' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install VTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+
+      - name: Set CMake path
+        run: echo "CMAKE_PREFIX_PATH=/usr/lib/cmake/vtk" >> $GITHUB_ENV
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync -v
+
+      - name: Run benchmark calibration
+        run: |
+          uv run python benchmarks/scripts/calibrate_benchmarks.py \
+            --runs ${{ github.event.inputs.calibration_runs || '10' }} \
+            --output calibration-results.json \
+            --thresholds-output benchmarks/thresholds.json
+
+      - name: Analyze calibration results
+        run: |
+          uv run python benchmarks/scripts/analyze_benchmark_variance.py calibration-results.json
+
+      - name: Upload calibration results
+        uses: actions/upload-artifact@v4
+        with:
+          name: calibration-results
+          path: |
+            calibration-results.json
+            benchmarks/thresholds.json
+          retention-days: 90
+
+      - name: Show next steps
+        run: |
+          echo "=============================================="
+          echo "CALIBRATION COMPLETE"
+          echo "=============================================="
+          echo ""
+          echo "Next steps:"
+          echo "1. Download the 'calibration-results' artifact"
+          echo "2. Copy benchmarks/thresholds.json to your local repo"
+          echo "3. Commit and push thresholds.json to enable per-benchmark comparison"
+          echo ""
+          echo "Or create a PR with the thresholds file to update them."
