@@ -40,16 +40,20 @@ jobs:
         run: uv sync -v
 
       - name: Run benchmarks
+        id: benchmarks
+        continue-on-error: true
         run: |
           uv run pytest benchmarks/ \
             --benchmark-only \
             --benchmark-json=benchmark-results.json \
             --benchmark-group-by=group \
-            --benchmark-sort=mean
+            --benchmark-sort=mean \
+            --junitxml=benchmark-junit.xml \
+            -o junit_family=legacy
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && steps.benchmarks.outcome == 'success'
         with:
           tool: "pytest"
           output-file-path: benchmark-results.json
@@ -61,7 +65,7 @@ jobs:
 
       - name: Compare benchmarks (PR only)
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.benchmarks.outcome == 'success'
         with:
           tool: "pytest"
           output-file-path: benchmark-results.json
@@ -72,43 +76,65 @@ jobs:
           fail-on-alert: false
 
       - name: Upload benchmark results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: benchmark-results.json
+          path: |
+            benchmark-results.json
+            benchmark-junit.xml
           retention-days: 30
 
-      - name: Post benchmark summary comment
-        if: github.event_name == 'pull_request'
+      - name: Post benchmark failure comment
+        if: github.event_name == 'pull_request' && steps.benchmarks.outcome == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const data = JSON.parse(fs.readFileSync('benchmark-results.json', 'utf8'));
 
-            // Group benchmarks by group
-            const groups = {};
-            for (const bench of data.benchmarks) {
-              const group = bench.group || 'ungrouped';
-              if (!groups[group]) groups[group] = [];
-              groups[group].push(bench);
+            // Parse JUnit XML for failures
+            const xml = fs.readFileSync('benchmark-junit.xml', 'utf8');
+            const failures = [];
+
+            // Extract failed testcases with their failure messages
+            const testcaseRegex = /<testcase[^>]*name="([^"]*)"[^>]*classname="([^"]*)"[^>]*>[\s\S]*?<failure[^>]*message="([^"]*)"[^>]*>([\s\S]*?)<\/failure>[\s\S]*?<\/testcase>/g;
+            let match;
+            while ((match = testcaseRegex.exec(xml)) !== null) {
+              failures.push({
+                name: match[1],
+                classname: match[2],
+                message: match[3],
+                details: match[4].trim().substring(0, 500) // Limit details length
+              });
             }
 
-            // Build markdown table
-            let body = '## 📊 Benchmark Results\n\n';
-            body += `Commit: \`${context.sha.substring(0, 7)}\` | Python ${data.machine_info?.python_version || 'N/A'}\n\n`;
+            // Also check for errors (not just failures)
+            const errorRegex = /<testcase[^>]*name="([^"]*)"[^>]*classname="([^"]*)"[^>]*>[\s\S]*?<error[^>]*message="([^"]*)"[^>]*>([\s\S]*?)<\/error>[\s\S]*?<\/testcase>/g;
+            while ((match = errorRegex.exec(xml)) !== null) {
+              failures.push({
+                name: match[1],
+                classname: match[2],
+                message: match[3],
+                details: match[4].trim().substring(0, 500)
+              });
+            }
 
-            for (const [group, benchmarks] of Object.entries(groups).sort()) {
-              body += `### ${group}\n\n`;
-              body += '| Test | Mean | StdDev | Min | Max | Rounds |\n';
-              body += '|------|-----:|-------:|----:|----:|-------:|\n';
+            if (failures.length === 0) {
+              console.log('No failures found in JUnit XML');
+              return;
+            }
 
-              for (const b of benchmarks.sort((a, b) => a.name.localeCompare(b.name))) {
-                const s = b.stats;
-                const fmt = (v) => v < 0.001 ? `${(v * 1e6).toFixed(1)}µs` : v < 1 ? `${(v * 1e3).toFixed(2)}ms` : `${v.toFixed(3)}s`;
-                body += `| ${b.name.replace('test_', '')} | ${fmt(s.mean)} | ±${fmt(s.stddev)} | ${fmt(s.min)} | ${fmt(s.max)} | ${s.rounds} |\n`;
+            // Build comment body
+            let body = '## ❌ Benchmark Failures\n\n';
+            body += `**${failures.length} benchmark(s) failed** on commit \`${context.sha.substring(0, 7)}\`\n\n`;
+
+            for (const f of failures) {
+              body += `### \`${f.name}\`\n`;
+              body += `**Class:** \`${f.classname}\`\n\n`;
+              body += `**Error:** ${f.message}\n\n`;
+              if (f.details) {
+                body += '<details><summary>Stack trace</summary>\n\n```\n' + f.details + '\n```\n\n</details>\n\n';
               }
-              body += '\n';
             }
 
             // Find existing comment
@@ -117,7 +143,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const botComment = comments.find(c => c.user.type === 'Bot' && c.body.includes('## 📊 Benchmark Results'));
+            const botComment = comments.find(c => c.user.type === 'Bot' && c.body.includes('## ❌ Benchmark Failures'));
 
             if (botComment) {
               await github.rest.issues.updateComment({
@@ -134,3 +160,7 @@ jobs:
                 body: body,
               });
             }
+
+      - name: Fail if benchmarks failed
+        if: steps.benchmarks.outcome == 'failure'
+        run: exit 1
