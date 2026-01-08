@@ -1,0 +1,476 @@
+{
+  "comparison-3d-wallclock::test_mmg3d_executable_wallclock": {
+    "threshold_seconds": 1.7853396027195902,
+    "baseline_mean": 1.6058345487399912,
+    "baseline_std": 0.059835017993199666,
+    "cv_percent": 3.7261010507059313
+  },
+  "comparison-3d::test_mmg_script": {
+    "threshold_seconds": 1.7941543029897844,
+    "baseline_mean": 1.6071069852399773,
+    "baseline_std": 0.062349105916602345,
+    "cv_percent": 3.8795865172157296
+  },
+  "comparison-3d::test_python_api_file_based": {
+    "threshold_seconds": 0.9423582262447951,
+    "baseline_mean": 0.8653383856200089,
+    "baseline_std": 0.025673280208262098,
+    "cv_percent": 2.966848649602823
+  },
+  "comparison-3d::test_python_api_in_memory": {
+    "threshold_seconds": 0.8699100178482678,
+    "baseline_mean": 0.8172729164999964,
+    "baseline_std": 0.017545700449423784,
+    "cv_percent": 2.146859402188921
+  },
+  "autodetect-exe::test_mmg3d_executable_direct": {
+    "threshold_seconds": 1.7027845786994569,
+    "baseline_mean": 1.6055662119800338,
+    "baseline_std": 0.03240612223980772,
+    "cv_percent": 2.0183609992541816
+  },
+  "autodetect-exe::test_mmg_script_autodetect": {
+    "threshold_seconds": 1.7236430761104171,
+    "baseline_mean": 1.6163278454000085,
+    "baseline_std": 0.03577174357013617,
+    "cv_percent": 2.2131490014195347
+  },
+  "autodetect-api::test_mmgmesh3d_direct": {
+    "threshold_seconds": 0.8723703134929838,
+    "baseline_mean": 0.8219477276000242,
+    "baseline_std": 0.016807528630986536,
+    "cv_percent": 2.04484154729185
+  },
+  "autodetect-api::test_mesh_autodetect": {
+    "threshold_seconds": 0.8804515642577477,
+    "baseline_mean": 0.8265031571200098,
+    "baseline_std": 0.01798280237924597,
+    "cv_percent": 2.175769351191339
+  },
+  "comparison-2d::test_mmg2d_executable": {
+    "threshold_seconds": 0.8247269089373254,
+    "baseline_mean": 0.7632438570999949,
+    "baseline_std": 0.0204943506124435,
+    "cv_percent": 2.685164174175394
+  },
+  "comparison-2d::test_mmg_script_2d": {
+    "threshold_seconds": 0.8243880528967891,
+    "baseline_mean": 0.7663008122999929,
+    "baseline_std": 0.019362413532265383,
+    "cv_percent": 2.526737962622092
+  },
+  "comparison-2d::test_python_api_2d_in_memory": {
+    "threshold_seconds": 0.009111774627562276,
+    "baseline_mean": 0.008510397080136812,
+    "baseline_std": 0.00020045918247515461,
+    "cv_percent": 2.355462155144611
+  },
+  "comparison-surface::test_mmgs_executable": {
+    "threshold_seconds": 0.8683710765876482,
+    "baseline_mean": 0.809787793740004,
+    "baseline_std": 0.019527760949214747,
+    "cv_percent": 2.4114664483920913
+  },
+  "comparison-surface::test_mmg_script_surface": {
+    "threshold_seconds": 0.8861989872628994,
+    "baseline_mean": 0.8202399508399821,
+    "baseline_std": 0.021986345474305728,
+    "cv_percent": 2.6804772739721097
+  },
+  "comparison-surface::test_python_api_surface_in_memory": {
+    "threshold_seconds": 0.06508883040489329,
+    "baseline_mean": 0.06115375930358359,
+    "baseline_std": 0.0013116903671032307,
+    "cv_percent": 2.1449055332668094
+  },
+  "io-3d-write::test_save_mesh_file": {
+    "threshold_seconds": 0.002715523464149371,
+    "baseline_mean": 0.002613286899711926,
+    "baseline_std": 3.407885481248168e-05,
+    "cv_percent": 1.3040609822150924
+  },
+  "io-3d-read::test_read_mesh_file": {
+    "threshold_seconds": 0.044611269040342356,
+    "baseline_mean": 0.041416682414191525,
+    "baseline_std": 0.0010648622087169432,
+    "cv_percent": 2.57109489859107
+  },
+  "io-2d-write::test_save_mesh_file": {
+    "threshold_seconds": 0.0063425480667839255,
+    "baseline_mean": 0.0060401053401533825,
+    "baseline_std": 0.00010081424221018092,
+    "cv_percent": 1.6690808608914236
+  },
+  "io-2d-read::test_read_mesh_file": {
+    "threshold_seconds": 0.004408459491628681,
+    "baseline_mean": 0.004049365657789332,
+    "baseline_std": 0.00011969794461311664,
+    "cv_percent": 2.9559677917173643
+  },
+  "io-surface-write::test_save_mesh_file": {
+    "threshold_seconds": 0.003863205216303242,
+    "baseline_mean": 0.003629678924434152,
+    "baseline_std": 7.784209728969665e-05,
+    "cv_percent": 2.1446000847535522
+  },
+  "io-surface-read::test_read_mesh_file": {
+    "threshold_seconds": 0.016691618687123485,
+    "baseline_mean": 0.015598134569803255,
+    "baseline_std": 0.00036449470577340975,
+    "cv_percent": 2.336783954146943
+  },
+  "io-pyvista-3d::test_to_pyvista": {
+    "threshold_seconds": 0.0011244357979274724,
+    "baseline_mean": 0.0010857684921158062,
+    "baseline_std": 1.2889101937222072e-05,
+    "cv_percent": 1.187094857772622
+  },
+  "io-pyvista-3d::test_from_pyvista": {
+    "threshold_seconds": 0.04008013632416639,
+    "baseline_mean": 0.03724651660068164,
+    "baseline_std": 0.0009445399078282504,
+    "cv_percent": 2.5359147486317277
+  },
+  "io-pyvista-surface::test_to_pyvista": {
+    "threshold_seconds": 0.0005335039381679805,
+    "baseline_mean": 0.0005082536156910235,
+    "baseline_std": 8.416774158985663e-06,
+    "cv_percent": 1.6560185504125111
+  },
+  "io-pyvista-surface::test_from_pyvista": {
+    "threshold_seconds": 0.015804260777520198,
+    "baseline_mean": 0.014371163836964816,
+    "baseline_std": 0.00047769898018512743,
+    "cv_percent": 3.3240103975184883
+  },
+  "io-data-access::test_get_vertices_3d": {
+    "threshold_seconds": 1.2160796063955346e-05,
+    "baseline_mean": 1.1144595098418379e-05,
+    "baseline_std": 3.387336551789888e-07,
+    "cv_percent": 3.0394433551656017
+  },
+  "io-data-access::test_get_elements_3d": {
+    "threshold_seconds": 4.041916587931661e-05,
+    "baseline_mean": 3.681619555647562e-05,
+    "baseline_std": 1.2009901076136618e-06,
+    "cv_percent": 3.2621244250274497
+  },
+  "io-data-access::test_get_vertices_with_refs": {
+    "threshold_seconds": 1.2385036081383343e-05,
+    "baseline_mean": 1.1825313596504116e-05,
+    "baseline_std": 1.8657416162640896e-07,
+    "cv_percent": 1.577752336999886
+  },
+  "mesh-construction-3d::test_construct_from_arrays_small": {
+    "threshold_seconds": 0.041620377579692114,
+    "baseline_mean": 0.036212188676335605,
+    "baseline_std": 0.0018027296344521693,
+    "cv_percent": 4.978239925139459
+  },
+  "mesh-construction-3d::test_construct_from_arrays_medium": {
+    "threshold_seconds": 0.039077616981730366,
+    "baseline_mean": 0.03583205855159039,
+    "baseline_std": 0.001081852810046658,
+    "cv_percent": 3.019231531141379
+  },
+  "mesh-construction-3d::test_construct_from_arrays_large": {
+    "threshold_seconds": 0.04192506461799825,
+    "baseline_mean": 0.037090700490478495,
+    "baseline_std": 0.00161145470917325,
+    "cv_percent": 4.344632718885761
+  },
+  "mesh-construction-2d::test_construct_from_arrays_small": {
+    "threshold_seconds": 0.0002862103587109105,
+    "baseline_mean": 0.00026186929561464493,
+    "baseline_std": 8.113687698755184e-06,
+    "cv_percent": 3.0983730565705274
+  },
+  "mesh-construction-2d::test_construct_from_arrays_medium": {
+    "threshold_seconds": 0.0003257941401884115,
+    "baseline_mean": 0.00030090967086603105,
+    "baseline_std": 8.294823107460148e-06,
+    "cv_percent": 2.7565824267419816
+  },
+  "mesh-construction-2d::test_construct_from_arrays_large": {
+    "threshold_seconds": 0.00045456074413005213,
+    "baseline_mean": 0.00042715153261377585,
+    "baseline_std": 9.13640383875876e-06,
+    "cv_percent": 2.138913978103354
+  },
+  "mesh-construction-surface::test_construct_from_arrays_small": {
+    "threshold_seconds": 0.011111633058402756,
+    "baseline_mean": 0.00983684191098454,
+    "baseline_std": 0.0004249303824727385,
+    "cv_percent": 4.319784604835725
+  },
+  "mesh-construction-surface::test_construct_from_arrays_medium": {
+    "threshold_seconds": 0.011142865755612612,
+    "baseline_mean": 0.009908435766266599,
+    "baseline_std": 0.00041147666311533784,
+    "cv_percent": 4.152791346906801
+  },
+  "mesh-construction-surface::test_construct_from_arrays_large": {
+    "threshold_seconds": 0.01103473577423261,
+    "baseline_mean": 0.00998086659456213,
+    "baseline_std": 0.0003512897265568269,
+    "cv_percent": 3.519631519253247
+  },
+  "mesh-lowlevel-3d::test_set_mesh_size_and_data": {
+    "threshold_seconds": 0.039015143335062494,
+    "baseline_mean": 0.03622060302405904,
+    "baseline_std": 0.0009315134370011531,
+    "cv_percent": 2.5717778259583586
+  },
+  "mesh-lowlevel-3d::test_set_vertices_with_refs": {
+    "threshold_seconds": 0.03950715622044358,
+    "baseline_mean": 0.036299391647823684,
+    "baseline_std": 0.001069254857539965,
+    "cv_percent": 2.945655034425547
+  },
+  "mesh-fields::test_set_metric_field": {
+    "threshold_seconds": 0.00012154359930798357,
+    "baseline_mean": 0.00011104800945839687,
+    "baseline_std": 3.4985299498622327e-06,
+    "cv_percent": 3.1504661514648085
+  },
+  "mesh-fields::test_get_metric_field": {
+    "threshold_seconds": 1.160941257548681e-06,
+    "baseline_mean": 1.0971564605079965e-06,
+    "baseline_std": 2.1261599013561517e-08,
+    "cv_percent": 1.9378821324824669
+  },
+  "mesh-topology::test_get_mesh_size": {
+    "threshold_seconds": 6.02819646622278e-07,
+    "baseline_mean": 3.592804994281006e-07,
+    "baseline_std": 8.117971573139248e-08,
+    "cv_percent": 22.595079850037393
+  },
+  "mesh-topology::test_get_adjacent_elements": {
+    "threshold_seconds": 7.651740662543351e-07,
+    "baseline_mean": 7.300000407871954e-07,
+    "baseline_std": 1.172467515571324e-08,
+    "cv_percent": 1.6061197946057562
+  },
+  "mesh-topology::test_get_vertex_neighbors": {
+    "threshold_seconds": 6.329409004134296e-06,
+    "baseline_mean": 6.027128821376084e-06,
+    "baseline_std": 1.0076006091940393e-07,
+    "cv_percent": 1.6717754656586037
+  },
+  "remesh-2d-baseline::test_remesh_small": {
+    "threshold_seconds": 0.0008755255793624855,
+    "baseline_mean": 0.0007908640458272251,
+    "baseline_std": 2.8220511178420167e-05,
+    "cv_percent": 3.5683138369126612
+  },
+  "remesh-2d-baseline::test_remesh_medium": {
+    "threshold_seconds": 0.009062769195707534,
+    "baseline_mean": 0.008558905503188568,
+    "baseline_std": 0.00016795456417298892,
+    "cv_percent": 1.9623369379463118
+  },
+  "remesh-2d-baseline::test_remesh_large": {
+    "threshold_seconds": 0.05771619556209307,
+    "baseline_mean": 0.05519662130000472,
+    "baseline_std": 0.0008398580873627842,
+    "cv_percent": 1.5215751754042823
+  },
+  "remesh-2d-modes::test_remesh_default": {
+    "threshold_seconds": 0.009157824875052387,
+    "baseline_mean": 0.008651522792812576,
+    "baseline_std": 0.00016876736074660374,
+    "cv_percent": 1.9507243382264516
+  },
+  "remesh-2d-modes::test_remesh_optimize": {
+    "threshold_seconds": 0.010192321991904863,
+    "baseline_mean": 0.009437872424991754,
+    "baseline_std": 0.00025148318897103624,
+    "cv_percent": 2.6646173803441293
+  },
+  "remesh-2d-modes::test_remesh_uniform": {
+    "threshold_seconds": 0.009603434623125792,
+    "baseline_mean": 0.008677808530355654,
+    "baseline_std": 0.0003085420309233795,
+    "cv_percent": 3.5555293694724344
+  },
+  "remesh-2d-options::test_remesh_hmax_fine": {
+    "threshold_seconds": 0.00719658078661193,
+    "baseline_mean": 0.0064317562935727575,
+    "baseline_std": 0.0002549414976797242,
+    "cv_percent": 3.9637928746536435
+  },
+  "remesh-2d-options::test_remesh_hmax_coarse": {
+    "threshold_seconds": 0.0008412809246292665,
+    "baseline_mean": 0.0007549768327668473,
+    "baseline_std": 2.8768030620806387e-05,
+    "cv_percent": 3.8104521055801137
+  },
+  "remesh-2d-options::test_remesh_with_hausd": {
+    "threshold_seconds": 0.009276301720054024,
+    "baseline_mean": 0.008590027844382885,
+    "baseline_std": 0.00022875795855704622,
+    "cv_percent": 2.663064226347457
+  },
+  "remesh-2d-options::test_remesh_with_angle_detection": {
+    "threshold_seconds": 0.009279799727908666,
+    "baseline_mean": 0.008579619858334634,
+    "baseline_std": 0.00023339328985801043,
+    "cv_percent": 2.720322038875435
+  },
+  "remesh-2d-quality::test_get_element_qualities": {
+    "threshold_seconds": 3.656310884993331e-05,
+    "baseline_mean": 3.603246509446182e-05,
+    "baseline_std": 1.7688125182382987e-07,
+    "cv_percent": 0.4908941182906092
+  },
+  "remesh-2d-quality::test_validate_mesh": {
+    "threshold_seconds": 0.22042458774219498,
+    "baseline_mean": 0.21725220278001872,
+    "baseline_std": 0.0010574616540587505,
+    "cv_percent": 0.48674381227310076
+  },
+  "remesh-3d-baseline::test_remesh_small": {
+    "threshold_seconds": 0.3718600340129655,
+    "baseline_mean": 0.3150459066399992,
+    "baseline_std": 0.01893804245765544,
+    "cv_percent": 6.011200926122748
+  },
+  "remesh-3d-baseline::test_remesh_medium": {
+    "threshold_seconds": 0.884940316429719,
+    "baseline_mean": 0.8227817563199994,
+    "baseline_std": 0.02071952003657321,
+    "cv_percent": 2.5182279355881705
+  },
+  "remesh-3d-baseline::test_remesh_large": {
+    "threshold_seconds": 8.854453527944397,
+    "baseline_mean": 7.956896627800012,
+    "baseline_std": 0.29918563338146154,
+    "cv_percent": 3.7600794301657627
+  },
+  "remesh-3d-modes::test_remesh_default": {
+    "threshold_seconds": 0.8939584657128549,
+    "baseline_mean": 0.8227414231199817,
+    "baseline_std": 0.02373901419762439,
+    "cv_percent": 2.885355414293087
+  },
+  "remesh-3d-modes::test_remesh_optimize": {
+    "threshold_seconds": 0.36875523708872127,
+    "baseline_mean": 0.33329551101999755,
+    "baseline_std": 0.011819908689574566,
+    "cv_percent": 3.546375003192101
+  },
+  "remesh-3d-modes::test_remesh_uniform": {
+    "threshold_seconds": 1.1229845563567193,
+    "baseline_mean": 1.0202343085799919,
+    "baseline_std": 0.0342500825922425,
+    "cv_percent": 3.3570800652561186
+  },
+  "remesh-3d-options::test_remesh_hmax_fine": {
+    "threshold_seconds": 0.4837009595336078,
+    "baseline_mean": 0.43197134729999564,
+    "baseline_std": 0.017243204077870725,
+    "cv_percent": 3.9917471808368945
+  },
+  "remesh-3d-options::test_remesh_hmax_coarse": {
+    "threshold_seconds": 0.3622536121763237,
+    "baseline_mean": 0.31837418591999833,
+    "baseline_std": 0.014626475418775106,
+    "cv_percent": 4.594114744733254
+  },
+  "remesh-3d-options::test_remesh_with_hausd": {
+    "threshold_seconds": 0.8939396461169821,
+    "baseline_mean": 0.8197936141400168,
+    "baseline_std": 0.024715343992321736,
+    "cv_percent": 3.014825142087588
+  },
+  "remesh-3d-options::test_remesh_with_hgrad": {
+    "threshold_seconds": 0.880976503036522,
+    "baseline_mean": 0.8192163462999997,
+    "baseline_std": 0.020586718912174097,
+    "cv_percent": 2.512977067065892
+  },
+  "remesh-3d-quality::test_get_element_qualities": {
+    "threshold_seconds": 8.914758449982982e-05,
+    "baseline_mean": 8.772635103921749e-05,
+    "baseline_std": 4.73744486870777e-07,
+    "cv_percent": 0.5400252960014177
+  },
+  "remesh-3d-quality::test_validate_mesh": {
+    "threshold_seconds": 0.2544093401500399,
+    "baseline_mean": 0.25123591594000916,
+    "baseline_std": 0.0010578080700102458,
+    "cv_percent": 0.42104173921647103
+  },
+  "remesh-surface-baseline::test_remesh_small": {
+    "threshold_seconds": 0.04365829834866594,
+    "baseline_mean": 0.03790735573173736,
+    "baseline_std": 0.0019169808723095278,
+    "cv_percent": 5.057015545678287
+  },
+  "remesh-surface-baseline::test_remesh_medium": {
+    "threshold_seconds": 0.06604641263122864,
+    "baseline_mean": 0.05995382539399087,
+    "baseline_std": 0.0020308624124125902,
+    "cv_percent": 3.387377534405239
+  },
+  "remesh-surface-baseline::test_remesh_large": {
+    "threshold_seconds": 0.19331811335870674,
+    "baseline_mean": 0.1846212875166799,
+    "baseline_std": 0.002898941947342283,
+    "cv_percent": 1.5702100155055922
+  },
+  "remesh-surface-modes::test_remesh_default": {
+    "threshold_seconds": 0.06590789477555185,
+    "baseline_mean": 0.05976393604482165,
+    "baseline_std": 0.0020479862435767355,
+    "cv_percent": 3.4267927769027637
+  },
+  "remesh-surface-modes::test_remesh_optimize": {
+    "threshold_seconds": 0.05150210916276408,
+    "baseline_mean": 0.04777795268024437,
+    "baseline_std": 0.0012413854941732347,
+    "cv_percent": 2.5982391972323526
+  },
+  "remesh-surface-modes::test_remesh_uniform": {
+    "threshold_seconds": 0.06656580845555748,
+    "baseline_mean": 0.05946772848157353,
+    "baseline_std": 0.00236602665799465,
+    "cv_percent": 3.9786733383094983
+  },
+  "remesh-surface-options::test_remesh_hmax_fine": {
+    "threshold_seconds": 0.06871549178688545,
+    "baseline_mean": 0.06121166840560546,
+    "baseline_std": 0.002501274460426662,
+    "cv_percent": 4.086270682662209
+  },
+  "remesh-surface-options::test_remesh_hmax_coarse": {
+    "threshold_seconds": 0.04521804444708659,
+    "baseline_mean": 0.038249806946384746,
+    "baseline_std": 0.002322745833567281,
+    "cv_percent": 6.0725687761590645
+  },
+  "remesh-surface-options::test_remesh_with_hausd": {
+    "threshold_seconds": 0.06630895600202621,
+    "baseline_mean": 0.059780954491455866,
+    "baseline_std": 0.0021760005035234516,
+    "cv_percent": 3.639956106479455
+  },
+  "remesh-surface-options::test_remesh_with_hgrad": {
+    "threshold_seconds": 0.06683284337178354,
+    "baseline_mean": 0.06007965872187122,
+    "baseline_std": 0.002251061549970775,
+    "cv_percent": 3.7467948351565874
+  },
+  "remesh-surface-quality::test_get_element_qualities": {
+    "threshold_seconds": 4.738767852197863e-05,
+    "baseline_mean": 4.658309540971519e-05,
+    "baseline_std": 2.681943707544828e-07,
+    "cv_percent": 0.5757332534380041
+  },
+  "remesh-surface-quality::test_validate_mesh": {
+    "threshold_seconds": 0.034754789564453346,
+    "baseline_mean": 0.033817706008223425,
+    "baseline_std": 0.00031236118540997366,
+    "cv_percent": 0.9236616621305331
+  }
+}
