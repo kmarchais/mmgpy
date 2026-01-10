@@ -728,5 +728,183 @@ class TestValidationReportStr:
             assert f"Test message {i}" in report_str
 
 
+# =============================================================================
+# Tests for duplicate vertex detection (issue #119)
+# =============================================================================
+
+
+class TestDuplicateVertexDetection:
+    """Tests for improved duplicate vertex detection using KD-tree."""
+
+    def test_detects_duplicates_small_mesh(self) -> None:
+        """Test that duplicate vertices are detected in small meshes."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+                [0.0, 0.0, 0.0],  # Duplicate of vertex 0
+            ],
+            dtype=np.float64,
+        )
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(tetrahedra)
+
+        report = mesh.validate(detailed=True)
+        duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
+        assert len(duplicate_warnings) > 0
+        assert "1 duplicate" in duplicate_warnings[0].message
+
+    def test_detects_duplicates_large_mesh(self) -> None:
+        """Test that duplicate detection works for large meshes (>10k vertices)."""
+        n_vertices = 50000
+        rng = np.random.default_rng(42)
+        vertices = rng.random((n_vertices, 3))
+        vertices[n_vertices - 1] = vertices[0]  # Create a duplicate
+
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(tetrahedra)
+
+        report = mesh.validate(detailed=True)
+        duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
+        assert len(duplicate_warnings) > 0
+
+    def test_no_false_positives_large_mesh(self) -> None:
+        """Test no false positives on large mesh without duplicates."""
+        n_vertices = 20000
+        rng = np.random.default_rng(123)
+        vertices = rng.random((n_vertices, 3)) * 100  # Spread out to avoid collisions
+
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(tetrahedra)
+
+        report = mesh.validate(detailed=True)
+        duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
+        assert len(duplicate_warnings) == 0
+
+    def test_tolerance_parameter(self) -> None:
+        """Test that tolerance parameter affects duplicate detection."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+                [1e-11, 0.0, 0.0],  # Very close to vertex 0
+            ],
+            dtype=np.float64,
+        )
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(tetrahedra)
+
+        # Default tolerance (1e-10) should detect this as duplicate
+        from mmgpy._validation import _check_duplicate_vertices
+
+        issues_default: list[ValidationIssue] = []
+        _check_duplicate_vertices(vertices, issues_default, tolerance=1e-10)
+        assert len(issues_default) == 1
+
+        # Smaller tolerance should not detect it
+        issues_small: list[ValidationIssue] = []
+        _check_duplicate_vertices(vertices, issues_small, tolerance=1e-12)
+        assert len(issues_small) == 0
+
+    def test_multiple_duplicates(self) -> None:
+        """Test detection of multiple duplicate pairs."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+                [0.0, 0.0, 0.0],  # Duplicate of 0
+                [1.0, 0.0, 0.0],  # Duplicate of 1
+                [0.5, 1.0, 0.0],  # Duplicate of 2
+            ],
+            dtype=np.float64,
+        )
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(tetrahedra)
+
+        report = mesh.validate(detailed=True)
+        duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
+        assert len(duplicate_warnings) > 0
+        assert "3 duplicate" in duplicate_warnings[0].message
+
+    def test_2d_mesh_duplicate_detection(self) -> None:
+        """Test duplicate detection works for 2D meshes."""
+        vertices = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [0.5, 1.0],
+                [0.0, 0.0],  # Duplicate of vertex 0
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2]], dtype=np.int32)
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        report = mesh.validate(detailed=True)
+        duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
+        assert len(duplicate_warnings) > 0
+
+    def test_surface_mesh_duplicate_detection(self) -> None:
+        """Test duplicate detection works for surface meshes."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+                [0.0, 0.0, 0.0],  # Duplicate of vertex 0
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array(
+            [
+                [0, 1, 2],
+                [0, 1, 3],
+                [1, 2, 3],
+                [0, 2, 3],
+            ],
+            dtype=np.int32,
+        )
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        report = mesh.validate(detailed=True)
+        duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
+        assert len(duplicate_warnings) > 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

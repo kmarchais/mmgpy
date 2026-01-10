@@ -11,6 +11,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import numpy as np
+from scipy.spatial import cKDTree
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -22,9 +23,6 @@ _GEOMETRY_TOLERANCE = 1e-15
 
 # Maximum number of issues to display in summary
 _MAX_DISPLAYED_ISSUES = 10
-
-# Maximum number of vertices for duplicate check (O(n^2))
-_MAX_VERTICES_FOR_DUPLICATE_CHECK = 10000
 
 # Maximum faces per edge for manifold mesh
 _MAX_FACES_PER_MANIFOLD_EDGE = 2
@@ -463,39 +461,23 @@ def _check_duplicate_vertices(
     issues: list[ValidationIssue],
     tolerance: float = 1e-10,
 ) -> None:
-    """Check for duplicate (coincident) vertices using spatial sorting."""
+    """Check for duplicate (coincident) vertices using KD-tree.
+
+    Time complexity: O(n log n) for tree construction, O(n) expected for queries.
+    Space complexity: O(n)
+    """
     if len(vertices) < _MIN_VERTICES_FOR_DUPLICATE_CHECK:
         return
 
-    n_verts = len(vertices)
+    tree = cKDTree(vertices)
+    pairs = tree.query_pairs(r=tolerance, output_type="ndarray")
 
-    if n_verts > _MAX_VERTICES_FOR_DUPLICATE_CHECK:
-        # For large meshes, skip expensive check
-        return
-
-    # Sort vertices by x-coordinate for efficient neighbor search
-    # This allows O(n log n) detection instead of O(n^2)
-    sort_indices = np.argsort(vertices[:, 0])
-    sorted_verts = vertices[sort_indices]
-
-    duplicates = []
-    for i in range(n_verts - 1):
-        # Only check subsequent vertices within x-tolerance
-        j = i + 1
-        while j < n_verts and (sorted_verts[j, 0] - sorted_verts[i, 0]) < tolerance:
-            dist = np.linalg.norm(sorted_verts[i] - sorted_verts[j])
-            if dist < tolerance:
-                # Map back to original indices
-                orig_i, orig_j = int(sort_indices[i]), int(sort_indices[j])
-                duplicates.append((min(orig_i, orig_j), max(orig_i, orig_j)))
-            j += 1
-
-    if duplicates:
+    if len(pairs) > 0:
         issues.append(
             ValidationIssue(
                 severity=IssueSeverity.WARNING,
                 check_name="duplicate_vertices",
-                message=f"Found {len(duplicates)} duplicate vertex pairs "
+                message=f"Found {len(pairs)} duplicate vertex pairs "
                 f"within tolerance {tolerance}",
                 element_ids=(),
             ),
