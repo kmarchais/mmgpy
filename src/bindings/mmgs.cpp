@@ -195,11 +195,11 @@ void set_mesh_options_surface(MMG5_pMesh mesh, MMG5_pSol met,
     switch (info.type) {
     case ParamType::Double:
       success = MMGS_Set_dparameter(mesh, met, info.param_type,
-                                    item.second.cast<double>());
+                                    safe_cast<double>(item.second, key));
       break;
     case ParamType::Integer:
       success = MMGS_Set_iparameter(mesh, met, info.param_type,
-                                    item.second.cast<int>());
+                                    safe_cast<int>(item.second, key));
       break;
     }
 
