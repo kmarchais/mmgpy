@@ -702,6 +702,240 @@ class Mesh:
         return self._impl[key]
 
     # =========================================================================
+    # Geometry operations
+    # =========================================================================
+
+    def _compute_tetrahedra_volumes(
+        self,
+        vertices: NDArray[np.float64],
+        tetrahedra: NDArray[np.int32],
+    ) -> NDArray[np.float64]:
+        """Compute volumes for an array of tetrahedra.
+
+        Parameters
+        ----------
+        vertices : ndarray
+            Vertex coordinates, shape (N, 3).
+        tetrahedra : ndarray
+            Tetrahedra connectivity, shape (M, 4).
+
+        Returns
+        -------
+        ndarray
+            Volume of each tetrahedron, shape (M,).
+
+        """
+        v0 = vertices[tetrahedra[:, 0]]
+        v1 = vertices[tetrahedra[:, 1]]
+        v2 = vertices[tetrahedra[:, 2]]
+        v3 = vertices[tetrahedra[:, 3]]
+        return np.abs(np.einsum("ij,ij->i", v1 - v0, np.cross(v2 - v0, v3 - v0))) / 6
+
+    def _compute_triangle_areas(
+        self,
+        vertices: NDArray[np.float64],
+        triangles: NDArray[np.int32],
+    ) -> NDArray[np.float64]:
+        """Compute areas for an array of triangles.
+
+        Automatically handles 2D (shoelace formula) and 3D (cross product) cases.
+
+        Parameters
+        ----------
+        vertices : ndarray
+            Vertex coordinates, shape (N, 2) or (N, 3).
+        triangles : ndarray
+            Triangle connectivity, shape (M, 3).
+
+        Returns
+        -------
+        ndarray
+            Area of each triangle, shape (M,).
+
+        """
+        v0 = vertices[triangles[:, 0]]
+        v1 = vertices[triangles[:, 1]]
+        v2 = vertices[triangles[:, 2]]
+
+        if self._kind == MeshKind.TRIANGULAR_2D:
+            # 2D: use shoelace formula
+            return 0.5 * np.abs(
+                (v1[:, 0] - v0[:, 0]) * (v2[:, 1] - v0[:, 1])
+                - (v2[:, 0] - v0[:, 0]) * (v1[:, 1] - v0[:, 1]),
+            )
+        # 3D: use cross product magnitude
+        return 0.5 * np.linalg.norm(np.cross(v1 - v0, v2 - v0), axis=1)
+
+    def get_bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        """Get the bounding box of the mesh.
+
+        Returns
+        -------
+        tuple[ndarray, ndarray]
+            Tuple of (min_coords, max_coords), each shape (3,) for 3D
+            or (2,) for 2D meshes.
+
+        Raises
+        ------
+        ValueError
+            If the mesh has no vertices.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> min_pt, max_pt = mesh.get_bounds()
+        >>> print(f"Size: {max_pt - min_pt}")
+
+        """
+        vertices = self.get_vertices()
+        if len(vertices) == 0:
+            msg = "Cannot compute bounds for mesh with no vertices"
+            raise ValueError(msg)
+        return vertices.min(axis=0), vertices.max(axis=0)
+
+    def get_center_of_mass(self) -> NDArray[np.float64]:
+        """Get the centroid (center of mass) of the mesh.
+
+        For volume meshes, computes volume-weighted centroid.
+        For surface meshes, computes area-weighted centroid.
+        For 2D meshes, computes area-weighted centroid.
+
+        Returns
+        -------
+        ndarray
+            Centroid coordinates, shape (3,) for 3D or (2,) for 2D.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> center = mesh.get_center_of_mass()
+        >>> print(f"Center: {center}")
+
+        """
+        vertices = self.get_vertices()
+
+        if self._kind == MeshKind.TETRAHEDRAL:
+            tetrahedra = self.get_tetrahedra()
+            if len(tetrahedra) == 0:
+                return vertices.mean(axis=0)
+
+            volumes = self._compute_tetrahedra_volumes(vertices, tetrahedra)
+            v0 = vertices[tetrahedra[:, 0]]
+            v1 = vertices[tetrahedra[:, 1]]
+            v2 = vertices[tetrahedra[:, 2]]
+            v3 = vertices[tetrahedra[:, 3]]
+            centroids = (v0 + v1 + v2 + v3) / 4
+            total_volume = volumes.sum()
+
+            if total_volume < np.finfo(np.float64).tiny:
+                return vertices.mean(axis=0)
+
+            return (centroids * volumes[:, np.newaxis]).sum(axis=0) / total_volume
+
+        triangles = self.get_triangles()
+        if len(triangles) == 0:
+            return vertices.mean(axis=0)
+
+        areas = self._compute_triangle_areas(vertices, triangles)
+        v0 = vertices[triangles[:, 0]]
+        v1 = vertices[triangles[:, 1]]
+        v2 = vertices[triangles[:, 2]]
+        centroids = (v0 + v1 + v2) / 3
+        total_area = areas.sum()
+
+        if total_area < np.finfo(np.float64).tiny:
+            return vertices.mean(axis=0)
+
+        return (centroids * areas[:, np.newaxis]).sum(axis=0) / total_area
+
+    def compute_volume(self) -> float:
+        """Compute the total volume of the mesh.
+
+        Only available for 3D volume meshes (TETRAHEDRAL).
+
+        Returns
+        -------
+        float
+            Total volume in mesh units cubed.
+
+        Raises
+        ------
+        TypeError
+            If mesh is not a 3D volume mesh.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> volume = mesh.compute_volume()
+        >>> print(f"Volume: {volume:.2f} mm^3")
+
+        """
+        if self._kind != MeshKind.TETRAHEDRAL:
+            msg = "compute_volume() is only available for TETRAHEDRAL meshes"
+            raise TypeError(msg)
+
+        vertices = self.get_vertices()
+        tetrahedra = self.get_tetrahedra()
+
+        if len(tetrahedra) == 0:
+            return 0.0
+
+        volumes = self._compute_tetrahedra_volumes(vertices, tetrahedra)
+        return float(volumes.sum())
+
+    def compute_surface_area(self) -> float:
+        """Compute the total surface area of the mesh.
+
+        For volume meshes (TETRAHEDRAL), computes boundary surface area
+        (triangles stored in the mesh represent boundary faces).
+        For surface meshes (TRIANGULAR_SURFACE), computes total area.
+        For 2D meshes (TRIANGULAR_2D), computes total area.
+
+        Returns
+        -------
+        float
+            Total surface area in mesh units squared.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> area = mesh.compute_surface_area()
+        >>> print(f"Surface area: {area:.2f} mm^2")
+
+        """
+        vertices = self.get_vertices()
+        triangles = self.get_triangles()
+
+        if len(triangles) == 0:
+            return 0.0
+
+        areas = self._compute_triangle_areas(vertices, triangles)
+        return float(areas.sum())
+
+    def get_diagonal(self) -> float:
+        """Get the diagonal length of the bounding box.
+
+        Returns
+        -------
+        float
+            The diagonal length of the bounding box.
+
+        Raises
+        ------
+        ValueError
+            If the mesh has no vertices.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> diagonal = mesh.get_diagonal()
+        >>> print(f"Bounding box diagonal: {diagonal:.2f}")
+
+        """
+        min_pt, max_pt = self.get_bounds()
+        return float(np.linalg.norm(max_pt - min_pt))
+
+    # =========================================================================
     # Topology queries
     # =========================================================================
 
