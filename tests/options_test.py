@@ -499,3 +499,155 @@ class TestModuleExports:
         from mmgpy import MmgSOptions
 
         assert MmgSOptions is not None
+
+
+class TestInvalidOptionTypes:
+    """Tests for invalid option type handling (issue #108)."""
+
+    @pytest.fixture
+    def mesh3d(self) -> MmgMesh3D:
+        """Create a simple 3D mesh."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        return MmgMesh3D(vertices, elements)
+
+    @pytest.fixture
+    def mesh2d(self) -> MmgMesh2D:
+        """Create a simple 2D mesh."""
+        vertices = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [1.0, 1.0],
+                [0.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        return MmgMesh2D(vertices, triangles)
+
+    @pytest.fixture
+    def meshs(self) -> MmgMeshS:
+        """Create a simple surface mesh."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array(
+            [[0, 1, 2], [0, 1, 3], [1, 2, 3], [0, 2, 3]],
+            dtype=np.int32,
+        )
+        return MmgMeshS(vertices, triangles)
+
+    def test_invalid_option_type_string_for_double_3d(
+        self,
+        mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that string instead of float raises ValueError with clear message."""
+        with pytest.raises(ValueError, match=r"hmax.*must be a number.*str"):
+            mesh3d.remesh(hmax="0.1")
+
+    def test_invalid_option_type_string_for_double_2d(
+        self,
+        mesh2d: MmgMesh2D,
+    ) -> None:
+        """Test that string instead of float raises ValueError for 2D mesh."""
+        with pytest.raises(ValueError, match=r"hmax.*must be a number.*str"):
+            mesh2d.remesh(hmax="0.1")
+
+    def test_invalid_option_type_string_for_double_surface(
+        self,
+        meshs: MmgMeshS,
+    ) -> None:
+        """Test that string instead of float raises ValueError for surface mesh."""
+        with pytest.raises(ValueError, match=r"hmax.*must be a number.*str"):
+            meshs.remesh(hmax="0.1")
+
+    def test_invalid_option_type_list_for_integer_3d(
+        self,
+        mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that list instead of int raises ValueError with clear message."""
+        with pytest.raises(ValueError, match=r"verbose.*must be an integer.*list"):
+            mesh3d.remesh(verbose=[1, 2])
+
+    def test_invalid_option_type_list_for_integer_2d(
+        self,
+        mesh2d: MmgMesh2D,
+    ) -> None:
+        """Test that list instead of int raises ValueError for 2D mesh."""
+        with pytest.raises(ValueError, match=r"verbose.*must be an integer.*list"):
+            mesh2d.remesh(verbose=[1, 2])
+
+    def test_invalid_option_type_list_for_integer_surface(
+        self,
+        meshs: MmgMeshS,
+    ) -> None:
+        """Test that list instead of int raises ValueError for surface mesh."""
+        with pytest.raises(ValueError, match=r"verbose.*must be an integer.*list"):
+            meshs.remesh(verbose=[1, 2])
+
+    def test_invalid_option_type_dict_for_double(
+        self,
+        mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that dict instead of float raises ValueError."""
+        with pytest.raises(ValueError, match=r"hmin.*must be a number.*dict"):
+            mesh3d.remesh(hmin={"value": 0.1})
+
+    def test_invalid_option_type_none_for_double(
+        self,
+        mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that None instead of float raises ValueError."""
+        with pytest.raises(ValueError, match=r"hausd.*must be a number.*NoneType"):
+            mesh3d.remesh(hausd=None)
+
+    def test_invalid_option_type_tuple_for_integer(
+        self,
+        mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that tuple instead of int raises ValueError."""
+        with pytest.raises(ValueError, match=r"mem.*must be an integer.*tuple"):
+            mesh3d.remesh(mem=(100,))
+
+    def test_error_includes_parameter_name(
+        self,
+        mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that error message includes the parameter name."""
+        with pytest.raises(ValueError, match="hgrad"):
+            mesh3d.remesh(hgrad="invalid")
+
+    def test_error_includes_actual_type(
+        self,
+        mesh3d: MmgMesh3D,
+    ) -> None:
+        """Test that error message includes actual type received."""
+        with pytest.raises(ValueError, match="str"):
+            mesh3d.remesh(hsiz="0.5")
+
+    def test_valid_types_still_work_3d(self, mesh3d: MmgMesh3D) -> None:
+        """Test that valid option types still work correctly."""
+        mesh3d.remesh(hmax=0.5, verbose=-1)
+
+    def test_valid_types_still_work_2d(self, mesh2d: MmgMesh2D) -> None:
+        """Test that valid option types still work correctly for 2D."""
+        mesh2d.remesh(hmax=0.5, verbose=-1)
+
+    def test_valid_types_still_work_surface(self, meshs: MmgMeshS) -> None:
+        """Test that valid option types still work correctly for surface."""
+        meshs.remesh(hmax=0.5, verbose=-1)
