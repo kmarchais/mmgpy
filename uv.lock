@@ -974,7 +974,7 @@ requires-dist = [
     { name = "patchelf", marker = "sys_platform == 'linux'", specifier = ">=0.17.2.4" },
     { name = "pyvista", specifier = ">=0.46.4" },
     { name = "rich", specifier = ">=13.0.0" },
-    { name = "scipy", specifier = ">=1.11.0" },
+    { name = "scipy", specifier = ">=1.11.0,<1.17" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0" },
 ]
 
