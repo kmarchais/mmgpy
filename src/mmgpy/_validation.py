@@ -463,7 +463,8 @@ def _check_duplicate_vertices(
 ) -> None:
     """Check for duplicate (coincident) vertices using KD-tree.
 
-    Time complexity: O(n log n) for tree construction, O(n) expected for queries.
+    Time complexity: O(n log n) for tree construction, O(n log n + k) for queries
+    where k is the number of pairs found.
     Space complexity: O(n)
     """
     if len(vertices) < _MIN_VERTICES_FOR_DUPLICATE_CHECK:
@@ -473,13 +474,15 @@ def _check_duplicate_vertices(
     pairs = tree.query_pairs(r=tolerance, output_type="ndarray")
 
     if len(pairs) > 0:
+        # Include affected vertex indices (limit to first 100 for large results)
+        affected_vertices = tuple(int(v) for v in pairs.flatten()[:100])
         issues.append(
             ValidationIssue(
                 severity=IssueSeverity.WARNING,
                 check_name="duplicate_vertices",
                 message=f"Found {len(pairs)} duplicate vertex pairs "
                 f"within tolerance {tolerance}",
-                element_ids=(),
+                element_ids=affected_vertices,
             ),
         )
 

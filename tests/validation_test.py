@@ -905,6 +905,70 @@ class TestDuplicateVertexDetection:
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
         assert len(duplicate_warnings) > 0
 
+    def test_tolerance_boundary_edge_case(self) -> None:
+        """Test vertices at exactly the tolerance boundary."""
+        from mmgpy._validation import _check_duplicate_vertices
+
+        tolerance = 1e-10
+
+        # Vertex at exactly the tolerance distance
+        vertices_at_boundary = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [tolerance, 0.0, 0.0],  # Exactly at tolerance distance
+            ],
+            dtype=np.float64,
+        )
+
+        # At exactly tolerance, query_pairs uses <= so this should be detected
+        issues_at: list[ValidationIssue] = []
+        _check_duplicate_vertices(vertices_at_boundary, issues_at, tolerance=tolerance)
+        assert len(issues_at) == 1
+
+        # Slightly beyond tolerance should not be detected
+        vertices_beyond = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [tolerance * 1.1, 0.0, 0.0],  # Just beyond tolerance
+            ],
+            dtype=np.float64,
+        )
+        issues_beyond: list[ValidationIssue] = []
+        _check_duplicate_vertices(vertices_beyond, issues_beyond, tolerance=tolerance)
+        assert len(issues_beyond) == 0
+
+    def test_clustered_duplicates(self) -> None:
+        """Test detection when one vertex is duplicated multiple times.
+
+        If vertex 0 is duplicated at indices 1, 2, and 3, we should detect
+        all pairs: (0,1), (0,2), (0,3), (1,2), (1,3), (2,3) = 6 pairs.
+        """
+        from mmgpy._validation import _check_duplicate_vertices
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],  # Original
+                [0.0, 0.0, 0.0],  # Duplicate 1
+                [0.0, 0.0, 0.0],  # Duplicate 2
+                [0.0, 0.0, 0.0],  # Duplicate 3
+                [1.0, 0.0, 0.0],  # Different vertex
+            ],
+            dtype=np.float64,
+        )
+
+        issues: list[ValidationIssue] = []
+        _check_duplicate_vertices(vertices, issues)
+
+        assert len(issues) == 1
+        # 4 coincident vertices form C(4,2) = 6 pairs
+        assert "6 duplicate" in issues[0].message
+
+        # Check that element_ids contains the affected vertices
+        assert len(issues[0].element_ids) > 0
+        # All of vertices 0, 1, 2, 3 should be in the affected list
+        affected_set = set(issues[0].element_ids)
+        assert {0, 1, 2, 3}.issubset(affected_set)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -34,21 +34,25 @@ def _generate_random_vertices_2d(
     return rng.random((n_vertices, 2)).astype(np.float64)
 
 
+# Session-scoped fixtures for benchmark data.
+# These are shared across all tests - do not modify the returned arrays.
+
+
 @pytest.fixture(scope="session")
 def vertices_10k() -> NDArray[np.float64]:
-    """10,000 random 3D vertices."""
+    """10,000 random 3D vertices (read-only, shared across session)."""
     return _generate_random_vertices_3d(10_000)
 
 
 @pytest.fixture(scope="session")
 def vertices_100k() -> NDArray[np.float64]:
-    """100,000 random 3D vertices."""
+    """100,000 random 3D vertices (read-only, shared across session)."""
     return _generate_random_vertices_3d(100_000)
 
 
 @pytest.fixture(scope="session")
 def vertices_1m() -> NDArray[np.float64]:
-    """1,000,000 random 3D vertices."""
+    """1,000,000 random 3D vertices (read-only, shared across session)."""
     return _generate_random_vertices_3d(1_000_000)
 
 
