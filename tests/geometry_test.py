@@ -1,11 +1,123 @@
 """Tests for mesh geometry convenience methods."""
 
+from unittest.mock import patch
+
 import numpy as np
 import numpy.testing as npt
 import pytest
 import pyvista as pv
 
 from mmgpy import Mesh, MeshKind
+
+
+class TestEmptyMesh:
+    """Tests for edge cases with empty meshes using mocking."""
+
+    def test_get_bounds_raises_for_empty_vertices(self) -> None:
+        """Test get_bounds raises ValueError for mesh with no vertices."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        # Mock get_vertices at class level
+        with (
+            patch.object(Mesh, "get_vertices", return_value=np.array([]).reshape(0, 3)),
+            pytest.raises(ValueError, match="no vertices"),
+        ):
+            mesh.get_bounds()
+
+    def test_get_diagonal_raises_for_empty_vertices(self) -> None:
+        """Test get_diagonal raises ValueError for mesh with no vertices."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        # Mock get_vertices at class level
+        with (
+            patch.object(Mesh, "get_vertices", return_value=np.array([]).reshape(0, 3)),
+            pytest.raises(ValueError, match="no vertices"),
+        ):
+            mesh.get_diagonal()
+
+    def test_center_of_mass_empty_tetrahedra(self) -> None:
+        """Test center_of_mass falls back to vertex mean when tetrahedra are empty."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 2.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        # Mock get_tetrahedra at class level
+        with patch.object(
+            Mesh,
+            "get_tetrahedra",
+            return_value=np.array([]).reshape(0, 4),
+        ):
+            center = mesh.get_center_of_mass()
+            expected = vertices.mean(axis=0)
+            npt.assert_array_almost_equal(center, expected)
+
+    def test_center_of_mass_empty_triangles(self) -> None:
+        """Test center_of_mass falls back to vertex mean when triangles are empty."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 2.0, 0.5]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        # Mock get_triangles at class level
+        with patch.object(
+            Mesh,
+            "get_triangles",
+            return_value=np.array([]).reshape(0, 3),
+        ):
+            center = mesh.get_center_of_mass()
+            expected = vertices.mean(axis=0)
+            npt.assert_array_almost_equal(center, expected)
+
+    def test_compute_volume_empty_tetrahedra(self) -> None:
+        """Test compute_volume returns 0.0 for mesh with no tetrahedra."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        # Mock get_tetrahedra at class level
+        with patch.object(
+            Mesh,
+            "get_tetrahedra",
+            return_value=np.array([]).reshape(0, 4),
+        ):
+            volume = mesh.compute_volume()
+            assert volume == 0.0
+
+    def test_compute_surface_area_empty_triangles(self) -> None:
+        """Test compute_surface_area returns 0.0 for mesh with no triangles."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.5]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        # Mock get_triangles at class level
+        with patch.object(
+            Mesh,
+            "get_triangles",
+            return_value=np.array([]).reshape(0, 3),
+        ):
+            area = mesh.compute_surface_area()
+            assert area == 0.0
 
 
 class TestGetBounds:
@@ -320,6 +432,34 @@ class TestComputeSurfaceArea:
 
         expected = 4 * np.pi
         assert abs(area - expected) / expected < 0.05
+
+    def test_tetrahedral_mesh_boundary_area_vs_volume(self) -> None:
+        """Test surface area is consistent with volume for tetrahedral mesh.
+
+        For a unit cube, volume=1 and surface_area=6. This test verifies
+        that compute_surface_area returns the boundary area (not internal
+        faces) by checking the ratio is approximately 6:1.
+
+        Note: remesh() is needed to populate boundary triangles from tetrahedra.
+        """
+        x = np.linspace(0, 1, 5)
+        xx, yy, zz = np.meshgrid(x, x, x, indexing="ij")
+        points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+        cloud = pv.PolyData(points)
+        tetra = cloud.delaunay_3d()
+        mesh = Mesh(tetra)
+
+        # Remesh to populate boundary triangles
+        mesh.remesh(hmax=0.5, verbose=-1)
+
+        volume = mesh.compute_volume()
+        area = mesh.compute_surface_area()
+
+        # For a unit cube: volume=1, surface_area=6
+        # The ratio should be approximately 6
+        ratio = area / volume
+        expected_ratio = 6.0
+        assert abs(ratio - expected_ratio) < 0.5
 
 
 class TestIntegration:
