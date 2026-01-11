@@ -19,33 +19,14 @@ from ._logging import (
 
 _logger = get_logger()
 
-# Handle DLL loading on Windows
+# Handle DLL loading on Windows (delvewheel handles most cases, this is a fallback)
 if sys.platform == "win32":  # pragma: no cover
-    # Get the directory containing this file
     _module_dir = Path(__file__).absolute().parent
+    for _dll_dir in (_module_dir / "lib", _module_dir / ".libs"):
+        if _dll_dir.is_dir():
+            os.add_dll_directory(str(_dll_dir))
 
-    # Add common DLL directories to search path
-    dll_search_dirs = [
-        _module_dir,  # Module directory itself
-        _module_dir / "lib",  # Common lib subdirectory
-        _module_dir / "Scripts",  # Common bin subdirectory
-        _module_dir / ".libs",  # delvewheel directory
-        Path("C:/vcpkg/installed/x64-windows/bin"),  # VTK DLLs from vcpkg
-    ]
-
-    for dll_dir in dll_search_dirs:
-        if dll_dir.exists() and dll_dir.is_dir():
-            try:
-                os.add_dll_directory(str(dll_dir))
-                _logger.debug("Added DLL directory: %s", dll_dir)
-            except (OSError, AttributeError):
-                os.environ.setdefault("PATH", "")
-                if str(dll_dir) not in os.environ["PATH"]:
-                    os.environ["PATH"] = str(dll_dir) + os.pathsep + os.environ["PATH"]
-                    _logger.debug("Added to PATH: %s", dll_dir)
-
-# Let delvewheel handle the rest of the imports
-# Import after DLL setup is complete
+# Version info
 try:
     from . import _version  # type: ignore[attr-defined]
 
@@ -53,34 +34,13 @@ try:
 except ImportError:
     __version__ = "unknown"
 
-# Main imports
-try:
-    from ._mmgpy import (  # type: ignore[attr-defined]
-        MMG_VERSION,
-        mmg2d,  # noqa: F401  # Available for advanced users
-        mmg3d,  # noqa: F401  # Available for advanced users
-        mmgs,  # noqa: F401  # Available for advanced users
-    )
-
-except ImportError:  # pragma: no cover
-    if sys.platform == "win32":
-        _module_dir = Path(__file__).absolute().parent
-        available_files = list(_module_dir.glob("*"))
-        lib_files = list(_module_dir.glob("**/*.dll")) + list(
-            _module_dir.glob("**/*.pyd"),
-        )
-
-        _logger.exception(
-            "Failed to import _mmgpy module on Windows.\n"
-            "Module directory: %s\n"
-            "Available files: %s\n"
-            "Found DLLs/PYDs: %s\n"
-            "To debug, set MMGPY_DEBUG=1 or call mmgpy.enable_debug().",
-            _module_dir,
-            [f.name for f in available_files],
-            [str(f) for f in lib_files],
-        )
-    raise
+# Core C++ bindings
+from ._mmgpy import (  # type: ignore[attr-defined]
+    MMG_VERSION,
+    mmg2d,  # noqa: F401  # Available for advanced users
+    mmg3d,  # noqa: F401  # Available for advanced users
+    mmgs,  # noqa: F401  # Available for advanced users
+)
 
 
 def _run_mmg2d() -> None:  # pragma: no cover
