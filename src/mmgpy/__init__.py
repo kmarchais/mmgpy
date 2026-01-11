@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import platform
 import site
 import subprocess
@@ -18,13 +17,6 @@ from ._logging import (
 )
 
 _logger = get_logger()
-
-# Handle DLL loading on Windows (delvewheel handles most cases, this is a fallback)
-if sys.platform == "win32":  # pragma: no cover
-    _module_dir = Path(__file__).absolute().parent
-    for _dll_dir in (_module_dir / "lib", _module_dir / ".libs"):
-        if _dll_dir.is_dir():
-            os.add_dll_directory(str(_dll_dir))
 
 # Version info
 try:
