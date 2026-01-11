@@ -5,15 +5,15 @@ and mmgpy mesh classes.
 
 Example:
     >>> import pyvista as pv
-    >>> from mmgpy import MmgMesh3D, from_pyvista, to_pyvista
+    >>> from mmgpy import Mesh
     >>>
     >>> # Load mesh and convert to mmgpy
     >>> grid = pv.read("mesh.vtk")
-    >>> mesh = from_pyvista(grid)
+    >>> mesh = Mesh(grid)
     >>>
     >>> # Remesh and convert back
     >>> mesh.remesh(hmax=0.1)
-    >>> result = to_pyvista(mesh)
+    >>> result = mesh.to_pyvista()
 
 """
 
@@ -341,130 +341,4 @@ def _mmgs_to_pyvista(mesh: MmgMeshS, *, include_refs: bool) -> pv.PolyData:
     return polydata
 
 
-def _mmg3d_from_pyvista(
-    cls: type[MmgMesh3D],  # noqa: ARG001
-    mesh: pv.UnstructuredGrid | pv.PolyData,
-) -> MmgMesh3D:
-    """Create MmgMesh3D from a PyVista mesh."""
-    if not isinstance(mesh, pv.UnstructuredGrid):
-        msg = "MmgMesh3D.from_pyvista requires UnstructuredGrid input"
-        raise TypeError(msg)
-    return _from_pyvista_to_mmg3d(mesh)
-
-
-def _mmg2d_from_pyvista(
-    cls: type[MmgMesh2D],  # noqa: ARG001
-    mesh: pv.UnstructuredGrid | pv.PolyData,
-) -> MmgMesh2D:
-    """Create MmgMesh2D from a PyVista mesh."""
-    if not isinstance(mesh, pv.PolyData):
-        msg = "MmgMesh2D.from_pyvista requires PolyData input"
-        raise TypeError(msg)
-    return _from_pyvista_to_mmg2d(mesh)
-
-
-def _mmgs_from_pyvista(
-    cls: type[MmgMeshS],  # noqa: ARG001
-    mesh: pv.UnstructuredGrid | pv.PolyData,
-) -> MmgMeshS:
-    """Create MmgMeshS from a PyVista mesh."""
-    if not isinstance(mesh, pv.PolyData):
-        msg = "MmgMeshS.from_pyvista requires PolyData input"
-        raise TypeError(msg)
-    return _from_pyvista_to_mmgs(mesh)
-
-
-def _mmg3d_to_pyvista_method(
-    self: MmgMesh3D,
-    *,
-    include_refs: bool = True,
-) -> pv.UnstructuredGrid:
-    """Convert MmgMesh3D to a PyVista UnstructuredGrid."""
-    return _mmg3d_to_pyvista(self, include_refs=include_refs)
-
-
-def _mmg2d_to_pyvista_method(
-    self: MmgMesh2D,
-    *,
-    include_refs: bool = True,
-) -> pv.PolyData:
-    """Convert MmgMesh2D to a PyVista PolyData."""
-    return _mmg2d_to_pyvista(self, include_refs=include_refs)
-
-
-def _mmgs_to_pyvista_method(
-    self: MmgMeshS,
-    *,
-    include_refs: bool = True,
-) -> pv.PolyData:
-    """Convert MmgMeshS to a PyVista PolyData."""
-    return _mmgs_to_pyvista(self, include_refs=include_refs)
-
-
-def _plot_mesh(  # noqa: D417
-    self: MmgMesh3D | MmgMesh2D | MmgMeshS,
-    *,
-    show_edges: bool = True,
-    **kwargs: object,
-) -> None:
-    """Plot the mesh using PyVista.
-
-    Parameters
-    ----------
-    show_edges : bool
-        Show mesh edges (default: True).
-    **kwargs : object
-        Additional arguments passed to PyVista's plot() method.
-
-    """
-    self.to_pyvista().plot(show_edges=show_edges, **kwargs)
-
-
-def _vtk_property(
-    self: MmgMesh3D | MmgMesh2D | MmgMeshS,
-) -> pv.UnstructuredGrid | pv.PolyData:
-    """Get the PyVista mesh representation.
-
-    This property provides direct access to the PyVista mesh for use with
-    custom plotters or other PyVista operations.
-
-    Returns
-    -------
-    pv.UnstructuredGrid | pv.PolyData
-        PyVista mesh representation.
-
-    Examples
-    --------
-    >>> plotter = pv.Plotter()
-    >>> plotter.add_mesh(mesh.vtk, show_edges=True)
-    >>> plotter.show()
-
-    """
-    return self.to_pyvista()
-
-
-def add_pyvista_methods() -> None:
-    """Add PyVista methods to mesh classes.
-
-    Call this function to add `from_pyvista` classmethod and `to_pyvista`
-    instance method to MmgMesh3D, MmgMesh2D, and MmgMeshS classes.
-
-    These methods are automatically called at import time.
-    """
-    # Add classmethods - type ignores needed for monkey-patching pybind11 classes
-    MmgMesh3D.from_pyvista = classmethod(_mmg3d_from_pyvista)  # type: ignore[attr-defined]
-    MmgMesh2D.from_pyvista = classmethod(_mmg2d_from_pyvista)  # type: ignore[attr-defined]
-    MmgMeshS.from_pyvista = classmethod(_mmgs_from_pyvista)  # type: ignore[attr-defined]
-
-    # Add instance methods
-    MmgMesh3D.to_pyvista = _mmg3d_to_pyvista_method  # type: ignore[attr-defined]
-    MmgMesh2D.to_pyvista = _mmg2d_to_pyvista_method  # type: ignore[attr-defined]
-    MmgMeshS.to_pyvista = _mmgs_to_pyvista_method  # type: ignore[attr-defined]
-
-    # Add plot() method and vtk property to all mesh classes
-    for mesh_class in (MmgMesh3D, MmgMesh2D, MmgMeshS):
-        mesh_class.plot = _plot_mesh  # type: ignore[attr-defined]
-        mesh_class.vtk = property(_vtk_property)  # type: ignore[attr-defined]
-
-
-__all__ = ["add_pyvista_methods", "from_pyvista", "to_pyvista"]
+__all__ = ["from_pyvista", "to_pyvista"]

@@ -9,7 +9,8 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy import Mesh
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -141,7 +142,7 @@ class TestPyVistaConversion3D:
     ) -> None:
         """Benchmark conversion to PyVista UnstructuredGrid."""
         vertices, tetrahedra = mesh_3d_medium
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         result = benchmark(mesh.to_pyvista)
         assert isinstance(result, pv.UnstructuredGrid)
@@ -154,7 +155,7 @@ class TestPyVistaConversion3D:
         pyvista_tetra_grid: pv.UnstructuredGrid,
     ) -> None:
         """Benchmark conversion from PyVista UnstructuredGrid."""
-        result = benchmark(MmgMesh3D.from_pyvista, pyvista_tetra_grid)
+        result = benchmark(Mesh, pyvista_tetra_grid)
         assert len(result.get_tetrahedra()) > 0
 
 
@@ -169,7 +170,7 @@ class TestPyVistaConversionSurface:
     ) -> None:
         """Benchmark conversion to PyVista PolyData."""
         vertices, triangles = mesh_surface_medium
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = benchmark(mesh.to_pyvista)
         assert isinstance(result, pv.PolyData)
@@ -182,7 +183,7 @@ class TestPyVistaConversionSurface:
         pyvista_surface_polydata: pv.PolyData,
     ) -> None:
         """Benchmark conversion from PyVista PolyData."""
-        result = benchmark(MmgMeshS.from_pyvista, pyvista_surface_polydata)
+        result = benchmark(Mesh, pyvista_surface_polydata)
         assert len(result.get_triangles()) > 0
 
 
@@ -200,31 +201,34 @@ class TestDataAccessPerformance:
         mesh = MmgMesh3D(vertices, tetrahedra)
 
         result = benchmark(mesh.get_vertices)
-        assert result.shape[0] == len(vertices)
+        assert len(result) == len(vertices)
 
     @pytest.mark.benchmark(group="io-data-access")
-    def test_get_elements_3d(
+    def test_get_tetrahedra(
         self,
         benchmark: BenchmarkFixture,
         mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
-        """Benchmark element array access."""
+        """Benchmark tetrahedra array access."""
         vertices, tetrahedra = mesh_3d_medium
         mesh = MmgMesh3D(vertices, tetrahedra)
 
         result = benchmark(mesh.get_tetrahedra)
-        assert result.shape[0] == len(tetrahedra)
+        assert len(result) == len(tetrahedra)
 
     @pytest.mark.benchmark(group="io-data-access")
-    def test_get_vertices_with_refs(
+    def test_get_triangles_3d(
         self,
         benchmark: BenchmarkFixture,
         mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
-        """Benchmark vertex array with references access."""
+        """Benchmark triangle array access (boundary faces)."""
         vertices, tetrahedra = mesh_3d_medium
         mesh = MmgMesh3D(vertices, tetrahedra)
 
-        result = benchmark(mesh.get_vertices_with_refs)
-        assert len(result) == 2
-        assert result[0].shape[0] == len(vertices)
+        # First do a remesh to generate triangles
+        mesh.remesh(hsiz=0.5, verbose=-1)
+
+        result = benchmark(mesh.get_triangles)
+        # Should have boundary triangles after remeshing
+        assert result is not None

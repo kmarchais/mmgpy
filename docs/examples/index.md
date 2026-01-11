@@ -13,7 +13,7 @@ Improve mesh quality without changing topology.
 import mmgpy
 
 # Load mesh
-mesh = mmgpy.MmgMesh3D("input.mesh")
+mesh = mmgpy.Mesh("input.mesh")
 
 # Optimize quality only (no vertex insertion/removal)
 result = mesh.remesh_optimize()
@@ -33,7 +33,7 @@ Remesh volumetric mesh with open boundaries.
 """Remeshing with open boundary handling."""
 import mmgpy
 
-mesh = mmgpy.MmgMesh3D("domain_with_holes.mesh")
+mesh = mmgpy.Mesh("domain_with_holes.mesh")
 
 result = mesh.remesh(
     hmax=0.1,
@@ -54,7 +54,7 @@ Remesh while applying mesh displacement.
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMesh3D("input.mesh")
+mesh = mmgpy.Mesh("input.mesh")
 vertices = mesh.get_vertices()
 
 # Define displacement field
@@ -78,7 +78,7 @@ Extract isosurface from implicit function.
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMesh3D("background.mesh")
+mesh = mmgpy.Mesh("background.mesh")
 vertices = mesh.get_vertices()
 
 # Sphere level-set
@@ -101,7 +101,7 @@ Apply regional mesh refinement.
 """Per-region mesh density control."""
 import mmgpy
 
-mesh = mmgpy.MmgMesh2D("domain.mesh")
+mesh = mmgpy.Mesh("domain.mesh")
 
 # Fine mesh in center
 mesh.set_size_sphere(center=[0.5, 0.5], radius=0.2, size=0.01)
@@ -124,7 +124,7 @@ import mmgpy
 import mmgpy.metrics as metrics
 import numpy as np
 
-mesh = mmgpy.MmgMesh2D("domain.mesh")
+mesh = mmgpy.Mesh("domain.mesh")
 vertices = mesh.get_vertices()
 
 # Solution field
@@ -153,7 +153,7 @@ import mmgpy
 import mmgpy.metrics as metrics
 import numpy as np
 
-mesh = mmgpy.MmgMesh2D("domain.mesh")
+mesh = mmgpy.Mesh("domain.mesh")
 n_vertices = mesh.get_mesh_size()["vertices"]
 
 # Create anisotropic metric (stretch in x direction)
@@ -179,7 +179,7 @@ Generate mesh from implicit function.
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMesh2D("background.mesh")
+mesh = mmgpy.Mesh("background.mesh")
 vertices = mesh.get_vertices()
 
 # Circle level-set
@@ -202,7 +202,7 @@ Industrial part surface remeshing.
 """Mechanical part surface optimization."""
 import mmgpy
 
-mesh = mmgpy.MmgMeshS("part.stl")
+mesh = mmgpy.Mesh("part.stl")
 
 result = mesh.remesh(
     hmax=0.05,
@@ -225,7 +225,7 @@ Surface smoothing and refinement.
 """Smooth surface mesh optimization."""
 import mmgpy
 
-mesh = mmgpy.MmgMeshS("surface.mesh")
+mesh = mmgpy.Mesh("surface.mesh")
 
 result = mesh.remesh(
     hmax=0.1,
@@ -249,7 +249,7 @@ Generate surface from implicit function.
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMeshS("background_surface.mesh")
+mesh = mmgpy.Mesh("background_surface.mesh")
 vertices = mesh.get_vertices()
 
 # Torus level-set

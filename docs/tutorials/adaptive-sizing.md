@@ -77,7 +77,7 @@ Refine within a cylindrical region (3D meshes only):
 ```python
 import mmgpy
 
-mesh = mmgpy.MmgMesh3D("input.mesh")
+mesh = mmgpy.Mesh("input.mesh")
 
 # Cylinder along x-axis
 mesh.set_size_cylinder(

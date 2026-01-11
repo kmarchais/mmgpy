@@ -4,9 +4,9 @@ This page explains the fundamental concepts behind mmgpy and mesh remeshing.
 
 ## Mesh Types
 
-mmgpy supports three types of meshes:
+mmgpy supports three types of meshes through the unified `Mesh` class:
 
-### 3D Volumetric Meshes (`MmgMesh3D`)
+### 3D Volumetric Meshes (`MeshKind.TETRAHEDRAL`)
 
 Tetrahedral meshes representing 3D volumes. Used for:
 
@@ -18,10 +18,11 @@ Tetrahedral meshes representing 3D volumes. Used for:
 import mmgpy
 
 # Load a volumetric mesh
-mesh = mmgpy.MmgMesh3D("volume.mesh")
+mesh = mmgpy.Mesh("volume.mesh")
+print(mesh.kind)  # MeshKind.TETRAHEDRAL
 ```
 
-### 2D Planar Meshes (`MmgMesh2D`)
+### 2D Planar Meshes (`MeshKind.TRIANGULAR_2D`)
 
 Triangular meshes in 2D. Used for:
 
@@ -32,10 +33,11 @@ Triangular meshes in 2D. Used for:
 ```python
 import mmgpy
 
-mesh = mmgpy.MmgMesh2D("planar.mesh")
+mesh = mmgpy.Mesh("planar.mesh")
+print(mesh.kind)  # MeshKind.TRIANGULAR_2D
 ```
 
-### 3D Surface Meshes (`MmgMeshS`)
+### 3D Surface Meshes (`MeshKind.TRIANGULAR_SURFACE`)
 
 Triangular meshes representing 3D surfaces. Used for:
 
@@ -46,19 +48,33 @@ Triangular meshes representing 3D surfaces. Used for:
 ```python
 import mmgpy
 
-mesh = mmgpy.MmgMeshS("surface.stl")
+mesh = mmgpy.Mesh("surface.stl")
+print(mesh.kind)  # MeshKind.TRIANGULAR_SURFACE
 ```
 
 ## The Unified Mesh Class
 
-For convenience, mmgpy provides a unified `Mesh` class that auto-detects the mesh type:
+The `Mesh` class is the primary public API for mmgpy. It auto-detects the mesh type based on input data:
 
 ```python
 import mmgpy
 
 # Auto-detect mesh type from file
-mesh = mmgpy.read("input.mesh")
+mesh = mmgpy.Mesh("input.mesh")
 print(f"Mesh type: {mesh.kind}")  # MeshKind.TETRAHEDRAL, TRIANGULAR_2D, or TRIANGULAR_SURFACE
+
+# From arrays - type is detected from vertex dimensions and cell type
+import numpy as np
+
+# 3D vertices + tetrahedra → TETRAHEDRAL
+vertices_3d = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+mesh_3d = mmgpy.Mesh(vertices_3d, tetrahedra)
+
+# 2D vertices + triangles → TRIANGULAR_2D
+vertices_2d = np.array([[0, 0], [1, 0], [0.5, 1]], dtype=np.float64)
+triangles = np.array([[0, 1, 2]], dtype=np.int32)
+mesh_2d = mmgpy.Mesh(vertices_2d, triangles)
 ```
 
 ## Remeshing Operations
@@ -114,7 +130,7 @@ import numpy as np
 def levelset_func(coords):
     return np.linalg.norm(coords - [0.5, 0.5, 0.5], axis=1) - 0.3
 
-mesh = mmgpy.MmgMesh3D("background.mesh")
+mesh = mmgpy.Mesh("background.mesh")
 levelset = levelset_func(mesh.get_vertices())
 
 result = mesh.remesh_levelset(levelset)
@@ -212,10 +228,10 @@ mmgpy supports 40+ file formats via meshio:
 | GMSH       | `.msh`         | Popular for FEM     |
 | PLY        | `.ply`         | Point cloud/mesh    |
 
-Load any format with `mmgpy.read()`:
+Load any format with `mmgpy.Mesh()` or `mmgpy.read()`:
 
 ```python
-mesh = mmgpy.read("model.stl")
+mesh = mmgpy.Mesh("model.stl")
 mesh.save("output.vtk")
 ```
 

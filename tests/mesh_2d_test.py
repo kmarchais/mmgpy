@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from mmgpy import MmgMesh2D
+from mmgpy._mmgpy import MmgMesh2D
 
 
 class TestConstruction:

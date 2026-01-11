@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

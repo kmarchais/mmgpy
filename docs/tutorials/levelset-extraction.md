@@ -20,7 +20,7 @@ import mmgpy
 import numpy as np
 
 # Load or create a background mesh
-mesh = mmgpy.MmgMesh3D("background.mesh")
+mesh = mmgpy.Mesh("background.mesh")
 
 # Get vertex coordinates
 vertices = mesh.get_vertices()
@@ -55,7 +55,7 @@ z = np.linspace(0, 1, n)
 
 # Create tetrahedral mesh from grid
 # (Simplified - real implementation would need proper tetrahedralization)
-mesh = mmgpy.MmgMesh3D("unit_cube.mesh")
+mesh = mmgpy.Mesh("unit_cube.mesh")
 ```
 
 ## Implicit Function Examples
@@ -126,7 +126,7 @@ Level-set extraction also works with 2D meshes:
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMesh2D("background_2d.mesh")
+mesh = mmgpy.Mesh("background_2d.mesh")
 vertices = mesh.get_vertices()
 
 # Circle level-set
@@ -145,7 +145,7 @@ For surface meshes, level-set can extract curves:
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMeshS("surface.mesh")
+mesh = mmgpy.Mesh("surface.mesh")
 vertices = mesh.get_vertices()
 
 # Level-set based on z-coordinate (extracts z=0 curve)
@@ -175,7 +175,7 @@ import mmgpy
 import numpy as np
 
 # Load background mesh
-mesh = mmgpy.MmgMesh3D("domain.mesh")
+mesh = mmgpy.Mesh("domain.mesh")
 vertices = mesh.get_vertices()
 
 # Define a complex implicit function: two intersecting spheres

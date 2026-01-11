@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS, from_pyvista, to_pyvista
+from mmgpy import from_pyvista, to_pyvista
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 # Test fixtures
 
@@ -364,84 +365,6 @@ class TestRemeshingIntegration:
 
 
 # Class method and instance method tests
-
-
-class TestClassMethods:
-    """Tests for from_pyvista classmethod and to_pyvista instance method."""
-
-    def test_mmg3d_from_pyvista_classmethod(
-        self,
-        tetra_grid: pv.UnstructuredGrid,
-    ) -> None:
-        """Test MmgMesh3D.from_pyvista() classmethod."""
-        mesh = MmgMesh3D.from_pyvista(tetra_grid)
-
-        assert isinstance(mesh, MmgMesh3D)
-        assert len(mesh.get_vertices()) == 6
-        assert len(mesh.get_elements()) == 2
-
-    def test_mmg3d_to_pyvista_method(self, mmg3d_mesh: MmgMesh3D) -> None:
-        """Test mesh.to_pyvista() instance method for MmgMesh3D."""
-        grid = mmg3d_mesh.to_pyvista()
-
-        assert isinstance(grid, pv.UnstructuredGrid)
-        assert grid.n_points == 4
-        assert grid.n_cells == 1
-
-    def test_mmg3d_to_pyvista_method_no_refs(self, mmg3d_mesh: MmgMesh3D) -> None:
-        """Test mesh.to_pyvista(include_refs=False) for MmgMesh3D."""
-        grid = mmg3d_mesh.to_pyvista(include_refs=False)
-
-        assert "refs" not in grid.cell_data
-
-    def test_mmg2d_from_pyvista_classmethod(
-        self,
-        triangle_polydata_2d: pv.PolyData,
-    ) -> None:
-        """Test MmgMesh2D.from_pyvista() classmethod."""
-        mesh = MmgMesh2D.from_pyvista(triangle_polydata_2d)
-
-        assert isinstance(mesh, MmgMesh2D)
-        assert len(mesh.get_vertices()) == 4
-        assert len(mesh.get_triangles()) == 2
-
-    def test_mmg2d_to_pyvista_method(self, mmg2d_mesh: MmgMesh2D) -> None:
-        """Test mesh.to_pyvista() instance method for MmgMesh2D."""
-        polydata = mmg2d_mesh.to_pyvista()
-
-        assert isinstance(polydata, pv.PolyData)
-        assert polydata.n_points == 4
-        assert polydata.n_cells == 2
-
-    def test_mmgs_from_pyvista_classmethod(
-        self,
-        triangle_polydata_3d: pv.PolyData,
-    ) -> None:
-        """Test MmgMeshS.from_pyvista() classmethod."""
-        mesh = MmgMeshS.from_pyvista(triangle_polydata_3d)
-
-        assert isinstance(mesh, MmgMeshS)
-        assert len(mesh.get_vertices()) == 4
-        assert len(mesh.get_triangles()) == 4
-
-    def test_mmgs_to_pyvista_method(self, mmgs_mesh: MmgMeshS) -> None:
-        """Test mesh.to_pyvista() instance method for MmgMeshS."""
-        polydata = mmgs_mesh.to_pyvista()
-
-        assert isinstance(polydata, pv.PolyData)
-        assert polydata.n_points == 4
-        assert polydata.n_cells == 4
-
-    def test_round_trip_with_methods(self, tetra_grid: pv.UnstructuredGrid) -> None:
-        """Test round-trip using class methods: PyVista → mmgpy → PyVista."""
-        mesh = MmgMesh3D.from_pyvista(tetra_grid)
-        grid_back = mesh.to_pyvista()
-
-        np.testing.assert_allclose(tetra_grid.points, grid_back.points)
-        np.testing.assert_array_equal(
-            tetra_grid.cells_dict[pv.CellType.TETRA],
-            grid_back.cells_dict[pv.CellType.TETRA],
-        )
 
 
 # Module exports test

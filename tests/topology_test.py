@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
 class TestTopologyQueries3D:

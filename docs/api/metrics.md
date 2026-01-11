@@ -197,7 +197,7 @@ if not is_valid:
 
 ## Metric Formats
 
-### 3D Metrics (MmgMesh3D)
+### 3D Metrics (TETRAHEDRAL)
 
 Symmetric 3x3 tensor stored as 6 components:
 
@@ -209,7 +209,7 @@ M = [M12  M22  M23]  -> [M11, M12, M13, M22, M23, M33]
 
 Metric field shape: `(n_vertices, 6)`
 
-### 2D Metrics (MmgMesh2D)
+### 2D Metrics (TRIANGULAR_2D)
 
 Symmetric 2x2 tensor stored as 3 components:
 
@@ -220,7 +220,7 @@ M = [M12  M22]  -> [M11, M12, M22]
 
 Metric field shape: `(n_vertices, 3)`
 
-### Surface Metrics (MmgMeshS)
+### Surface Metrics (TRIANGULAR_SURFACE)
 
 Same as 3D: `(n_vertices, 6)`
 

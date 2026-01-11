@@ -6,12 +6,10 @@ This section provides detailed API documentation for all public classes and func
 
 ### Core Classes
 
-| Class                                          | Description                              |
-| ---------------------------------------------- | ---------------------------------------- |
-| [`Mesh`](mesh-classes.md#mmgpy.Mesh)           | Unified mesh wrapper with auto-detection |
-| [`MmgMesh3D`](mesh-classes.md#mmgpy.MmgMesh3D) | 3D tetrahedral volume mesh               |
-| [`MmgMesh2D`](mesh-classes.md#mmgpy.MmgMesh2D) | 2D triangular planar mesh                |
-| [`MmgMeshS`](mesh-classes.md#mmgpy.MmgMeshS)   | 3D triangular surface mesh               |
+| Class                                        | Description                            |
+| -------------------------------------------- | -------------------------------------- |
+| [`Mesh`](mesh-classes.md#mmgpy.Mesh)         | Unified mesh class with auto-detection |
+| [`MeshKind`](mesh-classes.md#mmgpy.MeshKind) | Enumeration of mesh types              |
 
 ### Options Classes
 
@@ -59,10 +57,8 @@ This section provides detailed API documentation for all public classes and func
 ```
 mmgpy
 ├── Core Classes
-│   ├── Mesh              # Unified mesh class
-│   ├── MmgMesh3D         # 3D volume mesh
-│   ├── MmgMesh2D         # 2D planar mesh
-│   └── MmgMeshS          # 3D surface mesh
+│   ├── Mesh              # Unified mesh class (auto-detects type)
+│   └── MeshKind          # Mesh type enumeration
 │
 ├── Options
 │   ├── Mmg3DOptions      # 3D options
@@ -122,9 +118,9 @@ mesh.save("output.vtk")
 All public APIs are fully typed. Use with a type-aware IDE for autocomplete:
 
 ```python
-from mmgpy import MmgMesh3D, Mmg3DOptions, RemeshResult
+from mmgpy import Mesh, Mmg3DOptions, RemeshResult
 
-mesh: MmgMesh3D = MmgMesh3D("input.mesh")
+mesh: Mesh = Mesh("input.mesh")
 opts: Mmg3DOptions = Mmg3DOptions(hmax=0.1)
 result: RemeshResult = mesh.remesh(opts)
 ```

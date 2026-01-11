@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 
-from mmgpy import MmgMeshS
+from mmgpy._mmgpy import MmgMeshS
 
 
 class TestConstruction:

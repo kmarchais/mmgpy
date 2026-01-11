@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from mmgpy import Mesh, MmgMesh3D, mmg3d
+from mmgpy import Mesh, mmg3d
+from mmgpy._mmgpy import MmgMesh3D
 
 if TYPE_CHECKING:
     import numpy as np
@@ -463,7 +464,7 @@ class TestRemesh2DComparison:
         tmp_path: Path,
     ) -> Path:
         """Create a temporary 2D mesh file."""
-        from mmgpy import MmgMesh2D
+        from mmgpy._mmgpy import MmgMesh2D
 
         vertices, triangles = mesh_2d_medium
         mesh = MmgMesh2D(vertices, triangles)
@@ -538,7 +539,7 @@ class TestRemesh2DComparison:
         mesh_2d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
         """Benchmark Python API with in-memory 2D remeshing."""
-        from mmgpy import MmgMesh2D
+        from mmgpy._mmgpy import MmgMesh2D
 
         vertices, triangles = mesh_2d_medium
 
@@ -561,7 +562,7 @@ class TestRemeshSurfaceComparison:
         tmp_path: Path,
     ) -> Path:
         """Create a temporary surface mesh file."""
-        from mmgpy import MmgMeshS
+        from mmgpy._mmgpy import MmgMeshS
 
         vertices, triangles = mesh_surface_medium
         mesh = MmgMeshS(vertices, triangles)
@@ -636,7 +637,7 @@ class TestRemeshSurfaceComparison:
         mesh_surface_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
         """Benchmark Python API with in-memory surface remeshing."""
-        from mmgpy import MmgMeshS
+        from mmgpy._mmgpy import MmgMeshS
 
         vertices, triangles = mesh_surface_medium
 

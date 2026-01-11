@@ -143,40 +143,6 @@ report = mesh.validate(
 )
 ```
 
-## Validation Functions
-
-For direct validation without mesh methods:
-
-::: mmgpy.validate_mesh_3d
-options:
-show_root_heading: true
-
-::: mmgpy.validate_mesh_2d
-options:
-show_root_heading: true
-
-::: mmgpy.validate_mesh_surface
-options:
-show_root_heading: true
-
-### Direct Function Usage
-
-```python
-from mmgpy import validate_mesh_3d, MmgMesh3D
-
-mesh = MmgMesh3D("input.mesh")
-
-report = validate_mesh_3d(
-    mesh,
-    check_geometry=True,
-    check_topology=True,
-    check_quality=True,
-    min_quality=0.1,
-)
-
-print(f"Valid: {report.is_valid}")
-```
-
 ## Complete Example
 
 ```python
