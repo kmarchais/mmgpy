@@ -36,6 +36,7 @@ classifiers = [
 ]
 
 [tool.mmgpy]
+mmg_version = "5.8.0"
 vtk_version = "9.5.2"
 
 [tool.scikit-build]
