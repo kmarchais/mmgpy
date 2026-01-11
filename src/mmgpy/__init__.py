@@ -464,7 +464,7 @@ def _verify_rpath_fix_linux(  # pragma: no cover
         )
 
 
-from . import interactive, lagrangian, metrics, progress, sizing
+from . import interactive, lagrangian, metrics, progress, repair, sizing
 from ._io import read
 from ._mesh import Mesh, MeshCheckpoint, MeshKind
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
@@ -521,6 +521,7 @@ __all__ = [
     "progress",
     "propagate_displacement",
     "read",
+    "repair",
     "rich_progress",
     "set_log_level",
     "sizing",
