@@ -1,0 +1,116 @@
+name: Check Dependency Updates
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Weekly on Sunday at midnight UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get current versions from pyproject.toml
+        id: current
+        run: |
+          MMG_VERSION=$(grep 'mmg_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
+          VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
+
+          if [ -z "$MMG_VERSION" ]; then
+            echo "::error::Failed to parse mmg_version from pyproject.toml"
+            exit 1
+          fi
+          if [ -z "$VTK_VERSION" ]; then
+            echo "::error::Failed to parse vtk_version from pyproject.toml"
+            exit 1
+          fi
+
+          echo "mmg=$MMG_VERSION" >> $GITHUB_OUTPUT
+          echo "vtk=$VTK_VERSION" >> $GITHUB_OUTPUT
+          echo "Current MMG version: $MMG_VERSION"
+          echo "Current VTK version: $VTK_VERSION"
+
+      - name: Check latest MMG release
+        id: mmg-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LATEST=$(gh api repos/MmgTools/mmg/releases/latest --jq '.tag_name' | tr -d 'v')
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest MMG version: $LATEST"
+
+      - name: Check latest VTK release
+        id: vtk-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # VTK builds use tags like "VTK-9.5.2-shared", extract version
+          LATEST=$(gh api repos/sanguinariojoe/vtk-builds/releases/latest --jq '.tag_name' | sed 's/VTK-\([0-9.]*\)-.*/\1/')
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest VTK version: $LATEST"
+
+      - name: Check for updates
+        id: check
+        run: |
+          UPDATES=""
+
+          if [ "${{ steps.current.outputs.mmg }}" != "${{ steps.mmg-latest.outputs.version }}" ]; then
+            UPDATES="${UPDATES}MMG: ${{ steps.current.outputs.mmg }} -> ${{ steps.mmg-latest.outputs.version }}\n"
+            echo "mmg_update=true" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "${{ steps.current.outputs.vtk }}" != "${{ steps.vtk-latest.outputs.version }}" ]; then
+            UPDATES="${UPDATES}VTK: ${{ steps.current.outputs.vtk }} -> ${{ steps.vtk-latest.outputs.version }}\n"
+            echo "vtk_update=true" >> $GITHUB_OUTPUT
+          fi
+
+          if [ -n "$UPDATES" ]; then
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo -e "Updates available:\n$UPDATES"
+          else
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+            echo "All dependencies are up to date"
+          fi
+
+      - name: Create or update issue for dependency updates
+        if: steps.check.outputs.has_updates == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_TITLE="Dependency Updates Available"
+
+          # Build issue body
+          BODY="## Dependency Version Updates\n\n"
+          BODY="${BODY}The following dependencies have new versions available:\n\n"
+
+          if [ "${{ steps.check.outputs.mmg_update }}" == "true" ]; then
+            BODY="${BODY}### MMG\n"
+            BODY="${BODY}- Current: \`${{ steps.current.outputs.mmg }}\`\n"
+            BODY="${BODY}- Latest: \`${{ steps.mmg-latest.outputs.version }}\`\n"
+            BODY="${BODY}- [Release notes](https://github.com/MmgTools/mmg/releases/tag/v${{ steps.mmg-latest.outputs.version }})\n\n"
+          fi
+
+          if [ "${{ steps.check.outputs.vtk_update }}" == "true" ]; then
+            BODY="${BODY}### VTK\n"
+            BODY="${BODY}- Current: \`${{ steps.current.outputs.vtk }}\`\n"
+            BODY="${BODY}- Latest: \`${{ steps.vtk-latest.outputs.version }}\`\n"
+            BODY="${BODY}- [Release notes](https://github.com/sanguinariojoe/vtk-builds/releases)\n\n"
+          fi
+
+          BODY="${BODY}---\n"
+          BODY="${BODY}*This issue was automatically created by the dependency check workflow.*\n"
+          BODY="${BODY}*To update, modify the versions in \`pyproject.toml\` under \`[tool.mmgpy]\`.*"
+
+          # Check if issue already exists
+          EXISTING_ISSUE=$(gh issue list --search "\"$ISSUE_TITLE\" in:title" --state open --json number --jq '.[0].number')
+
+          if [ -n "$EXISTING_ISSUE" ]; then
+            echo "Updating existing issue #$EXISTING_ISSUE"
+            echo -e "$BODY" | gh issue edit "$EXISTING_ISSUE" --body-file -
+          else
+            echo "Creating new issue"
+            # Try with label first, fall back to no label if it doesn't exist
+            echo -e "$BODY" | gh issue create --title "$ISSUE_TITLE" --body-file - --label "build" 2>/dev/null \
+              || echo -e "$BODY" | gh issue create --title "$ISSUE_TITLE" --body-file -
+          fi

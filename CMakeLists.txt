@@ -15,6 +15,15 @@ endif()
 
 set(MMGPY_VERSION ${CMAKE_MATCH_1})
 
+# Read MMG version from pyproject.toml [tool.mmgpy] section
+string(REGEX MATCH "mmg_version = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" _ ${PYPROJECT_CONTENT})
+if(CMAKE_MATCH_1)
+    set(MMG_VERSION_FROM_TOML ${CMAKE_MATCH_1})
+    message(STATUS "MMG version from pyproject.toml: ${MMG_VERSION_FROM_TOML}")
+else()
+    message(FATAL_ERROR "Could not find mmg_version in pyproject.toml")
+endif()
+
 # Read VTK version from pyproject.toml [tool.mmgpy] section
 string(REGEX MATCH "vtk_version = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" _ ${PYPROJECT_CONTENT})
 if(CMAKE_MATCH_1)
@@ -59,6 +68,9 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Set MMG version from pyproject.toml for extern/CMakeLists.txt
+set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
 
 # Build external dependencies (MMG)
 # Don't use EXCLUDE_FROM_ALL if we want executables to be built

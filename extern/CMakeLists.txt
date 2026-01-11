@@ -2,9 +2,13 @@ cmake_minimum_required(VERSION 3.15)
 
 include(FetchContent)
 
-# Set MMG version
-set(MMG_GIT_TAG "v5.8.0" CACHE STRING "MMG version to build")
+# MMG version is set from pyproject.toml via parent CMakeLists.txt
+# This provides a fallback default if called standalone
+if(NOT DEFINED MMG_GIT_TAG)
+    set(MMG_GIT_TAG "v5.8.0" CACHE STRING "MMG version to build")
+endif()
 set(MMG_REPOSITORY "https://github.com/MmgTools/mmg.git" CACHE STRING "MMG repository URL")
+message(STATUS "Building MMG version: ${MMG_GIT_TAG}")
 
 # Fetch MMG
 FetchContent_Declare(
