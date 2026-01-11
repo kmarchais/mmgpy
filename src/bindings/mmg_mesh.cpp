@@ -152,7 +152,7 @@ void MmgMesh::set_vertices_and_elements(const py::array_t<double> &vertices,
 
 py::array_t<double> MmgMesh::get_vertices() const {
   MMG5_int np = mesh->np;
-  py::array_t<double> vertices({np, 3});
+  py::array_t<double> vertices({static_cast<py::ssize_t>(np), py::ssize_t{3}});
   auto buf = vertices.request();
   double *ptr = static_cast<double *>(buf.ptr);
 
@@ -177,7 +177,7 @@ py::array_t<double> MmgMesh::get_vertices() const {
 
 py::array_t<int> MmgMesh::get_elements() const {
   MMG5_int ne = mesh->ne;
-  py::array_t<int> elements({ne, 4});
+  py::array_t<int> elements({static_cast<py::ssize_t>(ne), py::ssize_t{4}});
   auto buf = elements.request();
   int *ptr = static_cast<int *>(buf.ptr);
 
@@ -247,7 +247,8 @@ py::array_t<double> MmgMesh::get_field(const std::string &field_name) const {
   auto field = get_solution_field(field_name);
   MMG5_int np = mesh->np;
 
-  py::array_t<double> values({np, field.components});
+  py::array_t<double> values({static_cast<py::ssize_t>(np),
+                              static_cast<py::ssize_t>(field.components)});
   auto buf = values.request();
   double *ptr = static_cast<double *>(buf.ptr);
 
@@ -518,8 +519,8 @@ void MmgMesh::set_edges(const py::array_t<int> &edges,
 
 py::tuple MmgMesh::get_vertices_with_refs() const {
   MMG5_int np = mesh->np;
-  py::array_t<double> vertices({np, static_cast<MMG5_int>(3)});
-  py::array_t<MMG5_int> refs(np);
+  py::array_t<double> vertices({static_cast<py::ssize_t>(np), py::ssize_t{3}});
+  py::array_t<MMG5_int> refs(static_cast<py::ssize_t>(np));
 
   auto vert_buf = vertices.request();
   auto refs_buf = refs.request();
@@ -548,7 +549,7 @@ py::tuple MmgMesh::get_vertices_with_refs() const {
 
 py::array_t<int> MmgMesh::get_triangles() const {
   MMG5_int nt = mesh->nt;
-  py::array_t<int> triangles({nt, static_cast<MMG5_int>(3)});
+  py::array_t<int> triangles({static_cast<py::ssize_t>(nt), py::ssize_t{3}});
   auto buf = triangles.request();
   int *ptr = static_cast<int *>(buf.ptr);
 
@@ -574,8 +575,8 @@ py::array_t<int> MmgMesh::get_triangles() const {
 
 py::tuple MmgMesh::get_triangles_with_refs() const {
   MMG5_int nt = mesh->nt;
-  py::array_t<int> triangles({nt, static_cast<MMG5_int>(3)});
-  py::array_t<MMG5_int> refs(nt);
+  py::array_t<int> triangles({static_cast<py::ssize_t>(nt), py::ssize_t{3}});
+  py::array_t<MMG5_int> refs(static_cast<py::ssize_t>(nt));
 
   auto tri_buf = triangles.request();
   auto refs_buf = refs.request();
@@ -605,8 +606,8 @@ py::tuple MmgMesh::get_triangles_with_refs() const {
 
 py::tuple MmgMesh::get_elements_with_refs() const {
   MMG5_int ne = mesh->ne;
-  py::array_t<int> elements({ne, static_cast<MMG5_int>(4)});
-  py::array_t<MMG5_int> refs(ne);
+  py::array_t<int> elements({static_cast<py::ssize_t>(ne), py::ssize_t{4}});
+  py::array_t<MMG5_int> refs(static_cast<py::ssize_t>(ne));
 
   auto elem_buf = elements.request();
   auto refs_buf = refs.request();
@@ -637,7 +638,7 @@ py::tuple MmgMesh::get_elements_with_refs() const {
 
 py::array_t<int> MmgMesh::get_edges() const {
   MMG5_int na = mesh->na;
-  py::array_t<int> edges({na, static_cast<MMG5_int>(2)});
+  py::array_t<int> edges({static_cast<py::ssize_t>(na), py::ssize_t{2}});
   auto buf = edges.request();
   int *ptr = static_cast<int *>(buf.ptr);
 
@@ -662,8 +663,8 @@ py::array_t<int> MmgMesh::get_edges() const {
 
 py::tuple MmgMesh::get_edges_with_refs() const {
   MMG5_int na = mesh->na;
-  py::array_t<int> edges({na, static_cast<MMG5_int>(2)});
-  py::array_t<MMG5_int> refs(na);
+  py::array_t<int> edges({static_cast<py::ssize_t>(na), py::ssize_t{2}});
+  py::array_t<MMG5_int> refs(static_cast<py::ssize_t>(na));
 
   auto edge_buf = edges.request();
   auto refs_buf = refs.request();
@@ -911,7 +912,7 @@ py::array_t<int> MmgMesh::get_adjacent_elements(MMG5_int idx) const {
                              std::to_string(idx));
   }
 
-  py::array_t<int> result(4);
+  py::array_t<int> result(py::ssize_t{4});
   auto buf = result.request();
   int *ptr = static_cast<int *>(buf.ptr);
 
@@ -1132,7 +1133,7 @@ py::tuple MmgMesh::get_quadrilateral(MMG5_int idx) const {
 
 py::array_t<int> MmgMesh::get_prisms() const {
   MMG5_int nprism = mesh->nprism;
-  py::array_t<int> prisms({nprism, static_cast<MMG5_int>(6)});
+  py::array_t<int> prisms({static_cast<py::ssize_t>(nprism), py::ssize_t{6}});
   auto buf = prisms.request();
   int *ptr = static_cast<int *>(buf.ptr);
 
@@ -1150,7 +1151,7 @@ py::array_t<int> MmgMesh::get_prisms() const {
 
 py::array_t<int> MmgMesh::get_quadrilaterals() const {
   MMG5_int nquad = mesh->nquad;
-  py::array_t<int> quads({nquad, static_cast<MMG5_int>(4)});
+  py::array_t<int> quads({static_cast<py::ssize_t>(nquad), py::ssize_t{4}});
   auto buf = quads.request();
   int *ptr = static_cast<int *>(buf.ptr);
 
@@ -1166,8 +1167,8 @@ py::array_t<int> MmgMesh::get_quadrilaterals() const {
 
 py::tuple MmgMesh::get_prisms_with_refs() const {
   MMG5_int nprism = mesh->nprism;
-  py::array_t<int> prisms({nprism, static_cast<MMG5_int>(6)});
-  py::array_t<MMG5_int> refs(nprism);
+  py::array_t<int> prisms({static_cast<py::ssize_t>(nprism), py::ssize_t{6}});
+  py::array_t<MMG5_int> refs(static_cast<py::ssize_t>(nprism));
 
   auto prism_buf = prisms.request();
   auto refs_buf = refs.request();
@@ -1189,8 +1190,8 @@ py::tuple MmgMesh::get_prisms_with_refs() const {
 
 py::tuple MmgMesh::get_quadrilaterals_with_refs() const {
   MMG5_int nquad = mesh->nquad;
-  py::array_t<int> quads({nquad, static_cast<MMG5_int>(4)});
-  py::array_t<MMG5_int> refs(nquad);
+  py::array_t<int> quads({static_cast<py::ssize_t>(nquad), py::ssize_t{4}});
+  py::array_t<MMG5_int> refs(static_cast<py::ssize_t>(nquad));
 
   auto quad_buf = quads.request();
   auto refs_buf = refs.request();
