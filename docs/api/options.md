@@ -4,13 +4,13 @@ This page documents the options classes for configuring remeshing operations.
 
 ## Overview
 
-Each mesh type has a corresponding options class:
+Each mesh kind has a corresponding options class:
 
-| Mesh Type   | Options Class  |
-| ----------- | -------------- |
-| `MmgMesh3D` | `Mmg3DOptions` |
-| `MmgMesh2D` | `Mmg2DOptions` |
-| `MmgMeshS`  | `MmgSOptions`  |
+| Mesh Kind            | Options Class  |
+| -------------------- | -------------- |
+| `TETRAHEDRAL`        | `Mmg3DOptions` |
+| `TRIANGULAR_2D`      | `Mmg2DOptions` |
+| `TRIANGULAR_SURFACE` | `MmgSOptions`  |
 
 Options classes are immutable dataclasses with:
 
@@ -79,9 +79,9 @@ members: - **init** - fine - coarse - optimize_only - to_dict
 ### Basic Usage
 
 ```python
-from mmgpy import MmgMesh3D, Mmg3DOptions
+from mmgpy import Mesh, Mmg3DOptions
 
-mesh = MmgMesh3D("input.mesh")
+mesh = Mesh("input.mesh")
 
 # Create options
 opts = Mmg3DOptions(

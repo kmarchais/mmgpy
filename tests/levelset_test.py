@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
 class TestLevelset3D:

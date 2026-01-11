@@ -4,6 +4,10 @@ This module provides a single `Mesh` class that wraps the underlying
 MmgMesh3D, MmgMesh2D, and MmgMeshS implementations with auto-detection
 of mesh type.
 
+The Mesh class is the primary public API for mmgpy. The underlying C++
+bindings (MmgMesh3D, MmgMesh2D, MmgMeshS) are implementation details
+and should not be used directly.
+
 Example:
     >>> from mmgpy import Mesh, MeshKind
     >>>
@@ -45,7 +49,7 @@ import pyvista as pv
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Generator, Sequence
     from types import TracebackType
 
     from numpy.typing import NDArray
@@ -53,12 +57,36 @@ if TYPE_CHECKING:
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
     from mmgpy._result import RemeshResult
     from mmgpy._validation import ValidationReport
+    from mmgpy.sizing import SizingConstraint
 
 _DIMS_2D = 2
 _DIMS_3D = 3
 _TETRA_VERTS = 4
 _TRI_VERTS = 3
 _2D_DETECTION_TOLERANCE = 1e-8
+
+
+def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
+    """Convert C++ remesh statistics dict to RemeshResult dataclass."""
+    from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
+
+    return _RemeshResult(
+        vertices_before=stats["vertices_before"],
+        vertices_after=stats["vertices_after"],
+        elements_before=stats["elements_before"],
+        elements_after=stats["elements_after"],
+        triangles_before=stats["triangles_before"],
+        triangles_after=stats["triangles_after"],
+        edges_before=stats["edges_before"],
+        edges_after=stats["edges_after"],
+        quality_min_before=stats["quality_min_before"],
+        quality_min_after=stats["quality_min_after"],
+        quality_mean_before=stats["quality_mean_before"],
+        quality_mean_after=stats["quality_mean_after"],
+        duration_seconds=stats["duration_seconds"],
+        warnings=tuple(stats["warnings"]),
+        return_code=stats["return_code"],
+    )
 
 
 class MeshKind(Enum):
@@ -336,10 +364,11 @@ class Mesh:
 
     """
 
-    __slots__ = ("_impl", "_kind")
+    __slots__ = ("_impl", "_kind", "_sizing_constraints")
 
     _impl: MmgMesh3D | MmgMesh2D | MmgMeshS
     _kind: MeshKind
+    _sizing_constraints: list[SizingConstraint]
 
     def __init__(
         self,
@@ -349,6 +378,8 @@ class Mesh:
         """Initialize a Mesh from various sources."""
         # Import here to avoid circular imports
         from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+
+        self._sizing_constraints = []
 
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
@@ -399,6 +430,7 @@ class Mesh:
         mesh = object.__new__(cls)
         mesh._impl = impl  # noqa: SLF001
         mesh._kind = kind  # noqa: SLF001
+        mesh._sizing_constraints = []  # noqa: SLF001
         return mesh
 
     @property
@@ -1037,7 +1069,43 @@ class Mesh:
             Statistics from the remeshing operation.
 
         """
-        return self._impl.remesh(options, **kwargs)  # type: ignore[arg-type, return-value]
+        from mmgpy._options import (  # noqa: PLC0415
+            Mmg2DOptions,
+            Mmg3DOptions,
+            MmgSOptions,
+        )
+
+        # Validate and convert options object
+        if options is not None:
+            if kwargs:
+                msg = (
+                    "Cannot pass both options object and keyword arguments. "
+                    "Use one or the other."
+                )
+                raise TypeError(msg)
+
+            # Validate options type matches mesh type
+            options_type_map = {
+                MeshKind.TETRAHEDRAL: Mmg3DOptions,
+                MeshKind.TRIANGULAR_2D: Mmg2DOptions,
+                MeshKind.TRIANGULAR_SURFACE: MmgSOptions,
+            }
+            expected_type = options_type_map[self._kind]
+            if not isinstance(options, expected_type):
+                msg = (
+                    f"Expected {expected_type.__name__} for {self._kind.value} mesh, "
+                    f"got {type(options).__name__}"
+                )
+                raise TypeError(msg)
+            kwargs = options.to_dict()
+
+        # Apply sizing constraints before remeshing
+        if self._sizing_constraints:
+            self._apply_sizing_to_metric()
+
+        # Call raw C++ method and convert result
+        stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(stats)
 
     def remesh_lagrangian(
         self,
@@ -1069,7 +1137,9 @@ class Mesh:
         if self._kind == MeshKind.TRIANGULAR_SURFACE:
             msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
             raise TypeError(msg)
-        return self._impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[union-attr, return-value]
+        impl = cast("MmgMesh3D | MmgMesh2D", self._impl)
+        stats = impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(stats)
 
     def remesh_levelset(
         self,
@@ -1091,10 +1161,207 @@ class Mesh:
             Statistics from the remeshing operation.
 
         """
-        return self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[return-value]
+        stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(stats)
+
+    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult:
+        """Optimize mesh quality without changing topology.
+
+        Only moves vertices to improve element quality.
+        No points are inserted or removed.
+
+        Parameters
+        ----------
+        verbose : int | None
+            Verbosity level (-1=silent, 0=errors, 1=info).
+
+        Returns
+        -------
+        RemeshResult
+            Statistics from the remeshing operation.
+
+        """
+        opts: dict[str, int | float] = {"optim": 1, "noinsert": 1}
+        if verbose is not None:
+            opts["verbose"] = verbose
+        return self.remesh(**opts)  # type: ignore[arg-type]
+
+    def remesh_uniform(
+        self,
+        size: float,
+        *,
+        verbose: int | None = None,
+    ) -> RemeshResult:
+        """Remesh with uniform element size.
+
+        Parameters
+        ----------
+        size : float
+            Target edge size for all elements.
+        verbose : int | None
+            Verbosity level (-1=silent, 0=errors, 1=info).
+
+        Returns
+        -------
+        RemeshResult
+            Statistics from the remeshing operation.
+
+        """
+        opts: dict[str, int | float] = {"hsiz": size}
+        if verbose is not None:
+            opts["verbose"] = verbose
+        return self.remesh(**opts)  # type: ignore[arg-type]
 
     # =========================================================================
-    # PyVista conversion (will be monkey-patched)
+    # Local sizing constraints
+    # =========================================================================
+
+    def set_size_sphere(
+        self,
+        center: Sequence[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+    ) -> None:
+        """Set target edge size within a spherical region.
+
+        Parameters
+        ----------
+        center : array-like
+            Center point of the sphere.
+        radius : float
+            Radius of the sphere.
+        size : float
+            Target edge size within the sphere.
+
+        """
+        from mmgpy.sizing import SphereSize  # noqa: PLC0415
+
+        center_arr = np.asarray(center, dtype=np.float64)
+        self._sizing_constraints.append(SphereSize(center_arr, radius, size))
+
+    def set_size_box(
+        self,
+        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
+        size: float,
+    ) -> None:
+        """Set target edge size within a box region.
+
+        Parameters
+        ----------
+        bounds : array-like
+            Bounding box as [[xmin, ymin, zmin], [xmax, ymax, zmax]].
+        size : float
+            Target edge size within the box.
+
+        """
+        from mmgpy.sizing import BoxSize  # noqa: PLC0415
+
+        bounds_arr = np.asarray(bounds, dtype=np.float64)
+        self._sizing_constraints.append(BoxSize(bounds_arr, size))
+
+    def set_size_cylinder(
+        self,
+        point1: Sequence[float] | NDArray[np.float64],
+        point2: Sequence[float] | NDArray[np.float64],
+        radius: float,
+        size: float,
+    ) -> None:
+        """Set target edge size within a cylindrical region.
+
+        Only available for TETRAHEDRAL and TRIANGULAR_SURFACE meshes.
+
+        Parameters
+        ----------
+        point1 : array-like
+            First endpoint of the cylinder axis.
+        point2 : array-like
+            Second endpoint of the cylinder axis.
+        radius : float
+            Radius of the cylinder.
+        size : float
+            Target edge size within the cylinder.
+
+        Raises
+        ------
+        TypeError
+            If mesh is TRIANGULAR_2D.
+
+        """
+        if self._kind == MeshKind.TRIANGULAR_2D:
+            msg = "set_size_cylinder() is not available for TRIANGULAR_2D meshes"
+            raise TypeError(msg)
+
+        from mmgpy.sizing import CylinderSize  # noqa: PLC0415
+
+        point1_arr = np.asarray(point1, dtype=np.float64)
+        point2_arr = np.asarray(point2, dtype=np.float64)
+        self._sizing_constraints.append(
+            CylinderSize(point1_arr, point2_arr, radius, size),
+        )
+
+    def set_size_from_point(
+        self,
+        point: Sequence[float] | NDArray[np.float64],
+        near_size: float,
+        far_size: float,
+        influence_radius: float,
+    ) -> None:
+        """Set target edge size based on distance from a point.
+
+        Parameters
+        ----------
+        point : array-like
+            Reference point.
+        near_size : float
+            Target edge size at the reference point.
+        far_size : float
+            Target edge size at the influence radius.
+        influence_radius : float
+            Radius of influence.
+
+        """
+        from mmgpy.sizing import PointSize  # noqa: PLC0415
+
+        point_arr = np.asarray(point, dtype=np.float64)
+        self._sizing_constraints.append(
+            PointSize(point_arr, near_size, far_size, influence_radius),
+        )
+
+    def clear_local_sizing(self) -> None:
+        """Clear all local sizing constraints."""
+        self._sizing_constraints.clear()
+
+    def get_local_sizing_count(self) -> int:
+        """Get the number of local sizing constraints.
+
+        Returns
+        -------
+        int
+            Number of sizing constraints.
+
+        """
+        return len(self._sizing_constraints)
+
+    def apply_local_sizing(self) -> None:
+        """Apply local sizing constraints to the metric field.
+
+        This is called automatically before remeshing if sizing
+        constraints have been added.
+        """
+        self._apply_sizing_to_metric()
+
+    def _apply_sizing_to_metric(self) -> None:
+        """Apply sizing constraints to the metric field."""
+        if not self._sizing_constraints:
+            return
+
+        from mmgpy.sizing import apply_sizing_constraints  # noqa: PLC0415
+
+        # apply_sizing_constraints expects a mesh object and sets the field directly
+        apply_sizing_constraints(self._impl, self._sizing_constraints)
+
+    # =========================================================================
+    # PyVista conversion
     # =========================================================================
 
     def to_pyvista(
@@ -1115,7 +1382,9 @@ class Mesh:
             PyVista mesh object.
 
         """
-        return self._impl.to_pyvista(include_refs=include_refs)  # type: ignore[return-value]
+        from mmgpy._pyvista import to_pyvista as _to_pyvista  # noqa: PLC0415
+
+        return _to_pyvista(self._impl, include_refs=include_refs)
 
     @property
     def vtk(self) -> pv.UnstructuredGrid | pv.PolyData:
@@ -1216,14 +1485,98 @@ class Mesh:
         >>> print(f"Quality: {report.quality.mean:.3f}")
 
         """
-        return self._impl.validate(  # type: ignore[attr-defined, return-value]
-            detailed=detailed,
-            strict=strict,
-            check_geometry=check_geometry,
-            check_topology=check_topology,
-            check_quality=check_quality,
-            min_quality=min_quality,
+        from mmgpy._validation import (  # noqa: PLC0415
+            ValidationError,
+            validate_mesh_2d,
+            validate_mesh_3d,
+            validate_mesh_surface,
         )
+
+        # Dispatch to the correct validation function based on mesh kind
+        if self._kind == MeshKind.TETRAHEDRAL:
+            report = validate_mesh_3d(
+                cast("MmgMesh3D", self._impl),
+                check_geometry=check_geometry,
+                check_topology=check_topology,
+                check_quality=check_quality,
+                min_quality=min_quality,
+            )
+        elif self._kind == MeshKind.TRIANGULAR_2D:
+            report = validate_mesh_2d(
+                cast("MmgMesh2D", self._impl),
+                check_geometry=check_geometry,
+                check_topology=check_topology,
+                check_quality=check_quality,
+                min_quality=min_quality,
+            )
+        else:  # TRIANGULAR_SURFACE
+            report = validate_mesh_surface(
+                cast("MmgMeshS", self._impl),
+                check_geometry=check_geometry,
+                check_topology=check_topology,
+                check_quality=check_quality,
+                min_quality=min_quality,
+            )
+
+        # Handle strict mode - raise on any issues
+        if strict and (report.errors or report.warnings):
+            raise ValidationError(report)
+
+        # Return report or boolean based on detailed flag
+        if detailed:
+            return report
+        return report.is_valid
+
+    # =========================================================================
+    # Interactive editing
+    # =========================================================================
+
+    def edit_sizing(
+        self,
+        *,
+        mode: str = "sphere",
+        default_size: float = 0.01,
+        default_radius: float = 0.1,
+    ) -> None:
+        """Launch interactive sizing editor.
+
+        Opens a PyVista window for visually defining local sizing
+        constraints by clicking on the mesh.
+
+        Parameters
+        ----------
+        mode : str
+            Initial interaction mode: "sphere", "box", "cylinder", or "point".
+        default_size : float
+            Default target edge size for constraints.
+        default_radius : float
+            Default radius for sphere and cylinder constraints.
+
+        Examples
+        --------
+        >>> mesh = Mesh(vertices, cells)
+        >>> mesh.edit_sizing()  # Opens interactive editor
+        >>> mesh.remesh()  # Uses interactively defined sizing
+
+        """
+        from mmgpy.interactive import SizingEditor  # noqa: PLC0415
+
+        editor = SizingEditor(self._impl)
+        editor._current_size = default_size  # noqa: SLF001
+        editor._current_radius = default_radius  # noqa: SLF001
+
+        mode_map = {
+            "sphere": editor.add_sphere_tool,
+            "box": editor.add_box_tool,
+            "cylinder": editor.add_cylinder_tool,
+            "point": editor.add_point_tool,
+        }
+
+        if mode in mode_map:
+            mode_map[mode]()
+
+        editor.run()
+        editor.apply_to_mesh()
 
     # =========================================================================
     # Context manager support

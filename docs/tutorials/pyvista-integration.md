@@ -86,11 +86,11 @@ mesh_3d = mmgpy.from_pyvista(cube, mesh_type="3d")
 
 Mesh type options:
 
-| `mesh_type` | Description                               |
-| ----------- | ----------------------------------------- |
-| `"surface"` | Surface triangular mesh (`MmgMeshS`)      |
-| `"3d"`      | Volumetric tetrahedral mesh (`MmgMesh3D`) |
-| `"2d"`      | 2D triangular mesh (`MmgMesh2D`)          |
+| `mesh_type` | Description                 |
+| ----------- | --------------------------- |
+| `"surface"` | Surface triangular mesh     |
+| `"3d"`      | Volumetric tetrahedral mesh |
+| `"2d"`      | 2D triangular mesh          |
 
 ## Visualization Examples
 

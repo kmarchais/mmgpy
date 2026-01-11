@@ -5,7 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mmgpy import MmgMesh2D, MmgMesh3D, ProgressEvent
+from mmgpy import ProgressEvent
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D
 from mmgpy._progress import _emit_event, remesh_mesh, rich_progress
 from mmgpy.progress import LoggingProgressReporter
 

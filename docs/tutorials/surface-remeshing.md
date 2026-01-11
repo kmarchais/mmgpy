@@ -16,7 +16,7 @@ mesh = mmgpy.read("model.stl")
 mesh = mmgpy.read("model.obj")
 
 # From MMG native format
-mesh = mmgpy.MmgMeshS("surface.mesh")
+mesh = mmgpy.Mesh("surface.mesh")
 ```
 
 ## Basic Surface Remeshing

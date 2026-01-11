@@ -6,7 +6,8 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS, metrics
+from mmgpy import metrics
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
 class TestCreateIsotropicMetric:

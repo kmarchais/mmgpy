@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from mmgpy import MmgMesh2D, MmgMesh3D
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D
 from mmgpy.lagrangian import (
     _build_adjacency_from_elements,
     detect_boundary_vertices,

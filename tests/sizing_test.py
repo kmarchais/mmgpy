@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy import Mesh
 from mmgpy.sizing import (
     BoxSize,
     CylinderSize,
@@ -287,7 +287,7 @@ class TestConstraintCombination:
 # ===========================================================================
 
 
-def create_simple_3d_mesh() -> MmgMesh3D:
+def create_simple_3d_mesh() -> Mesh:
     """Create a simple 3D mesh (unit cube with one tetrahedron)."""
     vertices = np.array(
         [
@@ -299,10 +299,10 @@ def create_simple_3d_mesh() -> MmgMesh3D:
         dtype=np.float64,
     )
     elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
-    return MmgMesh3D(vertices, elements)
+    return Mesh(vertices, elements)
 
 
-def create_simple_2d_mesh() -> MmgMesh2D:
+def create_simple_2d_mesh() -> Mesh:
     """Create a simple 2D mesh (unit square with two triangles)."""
     vertices = np.array(
         [
@@ -314,21 +314,21 @@ def create_simple_2d_mesh() -> MmgMesh2D:
         dtype=np.float64,
     )
     triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
-    return MmgMesh2D(vertices, triangles)
+    return Mesh(vertices, triangles)
 
 
-def create_simple_surface_mesh() -> MmgMeshS:
-    """Create a simple surface mesh (single triangle)."""
+def create_simple_surface_mesh() -> Mesh:
+    """Create a simple surface mesh (tilted triangle with varying z)."""
     vertices = np.array(
         [
             [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.5, 1.0, 0.0],
+            [1.0, 0.0, 0.5],  # Non-zero z to make it a 3D surface
+            [0.5, 1.0, 0.25],
         ],
         dtype=np.float64,
     )
     triangles = np.array([[0, 1, 2]], dtype=np.int32)
-    return MmgMeshS(vertices, triangles)
+    return Mesh(vertices, triangles)
 
 
 class TestMmgMesh3DSizing:
@@ -515,7 +515,7 @@ class TestSizingWithRemesh:
 
         # Create a sphere surface mesh with reasonable resolution
         sphere = pv.Sphere(radius=1.0, theta_resolution=16, phi_resolution=16)
-        mesh = MmgMeshS.from_pyvista(sphere)
+        mesh = Mesh(sphere)
 
         vertices = mesh.get_vertices()
         assert len(vertices) > 50  # Ensure we have a substantial mesh
@@ -542,7 +542,7 @@ class TestSizingWithRemesh:
         pv = pytest.importorskip("pyvista")
 
         sphere = pv.Sphere(radius=1.0)
-        mesh = MmgMeshS.from_pyvista(sphere)
+        mesh = Mesh(sphere)
 
         assert mesh.get_local_sizing_count() == 0
 

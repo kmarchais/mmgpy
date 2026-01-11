@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from mmgpy import MmgMesh2D
+from mmgpy import Mesh
+from mmgpy._mmgpy import MmgMesh2D
 
 if TYPE_CHECKING:
     import numpy as np
@@ -97,8 +98,8 @@ class TestRemesh2DModes:
         """Optimization without topology changes."""
         vertices, triangles = mesh_2d_medium
 
-        def optimize() -> MmgMesh2D:
-            mesh = MmgMesh2D(vertices, triangles)
+        def optimize() -> Mesh:
+            mesh = Mesh(vertices, triangles)
             mesh.remesh_optimize(verbose=-1)
             return mesh
 
@@ -113,8 +114,8 @@ class TestRemesh2DModes:
         """Uniform sizing remesh."""
         vertices, triangles = mesh_2d_medium
 
-        def uniform() -> MmgMesh2D:
-            mesh = MmgMesh2D(vertices, triangles)
+        def uniform() -> Mesh:
+            mesh = Mesh(vertices, triangles)
             mesh.remesh_uniform(0.05, verbose=-1)
             return mesh
 
@@ -213,7 +214,7 @@ class TestRemesh2DQuality:
     ) -> None:
         """Benchmark mesh validation."""
         vertices, triangles = mesh_2d_medium
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = benchmark(mesh.validate)
         assert result is True
