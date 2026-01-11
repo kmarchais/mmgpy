@@ -2,10 +2,27 @@
 
 This module provides functions for repairing vertex-related mesh issues
 including duplicate vertices, orphan vertices, and close vertices.
+
+Note:
+    Choosing between ``remove_duplicate_vertices`` and ``merge_close_vertices``:
+
+    - Use ``remove_duplicate_vertices`` (default tolerance=1e-10) for exact or
+      near-exact duplicates that result from numerical precision issues or
+      mesh generation artifacts.
+
+    - Use ``merge_close_vertices`` (default tolerance=1e-6) when you want to
+      merge vertices that are geometrically close but not necessarily duplicates,
+      such as when simplifying meshes or cleaning up imported geometry.
+
+    The ``auto_repair`` function uses ``remove_duplicate_vertices`` (strict
+    tolerance) to avoid unintentionally merging distinct vertices. Call
+    ``merge_close_vertices`` separately if aggressive vertex merging is desired.
+
 """
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -13,6 +30,10 @@ from scipy.spatial import cKDTree
 
 if TYPE_CHECKING:
     from mmgpy import Mesh
+
+_logger = logging.getLogger(__name__)
+
+_LARGE_PAIR_THRESHOLD = 100_000
 
 
 def remove_duplicate_vertices(
@@ -60,6 +81,15 @@ def remove_duplicate_vertices(
 
     if len(pairs) == 0:
         return mesh, 0
+
+    if len(pairs) > _LARGE_PAIR_THRESHOLD:
+        _logger.warning(
+            "Found %d vertex pairs within tolerance %g. This may indicate "
+            "the tolerance is too large or the mesh has many near-coincident "
+            "vertices. Consider using a smaller tolerance.",
+            len(pairs),
+            tolerance,
+        )
 
     mapping = np.arange(n_vertices)
     for i, j in pairs:

@@ -123,7 +123,13 @@ def fix_inverted_elements(mesh: Mesh) -> tuple[Mesh, int]:
     Inverted elements have negative volume (tetrahedra) or negative area
     (2D triangles). This function flips the orientation to make them positive.
 
-    Note: For surface meshes, this operation may change the normal direction.
+    Note
+    ----
+    For surface meshes (TRIANGULAR_SURFACE), this function returns immediately
+    without making changes. Surface mesh orientation is determined by normal
+    direction which requires additional context (e.g., inside/outside knowledge)
+    that cannot be inferred from geometry alone. Use mesh-specific tools for
+    surface normal correction if needed.
 
     Parameters
     ----------

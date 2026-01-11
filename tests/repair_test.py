@@ -559,8 +559,8 @@ class TestSurfaceMesh:
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
-    def test_empty_mesh(self) -> None:
-        """Test repair on mesh with no elements."""
+    def test_valid_mesh_no_repairs_needed(self) -> None:
+        """Test auto_repair returns valid result on a clean mesh."""
         from mmgpy.repair import auto_repair
 
         vertices = np.array(
@@ -579,6 +579,27 @@ class TestEdgeCases:
 
         assert result is not None
         assert isinstance(report.total_repairs, int)
+
+    def test_single_vertex_mesh(self) -> None:
+        """Test duplicate removal on mesh with single vertex."""
+        from mmgpy.repair import remove_duplicate_vertices
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        result, removed = remove_duplicate_vertices(mesh)
+
+        assert removed == 0
+        assert len(result.get_vertices()) == 4
 
     def test_single_element(self) -> None:
         """Test repair on single element mesh."""
@@ -622,3 +643,311 @@ class TestEdgeCases:
 
         assert removed == 2
         assert len(result.get_vertices()) == 4
+
+
+class TestSurfaceMeshRepair:
+    """Additional tests for surface mesh repair operations."""
+
+    def test_surface_mesh_degenerate_removal(self) -> None:
+        """Test degenerate element removal on surface mesh."""
+        from mmgpy.repair import remove_degenerate_elements
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.5],
+                [0.0, 0.0, 0.0],
+                [0.5, 0.0, 0.0],
+                [1.0, 0.0, 0.0],  # Collinear with 3 and 4
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array(
+            [
+                [0, 1, 2],  # Valid surface triangle
+                [3, 4, 5],  # Degenerate (collinear points)
+            ],
+            dtype=np.int32,
+        )
+        mesh = Mesh(vertices, cells)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
+
+        result, removed = remove_degenerate_elements(mesh, tolerance=1e-10)
+
+        assert removed == 1
+        assert len(result.get_triangles()) == 1
+
+    def test_surface_mesh_fix_inverted_noop(self) -> None:
+        """Test that fix_inverted_elements is a no-op for surface meshes."""
+        from mmgpy.repair import fix_inverted_elements
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.5],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
+
+        result, fixed = fix_inverted_elements(mesh)
+
+        assert fixed == 0
+        assert len(result.get_triangles()) == 1
+
+    def test_surface_mesh_duplicate_elements(self) -> None:
+        """Test duplicate element removal on surface mesh."""
+        from mmgpy.repair import remove_duplicate_elements
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.5],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array(
+            [
+                [0, 1, 2],
+                [2, 1, 0],  # Same vertices, different order
+            ],
+            dtype=np.int32,
+        )
+        mesh = Mesh(vertices, cells)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
+
+        result, removed = remove_duplicate_elements(mesh)
+
+        assert removed == 1
+        assert len(result.get_triangles()) == 1
+
+    def test_surface_mesh_auto_repair(self) -> None:
+        """Test auto_repair on surface mesh to cover triangle element counting."""
+        from mmgpy.repair import auto_repair
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.5],
+                [5.0, 5.0, 5.0],  # Orphan
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
+
+        result, report = auto_repair(mesh)
+
+        assert report.orphan_vertices_removed == 1
+        assert report.elements_before == 1
+        assert report.elements_after == 1
+        assert len(result.get_vertices()) == 3
+
+
+class TestAutoRepair2D:
+    """Tests for auto_repair on 2D meshes."""
+
+    def test_auto_repair_2d_mesh(self) -> None:
+        """Test auto_repair on 2D triangular mesh."""
+        from mmgpy.repair import auto_repair
+
+        vertices = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [0.5, 1.0],
+                [5.0, 5.0],  # Orphan
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2]], dtype=np.int32)
+        mesh = Mesh(vertices, cells)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_2D
+
+        _, report = auto_repair(mesh)
+
+        assert report.orphan_vertices_removed == 1
+        assert report.elements_before == 1
+        assert report.elements_after == 1
+
+
+class TestRepairReportFormatting:
+    """Tests for RepairReport string formatting."""
+
+    def test_report_no_repairs(self) -> None:
+        """Test report string when no repairs were made."""
+        from mmgpy.repair import RepairReport
+
+        report = RepairReport()
+
+        report_str = str(report)
+        assert "No repairs needed" in report_str
+
+    def test_report_with_all_repair_types(self) -> None:
+        """Test report string with all types of repairs."""
+        from mmgpy.repair import RepairReport
+
+        report = RepairReport(
+            duplicate_vertices_removed=5,
+            orphan_vertices_removed=2,
+            degenerate_elements_removed=3,
+            inverted_elements_fixed=1,
+            duplicate_elements_removed=4,
+            vertices_before=100,
+            vertices_after=93,
+            elements_before=50,
+            elements_after=43,
+        )
+
+        report_str = str(report)
+        assert "Duplicate vertices removed: 5" in report_str
+        assert "Orphan vertices removed: 2" in report_str
+        assert "Degenerate elements removed: 3" in report_str
+        assert "Inverted elements fixed: 1" in report_str
+        assert "Duplicate elements removed: 4" in report_str
+        assert "100 -> 93" in report_str
+        assert "50 -> 43" in report_str
+
+
+class TestComputeTriangleAreas3D:
+    """Tests for 3D triangle area computation."""
+
+    def test_compute_triangle_areas_3d(self) -> None:
+        """Test 3D triangle area computation directly."""
+        from mmgpy.repair._elements import _compute_triangle_areas_3d
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2]], dtype=np.int32)
+
+        areas = _compute_triangle_areas_3d(vertices, triangles)
+
+        assert len(areas) == 1
+        assert np.isclose(areas[0], 0.5)  # Area of right triangle with legs 1,1
+
+    def test_compute_triangle_areas_3d_tilted(self) -> None:
+        """Test 3D triangle area on tilted plane."""
+        from mmgpy.repair._elements import _compute_triangle_areas_3d
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 1.0],  # Tilted triangle
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2]], dtype=np.int32)
+
+        areas = _compute_triangle_areas_3d(vertices, triangles)
+
+        assert len(areas) == 1
+        assert areas[0] > 0
+
+
+class TestInvertedElementFix:
+    """Tests for inverted element fixing."""
+
+    def test_fix_inverted_tetra_array(self) -> None:
+        """Test fixing inverted tetrahedra using raw array manipulation."""
+        from mmgpy.repair._elements import (
+            _GEOMETRY_TOLERANCE,
+            _compute_tetra_volumes,
+        )
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+            ],
+            dtype=np.float64,
+        )
+
+        inverted_cells = np.array([[0, 2, 1, 3]], dtype=np.int32)
+
+        volumes_before = _compute_tetra_volumes(vertices, inverted_cells)
+        assert volumes_before[0] < -_GEOMETRY_TOLERANCE
+
+        inverted_mask = volumes_before < -_GEOMETRY_TOLERANCE
+        inverted_cells[inverted_mask] = inverted_cells[inverted_mask][:, [0, 2, 1, 3]]
+
+        volumes_after = _compute_tetra_volumes(vertices, inverted_cells)
+        assert volumes_after[0] > _GEOMETRY_TOLERANCE
+
+    def test_fix_inverted_2d_triangle_array(self) -> None:
+        """Test fixing inverted 2D triangles using raw array manipulation."""
+        from mmgpy.repair._elements import (
+            _GEOMETRY_TOLERANCE,
+            _compute_triangle_areas_2d,
+        )
+
+        vertices = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [0.5, 1.0],
+            ],
+            dtype=np.float64,
+        )
+
+        inverted_cells = np.array([[0, 2, 1]], dtype=np.int32)
+
+        areas_before = _compute_triangle_areas_2d(vertices, inverted_cells)
+        assert areas_before[0] < -_GEOMETRY_TOLERANCE
+
+        inverted_mask = areas_before < -_GEOMETRY_TOLERANCE
+        inverted_cells[inverted_mask] = inverted_cells[inverted_mask][:, [0, 2, 1]]
+
+        areas_after = _compute_triangle_areas_2d(vertices, inverted_cells)
+        assert areas_after[0] > _GEOMETRY_TOLERANCE
+
+
+class TestAutoRepairOperations:
+    """Tests for auto_repair operation tracking."""
+
+    def test_auto_repair_tracks_duplicate_elements(self) -> None:
+        """Test that auto_repair tracks duplicate element removal."""
+        from mmgpy.repair import auto_repair
+
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 1.0, 0.0],
+                [0.5, 0.5, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array(
+            [
+                [0, 1, 2, 3],
+                [0, 1, 2, 3],  # Exact duplicate
+            ],
+            dtype=np.int32,
+        )
+        mesh = Mesh(vertices, cells)
+
+        _, report = auto_repair(mesh)
+
+        assert report.duplicate_elements_removed >= 1
+        assert "remove_duplicate_elements" in report.operations_applied
