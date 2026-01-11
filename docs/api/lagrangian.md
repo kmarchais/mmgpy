@@ -39,7 +39,7 @@ Meshes have a `remesh_lagrangian()` method for direct use:
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMesh3D("input.mesh")
+mesh = mmgpy.Mesh("input.mesh")
 
 # Define displacement field (3D vector at each vertex)
 n_vertices = mesh.get_mesh_size()["vertices"]
@@ -187,7 +187,7 @@ import mmgpy
 import numpy as np
 
 # Load sphere mesh
-mesh = mmgpy.MmgMesh3D("sphere.mesh")
+mesh = mmgpy.Mesh("sphere.mesh")
 vertices = mesh.get_vertices()
 
 # Compute displacement: stretch in z, compress in x and y

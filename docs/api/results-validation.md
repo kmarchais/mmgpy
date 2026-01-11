@@ -162,12 +162,13 @@ show_root_heading: true
 ### Direct Function Usage
 
 ```python
-from mmgpy import validate_mesh_3d, MmgMesh3D
+import mmgpy
 
-mesh = MmgMesh3D("input.mesh")
+mesh = mmgpy.Mesh("input.mesh")
 
-report = validate_mesh_3d(
-    mesh,
+# Use the mesh's validate method (recommended)
+report = mesh.validate(
+    detailed=True,
     check_geometry=True,
     check_topology=True,
     check_quality=True,

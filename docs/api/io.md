@@ -110,13 +110,13 @@ Each mesh class can also load from files directly:
 import mmgpy
 
 # 3D mesh
-mesh_3d = mmgpy.MmgMesh3D("volume.mesh")
+mesh_3d = mmgpy.Mesh("volume.mesh")
 
 # 2D mesh
-mesh_2d = mmgpy.MmgMesh2D("planar.mesh")
+mesh_2d = mmgpy.Mesh("planar.mesh")
 
 # Surface mesh
-mesh_s = mmgpy.MmgMeshS("surface.stl")
+mesh_s = mmgpy.Mesh("surface.stl")
 ```
 
 ## Complete Example

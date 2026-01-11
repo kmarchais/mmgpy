@@ -13,9 +13,9 @@ import mmgpy
 mesh = mmgpy.read("input.mesh")
 
 # Or use specific mesh classes directly
-mesh_3d = mmgpy.MmgMesh3D("volume.mesh")
-mesh_2d = mmgpy.MmgMesh2D("planar.mesh")
-mesh_s = mmgpy.MmgMeshS("surface.stl")
+mesh_3d = mmgpy.Mesh("volume.mesh")
+mesh_2d = mmgpy.Mesh("planar.mesh")
+mesh_s = mmgpy.Mesh("surface.stl")
 ```
 
 The `read()` function automatically detects the mesh type and returns the appropriate class wrapped in a unified `Mesh` interface.
