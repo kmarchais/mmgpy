@@ -1,11 +1,14 @@
 """Python bindings for the MMG library."""
 
+from __future__ import annotations
+
 import os
 import platform
 import site
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 from ._logging import (
     disable_logging,
@@ -242,12 +245,12 @@ def _run_mmg() -> None:  # pragma: no cover
 # for diagnostics and manual fixing if needed.
 
 
-def check_rpath() -> dict:  # pragma: no cover
+def check_rpath() -> dict[str, Any]:  # pragma: no cover
     """Check RPATH status of MMG executables and libraries.
 
     Returns a dict with 'executables' and 'libraries' keys, each containing
-    a list of dicts with 'name', 'path', 'rpath', and 'ok' keys.
-    On Windows, returns a 'message' key explaining RPATH is not used.
+    a list of dicts with 'name', 'path', 'rpath', 'expected', and 'ok' keys.
+    On Windows, also includes a 'message' key explaining RPATH is not used.
 
     Example:
         >>> import mmgpy
@@ -265,7 +268,7 @@ def check_rpath() -> dict:  # pragma: no cover
         }
 
     site_packages = Path(site.getsitepackages()[0])
-    result: dict[str, list[dict[str, str | bool]]] = {
+    result: dict[str, Any] = {
         "executables": [],
         "libraries": [],
     }
@@ -332,7 +335,7 @@ def _get_rpath(binary: Path, system: str) -> str:  # pragma: no cover
                     rpaths.append(path_line.split()[1])
         return ":".join(rpaths)
     proc = subprocess.run(
-        ["patchelf", "--print-rpath", str(binary)],  # noqa: S607
+        ["patchelf", "--print-rpath", str(binary)],
         capture_output=True,
         text=True,
         check=False,
@@ -470,3 +473,51 @@ __all__ = [
     "sizing",
     "to_pyvista",
 ]
+
+
+def _auto_fix_rpath_on_import() -> None:  # pragma: no cover
+    """Automatically fix RPATH on import if needed (fallback for CMake failures)."""
+    system = platform.system()
+    if system not in ("Darwin", "Linux"):
+        return
+
+    try:
+        site_packages = Path(site.getsitepackages()[0])
+        bin_dir = site_packages / "bin"
+
+        if not bin_dir.exists():
+            return
+
+        executables = list(bin_dir.glob("mmg*_O3"))
+        if not executables:
+            return
+
+        # Quick check: test one executable to see if RPATH fix is needed
+        exe = executables[0]
+        if system == "Darwin":
+            expected_rpath = "@loader_path/../mmgpy/lib"
+            rpath = _get_rpath(exe, system)
+            if expected_rpath in rpath:
+                return  # Already correct
+        else:
+            # On Linux, check if libraries can be found via ldd
+            result = subprocess.run(
+                ["ldd", str(exe)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if "not found" not in result.stdout:
+                return  # Libraries found, no fix needed
+
+        # RPATH fix needed - run the fix
+        _logger.debug("Auto-fixing RPATH for MMG executables...")
+        _fix_rpath()
+
+    except Exception:
+        # Never let RPATH fixing break package import
+        pass
+
+
+# Auto-fix RPATH on import if CMake failed to set it correctly
+_auto_fix_rpath_on_import()

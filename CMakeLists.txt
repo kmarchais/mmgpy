@@ -166,7 +166,9 @@ if(UNIX AND NOT APPLE)
                     ERROR_VARIABLE PATCHELF_ERROR
                     RESULT_VARIABLE PATCHELF_RESULT
                 )
-                if(NOT PATCHELF_RESULT)
+                if(PATCHELF_RESULT)
+                    message(WARNING \"Failed to set RPATH for \${lib_name}: \${PATCHELF_ERROR}\")
+                else()
                     message(STATUS \"Set RPATH for \${lib_name}\")
                 endif()
             endif()
@@ -229,17 +231,23 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                             # Add correct RPATH
                             execute_process(
                                 COMMAND install_name_tool -add_rpath \"\${LIB_RPATH}\" \"\${exec}\"
+                                ERROR_VARIABLE ADD_ERROR
                                 RESULT_VARIABLE ADD_RESULT
                             )
-                            if(NOT ADD_RESULT)
+                            if(ADD_RESULT)
+                                message(WARNING \"Failed to set RPATH for \${exec_name}: \${ADD_ERROR}\")
+                            else()
                                 message(STATUS \"Set RPATH for \${exec_name}\")
                             endif()
                         else()
                             execute_process(
                                 COMMAND patchelf --set-rpath \"\${LIB_RPATH}\" \"\${exec}\"
+                                ERROR_VARIABLE PATCHELF_ERROR
                                 RESULT_VARIABLE PATCHELF_RESULT
                             )
-                            if(NOT PATCHELF_RESULT)
+                            if(PATCHELF_RESULT)
+                                message(WARNING \"Failed to set RPATH for \${exec_name}: \${PATCHELF_ERROR}\")
+                            else()
                                 message(STATUS \"Set RPATH for \${exec_name}\")
                             endif()
                         endif()
