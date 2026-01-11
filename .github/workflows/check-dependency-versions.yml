@@ -16,6 +16,16 @@ jobs:
         run: |
           MMG_VERSION=$(grep 'mmg_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
+
+          if [ -z "$MMG_VERSION" ]; then
+            echo "::error::Failed to parse mmg_version from pyproject.toml"
+            exit 1
+          fi
+          if [ -z "$VTK_VERSION" ]; then
+            echo "::error::Failed to parse vtk_version from pyproject.toml"
+            exit 1
+          fi
+
           echo "mmg=$MMG_VERSION" >> $GITHUB_OUTPUT
           echo "vtk=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "Current MMG version: $MMG_VERSION"
@@ -100,5 +110,7 @@ jobs:
             echo -e "$BODY" | gh issue edit "$EXISTING_ISSUE" --body-file -
           else
             echo "Creating new issue"
-            echo -e "$BODY" | gh issue create --title "$ISSUE_TITLE" --body-file - --label "build"
+            # Try with label first, fall back to no label if it doesn't exist
+            echo -e "$BODY" | gh issue create --title "$ISSUE_TITLE" --body-file - --label "build" 2>/dev/null \
+              || echo -e "$BODY" | gh issue create --title "$ISSUE_TITLE" --body-file -
           fi
