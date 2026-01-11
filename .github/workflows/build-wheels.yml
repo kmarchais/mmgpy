@@ -19,7 +19,7 @@ jobs:
       - name: Get VTK version from pyproject.toml
         id: vtk
         run: |
-          VTK_VERSION=$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Cache VTK
@@ -69,7 +69,7 @@ jobs:
       - name: Get VTK version from pyproject.toml
         id: vtk
         run: |
-          VTK_VERSION=$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Cache VTK
@@ -120,7 +120,7 @@ jobs:
         id: vtk
         shell: bash
         run: |
-          VTK_VERSION=$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Build wheels
@@ -159,7 +159,7 @@ jobs:
       - name: Get VTK version from pyproject.toml
         id: vtk
         run: |
-          VTK_VERSION=$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Cache VTK

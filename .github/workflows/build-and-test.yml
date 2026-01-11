@@ -33,7 +33,7 @@ jobs:
       - name: Get VTK version from pyproject.toml
         id: vtk
         run: |
-          VTK_VERSION=$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "major=${VTK_VERSION%%.*}" >> $GITHUB_OUTPUT
           echo "minor=$(echo $VTK_VERSION | cut -d. -f2)" >> $GITHUB_OUTPUT
