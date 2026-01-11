@@ -15,6 +15,13 @@ endif()
 
 set(MMGPY_VERSION ${CMAKE_MATCH_1})
 
+# Read VTK version from pyproject.toml [tool.mmgpy] section
+string(REGEX MATCH "vtk_version = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" _ ${PYPROJECT_CONTENT})
+if(CMAKE_MATCH_1)
+    set(VTK_VERSION_FROM_TOML ${CMAKE_MATCH_1})
+    message(STATUS "VTK version from pyproject.toml: ${VTK_VERSION_FROM_TOML}")
+endif()
+
 # Extract numeric version for CMake project() which doesn't support suffixes
 string(REGEX MATCH "([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?)" _ ${MMGPY_VERSION})
 set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})
