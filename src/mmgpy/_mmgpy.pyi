@@ -216,7 +216,7 @@ class MmgMesh3D:
         noswap: int | None = None,
         nomove: int | None = None,
         nosurf: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...
     def remesh_lagrangian(
         self,
@@ -229,7 +229,7 @@ class MmgMesh3D:
         hgrad: float | None = None,
         verbose: int | None = None,
         lag: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...
     def remesh_levelset(
         self,
@@ -243,7 +243,7 @@ class MmgMesh3D:
         hgrad: float | None = None,
         verbose: int | None = None,
         iso: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...
 
 class MmgMesh2D:
@@ -372,7 +372,7 @@ class MmgMesh2D:
         noinsert: int | None = None,
         noswap: int | None = None,
         nomove: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...
     def remesh_lagrangian(
         self,
@@ -385,7 +385,7 @@ class MmgMesh2D:
         hgrad: float | None = None,
         verbose: int | None = None,
         lag: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...
     def remesh_levelset(
         self,
@@ -399,7 +399,7 @@ class MmgMesh2D:
         hgrad: float | None = None,
         verbose: int | None = None,
         iso: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...
 
 class MmgMeshS:
@@ -515,7 +515,7 @@ class MmgMeshS:
         noinsert: int | None = None,
         noswap: int | None = None,
         nomove: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...
     def remesh_levelset(
         self,
@@ -529,5 +529,5 @@ class MmgMeshS:
         hgrad: float | None = None,
         verbose: int | None = None,
         iso: int | None = None,
-        **kwargs: float,
+        **kwargs: float | None,
     ) -> dict[str, Any]: ...

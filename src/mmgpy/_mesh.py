@@ -1104,7 +1104,7 @@ class Mesh:
             self._apply_sizing_to_metric()
 
         # Call raw C++ method and convert result
-        stats = self._impl.remesh(**kwargs)
+        stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
         return _dict_to_remesh_result(stats)
 
     def remesh_lagrangian(
@@ -1138,7 +1138,7 @@ class Mesh:
             msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
             raise TypeError(msg)
         impl = cast("MmgMesh3D | MmgMesh2D", self._impl)
-        stats = impl.remesh_lagrangian(displacement, **kwargs)
+        stats = impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[arg-type]
         return _dict_to_remesh_result(stats)
 
     def remesh_levelset(
@@ -1161,7 +1161,7 @@ class Mesh:
             Statistics from the remeshing operation.
 
         """
-        stats = self._impl.remesh_levelset(levelset, **kwargs)
+        stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
         return _dict_to_remesh_result(stats)
 
     def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult:
