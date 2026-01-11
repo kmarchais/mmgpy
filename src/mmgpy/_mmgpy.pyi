@@ -210,12 +210,12 @@ class MmgMesh3D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        optim: float | None = None,
-        noinsert: float | None = None,
-        noswap: float | None = None,
-        nomove: float | None = None,
-        nosurf: float | None = None,
+        verbose: int | None = None,
+        optim: int | None = None,
+        noinsert: int | None = None,
+        noswap: int | None = None,
+        nomove: int | None = None,
+        nosurf: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
     def remesh_lagrangian(
@@ -227,8 +227,8 @@ class MmgMesh3D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        lag: float | None = None,
+        verbose: int | None = None,
+        lag: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
     def remesh_levelset(
@@ -241,8 +241,8 @@ class MmgMesh3D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        iso: float | None = None,
+        verbose: int | None = None,
+        iso: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
 
@@ -367,11 +367,11 @@ class MmgMesh2D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        optim: float | None = None,
-        noinsert: float | None = None,
-        noswap: float | None = None,
-        nomove: float | None = None,
+        verbose: int | None = None,
+        optim: int | None = None,
+        noinsert: int | None = None,
+        noswap: int | None = None,
+        nomove: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
     def remesh_lagrangian(
@@ -383,8 +383,8 @@ class MmgMesh2D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        lag: float | None = None,
+        verbose: int | None = None,
+        lag: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
     def remesh_levelset(
@@ -397,8 +397,8 @@ class MmgMesh2D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        iso: float | None = None,
+        verbose: int | None = None,
+        iso: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
 
@@ -510,11 +510,11 @@ class MmgMeshS:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        optim: float | None = None,
-        noinsert: float | None = None,
-        noswap: float | None = None,
-        nomove: float | None = None,
+        verbose: int | None = None,
+        optim: int | None = None,
+        noinsert: int | None = None,
+        noswap: int | None = None,
+        nomove: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
     def remesh_levelset(
@@ -527,7 +527,7 @@ class MmgMeshS:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: float | None = None,
-        iso: float | None = None,
+        verbose: int | None = None,
+        iso: int | None = None,
         **kwargs: float,
     ) -> dict[str, Any]: ...
