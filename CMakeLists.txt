@@ -144,31 +144,30 @@ if(VTK_DIR OR ENV{VTK_DIR})
     endif()
 endif()
 
-# Fix RPATH for MMG libraries to find VTK libraries on Linux
+# RPATH Configuration
+# ===================
+# Strategy: Set RPATH at install time so binaries can find shared libraries.
+# - Python module (_mmgpy): looks in ./lib for MMG libraries
+# - MMG libraries (libmmg*.so): look in same dir ($ORIGIN) for VTK libraries
+# - MMG executables (mmg*_O3): look in ../mmgpy/lib for all libraries
+#
+# This is handled entirely by CMake; no Python fallback is needed.
+
+# Fix RPATH for MMG libraries on Linux to find VTK libraries
 if(UNIX AND NOT APPLE)
     install(CODE "
-        message(STATUS \"Fixing RPATH for MMG libraries on Linux...\")
-
-        # Find MMG libraries in the install directory
         set(MMG_LIB_DIR \"\${CMAKE_INSTALL_PREFIX}/mmgpy/lib\")
         file(GLOB MMG_LIBS \"\${MMG_LIB_DIR}/libmmg*.so*\")
-
         foreach(mmg_lib \${MMG_LIBS})
             if(EXISTS \"\${mmg_lib}\")
                 get_filename_component(lib_name \"\${mmg_lib}\" NAME)
-                message(STATUS \"Setting RPATH for MMG library: \${lib_name}\")
-
-                # Set RPATH to look in the same directory (where VTK libs are installed)
                 execute_process(
                     COMMAND patchelf --set-rpath \"\\\$ORIGIN\" \"\${mmg_lib}\"
                     ERROR_VARIABLE PATCHELF_ERROR
                     RESULT_VARIABLE PATCHELF_RESULT
                 )
-
-                if(PATCHELF_RESULT)
-                    message(WARNING \"patchelf failed for \${lib_name}: \${PATCHELF_ERROR}\")
-                else()
-                    message(STATUS \"Successfully set RPATH for \${lib_name}\")
+                if(NOT PATCHELF_RESULT)
+                    message(STATUS \"Set RPATH for \${lib_name}\")
                 endif()
             endif()
         endforeach()
@@ -204,113 +203,48 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
             PATTERN "genheader" EXCLUDE
         )
 
-        # Set the correct RPATH for MMG executables after installation
+        # Set RPATH for MMG executables (bin/ -> mmgpy/lib/)
         if(UNIX)
             if(APPLE)
                 set(RPATH_PREFIX "@loader_path")
-            else() # Linux
+            else()
                 set(RPATH_PREFIX "$ORIGIN")
             endif()
 
-            # Use install CODE to fix RPATH after the executables are installed
             install(CODE "
-                message(STATUS \"Fixing RPATH for MMG executables...\")
-
-                # Define the executable install directory
                 set(EXEC_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
-                message(STATUS \"Looking for executables in: \${EXEC_DIR}\")
-
-                # Find all MMG executables
                 file(GLOB EXECS \"\${EXEC_DIR}/mmg*\")
-                message(STATUS \"Found executables: \${EXECS}\")
+                set(LIB_RPATH \"${RPATH_PREFIX}/../mmgpy/lib\")
 
                 foreach(exec \${EXECS})
                     if(EXISTS \"\${exec}\")
                         get_filename_component(exec_name \"\${exec}\" NAME)
-                        message(STATUS \"Setting RPATH for \${exec_name}\")
-
-                        # Executables are in site-packages/bin/, libraries in site-packages/mmgpy/lib/
-                        set(LIB_RPATH \"${RPATH_PREFIX}/../mmgpy/lib\")
-                        message(STATUS \"Target RPATH: \${LIB_RPATH}\")
 
                         if(APPLE)
-                            # First, check current RPATH
-                            execute_process(
-                                COMMAND otool -l \"\${exec}\"
-                                OUTPUT_VARIABLE OTOOL_OUTPUT
-                                ERROR_VARIABLE OTOOL_ERROR
-                                RESULT_VARIABLE OTOOL_RESULT
-                            )
-                            if(OTOOL_RESULT)
-                                message(WARNING \"otool failed for \${exec_name}: \${OTOOL_ERROR}\")
-                            endif()
-
-                            # Try to remove any existing @rpath entries (may fail if none exist)
+                            # Remove old @rpath (ignore failure if none exists)
                             execute_process(
                                 COMMAND install_name_tool -delete_rpath \"@rpath\" \"\${exec}\"
-                                ERROR_VARIABLE DELETE_ERROR
-                                RESULT_VARIABLE DELETE_RESULT
+                                ERROR_QUIET
                             )
-
-                            # Add the correct RPATH - this is the critical step
+                            # Add correct RPATH
                             execute_process(
                                 COMMAND install_name_tool -add_rpath \"\${LIB_RPATH}\" \"\${exec}\"
-                                ERROR_VARIABLE ADD_ERROR
                                 RESULT_VARIABLE ADD_RESULT
                             )
-
-                            if(ADD_RESULT)
-                                message(WARNING \"Failed to add RPATH for \${exec_name}: \${ADD_ERROR}\")
-                            else()
-                                message(STATUS \"Successfully set RPATH for \${exec_name}\")
-
-                                # Verify the RPATH was set correctly
-                                execute_process(
-                                    COMMAND otool -l \"\${exec}\"
-                                    OUTPUT_VARIABLE VERIFY_OUTPUT
-                                )
-                                if(\"\${VERIFY_OUTPUT}\" MATCHES \"\${LIB_RPATH}\")
-                                    message(STATUS \"RPATH verification successful for \${exec_name}\")
-                                else()
-                                    message(WARNING \"RPATH verification failed for \${exec_name}\")
-                                endif()
+                            if(NOT ADD_RESULT)
+                                message(STATUS \"Set RPATH for \${exec_name}\")
                             endif()
                         else()
                             execute_process(
                                 COMMAND patchelf --set-rpath \"\${LIB_RPATH}\" \"\${exec}\"
-                                ERROR_VARIABLE PATCHELF_ERROR
                                 RESULT_VARIABLE PATCHELF_RESULT
                             )
-                            if(PATCHELF_RESULT)
-                                message(WARNING \"patchelf failed for \${exec_name}: \${PATCHELF_ERROR}\")
-                            else()
-                                message(STATUS \"Successfully set RPATH for \${exec_name}\")
+                            if(NOT PATCHELF_RESULT)
+                                message(STATUS \"Set RPATH for \${exec_name}\")
                             endif()
                         endif()
                     endif()
                 endforeach()
-            ")
-
-            # Backup RPATH fix using Python utility (fallback mechanism)
-            install(CODE "
-                message(STATUS \"Running backup RPATH fix utility...\")
-                execute_process(
-                    COMMAND \"\${Python_EXECUTABLE}\" -c \"
-try:
-    import mmgpy
-    mmgpy._fix_rpath()
-    print('Backup RPATH fix completed successfully')
-except Exception as e:
-    print(f'Backup RPATH fix failed: {e}')
-\"
-                    ERROR_VARIABLE BACKUP_ERROR
-                    RESULT_VARIABLE BACKUP_RESULT
-                )
-                if(BACKUP_RESULT)
-                    message(STATUS \"Backup RPATH fix had issues: \${BACKUP_ERROR}\")
-                else()
-                    message(STATUS \"Backup RPATH fix completed\")
-                endif()
             ")
         endif()
     endif()

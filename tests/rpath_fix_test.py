@@ -1,77 +1,64 @@
-"""Test RPATH fixing utility."""
+"""Test RPATH checking and fixing utilities."""
 
 import platform
 import subprocess
-from pathlib import Path
+
+import mmgpy
 
 
-def test_rpath_fix_utility() -> None:  # noqa: PLR0912, C901
-    """Test that the RPATH fix utility works and provides debugging info."""
-    if platform.system() != "Darwin":
-        print("RPATH fix test only relevant on macOS")
+def test_check_rpath() -> None:
+    """Test that check_rpath returns valid status information."""
+    status = mmgpy.check_rpath()
+
+    assert "executables" in status
+    assert "libraries" in status
+    assert isinstance(status["executables"], list)
+    assert isinstance(status["libraries"], list)
+
+    if platform.system() == "Windows":
+        assert status.get("message") == "RPATH not used on Windows"
         return
 
-    # Run our RPATH fix utility explicitly
+    for exe in status["executables"]:
+        assert "name" in exe
+        assert "path" in exe
+        assert "rpath" in exe
+        assert "expected" in exe
+        assert "ok" in exe
+        print(f"Executable {exe['name']}: {'OK' if exe['ok'] else 'NEEDS FIX'}")
+        print(f"  RPATH: {exe['rpath']}")
+        print(f"  Expected: {exe['expected']}")
+
+    for lib in status["libraries"]:
+        assert "name" in lib
+        assert "path" in lib
+        assert "rpath" in lib
+        assert "expected" in lib
+        assert "ok" in lib
+        print(f"Library {lib['name']}: {'OK' if lib['ok'] else 'NEEDS FIX'}")
+        print(f"  RPATH: {lib['rpath']}")
+        print(f"  Expected: {lib['expected']}")
+
+
+def test_rpath_fix_utility() -> None:
+    """Test that the RPATH fix utility runs without errors."""
+    if platform.system() not in ("Darwin", "Linux"):
+        print("RPATH fix test only relevant on macOS/Linux")
+        return
+
     print("=== Running RPATH fix utility ===")
     try:
-        import mmgpy
-
         mmgpy._fix_rpath()
+        print("RPATH fix utility completed")
     except Exception as e:
         print(f"RPATH fix utility failed: {e}")
         raise
-
-    # Check if MMG executables exist and have correct RPATH
-    import site
-
-    site_packages = Path(site.getsitepackages()[0])
-    bin_dir = site_packages / "bin"
-
-    print(f"\n=== Checking executables in {bin_dir} ===")
-    if not bin_dir.exists():
-        print(f"ERROR: {bin_dir} does not exist!")
-        return
-
-    executables = list(bin_dir.glob("mmg*_O3"))
-    print(f"Found executables: {[exe.name for exe in executables]}")
-
-    for exe in executables:
-        print(f"\n--- Checking {exe.name} ---")
-        if not exe.exists():
-            print(f"ERROR: {exe} does not exist!")
-            continue
-
-        # Check RPATH using otool
-        result = subprocess.run(
-            ["/usr/bin/otool", "-l", str(exe)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        if result.returncode == 0:
-            if "@loader_path/../mmgpy/lib" in result.stdout:
-                print(f"✓ {exe.name} has correct RPATH")
-            else:
-                print(f"✗ {exe.name} missing correct RPATH")
-                # Show actual RPATH entries
-                lines = result.stdout.split("\n")
-                for i, line in enumerate(lines):
-                    if "LC_RPATH" in line:
-                        print(f"  Found LC_RPATH at line {i}")
-                        # Print next few lines to show the path
-                        for j in range(i, min(i + 4, len(lines))):
-                            if lines[j].strip():
-                                print(f"    {lines[j]}")
-        else:
-            print(f"ERROR: Could not read {exe.name} with otool: {result.stderr}")
 
 
 def test_mmg_executable_can_run() -> None:
     """Test that MMG executable can actually run (RPATH test)."""
     exe = "mmg3d_O3.exe" if platform.system() == "Windows" else "mmg3d_O3"
 
-    # Try to run the executable with --help to see if RPATH works
     try:
         result = subprocess.run(
             [exe, "--help"],
@@ -83,12 +70,12 @@ def test_mmg_executable_can_run() -> None:
         print(f"\n=== Testing {exe} execution ===")
         print(f"Return code: {result.returncode}")
         if result.returncode == 0:
-            print("✓ Executable runs successfully")
+            print("Executable runs successfully")
         else:
-            print(f"✗ Executable failed: {result.stderr}")
+            print(f"Executable returned non-zero: {result.stderr}")
     except FileNotFoundError:
-        print(f"✗ Executable {exe} not found in PATH")
+        print(f"Executable {exe} not found in PATH")
     except subprocess.TimeoutExpired:
-        print(f"✗ Executable {exe} timed out")
+        print(f"Executable {exe} timed out")
     except Exception as e:
-        print(f"✗ Unexpected error running {exe}: {e}")
+        print(f"Unexpected error running {exe}: {e}")

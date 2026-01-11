@@ -236,232 +236,174 @@ def _run_mmg() -> None:  # pragma: no cover
     run_func()
 
 
-def _fix_rpath() -> None:  # pragma: no cover
-    """Fix RPATH for MMG executables - post-install utility."""
+# RPATH utilities
+# ================
+# RPATH is normally set by CMake at install time. These utilities are provided
+# for diagnostics and manual fixing if needed.
+
+
+def check_rpath() -> dict:  # pragma: no cover
+    """Check RPATH status of MMG executables and libraries.
+
+    Returns a dict with 'executables' and 'libraries' keys, each containing
+    a list of dicts with 'name', 'path', 'rpath', and 'ok' keys.
+    On Windows, returns a 'message' key explaining RPATH is not used.
+
+    Example:
+        >>> import mmgpy
+        >>> status = mmgpy.check_rpath()
+        >>> for exe in status['executables']:
+        ...     print(f"{exe['name']}: {'OK' if exe['ok'] else 'NEEDS FIX'}")
+
+    """
     system = platform.system()
+    if system == "Windows":
+        return {
+            "executables": [],
+            "libraries": [],
+            "message": "RPATH not used on Windows",
+        }
+
+    site_packages = Path(site.getsitepackages()[0])
+    result: dict[str, list[dict[str, str | bool]]] = {
+        "executables": [],
+        "libraries": [],
+    }
+
+    bin_dir = site_packages / "bin"
+    lib_dir = site_packages / "mmgpy" / "lib"
+
     if system == "Darwin":
-        try:
-            _fix_rpath_macos()
-        except (OSError, subprocess.SubprocessError):
-            _logger.exception("Error fixing RPATH")
-            raise
-    elif system == "Linux":
-        try:
-            _fix_rpath_linux()
-        except (OSError, subprocess.SubprocessError):
-            _logger.exception("Error fixing RPATH")
-            raise
+        expected_exe_rpath = "@loader_path/../mmgpy/lib"
+        expected_lib_rpath = "@loader_path"
     else:
-        _logger.debug("RPATH fix not needed for %s", system)
+        expected_exe_rpath = "$ORIGIN/../mmgpy/lib"
+        expected_lib_rpath = "$ORIGIN"
+
+    if bin_dir.exists():
+        for exe in bin_dir.glob("mmg*_O3"):
+            rpath = _get_rpath(exe, system)
+            result["executables"].append(
+                {
+                    "name": exe.name,
+                    "path": str(exe),
+                    "rpath": rpath,
+                    "expected": expected_exe_rpath,
+                    "ok": expected_exe_rpath in rpath if rpath else False,
+                },
+            )
+
+    if lib_dir.exists():
+        pattern = "libmmg*.dylib" if system == "Darwin" else "libmmg*.so*"
+        for lib in lib_dir.glob(pattern):
+            if lib.is_symlink():
+                continue
+            rpath = _get_rpath(lib, system)
+            result["libraries"].append(
+                {
+                    "name": lib.name,
+                    "path": str(lib),
+                    "rpath": rpath,
+                    "expected": expected_lib_rpath,
+                    "ok": expected_lib_rpath in rpath if rpath else False,
+                },
+            )
+
+    return result
 
 
-def _fix_rpath_macos() -> None:  # pragma: no cover
-    """Fix RPATH for MMG executables on macOS."""
-    site_packages = Path(site.getsitepackages()[0])
-    _logger.debug("Site packages: %s", site_packages)
-
-    bin_dir = site_packages / "bin"
-    if not bin_dir.exists():
-        _logger.warning("Bin directory does not exist: %s", bin_dir)
-        return
-
-    executables = list(bin_dir.glob("mmg*_O3"))
-    if not executables:
-        _logger.warning("No MMG executables found")
-        return
-
-    _logger.debug("Found %d executables to fix", len(executables))
-
-    for exe in executables:
-        _fix_single_executable_rpath(exe)
-
-
-def _fix_single_executable_rpath(exe: "Path") -> None:  # pragma: no cover
-    """Fix RPATH for a single executable."""
-    _logger.debug("Fixing RPATH for %s...", exe.name)
-
-    if not exe.exists() or not exe.is_file():
-        _logger.debug("Skipping %s - not a valid file", exe.name)
-        return
-
-    target_rpath = "@loader_path/../mmgpy/lib"
-
-    if _has_correct_rpath(exe, target_rpath):
-        _logger.debug("RPATH already correct for %s", exe.name)
-        return
-
-    _remove_old_rpath(exe)
-    if _add_new_rpath(exe, target_rpath):
-        _verify_rpath_fix(exe, target_rpath)
-
-
-def _has_correct_rpath(exe: "Path", target_rpath: str) -> bool:  # pragma: no cover
-    """Check if executable has the correct RPATH."""
-    result = subprocess.run(
-        ["/usr/bin/otool", "-l", str(exe)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.returncode == 0 and target_rpath in result.stdout
-
-
-def _remove_old_rpath(exe: "Path") -> None:  # pragma: no cover
-    """Remove existing @rpath entries from executable."""
-    subprocess.run(
-        ["/usr/bin/install_name_tool", "-delete_rpath", "@rpath", str(exe)],
-        check=False,
-        capture_output=True,
-    )
-
-
-def _add_new_rpath(exe: "Path", target_rpath: str) -> bool:  # pragma: no cover
-    """Add new RPATH to executable. Returns True if successful."""
-    result = subprocess.run(
-        ["/usr/bin/install_name_tool", "-add_rpath", target_rpath, str(exe)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    if result.returncode == 0:
-        _logger.info("Successfully fixed RPATH for %s", exe.name)
-        return True
-    _logger.error("Failed to fix RPATH for %s: %s", exe.name, result.stderr)
-    return False
-
-
-def _verify_rpath_fix(exe: "Path", target_rpath: str) -> None:  # pragma: no cover
-    """Verify that RPATH fix was successful."""
-    verify_result = subprocess.run(
-        ["/usr/bin/otool", "-l", str(exe)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    if target_rpath in verify_result.stdout:
-        _logger.debug("RPATH verification successful for %s", exe.name)
-    else:
-        _logger.warning("RPATH verification failed for %s", exe.name)
-
-
-def _fix_rpath_linux() -> None:  # pragma: no cover
-    """Fix RPATH for MMG executables on Linux using patchelf."""
-    site_packages = Path(site.getsitepackages()[0])
-    _logger.debug("Site packages: %s", site_packages)
-
-    bin_dir = site_packages / "bin"
-    if not bin_dir.exists():
-        _logger.warning("Bin directory does not exist: %s", bin_dir)
-        return
-
-    executables = list(bin_dir.glob("mmg*_O3"))
-    if not executables:
-        _logger.warning("No MMG executables found")
-        return
-
-    _logger.debug("Found %d executables to fix", len(executables))
-
-    lib_dirs = [
-        str(site_packages / "lib"),
-        str(site_packages / "mmgpy" / "lib"),
-    ]
-
-    for exe in executables:
-        _fix_single_executable_rpath_linux(exe, lib_dirs)
-
-
-def _fix_single_executable_rpath_linux(  # pragma: no cover
-    exe: "Path",
-    lib_dirs: list[str],
-) -> None:
-    """Fix RPATH for a single executable on Linux."""
-    _logger.debug("Fixing RPATH for %s...", exe.name)
-
-    if not exe.exists() or not exe.is_file():
-        _logger.debug("Skipping %s - not a valid file", exe.name)
-        return
-
-    try:
-        rpath = ":".join(lib_dirs)
-        result = subprocess.run(
-            ["patchelf", "--set-rpath", rpath, str(exe)],  # noqa: S607
+def _get_rpath(binary: Path, system: str) -> str:  # pragma: no cover
+    """Get RPATH of a binary file."""
+    if system == "Darwin":
+        proc = subprocess.run(
+            ["/usr/bin/otool", "-l", str(binary)],
             capture_output=True,
             text=True,
             check=False,
         )
+        if proc.returncode != 0:
+            return ""
+        rpaths = []
+        lines = proc.stdout.split("\n")
+        for i, line in enumerate(lines):
+            if "LC_RPATH" in line and i + 2 < len(lines):
+                path_line = lines[i + 2].strip()
+                if path_line.startswith("path "):
+                    rpaths.append(path_line.split()[1])
+        return ":".join(rpaths)
+    proc = subprocess.run(
+        ["patchelf", "--print-rpath", str(binary)],  # noqa: S607
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.stdout.strip() if proc.returncode == 0 else ""
 
-        if result.returncode == 0:
-            _logger.info("Successfully fixed RPATH for %s", exe.name)
-            _verify_rpath_fix_linux(exe, lib_dirs)
-        else:
-            _logger.error("Failed to fix RPATH for %s: %s", exe.name, result.stderr)
 
-    except FileNotFoundError:
-        _logger.debug("patchelf not found - trying venv patchelf...")
-        venv_patchelf = Path(sys.executable).parent / "patchelf"
-        if venv_patchelf.exists():
+def _fix_rpath() -> None:  # pragma: no cover
+    """Fix RPATH for MMG executables (manual utility).
+
+    Normally RPATH is set by CMake at install time. Use this function only if
+    executables fail to find their libraries after installation.
+
+    Example:
+        >>> import mmgpy
+        >>> mmgpy._fix_rpath()  # Only if check_rpath() shows issues
+
+    """
+    system = platform.system()
+    if system not in ("Darwin", "Linux"):
+        _logger.debug("RPATH fix not applicable for %s", system)
+        return
+
+    site_packages = Path(site.getsitepackages()[0])
+    bin_dir = site_packages / "bin"
+
+    if not bin_dir.exists():
+        _logger.warning("Bin directory not found: %s", bin_dir)
+        return
+
+    executables = list(bin_dir.glob("mmg*_O3"))
+    if not executables:
+        _logger.info("No MMG executables found to fix")
+        return
+
+    if system == "Darwin":
+        target_rpath = "@loader_path/../mmgpy/lib"
+        for exe in executables:
+            subprocess.run(
+                ["/usr/bin/install_name_tool", "-delete_rpath", "@rpath", str(exe)],
+                capture_output=True,
+                check=False,
+            )
             result = subprocess.run(
-                [str(venv_patchelf), "--set-rpath", ":".join(lib_dirs), str(exe)],
+                ["/usr/bin/install_name_tool", "-add_rpath", target_rpath, str(exe)],
                 capture_output=True,
                 text=True,
                 check=False,
             )
             if result.returncode == 0:
-                _logger.info("Successfully fixed RPATH for %s", exe.name)
+                _logger.info("Fixed RPATH for %s", exe.name)
             else:
-                _logger.error(  # noqa: TRY400
-                    "Failed to fix RPATH for %s: %s",
-                    exe.name,
-                    result.stderr,
-                )
-        else:
-            _logger.warning(
-                "patchelf not available - RPATH fix skipped for %s",
-                exe.name,
+                _logger.error("Failed to fix %s: %s", exe.name, result.stderr)
+    else:
+        target_rpath = "$ORIGIN/../mmgpy/lib"
+        patchelf = "patchelf"
+        venv_patchelf = Path(sys.executable).parent / "patchelf"
+        if venv_patchelf.exists():
+            patchelf = str(venv_patchelf)
+
+        for exe in executables:
+            result = subprocess.run(
+                [patchelf, "--set-rpath", target_rpath, str(exe)],
+                capture_output=True,
+                text=True,
+                check=False,
             )
-
-
-def _verify_rpath_fix_linux(  # pragma: no cover
-    exe: "Path",
-    lib_dirs: list[str],
-) -> None:
-    """Verify that RPATH fix was successful on Linux."""
-    try:
-        verify_result = subprocess.run(
-            ["patchelf", "--print-rpath", str(exe)],  # noqa: S607
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        if verify_result.returncode == 0:
-            current_rpath = verify_result.stdout.strip()
-            _logger.debug("Current RPATH: %s", current_rpath)
-
-            rpath_dirs = current_rpath.split(":")
-            missing_dirs = [d for d in lib_dirs if d not in rpath_dirs]
-
-            if not missing_dirs:
-                _logger.debug("RPATH verification successful for %s", exe.name)
+            if result.returncode == 0:
+                _logger.info("Fixed RPATH for %s", exe.name)
             else:
-                _logger.warning(
-                    "RPATH verification failed for %s - missing: %s",
-                    exe.name,
-                    missing_dirs,
-                )
-        else:
-            _logger.warning(
-                "RPATH verification failed for %s: %s",
-                exe.name,
-                verify_result.stderr,
-            )
-    except FileNotFoundError:
-        _logger.debug(
-            "Could not verify RPATH for %s - patchelf not available",
-            exe.name,
-        )
+                _logger.error("Failed to fix %s: %s", exe.name, result.stderr)
 
 
 from . import interactive, lagrangian, metrics, progress, repair, sizing
@@ -510,6 +452,7 @@ __all__ = [
     "ValidationReport",
     "__version__",
     "apply_sizing_constraints",
+    "check_rpath",
     "detect_boundary_vertices",
     "disable_logging",
     "enable_debug",
@@ -527,60 +470,3 @@ __all__ = [
     "sizing",
     "to_pyvista",
 ]
-
-
-# Auto-fix RPATH on import if needed (macOS only)
-def _auto_fix_rpath_on_import() -> None:  # pragma: no cover
-    """Automatically fix RPATH on import if executables need it."""
-    # Skip RPATH fixing on Windows entirely
-    if sys.platform == "win32":
-        return
-
-    system = platform.system()
-    if system not in ("Darwin", "Linux"):
-        return
-
-    try:
-        # Quick check if RPATH fix is needed
-        site_packages = Path(site.getsitepackages()[0])
-        bin_dir = site_packages / "bin"
-
-        if not bin_dir.exists():
-            return
-
-        executables = list(bin_dir.glob("mmg*_O3"))
-        if not executables:
-            return
-
-        # Check if any executable needs RPATH fix
-        needs_fix = False
-        if system == "Darwin":
-            for exe in executables:
-                if not _has_correct_rpath(exe, "@loader_path/../mmgpy/lib"):
-                    needs_fix = True
-                    break
-        elif system == "Linux":
-            # For Linux, check if libraries can be found
-
-            for exe in executables:
-                result = subprocess.run(
-                    ["ldd", str(exe)],  # noqa: S607
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
-                if "not found" in result.stdout:
-                    needs_fix = True
-                    break
-
-        if needs_fix:
-            _logger.info("Auto-fixing RPATH for MMG executables...")
-            _fix_rpath()
-
-    except Exception:
-        # Don't let RPATH fixing break package import
-        pass
-
-
-# Run RPATH auto-fix on import
-_auto_fix_rpath_on_import()

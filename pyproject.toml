@@ -151,10 +151,7 @@ ignore = [
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
-    "S110",   # try-except-pass is acceptable for non-critical RPATH fixing
-    "BLE001", # broad exception catching is acceptable for non-critical RPATH fixing
     "E402",   # imports inside functions are intentional for lazy loading
-    "C901",   # complex functions are acceptable for RPATH fixing logic
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
 ]
