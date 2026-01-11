@@ -196,17 +196,19 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
         set(MMG_EXE_SUFFIX "")
     endif()
 
-    # Install executables if they are built (files in build directory)
-    if(EXISTS "${mmg_BINARY_DIR}/bin")
-        install(DIRECTORY "${mmg_BINARY_DIR}/bin/"
-            DESTINATION "${SCRIPTS_DIR}"
-            USE_SOURCE_PERMISSIONS
-            FILES_MATCHING PATTERN "mmg*"
-            PATTERN "genheader" EXCLUDE
-        )
+    # Install executables from MMG build directory
+    # Note: We don't use if(EXISTS) here because the directory is created during build,
+    # not during configure. The OPTIONAL keyword handles missing files gracefully.
+    install(DIRECTORY "${mmg_BINARY_DIR}/bin/"
+        DESTINATION "${SCRIPTS_DIR}"
+        USE_SOURCE_PERMISSIONS
+        FILES_MATCHING PATTERN "mmg*"
+        PATTERN "genheader" EXCLUDE
+        OPTIONAL
+    )
 
-        # Set RPATH for MMG executables (bin/ -> mmgpy/lib/)
-        if(UNIX)
+    # Set RPATH for MMG executables (bin/ -> mmgpy/lib/)
+    if(UNIX)
             if(APPLE)
                 set(RPATH_PREFIX "@loader_path")
             else()
@@ -254,7 +256,6 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                     endif()
                 endforeach()
             ")
-        endif()
     endif()
 
     # For development installs, create symlinks in the virtual environment
