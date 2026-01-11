@@ -13,17 +13,21 @@ on:
 jobs:
   build-wheels-linux-x86_64:
     runs-on: ubuntu-latest
-    env:
-      VTK_VERSION: "9.5.2"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Get VTK version from pyproject.toml
+        id: vtk
+        run: |
+          VTK_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
+          echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
         with:
           path: vtk-cache
-          key: vtk-${{ env.VTK_VERSION }}-linux-x86_64-v1
+          key: vtk-${{ steps.vtk.outputs.version }}-linux-x86_64-v1
       - name: Download and prepare VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: ./.github/scripts/download_vtk.sh linux x86_64 ./vtk-cache
@@ -32,6 +36,7 @@ jobs:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
           CIBW_ARCHS_LINUX: x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          VTK_VERSION: ${{ steps.vtk.outputs.version }}
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
@@ -58,17 +63,21 @@ jobs:
 
   build-wheels-linux-aarch64:
     runs-on: ubuntu-24.04-arm # Native ARM runner (no QEMU needed)
-    env:
-      VTK_VERSION: "9.5.2"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Get VTK version from pyproject.toml
+        id: vtk
+        run: |
+          VTK_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
+          echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
         with:
           path: vtk-cache
-          key: vtk-${{ env.VTK_VERSION }}-linux-aarch64-v1
+          key: vtk-${{ steps.vtk.outputs.version }}-linux-aarch64-v1
       - name: Download and prepare VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: ./.github/scripts/download_vtk.sh linux aarch64 ./vtk-cache
@@ -77,6 +86,7 @@ jobs:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
           CIBW_ARCHS_LINUX: aarch64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+          VTK_VERSION: ${{ steps.vtk.outputs.version }}
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
@@ -106,9 +116,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Get VTK version from pyproject.toml
+        id: vtk
+        shell: bash
+        run: |
+          VTK_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
+          echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          VTK_VERSION: ${{ steps.vtk.outputs.version }}
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
@@ -135,23 +153,28 @@ jobs:
 
   build-wheels-macos:
     runs-on: macos-latest
-    env:
-      VTK_VERSION: "9.5.2"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Get VTK version from pyproject.toml
+        id: vtk
+        run: |
+          VTK_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
+          echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
         with:
           path: vtk-cache
-          key: vtk-${{ env.VTK_VERSION }}-macos-arm64-v1
+          key: vtk-${{ steps.vtk.outputs.version }}-macos-arm64-v1
       - name: Download and prepare VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: ./.github/scripts/download_vtk.sh macos arm64 ./vtk-cache
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          VTK_VERSION: ${{ steps.vtk.outputs.version }}
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4

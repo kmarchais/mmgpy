@@ -8,11 +8,6 @@ on:
   schedule:
     - cron: "0 0 * * *" # Run at midnight UTC every day
 
-env:
-  VTK_VERSION_MAJOR: 9
-  VTK_VERSION_MINOR: 5
-  VTK_VERSION_PATCH: 2
-
 jobs:
   build-and-test:
     strategy:
@@ -30,6 +25,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Get VTK version from pyproject.toml
+        id: vtk
+        run: |
+          VTK_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['tool']['mmgpy']['vtk_version'])")
+          echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
+          echo "major=${VTK_VERSION%%.*}" >> $GITHUB_OUTPUT
+          echo "minor=$(echo $VTK_VERSION | cut -d. -f2)" >> $GITHUB_OUTPUT
+          echo "patch=${VTK_VERSION##*.}" >> $GITHUB_OUTPUT
+        shell: bash
 
       # Install VTK for Linux using apt
       - name: Install VTK (Linux)
@@ -57,7 +62,7 @@ jobs:
         if: runner.os != 'Linux'
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
-          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{env.VTK_VERSION_MAJOR}}.${{env.VTK_VERSION_MINOR}}.${{env.VTK_VERSION_PATCH}}-static/${{ steps.vtk-file.outputs.filename }}
+          url: https://github.com/sanguinariojoe/vtk-builds/releases/download/VTK-${{ steps.vtk.outputs.version }}-static/${{ steps.vtk-file.outputs.filename }}
           target: ${{github.workspace}}
 
       - name: Extract VTK
@@ -70,13 +75,14 @@ jobs:
 
       - name: Set CMake path
         run: |
+          VTK_MAJOR_MINOR="${{ steps.vtk.outputs.major }}.${{ steps.vtk.outputs.minor }}"
           if [ "$RUNNER_OS" == "Windows" ]; then
-            VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}" | sed 's/\\/\\\\/g')
+            VTK_PATH=$(cygpath -w "${PWD}/vtk/lib/cmake/vtk-${VTK_MAJOR_MINOR}" | sed 's/\\/\\\\/g')
             echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
           elif [ "$RUNNER_OS" == "Linux" ]; then
             echo "CMAKE_PREFIX_PATH=/usr/lib/cmake/vtk" >> $GITHUB_ENV
           else
-            VTK_PATH="${PWD}/vtk/lib/cmake/vtk-${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}"
+            VTK_PATH="${PWD}/vtk/lib/cmake/vtk-${VTK_MAJOR_MINOR}"
             echo "CMAKE_PREFIX_PATH=${VTK_PATH}" >> $GITHUB_ENV
           fi
         shell: bash
