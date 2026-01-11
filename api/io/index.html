@@ -2161,7 +2161,7 @@ show_root_heading: true</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>mesh_type</code></b>
-              (<code><span title="type">type</span>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh3D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh3D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh3D">MmgMesh3D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh2D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh2D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh2D">MmgMesh2D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMeshS&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMeshS&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMeshS">MmgMeshS</a>] | None</code>, default:
+              (<code><span title="type">type</span>[<span title="mmgpy._mmgpy.MmgMesh3D">MmgMesh3D</span> | <span title="mmgpy._mmgpy.MmgMesh2D">MmgMesh2D</span> | <span title="mmgpy._mmgpy.MmgMeshS">MmgMeshS</span>] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -2178,7 +2178,7 @@ show_root_heading: true</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh3D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh3D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh3D">MmgMesh3D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh2D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh2D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh2D">MmgMesh2D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMeshS&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMeshS&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMeshS">MmgMeshS</a></code>
+              <code><span title="mmgpy._mmgpy.MmgMesh3D">MmgMesh3D</span> | <span title="mmgpy._mmgpy.MmgMesh2D">MmgMesh2D</span> | <span title="mmgpy._mmgpy.MmgMeshS">MmgMeshS</span></code>
           –
           <div class="doc-md-description">
             <p>The appropriate mmgpy mesh instance.</p>
@@ -2257,7 +2257,7 @@ show_root_heading: true</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mesh</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh3D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh3D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh3D">MmgMesh3D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh2D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh2D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh2D">MmgMesh2D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMeshS&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMeshS&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMeshS">MmgMeshS</a></code>)
+              (<code><span title="mmgpy._mmgpy.MmgMesh3D">MmgMesh3D</span> | <span title="mmgpy._mmgpy.MmgMesh2D">MmgMesh2D</span> | <span title="mmgpy._mmgpy.MmgMeshS">MmgMeshS</span></code>)
           –
           <div class="doc-md-description">
             <p>mmgpy mesh instance (MmgMesh3D, MmgMesh2D, or MmgMeshS).</p>
@@ -2366,13 +2366,13 @@ show_root_heading: true</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># 3D mesh</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">mesh_3d</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMesh3D</span><span class="p">(</span><span class="s2">&quot;volume.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">mesh_3d</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;volume.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># 2D mesh</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">mesh_2d</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMesh2D</span><span class="p">(</span><span class="s2">&quot;planar.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">mesh_2d</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;planar.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Surface mesh</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">mesh_s</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMeshS</span><span class="p">(</span><span class="s2">&quot;surface.stl&quot;</span><span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">mesh_s</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;surface.stl&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>

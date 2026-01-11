@@ -625,10 +625,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#3d-volumetric-meshes-mmgmesh3d" class="md-nav__link">
+  <a href="#3d-volumetric-meshes-meshkindtetrahedral" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3D Volumetric Meshes (MmgMesh3D)
+        3D Volumetric Meshes (MeshKind.TETRAHEDRAL)
       
     </span>
   </a>
@@ -636,10 +636,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2d-planar-meshes-mmgmesh2d" class="md-nav__link">
+  <a href="#2d-planar-meshes-meshkindtriangular_2d" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2D Planar Meshes (MmgMesh2D)
+        2D Planar Meshes (MeshKind.TRIANGULAR_2D)
       
     </span>
   </a>
@@ -647,10 +647,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3d-surface-meshes-mmgmeshs" class="md-nav__link">
+  <a href="#3d-surface-meshes-meshkindtriangular_surface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3D Surface Meshes (MmgMeshS)
+        3D Surface Meshes (MeshKind.TRIANGULAR_SURFACE)
       
     </span>
   </a>
@@ -1630,10 +1630,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#3d-volumetric-meshes-mmgmesh3d" class="md-nav__link">
+  <a href="#3d-volumetric-meshes-meshkindtetrahedral" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3D Volumetric Meshes (MmgMesh3D)
+        3D Volumetric Meshes (MeshKind.TETRAHEDRAL)
       
     </span>
   </a>
@@ -1641,10 +1641,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2d-planar-meshes-mmgmesh2d" class="md-nav__link">
+  <a href="#2d-planar-meshes-meshkindtriangular_2d" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2D Planar Meshes (MmgMesh2D)
+        2D Planar Meshes (MeshKind.TRIANGULAR_2D)
       
     </span>
   </a>
@@ -1652,10 +1652,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3d-surface-meshes-mmgmeshs" class="md-nav__link">
+  <a href="#3d-surface-meshes-meshkindtriangular_surface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3D Surface Meshes (MmgMeshS)
+        3D Surface Meshes (MeshKind.TRIANGULAR_SURFACE)
       
     </span>
   </a>
@@ -1904,8 +1904,8 @@
 <h1 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h1>
 <p>This page explains the fundamental concepts behind mmgpy and mesh remeshing.</p>
 <h2 id="mesh-types">Mesh Types<a class="headerlink" href="#mesh-types" title="Permanent link">&para;</a></h2>
-<p>mmgpy supports three types of meshes:</p>
-<h3 id="3d-volumetric-meshes-mmgmesh3d">3D Volumetric Meshes (<code>MmgMesh3D</code>)<a class="headerlink" href="#3d-volumetric-meshes-mmgmesh3d" title="Permanent link">&para;</a></h3>
+<p>mmgpy supports three types of meshes through the unified <code>Mesh</code> class:</p>
+<h3 id="3d-volumetric-meshes-meshkindtetrahedral">3D Volumetric Meshes (<code>MeshKind.TETRAHEDRAL</code>)<a class="headerlink" href="#3d-volumetric-meshes-meshkindtetrahedral" title="Permanent link">&para;</a></h3>
 <p>Tetrahedral meshes representing 3D volumes. Used for:</p>
 <ul>
 <li>Finite element analysis (FEA)</li>
@@ -1915,9 +1915,10 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Load a volumetric mesh</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMesh3D</span><span class="p">(</span><span class="s2">&quot;volume.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;volume.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>  <span class="c1"># MeshKind.TETRAHEDRAL</span>
 </span></code></pre></div>
-<h3 id="2d-planar-meshes-mmgmesh2d">2D Planar Meshes (<code>MmgMesh2D</code>)<a class="headerlink" href="#2d-planar-meshes-mmgmesh2d" title="Permanent link">&para;</a></h3>
+<h3 id="2d-planar-meshes-meshkindtriangular_2d">2D Planar Meshes (<code>MeshKind.TRIANGULAR_2D</code>)<a class="headerlink" href="#2d-planar-meshes-meshkindtriangular_2d" title="Permanent link">&para;</a></h3>
 <p>Triangular meshes in 2D. Used for:</p>
 <ul>
 <li>2D simulations</li>
@@ -1926,9 +1927,10 @@
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMesh2D</span><span class="p">(</span><span class="s2">&quot;planar.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;planar.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>  <span class="c1"># MeshKind.TRIANGULAR_2D</span>
 </span></code></pre></div>
-<h3 id="3d-surface-meshes-mmgmeshs">3D Surface Meshes (<code>MmgMeshS</code>)<a class="headerlink" href="#3d-surface-meshes-mmgmeshs" title="Permanent link">&para;</a></h3>
+<h3 id="3d-surface-meshes-meshkindtriangular_surface">3D Surface Meshes (<code>MeshKind.TRIANGULAR_SURFACE</code>)<a class="headerlink" href="#3d-surface-meshes-meshkindtriangular_surface" title="Permanent link">&para;</a></h3>
 <p>Triangular meshes representing 3D surfaces. Used for:</p>
 <ul>
 <li>Surface remeshing</li>
@@ -1937,15 +1939,29 @@
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMeshS</span><span class="p">(</span><span class="s2">&quot;surface.stl&quot;</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;surface.stl&quot;</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>  <span class="c1"># MeshKind.TRIANGULAR_SURFACE</span>
 </span></code></pre></div>
 <h2 id="the-unified-mesh-class">The Unified Mesh Class<a class="headerlink" href="#the-unified-mesh-class" title="Permanent link">&para;</a></h2>
-<p>For convenience, mmgpy provides a unified <code>Mesh</code> class that auto-detects the mesh type:</p>
+<p>The <code>Mesh</code> class is the primary public API for mmgpy. It auto-detects the mesh type based on input data:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Auto-detect mesh type from file</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mesh type: </span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">kind</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># MeshKind.TETRAHEDRAL, TRIANGULAR_2D, or TRIANGULAR_SURFACE</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># From arrays - type is detected from vertex dimensions and cell type</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># 3D vertices + tetrahedra → TETRAHEDRAL</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">vertices_3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">tetrahedra</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">mesh_3d</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">vertices_3d</span><span class="p">,</span> <span class="n">tetrahedra</span><span class="p">)</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="c1"># 2D vertices + triangles → TRIANGULAR_2D</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">vertices_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">mesh_2d</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">vertices_2d</span><span class="p">,</span> <span class="n">triangles</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="remeshing-operations">Remeshing Operations<a class="headerlink" href="#remeshing-operations" title="Permanent link">&para;</a></h2>
 <h3 id="standard-remeshing">Standard Remeshing<a class="headerlink" href="#standard-remeshing" title="Permanent link">&para;</a></h3>
@@ -1981,7 +1997,7 @@
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">levelset_func</span><span class="p">(</span><span class="n">coords</span><span class="p">):</span>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">coords</span> <span class="o">-</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.3</span>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMesh3D</span><span class="p">(</span><span class="s2">&quot;background.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;background.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">levelset</span> <span class="o">=</span> <span class="n">levelset_func</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">get_vertices</span><span class="p">())</span>
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
 </span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">result</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">remesh_levelset</span><span class="p">(</span><span class="n">levelset</span><span class="p">)</span>
@@ -2108,8 +2124,8 @@
 </tr>
 </tbody>
 </table>
-<p>Load any format with <code>mmgpy.read()</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;model.stl&quot;</span><span class="p">)</span>
+<p>Load any format with <code>mmgpy.Mesh()</code> or <code>mmgpy.read()</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;model.stl&quot;</span><span class="p">)</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">mesh</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;output.vtk&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="verbosity-levels">Verbosity Levels<a class="headerlink" href="#verbosity-levels" title="Permanent link">&para;</a></h2>

@@ -1861,7 +1861,7 @@ multiple steps (n_steps &gt; 1) to avoid mesh inversion.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mesh</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh2D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh2D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh2D">MmgMesh2D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh3D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh3D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh3D">MmgMesh3D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMeshS&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMeshS&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMeshS">MmgMeshS</a></code>)
+              (<code><span title="mmgpy._mmgpy.MmgMesh2D">MmgMesh2D</span> | <span title="mmgpy._mmgpy.MmgMesh3D">MmgMesh3D</span> | <span title="mmgpy._mmgpy.MmgMeshS">MmgMeshS</span></code>)
           –
           <div class="doc-md-description">
             <p>MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.</p>
@@ -2066,7 +2066,7 @@ For 2D/surface meshes, these are vertices on boundary edges.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mesh</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh2D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh2D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh2D">MmgMesh2D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMesh3D&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMesh3D&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMesh3D">MmgMesh3D</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;mmgpy.MmgMeshS&lt;/span&gt; (&lt;code&gt;mmgpy._mmgpy.MmgMeshS&lt;/code&gt;)" href="../mesh-classes/#mmgpy.MmgMeshS">MmgMeshS</a></code>)
+              (<code><span title="mmgpy._mmgpy.MmgMesh2D">MmgMesh2D</span> | <span title="mmgpy._mmgpy.MmgMesh3D">MmgMesh3D</span> | <span title="mmgpy._mmgpy.MmgMeshS">MmgMeshS</span></code>)
           –
           <div class="doc-md-description">
             <p>MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.</p>
@@ -2096,7 +2096,7 @@ show_root_heading: true</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMesh3D</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Define displacement field (3D vector at each vertex)</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">n_vertices</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_mesh_size</span><span class="p">()[</span><span class="s2">&quot;vertices&quot;</span><span class="p">]</span>
@@ -2216,7 +2216,7 @@ show_root_heading: true</p>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Load sphere mesh</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">MmgMesh3D</span><span class="p">(</span><span class="s2">&quot;sphere.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;sphere.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">vertices</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_vertices</span><span class="p">()</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
 </span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># Compute displacement: stretch in z, compress in x and y</span>
