@@ -3,14 +3,8 @@
 import numpy as np
 import pytest
 
-from mmgpy import (
-    Mmg2DOptions,
-    Mmg3DOptions,
-    MmgMesh2D,
-    MmgMesh3D,
-    MmgMeshS,
-    MmgSOptions,
-)
+from mmgpy import Mesh, Mmg2DOptions, Mmg3DOptions, MmgSOptions
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
 class TestMmg3DOptions:
@@ -238,7 +232,7 @@ class TestConvenienceMethods:
     """Tests for convenience remeshing methods."""
 
     @pytest.fixture
-    def mesh3d(self) -> MmgMesh3D:
+    def mesh3d(self) -> Mesh:
         """Create a simple 3D mesh."""
         vertices = np.array(
             [
@@ -250,10 +244,10 @@ class TestConvenienceMethods:
             dtype=np.float64,
         )
         elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
-        return MmgMesh3D(vertices, elements)
+        return Mesh(vertices, elements)
 
     @pytest.fixture
-    def mesh2d(self) -> MmgMesh2D:
+    def mesh2d(self) -> Mesh:
         """Create a simple 2D mesh."""
         vertices = np.array(
             [
@@ -265,10 +259,10 @@ class TestConvenienceMethods:
             dtype=np.float64,
         )
         triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
-        return MmgMesh2D(vertices, triangles)
+        return Mesh(vertices, triangles)
 
     @pytest.fixture
-    def meshs(self) -> MmgMeshS:
+    def meshs(self) -> Mesh:
         """Create a simple surface mesh."""
         vertices = np.array(
             [
@@ -283,120 +277,132 @@ class TestConvenienceMethods:
             [[0, 1, 2], [0, 1, 3], [1, 2, 3], [0, 2, 3]],
             dtype=np.int32,
         )
-        return MmgMeshS(vertices, triangles)
+        return Mesh(vertices, triangles)
 
-    def test_remesh_optimize_exists_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_optimize_exists_3d(self, mesh3d: Mesh) -> None:
         """Test remesh_optimize method exists on MmgMesh3D."""
         assert hasattr(mesh3d, "remesh_optimize")
         assert callable(mesh3d.remesh_optimize)
 
-    def test_remesh_uniform_exists_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_uniform_exists_3d(self, mesh3d: Mesh) -> None:
         """Test remesh_uniform method exists on MmgMesh3D."""
         assert hasattr(mesh3d, "remesh_uniform")
         assert callable(mesh3d.remesh_uniform)
 
-    def test_remesh_optimize_exists_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_remesh_optimize_exists_2d(self, mesh2d: Mesh) -> None:
         """Test remesh_optimize method exists on MmgMesh2D."""
         assert hasattr(mesh2d, "remesh_optimize")
         assert callable(mesh2d.remesh_optimize)
 
-    def test_remesh_uniform_exists_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_remesh_uniform_exists_2d(self, mesh2d: Mesh) -> None:
         """Test remesh_uniform method exists on MmgMesh2D."""
         assert hasattr(mesh2d, "remesh_uniform")
         assert callable(mesh2d.remesh_uniform)
 
-    def test_remesh_optimize_exists_s(self, meshs: MmgMeshS) -> None:
+    def test_remesh_optimize_exists_s(self, meshs: Mesh) -> None:
         """Test remesh_optimize method exists on MmgMeshS."""
         assert hasattr(meshs, "remesh_optimize")
         assert callable(meshs.remesh_optimize)
 
-    def test_remesh_uniform_exists_s(self, meshs: MmgMeshS) -> None:
+    def test_remesh_uniform_exists_s(self, meshs: Mesh) -> None:
         """Test remesh_uniform method exists on MmgMeshS."""
         assert hasattr(meshs, "remesh_uniform")
         assert callable(meshs.remesh_uniform)
 
-    def test_remesh_optimize_runs_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_optimize_runs_3d(self, mesh3d: Mesh) -> None:
         """Test remesh_optimize actually runs on 3D mesh."""
         mesh3d.remesh_optimize(verbose=-1)
         # Just verify it doesn't crash
 
-    def test_remesh_uniform_runs_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_uniform_runs_3d(self, mesh3d: Mesh) -> None:
         """Test remesh_uniform actually runs on 3D mesh."""
         mesh3d.remesh_uniform(0.5, verbose=-1)
         # Just verify it doesn't crash
 
-    def test_remesh_optimize_runs_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_remesh_optimize_runs_2d(self, mesh2d: Mesh) -> None:
         """Test remesh_optimize actually runs on 2D mesh."""
         mesh2d.remesh_optimize(verbose=-1)
 
-    def test_remesh_uniform_runs_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_remesh_uniform_runs_2d(self, mesh2d: Mesh) -> None:
         """Test remesh_uniform actually runs on 2D mesh."""
         mesh2d.remesh_uniform(0.5, verbose=-1)
 
-    def test_remesh_optimize_runs_s(self, meshs: MmgMeshS) -> None:
+    def test_remesh_optimize_runs_s(self, meshs: Mesh) -> None:
         """Test remesh_optimize actually runs on surface mesh."""
         meshs.remesh_optimize(verbose=-1)
 
-    def test_remesh_uniform_runs_s(self, meshs: MmgMeshS) -> None:
+    def test_remesh_uniform_runs_s(self, meshs: Mesh) -> None:
         """Test remesh_uniform actually runs on surface mesh."""
         meshs.remesh_uniform(0.5, verbose=-1)
 
-    def test_remesh_with_options_object_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_with_options_object_3d(self, mesh3d: Mesh) -> None:
         """Test passing options object directly to remesh on 3D mesh."""
         opts = Mmg3DOptions(hsiz=0.5, verbose=-1)
         mesh3d.remesh(opts)  # Pass options directly without unpacking
 
-    def test_remesh_with_options_object_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_remesh_with_options_object_2d(self, mesh2d: Mesh) -> None:
         """Test passing options object directly to remesh on 2D mesh."""
         opts = Mmg2DOptions(hsiz=0.5, verbose=-1)
         mesh2d.remesh(opts)
 
-    def test_remesh_with_options_object_s(self, meshs: MmgMeshS) -> None:
+    def test_remesh_with_options_object_s(self, meshs: Mesh) -> None:
         """Test passing options object directly to remesh on surface mesh."""
         opts = MmgSOptions(hsiz=0.5, verbose=-1)
         meshs.remesh(opts)
 
-    def test_remesh_with_preset_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_with_preset_3d(self, mesh3d: Mesh) -> None:
         """Test passing preset options directly to remesh."""
         mesh3d.remesh(Mmg3DOptions.optimize_only(verbose=-1))
 
-    def test_remesh_options_and_kwargs_conflict(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_options_and_kwargs_conflict(self, mesh3d: Mesh) -> None:
         """Test that passing both options and kwargs raises TypeError."""
         opts = Mmg3DOptions(hsiz=0.5)
         with pytest.raises(TypeError, match="Cannot pass both options object"):
             mesh3d.remesh(opts, verbose=-1)
 
-    def test_remesh_options_and_kwargs_conflict_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_remesh_options_and_kwargs_conflict_2d(self, mesh2d: Mesh) -> None:
         """Test that passing both options and kwargs raises TypeError for 2D."""
         opts = Mmg2DOptions(hsiz=0.5)
         with pytest.raises(TypeError, match="Cannot pass both options object"):
             mesh2d.remesh(opts, hmax=0.2)
 
-    def test_remesh_options_and_kwargs_conflict_s(self, meshs: MmgMeshS) -> None:
+    def test_remesh_options_and_kwargs_conflict_s(self, meshs: Mesh) -> None:
         """Test that passing both options and kwargs raises TypeError for surface."""
         opts = MmgSOptions(hsiz=0.5)
         with pytest.raises(TypeError, match="Cannot pass both options object"):
             meshs.remesh(opts, optim=True)
 
-    def test_remesh_wrong_options_type_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_remesh_wrong_options_type_3d(self, mesh3d: Mesh) -> None:
         """Test that passing wrong options type raises TypeError for 3D mesh."""
         opts_2d = Mmg2DOptions(hsiz=0.5)
-        with pytest.raises(TypeError, match="Expected Mmg3DOptions for MmgMesh3D"):
+        with pytest.raises(
+            TypeError,
+            match="Expected Mmg3DOptions for tetrahedral mesh",
+        ):
             mesh3d.remesh(opts_2d)  # type: ignore[arg-type]
         opts_s = MmgSOptions(hsiz=0.5)
-        with pytest.raises(TypeError, match="Expected Mmg3DOptions for MmgMesh3D"):
+        with pytest.raises(
+            TypeError,
+            match="Expected Mmg3DOptions for tetrahedral mesh",
+        ):
             mesh3d.remesh(opts_s)  # type: ignore[arg-type]
 
-    def test_remesh_wrong_options_type_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_remesh_wrong_options_type_2d(self, mesh2d: Mesh) -> None:
         """Test that passing wrong options type raises TypeError for 2D mesh."""
         opts_3d = Mmg3DOptions(hsiz=0.5)
-        with pytest.raises(TypeError, match="Expected Mmg2DOptions for MmgMesh2D"):
+        with pytest.raises(
+            TypeError,
+            match="Expected Mmg2DOptions for triangular_2d mesh",
+        ):
             mesh2d.remesh(opts_3d)  # type: ignore[arg-type]
 
-    def test_remesh_wrong_options_type_s(self, meshs: MmgMeshS) -> None:
+    def test_remesh_wrong_options_type_s(self, meshs: Mesh) -> None:
         """Test that passing wrong options type raises TypeError for surface mesh."""
         opts_3d = Mmg3DOptions(hsiz=0.5)
-        with pytest.raises(TypeError, match="Expected MmgSOptions for MmgMeshS"):
+        with pytest.raises(
+            TypeError,
+            match="Expected MmgSOptions for triangular_surface mesh",
+        ):
             meshs.remesh(opts_3d)  # type: ignore[arg-type]
 
 
@@ -404,7 +410,7 @@ class TestMeshChangeVerification:
     """Tests that verify mesh actually changes after remeshing."""
 
     @pytest.fixture
-    def coarse_mesh3d(self) -> MmgMesh3D:
+    def coarse_mesh3d(self) -> Mesh:
         """Create a coarse 3D mesh (single tetrahedron)."""
         vertices = np.array(
             [
@@ -416,10 +422,10 @@ class TestMeshChangeVerification:
             dtype=np.float64,
         )
         elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
-        return MmgMesh3D(vertices, elements)
+        return Mesh(vertices, elements)
 
     @pytest.fixture
-    def coarse_mesh2d(self) -> MmgMesh2D:
+    def coarse_mesh2d(self) -> Mesh:
         """Create a coarse 2D mesh (two triangles)."""
         vertices = np.array(
             [
@@ -431,11 +437,11 @@ class TestMeshChangeVerification:
             dtype=np.float64,
         )
         triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
-        return MmgMesh2D(vertices, triangles)
+        return Mesh(vertices, triangles)
 
     def test_remesh_uniform_increases_vertices_3d(
         self,
-        coarse_mesh3d: MmgMesh3D,
+        coarse_mesh3d: Mesh,
     ) -> None:
         """Test that remesh_uniform with small size increases vertex count."""
         initial_vertices = len(coarse_mesh3d.get_vertices())
@@ -445,7 +451,7 @@ class TestMeshChangeVerification:
 
     def test_remesh_uniform_increases_elements_3d(
         self,
-        coarse_mesh3d: MmgMesh3D,
+        coarse_mesh3d: Mesh,
     ) -> None:
         """Test that remesh_uniform with small size increases element count."""
         initial_elements = len(coarse_mesh3d.get_tetrahedra())
@@ -455,7 +461,7 @@ class TestMeshChangeVerification:
 
     def test_remesh_uniform_increases_vertices_2d(
         self,
-        coarse_mesh2d: MmgMesh2D,
+        coarse_mesh2d: Mesh,
     ) -> None:
         """Test that remesh_uniform with small size increases vertex count for 2D."""
         initial_vertices = len(coarse_mesh2d.get_vertices())
@@ -463,7 +469,7 @@ class TestMeshChangeVerification:
         final_vertices = len(coarse_mesh2d.get_vertices())
         assert final_vertices > initial_vertices
 
-    def test_remesh_with_options_changes_mesh(self, coarse_mesh3d: MmgMesh3D) -> None:
+    def test_remesh_with_options_changes_mesh(self, coarse_mesh3d: Mesh) -> None:
         """Test that remesh with options object actually modifies the mesh."""
         initial_vertices = len(coarse_mesh3d.get_vertices())
         opts = Mmg3DOptions(hsiz=0.3, verbose=-1)
@@ -471,7 +477,7 @@ class TestMeshChangeVerification:
         final_vertices = len(coarse_mesh3d.get_vertices())
         assert final_vertices > initial_vertices
 
-    def test_remesh_with_fine_preset(self, coarse_mesh3d: MmgMesh3D) -> None:
+    def test_remesh_with_fine_preset(self, coarse_mesh3d: Mesh) -> None:
         """Test that remesh with fine preset creates more vertices."""
         initial_vertices = len(coarse_mesh3d.get_vertices())
         coarse_mesh3d.remesh(Mmg3DOptions.fine(hmax=0.3))
@@ -554,7 +560,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_string_for_double_3d(
         self,
-        mesh3d: MmgMesh3D,
+        mesh3d: Mesh,
     ) -> None:
         """Test that string instead of float raises ValueError with clear message."""
         with pytest.raises(ValueError, match=r"hmax.*must be a number.*str"):
@@ -562,7 +568,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_string_for_double_2d(
         self,
-        mesh2d: MmgMesh2D,
+        mesh2d: Mesh,
     ) -> None:
         """Test that string instead of float raises ValueError for 2D mesh."""
         with pytest.raises(ValueError, match=r"hmax.*must be a number.*str"):
@@ -570,7 +576,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_string_for_double_surface(
         self,
-        meshs: MmgMeshS,
+        meshs: Mesh,
     ) -> None:
         """Test that string instead of float raises ValueError for surface mesh."""
         with pytest.raises(ValueError, match=r"hmax.*must be a number.*str"):
@@ -578,7 +584,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_list_for_integer_3d(
         self,
-        mesh3d: MmgMesh3D,
+        mesh3d: Mesh,
     ) -> None:
         """Test that list instead of int raises ValueError with clear message."""
         with pytest.raises(ValueError, match=r"verbose.*must be an integer.*list"):
@@ -586,7 +592,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_list_for_integer_2d(
         self,
-        mesh2d: MmgMesh2D,
+        mesh2d: Mesh,
     ) -> None:
         """Test that list instead of int raises ValueError for 2D mesh."""
         with pytest.raises(ValueError, match=r"verbose.*must be an integer.*list"):
@@ -594,7 +600,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_list_for_integer_surface(
         self,
-        meshs: MmgMeshS,
+        meshs: Mesh,
     ) -> None:
         """Test that list instead of int raises ValueError for surface mesh."""
         with pytest.raises(ValueError, match=r"verbose.*must be an integer.*list"):
@@ -602,7 +608,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_dict_for_double(
         self,
-        mesh3d: MmgMesh3D,
+        mesh3d: Mesh,
     ) -> None:
         """Test that dict instead of float raises ValueError."""
         with pytest.raises(ValueError, match=r"hmin.*must be a number.*dict"):
@@ -610,7 +616,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_none_for_double(
         self,
-        mesh3d: MmgMesh3D,
+        mesh3d: Mesh,
     ) -> None:
         """Test that None instead of float raises ValueError."""
         with pytest.raises(ValueError, match=r"hausd.*must be a number.*NoneType"):
@@ -618,7 +624,7 @@ class TestInvalidOptionTypes:
 
     def test_invalid_option_type_tuple_for_integer(
         self,
-        mesh3d: MmgMesh3D,
+        mesh3d: Mesh,
     ) -> None:
         """Test that tuple instead of int raises ValueError."""
         with pytest.raises(ValueError, match=r"mem.*must be an integer.*tuple"):
@@ -626,7 +632,7 @@ class TestInvalidOptionTypes:
 
     def test_error_includes_parameter_name(
         self,
-        mesh3d: MmgMesh3D,
+        mesh3d: Mesh,
     ) -> None:
         """Test that error message includes the parameter name."""
         with pytest.raises(ValueError, match="hgrad"):
@@ -634,20 +640,20 @@ class TestInvalidOptionTypes:
 
     def test_error_includes_actual_type(
         self,
-        mesh3d: MmgMesh3D,
+        mesh3d: Mesh,
     ) -> None:
         """Test that error message includes actual type received."""
         with pytest.raises(ValueError, match="str"):
             mesh3d.remesh(hsiz="0.5")
 
-    def test_valid_types_still_work_3d(self, mesh3d: MmgMesh3D) -> None:
+    def test_valid_types_still_work_3d(self, mesh3d: Mesh) -> None:
         """Test that valid option types still work correctly."""
         mesh3d.remesh(hmax=0.5, verbose=-1)
 
-    def test_valid_types_still_work_2d(self, mesh2d: MmgMesh2D) -> None:
+    def test_valid_types_still_work_2d(self, mesh2d: Mesh) -> None:
         """Test that valid option types still work correctly for 2D."""
         mesh2d.remesh(hmax=0.5, verbose=-1)
 
-    def test_valid_types_still_work_surface(self, meshs: MmgMeshS) -> None:
+    def test_valid_types_still_work_surface(self, meshs: Mesh) -> None:
         """Test that valid option types still work correctly for surface."""
         meshs.remesh(hmax=0.5, verbose=-1)

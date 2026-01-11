@@ -6,14 +6,13 @@ import pytest
 from mmgpy import (
     IssueSeverity,
     Mesh,
-    MmgMesh2D,
-    MmgMesh3D,
-    MmgMeshS,
+    MeshKind,
     QualityStats,
     ValidationError,
     ValidationIssue,
     ValidationReport,
 )
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
 def create_test_mesh_3d() -> tuple[np.ndarray, np.ndarray]:
@@ -99,7 +98,7 @@ class TestMmgMesh3DValidation:
     def test_validate_returns_bool(self) -> None:
         """Test that validate() returns bool by default."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         result = mesh.validate()
         assert isinstance(result, bool)
@@ -107,7 +106,7 @@ class TestMmgMesh3DValidation:
     def test_validate_returns_report_when_detailed(self) -> None:
         """Test that validate(detailed=True) returns ValidationReport."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         result = mesh.validate(detailed=True)
         assert isinstance(result, ValidationReport)
@@ -115,14 +114,14 @@ class TestMmgMesh3DValidation:
     def test_valid_mesh_returns_true(self) -> None:
         """Test that a valid mesh returns True."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         assert mesh.validate() is True
 
     def test_valid_mesh_report_is_valid(self) -> None:
         """Test that a valid mesh has is_valid=True in report."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         report = mesh.validate(detailed=True)
         assert report.is_valid is True
@@ -131,7 +130,7 @@ class TestMmgMesh3DValidation:
     def test_report_has_quality_stats(self) -> None:
         """Test that report includes quality statistics."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         report = mesh.validate(detailed=True)
         assert report.quality is not None
@@ -143,7 +142,7 @@ class TestMmgMesh3DValidation:
     def test_report_str_representation(self) -> None:
         """Test that report has a string representation."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         report = mesh.validate(detailed=True)
         report_str = str(report)
@@ -170,10 +169,11 @@ class TestMmgMesh3DValidation:
         # This ordering has negative volume, but MMG will fix it
         tet = np.array([[0, 2, 1, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D()
-        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tet))
-        mesh.set_vertices(vertices)
-        mesh.set_tetrahedra(tet)
+        raw_mesh = MmgMesh3D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tet))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_tetrahedra(tet)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         # Mesh should be valid after MMG's internal reordering
         report = mesh.validate(detailed=True)
@@ -182,7 +182,7 @@ class TestMmgMesh3DValidation:
     def test_strict_mode_raises_on_warning(self) -> None:
         """Test that strict=True raises ValidationError on warnings."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         # Create a mesh that will have quality warnings
         report = mesh.validate(detailed=True, min_quality=0.99)
@@ -195,7 +195,7 @@ class TestMmgMesh3DValidation:
     def test_skip_geometry_check(self) -> None:
         """Test that geometry check can be skipped."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         report = mesh.validate(detailed=True, check_geometry=False)
         assert report.is_valid is True
@@ -209,7 +209,7 @@ class TestMmgMesh3DValidation:
     def test_skip_quality_check(self) -> None:
         """Test that quality check can be skipped."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         report = mesh.validate(detailed=True, check_quality=False)
         assert report.quality is None
@@ -226,7 +226,7 @@ class TestMmgMesh2DValidation:
     def test_validate_returns_bool(self) -> None:
         """Test that validate() returns bool by default."""
         vertices, triangles = create_test_mesh_2d()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.validate()
         assert isinstance(result, bool)
@@ -234,7 +234,7 @@ class TestMmgMesh2DValidation:
     def test_validate_returns_report_when_detailed(self) -> None:
         """Test that validate(detailed=True) returns ValidationReport."""
         vertices, triangles = create_test_mesh_2d()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.validate(detailed=True)
         assert isinstance(result, ValidationReport)
@@ -242,14 +242,14 @@ class TestMmgMesh2DValidation:
     def test_valid_mesh_returns_true(self) -> None:
         """Test that a valid mesh returns True."""
         vertices, triangles = create_test_mesh_2d()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         assert mesh.validate() is True
 
     def test_valid_mesh_report_is_valid(self) -> None:
         """Test that a valid mesh has is_valid=True in report."""
         vertices, triangles = create_test_mesh_2d()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         report = mesh.validate(detailed=True)
         assert report.is_valid is True
@@ -257,7 +257,7 @@ class TestMmgMesh2DValidation:
     def test_report_has_quality_stats(self) -> None:
         """Test that report includes quality statistics."""
         vertices, triangles = create_test_mesh_2d()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         report = mesh.validate(detailed=True)
         assert report.quality is not None
@@ -281,10 +281,11 @@ class TestMmgMesh2DValidation:
         # CW orientation (would be inverted)
         tri = np.array([[0, 2, 1]], dtype=np.int32)
 
-        mesh = MmgMesh2D()
-        mesh.set_mesh_size(vertices=len(vertices), triangles=len(tri))
-        mesh.set_vertices(vertices)
-        mesh.set_triangles(tri)
+        raw_mesh = MmgMesh2D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(tri))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_triangles(tri)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
 
         # Mesh should be valid (MMG may fix orientation or store as-is)
         report = mesh.validate(detailed=True)
@@ -294,7 +295,7 @@ class TestMmgMesh2DValidation:
     def test_mesh_type_in_report(self) -> None:
         """Test that report includes correct mesh type."""
         vertices, triangles = create_test_mesh_2d()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         report = mesh.validate(detailed=True)
         assert report.mesh_type == "MmgMesh2D"
@@ -311,7 +312,7 @@ class TestMmgMeshSValidation:
     def test_validate_returns_bool(self) -> None:
         """Test that validate() returns bool by default."""
         vertices, triangles = create_surface_mesh()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.validate()
         assert isinstance(result, bool)
@@ -319,7 +320,7 @@ class TestMmgMeshSValidation:
     def test_validate_returns_report_when_detailed(self) -> None:
         """Test that validate(detailed=True) returns ValidationReport."""
         vertices, triangles = create_surface_mesh()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.validate(detailed=True)
         assert isinstance(result, ValidationReport)
@@ -327,14 +328,14 @@ class TestMmgMeshSValidation:
     def test_valid_mesh_returns_true(self) -> None:
         """Test that a valid mesh returns True."""
         vertices, triangles = create_surface_mesh()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         assert mesh.validate() is True
 
     def test_report_has_quality_stats(self) -> None:
         """Test that report includes quality statistics."""
         vertices, triangles = create_surface_mesh()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         report = mesh.validate(detailed=True)
         assert report.quality is not None
@@ -342,7 +343,7 @@ class TestMmgMeshSValidation:
     def test_mesh_type_in_report(self) -> None:
         """Test that report includes correct mesh type."""
         vertices, triangles = create_surface_mesh()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         report = mesh.validate(detailed=True)
         assert report.mesh_type == "MmgMeshS"
@@ -381,7 +382,7 @@ class TestMeshValidation:
     def test_validate_surface_mesh(self) -> None:
         """Test validation of surface mesh through MmgMeshS."""
         vertices, triangles = create_surface_mesh()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.validate()
         assert isinstance(result, bool)
@@ -401,7 +402,7 @@ class TestQualityStats:
     def test_quality_histogram(self) -> None:
         """Test that quality histogram is computed correctly."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         report = mesh.validate(detailed=True)
         assert report.quality is not None
@@ -410,7 +411,7 @@ class TestQualityStats:
     def test_below_threshold(self) -> None:
         """Test below_threshold method."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         report = mesh.validate(detailed=True)
         assert report.quality is not None
@@ -460,7 +461,7 @@ class TestValidationError:
         """Test that ValidationError includes the report."""
         vertices, tetrahedra = create_test_mesh_3d()
 
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         # Use a high quality threshold to ensure we get warnings
         # which will trigger ValidationError in strict mode
@@ -495,7 +496,7 @@ class TestValidationEdgeCases:
         )
         tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         # Should handle minimal mesh without issues
         result = mesh.validate()
@@ -515,10 +516,11 @@ class TestValidationEdgeCases:
         )
         tet = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D()
-        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tet))
-        mesh.set_vertices(vertices)
-        mesh.set_tetrahedra(tet)
+        raw_mesh = MmgMesh3D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tet))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_tetrahedra(tet)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         degenerate_warnings = [
@@ -529,7 +531,7 @@ class TestValidationEdgeCases:
     def test_quality_threshold_parameter(self) -> None:
         """Test that min_quality parameter affects warnings."""
         vertices, tetrahedra = create_test_mesh_3d()
-        mesh = MmgMesh3D(vertices, tetrahedra)
+        mesh = Mesh(vertices, tetrahedra)
 
         # With very low threshold, no quality warnings
         report_low = mesh.validate(detailed=True, min_quality=0.01)
@@ -561,10 +563,11 @@ class TestValidationEdgeCases:
         )
         tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D()
-        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
-        mesh.set_vertices(vertices)
-        mesh.set_tetrahedra(tetrahedra)
+        raw_mesh = MmgMesh3D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_tetrahedra(tetrahedra)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         orphan_warnings = [w for w in report.warnings if "orphan" in w.check_name]
@@ -597,10 +600,11 @@ class TestValidationEdgeCases:
             dtype=np.int32,
         )
 
-        mesh = MmgMesh2D()
-        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
-        mesh.set_vertices(vertices)
-        mesh.set_triangles(triangles)
+        raw_mesh = MmgMesh2D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_triangles(triangles)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
 
         # This mesh should validate without non-manifold issues
         # (each edge has max 2 faces)
@@ -750,10 +754,11 @@ class TestDuplicateVertexDetection:
         )
         tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D()
-        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
-        mesh.set_vertices(vertices)
-        mesh.set_tetrahedra(tetrahedra)
+        raw_mesh = MmgMesh3D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_tetrahedra(tetrahedra)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -769,10 +774,11 @@ class TestDuplicateVertexDetection:
 
         tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D()
-        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
-        mesh.set_vertices(vertices)
-        mesh.set_tetrahedra(tetrahedra)
+        raw_mesh = MmgMesh3D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_tetrahedra(tetrahedra)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -786,10 +792,11 @@ class TestDuplicateVertexDetection:
 
         tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D()
-        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
-        mesh.set_vertices(vertices)
-        mesh.set_tetrahedra(tetrahedra)
+        raw_mesh = MmgMesh3D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_tetrahedra(tetrahedra)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -842,10 +849,11 @@ class TestDuplicateVertexDetection:
         )
         tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-        mesh = MmgMesh3D()
-        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
-        mesh.set_vertices(vertices)
-        mesh.set_tetrahedra(tetrahedra)
+        raw_mesh = MmgMesh3D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_tetrahedra(tetrahedra)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -865,10 +873,11 @@ class TestDuplicateVertexDetection:
         )
         triangles = np.array([[0, 1, 2]], dtype=np.int32)
 
-        mesh = MmgMesh2D()
-        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
-        mesh.set_vertices(vertices)
-        mesh.set_triangles(triangles)
+        raw_mesh = MmgMesh2D()
+        raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_triangles(triangles)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -896,10 +905,11 @@ class TestDuplicateVertexDetection:
             dtype=np.int32,
         )
 
-        mesh = MmgMeshS()
-        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
-        mesh.set_vertices(vertices)
-        mesh.set_triangles(triangles)
+        raw_mesh = MmgMeshS()
+        raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        raw_mesh.set_vertices(vertices)
+        raw_mesh.set_triangles(triangles)
+        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_SURFACE)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]

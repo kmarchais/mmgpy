@@ -1,14 +1,8 @@
-from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, overload
+from typing import Any, overload
 
 import numpy as np
-import pyvista as pv
 from numpy.typing import NDArray
-
-from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
-from ._result import RemeshResult
-from ._validation import ValidationReport
 
 class mmg3d:  # noqa: N801
     @staticmethod
@@ -62,7 +56,7 @@ class MmgMesh3D:
     def get_vertices(self) -> NDArray[np.float64]: ...
     def get_elements(self) -> NDArray[np.int32]: ...
 
-    # Low-level mesh construction API (Phase 1 of Issue #50)
+    # Low-level mesh construction API
     def set_mesh_size(
         self,
         vertices: int = 0,
@@ -110,7 +104,7 @@ class MmgMesh3D:
         self,
     ) -> tuple[NDArray[np.int32], NDArray[np.int64]]: ...
 
-    # Phase 2: Single element operations
+    # Single element operations
     def set_vertex(
         self,
         x: float,
@@ -156,7 +150,7 @@ class MmgMesh3D:
     def get_element_quality(self, idx: int) -> float: ...
     def get_element_qualities(self) -> NDArray[np.float64]: ...
 
-    # Phase 3: Advanced element types (prisms and quadrilaterals)
+    # Advanced element types (prisms and quadrilaterals)
     def set_prism(
         self,
         v0: int,
@@ -206,23 +200,24 @@ class MmgMesh3D:
     def __setitem__(self, key: str, value: NDArray[np.float64]) -> None: ...
     def __getitem__(self, key: str) -> NDArray[np.float64]: ...
     def save(self, filename: str | Path) -> None: ...
+
+    # Remeshing (returns raw dict with statistics)
     def remesh(
         self,
-        options: Mmg3DOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        optim: int | None = None,
-        noinsert: int | None = None,
-        noswap: int | None = None,
-        nomove: int | None = None,
-        nosurf: int | None = None,
+        verbose: float | None = None,
+        optim: float | None = None,
+        noinsert: float | None = None,
+        noswap: float | None = None,
+        nomove: float | None = None,
+        nosurf: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
+    ) -> dict[str, Any]: ...
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
@@ -232,10 +227,10 @@ class MmgMesh3D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        lag: int | None = None,
+        verbose: float | None = None,
+        lag: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
+    ) -> dict[str, Any]: ...
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -246,91 +241,11 @@ class MmgMesh3D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        iso: int | None = None,
+        verbose: float | None = None,
+        iso: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
-    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
-    @classmethod
-    def from_pyvista(
-        cls,
-        mesh: pv.UnstructuredGrid | pv.PolyData,
-    ) -> MmgMesh3D: ...
-    def to_pyvista(
-        self,
-        *,
-        include_refs: bool = True,
-    ) -> pv.UnstructuredGrid: ...
-    # Convenience methods (added by mmgpy._add_convenience_methods)
-    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult: ...
-    def remesh_uniform(
-        self,
-        size: float,
-        *,
-        verbose: int | None = None,
-    ) -> RemeshResult: ...
-    # Local sizing methods (added by mmgpy._add_sizing_methods)
-    def set_size_sphere(
-        self,
-        center: Sequence[float] | NDArray[np.float64],
-        radius: float,
-        size: float,
-    ) -> None: ...
-    def set_size_box(
-        self,
-        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
-        size: float,
-    ) -> None: ...
-    def set_size_cylinder(
-        self,
-        point1: Sequence[float] | NDArray[np.float64],
-        point2: Sequence[float] | NDArray[np.float64],
-        radius: float,
-        size: float,
-    ) -> None: ...
-    def set_size_from_point(
-        self,
-        point: Sequence[float] | NDArray[np.float64],
-        near_size: float,
-        far_size: float,
-        influence_radius: float,
-    ) -> None: ...
-    def clear_local_sizing(self) -> None: ...
-    def get_local_sizing_count(self) -> int: ...
-    def apply_local_sizing(self) -> None: ...
-    # Validation methods (added by mmgpy._add_validation_methods)
-    @overload
-    def validate(
-        self,
-        *,
-        detailed: Literal[False] = ...,
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        min_quality: float = 0.1,
-    ) -> bool: ...
-    @overload
-    def validate(
-        self,
-        *,
-        detailed: Literal[True],
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        min_quality: float = 0.1,
-    ) -> ValidationReport: ...
-    # Interactive sizing methods (added by mmgpy._add_interactive_methods)
-    def edit_sizing(
-        self,
-        *,
-        mode: str = "sphere",
-        default_size: float = 0.01,
-        default_radius: float = 0.1,
-    ) -> None: ...
+    ) -> dict[str, Any]: ...
 
-# Phase 4: 2D planar mesh class (MMG2D)
 class MmgMesh2D:
     @overload
     def __init__(self) -> None: ...
@@ -442,22 +357,23 @@ class MmgMesh2D:
 
     # File I/O
     def save(self, filename: str | Path) -> None: ...
+
+    # Remeshing (returns raw dict with statistics)
     def remesh(
         self,
-        options: Mmg2DOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        optim: int | None = None,
-        noinsert: int | None = None,
-        noswap: int | None = None,
-        nomove: int | None = None,
+        verbose: float | None = None,
+        optim: float | None = None,
+        noinsert: float | None = None,
+        noswap: float | None = None,
+        nomove: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
+    ) -> dict[str, Any]: ...
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
@@ -467,10 +383,10 @@ class MmgMesh2D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        lag: int | None = None,
+        verbose: float | None = None,
+        lag: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
+    ) -> dict[str, Any]: ...
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -481,80 +397,11 @@ class MmgMesh2D:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        iso: int | None = None,
+        verbose: float | None = None,
+        iso: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
-    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
-    @classmethod
-    def from_pyvista(
-        cls,
-        mesh: pv.UnstructuredGrid | pv.PolyData,
-    ) -> MmgMesh2D: ...
-    def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
-    # Convenience methods (added by mmgpy._add_convenience_methods)
-    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult: ...
-    def remesh_uniform(
-        self,
-        size: float,
-        *,
-        verbose: int | None = None,
-    ) -> RemeshResult: ...
-    # Local sizing methods (added by mmgpy._add_sizing_methods)
-    def set_size_sphere(
-        self,
-        center: Sequence[float] | NDArray[np.float64],
-        radius: float,
-        size: float,
-    ) -> None: ...
-    def set_size_box(
-        self,
-        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
-        size: float,
-    ) -> None: ...
-    def set_size_from_point(
-        self,
-        point: Sequence[float] | NDArray[np.float64],
-        near_size: float,
-        far_size: float,
-        influence_radius: float,
-    ) -> None: ...
-    def clear_local_sizing(self) -> None: ...
-    def get_local_sizing_count(self) -> int: ...
-    def apply_local_sizing(self) -> None: ...
-    # Validation methods (added by mmgpy._add_validation_methods)
-    @overload
-    def validate(
-        self,
-        *,
-        detailed: Literal[False] = ...,
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        min_quality: float = 0.1,
-    ) -> bool: ...
-    @overload
-    def validate(
-        self,
-        *,
-        detailed: Literal[True],
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        min_quality: float = 0.1,
-    ) -> ValidationReport: ...
-    # Interactive sizing methods (added by mmgpy._add_interactive_methods)
-    def edit_sizing(
-        self,
-        *,
-        mode: str = "sphere",
-        default_size: float = 0.01,
-        default_radius: float = 0.1,
-    ) -> None: ...
+    ) -> dict[str, Any]: ...
 
-# Phase 4: Surface mesh class (MMGS)
 class MmgMeshS:
     @overload
     def __init__(self) -> None: ...
@@ -653,22 +500,23 @@ class MmgMeshS:
 
     # File I/O
     def save(self, filename: str | Path) -> None: ...
+
+    # Remeshing (returns raw dict with statistics)
     def remesh(
         self,
-        options: MmgSOptions | None = None,
         *,
         hmin: float | None = None,
         hmax: float | None = None,
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        optim: int | None = None,
-        noinsert: int | None = None,
-        noswap: int | None = None,
-        nomove: int | None = None,
+        verbose: float | None = None,
+        optim: float | None = None,
+        noinsert: float | None = None,
+        noswap: float | None = None,
+        nomove: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
+    ) -> dict[str, Any]: ...
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -679,82 +527,7 @@ class MmgMeshS:
         hsiz: float | None = None,
         hausd: float | None = None,
         hgrad: float | None = None,
-        verbose: bool | int | None = None,
-        iso: int | None = None,
+        verbose: float | None = None,
+        iso: float | None = None,
         **kwargs: float,
-    ) -> RemeshResult: ...
-    # PyVista integration (added by mmgpy._pyvista.add_pyvista_methods)
-    @classmethod
-    def from_pyvista(
-        cls,
-        mesh: pv.UnstructuredGrid | pv.PolyData,
-    ) -> MmgMeshS: ...
-    def to_pyvista(self, *, include_refs: bool = True) -> pv.PolyData: ...
-    # Convenience methods (added by mmgpy._add_convenience_methods)
-    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult: ...
-    def remesh_uniform(
-        self,
-        size: float,
-        *,
-        verbose: int | None = None,
-    ) -> RemeshResult: ...
-    # Local sizing methods (added by mmgpy._add_sizing_methods)
-    def set_size_sphere(
-        self,
-        center: Sequence[float] | NDArray[np.float64],
-        radius: float,
-        size: float,
-    ) -> None: ...
-    def set_size_box(
-        self,
-        bounds: Sequence[Sequence[float]] | NDArray[np.float64],
-        size: float,
-    ) -> None: ...
-    def set_size_cylinder(
-        self,
-        point1: Sequence[float] | NDArray[np.float64],
-        point2: Sequence[float] | NDArray[np.float64],
-        radius: float,
-        size: float,
-    ) -> None: ...
-    def set_size_from_point(
-        self,
-        point: Sequence[float] | NDArray[np.float64],
-        near_size: float,
-        far_size: float,
-        influence_radius: float,
-    ) -> None: ...
-    def clear_local_sizing(self) -> None: ...
-    def get_local_sizing_count(self) -> int: ...
-    def apply_local_sizing(self) -> None: ...
-    # Validation methods (added by mmgpy._add_validation_methods)
-    @overload
-    def validate(
-        self,
-        *,
-        detailed: Literal[False] = ...,
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        min_quality: float = 0.1,
-    ) -> bool: ...
-    @overload
-    def validate(
-        self,
-        *,
-        detailed: Literal[True],
-        strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
-        min_quality: float = 0.1,
-    ) -> ValidationReport: ...
-    # Interactive sizing methods (added by mmgpy._add_interactive_methods)
-    def edit_sizing(
-        self,
-        *,
-        mode: str = "sphere",
-        default_size: float = 0.01,
-        default_radius: float = 0.1,
-    ) -> None: ...
+    ) -> dict[str, Any]: ...

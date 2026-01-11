@@ -3,13 +3,13 @@
 import numpy as np
 import pytest
 
-from mmgpy import Mesh, MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy import Mesh
 from mmgpy.interactive import SizingEditor
 from mmgpy.interactive.sizing_editor import ConstraintMode
 from mmgpy.sizing import BoxSize, CylinderSize, PointSize, SphereSize
 
 
-def create_simple_3d_mesh() -> MmgMesh3D:
+def create_simple_3d_mesh() -> Mesh:
     """Create a simple 3D mesh (unit cube with one tetrahedron)."""
     vertices = np.array(
         [
@@ -21,10 +21,10 @@ def create_simple_3d_mesh() -> MmgMesh3D:
         dtype=np.float64,
     )
     elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
-    return MmgMesh3D(vertices, elements)
+    return Mesh(vertices, elements)
 
 
-def create_simple_2d_mesh() -> MmgMesh2D:
+def create_simple_2d_mesh() -> Mesh:
     """Create a simple 2D mesh (unit square with two triangles)."""
     vertices = np.array(
         [
@@ -36,10 +36,10 @@ def create_simple_2d_mesh() -> MmgMesh2D:
         dtype=np.float64,
     )
     triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
-    return MmgMesh2D(vertices, triangles)
+    return Mesh(vertices, triangles)
 
 
-def create_simple_surface_mesh() -> MmgMeshS:
+def create_simple_surface_mesh() -> Mesh:
     """Create a simple surface mesh (single triangle)."""
     vertices = np.array(
         [
@@ -50,7 +50,7 @@ def create_simple_surface_mesh() -> MmgMeshS:
         dtype=np.float64,
     )
     triangles = np.array([[0, 1, 2]], dtype=np.int32)
-    return MmgMeshS(vertices, triangles)
+    return Mesh(vertices, triangles)
 
 
 class TestSizingEditorInit:

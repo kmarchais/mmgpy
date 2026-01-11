@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS, RemeshResult
+from mmgpy import Mesh, RemeshResult
 
 
 def create_test_cube() -> tuple[np.ndarray, np.ndarray]:
@@ -82,7 +82,7 @@ class TestRemeshResult3D:
     def test_remesh_returns_result(self) -> None:
         """remesh() returns a RemeshResult instance."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -91,7 +91,7 @@ class TestRemeshResult3D:
     def test_remesh_result_has_counts(self) -> None:
         """RemeshResult has element and vertex counts."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -103,7 +103,7 @@ class TestRemeshResult3D:
     def test_remesh_result_success(self) -> None:
         """RemeshResult.success indicates successful remeshing."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -113,7 +113,7 @@ class TestRemeshResult3D:
     def test_remesh_result_timing(self) -> None:
         """RemeshResult.duration_seconds captures timing."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -123,7 +123,7 @@ class TestRemeshResult3D:
     def test_remesh_result_quality_metrics(self) -> None:
         """RemeshResult has quality metrics before and after."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -135,7 +135,7 @@ class TestRemeshResult3D:
     def test_remesh_result_vertex_change(self) -> None:
         """RemeshResult.vertex_change computes difference."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -145,7 +145,7 @@ class TestRemeshResult3D:
     def test_remesh_result_element_change(self) -> None:
         """RemeshResult.element_change computes difference."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -155,7 +155,7 @@ class TestRemeshResult3D:
     def test_remesh_result_quality_improvement(self) -> None:
         """RemeshResult.quality_improvement computes ratio."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -166,7 +166,7 @@ class TestRemeshResult3D:
     def test_remesh_result_str(self) -> None:
         """RemeshResult has readable string representation."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
         s = str(result)
@@ -179,7 +179,7 @@ class TestRemeshResult3D:
     def test_remesh_result_is_frozen(self) -> None:
         """RemeshResult is immutable."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -189,7 +189,7 @@ class TestRemeshResult3D:
     def test_remesh_uniform_returns_result(self) -> None:
         """remesh_uniform() returns a RemeshResult."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh_uniform(0.5, verbose=-1)
 
@@ -198,7 +198,7 @@ class TestRemeshResult3D:
     def test_remesh_optimize_returns_result(self) -> None:
         """remesh_optimize() returns a RemeshResult."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh_optimize(verbose=-1)
 
@@ -211,7 +211,7 @@ class TestRemeshResult2D:
     def test_remesh_returns_result(self) -> None:
         """remesh() returns a RemeshResult instance."""
         vertices, triangles = create_test_square()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.remesh(hsiz=0.3, verbose=-1)
 
@@ -220,7 +220,7 @@ class TestRemeshResult2D:
     def test_remesh_result_success(self) -> None:
         """RemeshResult.success for 2D meshes."""
         vertices, triangles = create_test_square()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.remesh(hsiz=0.3, verbose=-1)
 
@@ -235,7 +235,7 @@ class TestRemeshResultSurface:
     def test_remesh_returns_result(self) -> None:
         """remesh() returns a RemeshResult instance."""
         vertices, triangles = create_test_surface()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.remesh(hsiz=0.3, verbose=-1)
 
@@ -244,7 +244,7 @@ class TestRemeshResultSurface:
     def test_remesh_result_success(self) -> None:
         """RemeshResult.success for surface meshes."""
         vertices, triangles = create_test_surface()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         result = mesh.remesh(hsiz=0.3, verbose=-1)
 
@@ -259,7 +259,7 @@ class TestRemeshResultDataclass:
     def test_remesh_result_warnings_tuple(self) -> None:
         """RemeshResult.warnings is a tuple."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         result = mesh.remesh(hsiz=0.5, verbose=-1)
 
@@ -321,7 +321,7 @@ class TestRemeshMethodsReturnResult:
     def test_remesh_lagrangian_3d_returns_result(self) -> None:
         """remesh_lagrangian() returns a RemeshResult for 3D meshes."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         # Small displacement field
         displacement = np.zeros((len(vertices), 3), dtype=np.float64)
@@ -340,7 +340,7 @@ class TestRemeshMethodsReturnResult:
     def test_remesh_lagrangian_2d_returns_result(self) -> None:
         """remesh_lagrangian() returns a RemeshResult for 2D meshes."""
         vertices, triangles = create_test_square()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         # Small displacement field
         displacement = np.zeros((len(vertices), 2), dtype=np.float64)
@@ -359,7 +359,7 @@ class TestRemeshMethodsReturnResult:
     def test_remesh_levelset_3d_returns_result(self) -> None:
         """remesh_levelset() returns a RemeshResult for 3D meshes."""
         vertices, elements = create_test_cube()
-        mesh = MmgMesh3D(vertices, elements)
+        mesh = Mesh(vertices, elements)
 
         # Level-set based on distance from center
         center = np.array([0.5, 0.5, 0.5])
@@ -373,7 +373,7 @@ class TestRemeshMethodsReturnResult:
     def test_remesh_levelset_2d_returns_result(self) -> None:
         """remesh_levelset() returns a RemeshResult for 2D meshes."""
         vertices, triangles = create_test_square()
-        mesh = MmgMesh2D(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         # Level-set based on distance from center
         center = np.array([0.5, 0.5])
@@ -387,7 +387,7 @@ class TestRemeshMethodsReturnResult:
     def test_remesh_levelset_surface_returns_result(self) -> None:
         """remesh_levelset() returns a RemeshResult for surface meshes."""
         vertices, triangles = create_test_surface()
-        mesh = MmgMeshS(vertices, triangles)
+        mesh = Mesh(vertices, triangles)
 
         # Level-set based on x coordinate
         levelset = vertices[:, 0] - 0.5

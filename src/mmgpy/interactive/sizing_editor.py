@@ -117,7 +117,19 @@ class SizingEditor:
             The mesh to edit sizing for.
 
         """
-        self._mesh = mesh
+        # Wrap raw MmgMesh* objects in a Mesh wrapper
+        from mmgpy import Mesh as MeshClass
+        from mmgpy import MeshKind
+        from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+
+        if isinstance(mesh, MmgMesh3D):
+            self._mesh: Mesh = MeshClass._from_impl(mesh, MeshKind.TETRAHEDRAL)  # noqa: SLF001
+        elif isinstance(mesh, MmgMesh2D):
+            self._mesh = MeshClass._from_impl(mesh, MeshKind.TRIANGULAR_2D)  # noqa: SLF001
+        elif isinstance(mesh, MmgMeshS):
+            self._mesh = MeshClass._from_impl(mesh, MeshKind.TRIANGULAR_SURFACE)  # noqa: SLF001
+        else:
+            self._mesh = mesh
         self._pv_mesh: pv.PolyData | pv.UnstructuredGrid | None = None
         self._plotter: pv.Plotter | None = None
 
@@ -135,14 +147,9 @@ class SizingEditor:
 
     def _detect_mesh_dimension(self) -> bool:
         """Detect if mesh is 3D (vs 2D planar)."""
-        from mmgpy import Mesh, MeshKind
-        from mmgpy._mmgpy import MmgMesh2D
+        from mmgpy import MeshKind
 
-        if isinstance(self._mesh, MmgMesh2D):
-            return False
-        return not (
-            isinstance(self._mesh, Mesh) and self._mesh.kind == MeshKind.TRIANGULAR_2D
-        )
+        return self._mesh.kind != MeshKind.TRIANGULAR_2D
 
     def _get_pyvista_mesh(self) -> pv.PolyData | pv.UnstructuredGrid:
         """Get PyVista representation of the mesh."""
