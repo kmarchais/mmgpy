@@ -202,9 +202,9 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
     install(DIRECTORY "${mmg_BINARY_DIR}/bin/"
         DESTINATION "${SCRIPTS_DIR}"
         USE_SOURCE_PERMISSIONS
+        OPTIONAL
         FILES_MATCHING PATTERN "mmg*"
         PATTERN "genheader" EXCLUDE
-        OPTIONAL
     )
 
     # Set RPATH for MMG executables (bin/ -> mmgpy/lib/)
