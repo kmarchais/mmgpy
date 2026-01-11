@@ -64,6 +64,7 @@ mmgs_O3 = "mmgpy:_run_mmgs"
 [dependency-groups]
 dev = [
     "imageio>=2.37.2",
+    "mypy>=1.19.1",
     "pre-commit>=4.0.1",
     "pytest>=8.3.4",
     "pytest-benchmark>=5.0.0",
@@ -158,6 +159,10 @@ ignore = [
 ]
 "src/mmgpy/_progress.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency
+]
+"src/mmgpy/_mmgpy.pyi" = [
+    "PYI021",  # Docstrings intentionally included for IDE support (issue #111)
+    "D418",    # Docstrings in @overload methods intentional for IDE support
 ]
 "src/mmgpy/interactive/*.py" = [
     "PLC0415", # imports inside functions to avoid circular imports
