@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy import Mesh, from_pyvista
+from mmgpy import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
@@ -155,7 +155,7 @@ class TestPyVistaConversion3D:
         pyvista_tetra_grid: pv.UnstructuredGrid,
     ) -> None:
         """Benchmark conversion from PyVista UnstructuredGrid."""
-        result = benchmark(from_pyvista, pyvista_tetra_grid, mesh_type="3d")
+        result = benchmark(Mesh, pyvista_tetra_grid)
         assert len(result.get_tetrahedra()) > 0
 
 
@@ -183,7 +183,7 @@ class TestPyVistaConversionSurface:
         pyvista_surface_polydata: pv.PolyData,
     ) -> None:
         """Benchmark conversion from PyVista PolyData."""
-        result = benchmark(from_pyvista, pyvista_surface_polydata, mesh_type="surface")
+        result = benchmark(Mesh, pyvista_surface_polydata)
         assert len(result.get_triangles()) > 0
 
 
@@ -238,46 +238,21 @@ class TestFieldIO:
     """Benchmarks for field data I/O operations."""
 
     @pytest.mark.benchmark(group="io-fields")
-    def test_set_scalar_field(
-        self,
-        benchmark: BenchmarkFixture,
-        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
-    ) -> None:
-        """Benchmark setting a scalar field."""
-        vertices, tetrahedra = mesh_3d_medium
-        mesh = MmgMesh3D(vertices, tetrahedra)
-        field = np.random.default_rng().random(len(vertices))
-
-        benchmark(mesh.set_field, "scalar", field)
-
-    @pytest.mark.benchmark(group="io-fields")
-    def test_get_scalar_field(
-        self,
-        benchmark: BenchmarkFixture,
-        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
-    ) -> None:
-        """Benchmark getting a scalar field."""
-        vertices, tetrahedra = mesh_3d_medium
-        mesh = MmgMesh3D(vertices, tetrahedra)
-        field = np.random.default_rng().random(len(vertices))
-        mesh.set_field("scalar", field)
-
-        result = benchmark(mesh.get_field, "scalar")
-        assert len(result) == len(vertices)
-
-    @pytest.mark.benchmark(group="io-fields")
     def test_set_metric_field(
         self,
         benchmark: BenchmarkFixture,
         mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
-        """Benchmark setting a metric field (6 components per vertex)."""
+        """Benchmark setting an isotropic metric field."""
         vertices, tetrahedra = mesh_3d_medium
-        mesh = MmgMesh3D(vertices, tetrahedra)
-        # Isotropic metric: [1, 0, 0, 1, 0, 1] scaled by target size
-        metric = np.tile([100.0, 0.0, 0.0, 100.0, 0.0, 100.0], (len(vertices), 1))
+        mesh = Mesh(vertices, tetrahedra)
+        # Isotropic metric: scalar size at each vertex
+        metric = np.ones(len(vertices)) * 0.1
 
-        benchmark(mesh.set_field, "metric", metric)
+        def set_metric() -> None:
+            mesh["metric"] = metric  # type: ignore[index]
+
+        benchmark(set_metric)
 
     @pytest.mark.benchmark(group="io-fields")
     def test_get_metric_field(
@@ -287,9 +262,12 @@ class TestFieldIO:
     ) -> None:
         """Benchmark getting a metric field."""
         vertices, tetrahedra = mesh_3d_medium
-        mesh = MmgMesh3D(vertices, tetrahedra)
-        metric = np.tile([100.0, 0.0, 0.0, 100.0, 0.0, 100.0], (len(vertices), 1))
-        mesh.set_field("metric", metric)
+        mesh = Mesh(vertices, tetrahedra)
+        # Set isotropic metric first
+        mesh["metric"] = np.ones(len(vertices)) * 0.1  # type: ignore[index]
 
-        result = benchmark(mesh.get_field, "metric")
-        assert result.shape == (len(vertices), 6)
+        def get_metric() -> np.ndarray:
+            return mesh["metric"]
+
+        result = benchmark(get_metric)
+        assert len(result) == len(vertices)
