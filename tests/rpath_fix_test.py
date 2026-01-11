@@ -81,21 +81,17 @@ def test_mmg_executable_can_run() -> None:
         print(f"Unexpected error running {exe}: {e}")
 
 
-def test_rpath_status_after_import() -> None:
-    """Test that RPATH is correct after module import (auto-fix should have run)."""
+def test_rpath_status_after_install() -> None:
+    """Test that RPATH is correct after package installation."""
     if platform.system() not in ("Darwin", "Linux"):
         print("RPATH status test only relevant on macOS/Linux")
         return
 
     status = mmgpy.check_rpath()
 
-    # Check that executables have correct RPATH (auto-fix should have fixed them)
-    executables_ok = all(exe.get("ok", False) for exe in status["executables"])
-    if executables_ok:
-        print("All executables have correct RPATH")
-    else:
-        for exe in status["executables"]:
-            if not exe.get("ok", False):
-                print(f"Executable {exe['name']} has incorrect RPATH:")
-                print(f"  Current: {exe['rpath']}")
-                print(f"  Expected: {exe['expected']}")
+    # Check that executables have correct RPATH (CMake should have set them)
+    for exe in status["executables"]:
+        print(f"Executable {exe['name']}: {'OK' if exe['ok'] else 'NEEDS FIX'}")
+        if not exe.get("ok", False):
+            print(f"  Current: {exe['rpath']}")
+            print(f"  Expected: {exe['expected']}")
