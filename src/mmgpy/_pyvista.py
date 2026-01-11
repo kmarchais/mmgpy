@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, overload
 import numpy as np
 import pyvista as pv
 
+from mmgpy._extensions import add_method
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
@@ -451,20 +452,20 @@ def add_pyvista_methods() -> None:
 
     These methods are automatically called at import time.
     """
-    # Add classmethods - type ignores needed for monkey-patching pybind11 classes
-    MmgMesh3D.from_pyvista = classmethod(_mmg3d_from_pyvista)  # type: ignore[attr-defined]
-    MmgMesh2D.from_pyvista = classmethod(_mmg2d_from_pyvista)  # type: ignore[attr-defined]
-    MmgMeshS.from_pyvista = classmethod(_mmgs_from_pyvista)  # type: ignore[attr-defined]
+    # Add classmethods
+    add_method(MmgMesh3D, "from_pyvista", classmethod(_mmg3d_from_pyvista))
+    add_method(MmgMesh2D, "from_pyvista", classmethod(_mmg2d_from_pyvista))
+    add_method(MmgMeshS, "from_pyvista", classmethod(_mmgs_from_pyvista))
 
     # Add instance methods
-    MmgMesh3D.to_pyvista = _mmg3d_to_pyvista_method  # type: ignore[attr-defined]
-    MmgMesh2D.to_pyvista = _mmg2d_to_pyvista_method  # type: ignore[attr-defined]
-    MmgMeshS.to_pyvista = _mmgs_to_pyvista_method  # type: ignore[attr-defined]
+    add_method(MmgMesh3D, "to_pyvista", _mmg3d_to_pyvista_method)
+    add_method(MmgMesh2D, "to_pyvista", _mmg2d_to_pyvista_method)
+    add_method(MmgMeshS, "to_pyvista", _mmgs_to_pyvista_method)
 
     # Add plot() method and vtk property to all mesh classes
     for mesh_class in (MmgMesh3D, MmgMesh2D, MmgMeshS):
-        mesh_class.plot = _plot_mesh  # type: ignore[attr-defined]
-        mesh_class.vtk = property(_vtk_property)  # type: ignore[attr-defined]
+        add_method(mesh_class, "plot", _plot_mesh)
+        add_method(mesh_class, "vtk", property(_vtk_property))
 
 
 __all__ = ["add_pyvista_methods", "from_pyvista", "to_pyvista"]

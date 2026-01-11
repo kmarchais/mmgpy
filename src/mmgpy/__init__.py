@@ -468,6 +468,7 @@ def _verify_rpath_fix_linux(  # pragma: no cover
 
 
 from . import interactive, lagrangian, metrics, progress, sizing
+from ._extensions import add_method, replace_method
 from ._io import read
 from ._mesh import Mesh, MeshCheckpoint, MeshKind
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
@@ -490,14 +491,16 @@ add_pyvista_methods()
 def _add_convenience_methods() -> None:
     """Add convenience remeshing methods and wrap remesh() to accept options objects."""
     from collections.abc import Callable  # noqa: PLC0415
-    from typing import Any  # noqa: PLC0415
+    from typing import Any, cast  # noqa: PLC0415
 
     from ._result import RemeshResult  # noqa: PLC0415
 
-    # Wrap remesh() to accept options objects directly
-    _original_remesh_3d = MmgMesh3D.remesh
-    _original_remesh_2d = MmgMesh2D.remesh
-    _original_remesh_s = MmgMeshS.remesh
+    # Store original C++ methods before wrapping. The stub declares the final
+    # wrapped signature (returning RemeshResult), but the originals return dict.
+    # We use cast to tell the type checker the actual runtime signature.
+    _original_remesh_3d: Callable[..., Any] = MmgMesh3D.remesh
+    _original_remesh_2d: Callable[..., Any] = MmgMesh2D.remesh
+    _original_remesh_s: Callable[..., Any] = MmgMeshS.remesh
 
     # Map mesh types to their expected options types
     _options_type_map: dict[type, type] = {
@@ -527,7 +530,7 @@ def _add_convenience_methods() -> None:
         )
 
     def _make_remesh_wrapper(
-        original_remesh: Callable[..., dict[str, Any]],
+        original_remesh: Callable[..., Any],
     ) -> Callable[..., RemeshResult]:
         def _wrapped_remesh(
             self: MmgMesh3D | MmgMesh2D | MmgMeshS,
@@ -556,15 +559,15 @@ def _add_convenience_methods() -> None:
 
         return _wrapped_remesh
 
-    MmgMesh3D.remesh = _make_remesh_wrapper(_original_remesh_3d)  # type: ignore[method-assign]
-    MmgMesh2D.remesh = _make_remesh_wrapper(_original_remesh_2d)  # type: ignore[method-assign]
-    MmgMeshS.remesh = _make_remesh_wrapper(_original_remesh_s)  # type: ignore[method-assign]
+    replace_method(MmgMesh3D, "remesh", _make_remesh_wrapper(_original_remesh_3d))
+    replace_method(MmgMesh2D, "remesh", _make_remesh_wrapper(_original_remesh_2d))
+    replace_method(MmgMeshS, "remesh", _make_remesh_wrapper(_original_remesh_s))
 
     # Wrap remesh_lagrangian and remesh_levelset to return RemeshResult
 
     # Store original C++ methods for 3D (returns dict, not RemeshResult)
-    _original_remesh_lagrangian_3d = MmgMesh3D.remesh_lagrangian
-    _original_remesh_levelset_3d = MmgMesh3D.remesh_levelset
+    _original_remesh_lagrangian_3d: Callable[..., Any] = MmgMesh3D.remesh_lagrangian
+    _original_remesh_levelset_3d: Callable[..., Any] = MmgMesh3D.remesh_levelset
 
     def _wrapped_remesh_lagrangian_3d(
         self: MmgMesh3D,
@@ -572,7 +575,7 @@ def _add_convenience_methods() -> None:
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         stats = _original_remesh_lagrangian_3d(self, displacement, **kwargs)
-        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(cast("dict[str, Any]", stats))
 
     def _wrapped_remesh_levelset_3d(
         self: MmgMesh3D,
@@ -580,14 +583,14 @@ def _add_convenience_methods() -> None:
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         stats = _original_remesh_levelset_3d(self, levelset, **kwargs)
-        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(cast("dict[str, Any]", stats))
 
-    MmgMesh3D.remesh_lagrangian = _wrapped_remesh_lagrangian_3d  # type: ignore[method-assign]
-    MmgMesh3D.remesh_levelset = _wrapped_remesh_levelset_3d  # type: ignore[method-assign]
+    replace_method(MmgMesh3D, "remesh_lagrangian", _wrapped_remesh_lagrangian_3d)
+    replace_method(MmgMesh3D, "remesh_levelset", _wrapped_remesh_levelset_3d)
 
     # Store original C++ methods for 2D (returns dict, not RemeshResult)
-    _original_remesh_lagrangian_2d = MmgMesh2D.remesh_lagrangian
-    _original_remesh_levelset_2d = MmgMesh2D.remesh_levelset
+    _original_remesh_lagrangian_2d: Callable[..., Any] = MmgMesh2D.remesh_lagrangian
+    _original_remesh_levelset_2d: Callable[..., Any] = MmgMesh2D.remesh_levelset
 
     def _wrapped_remesh_lagrangian_2d(
         self: MmgMesh2D,
@@ -595,7 +598,7 @@ def _add_convenience_methods() -> None:
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         stats = _original_remesh_lagrangian_2d(self, displacement, **kwargs)
-        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(cast("dict[str, Any]", stats))
 
     def _wrapped_remesh_levelset_2d(
         self: MmgMesh2D,
@@ -603,13 +606,13 @@ def _add_convenience_methods() -> None:
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         stats = _original_remesh_levelset_2d(self, levelset, **kwargs)
-        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(cast("dict[str, Any]", stats))
 
-    MmgMesh2D.remesh_lagrangian = _wrapped_remesh_lagrangian_2d  # type: ignore[method-assign]
-    MmgMesh2D.remesh_levelset = _wrapped_remesh_levelset_2d  # type: ignore[method-assign]
+    replace_method(MmgMesh2D, "remesh_lagrangian", _wrapped_remesh_lagrangian_2d)
+    replace_method(MmgMesh2D, "remesh_levelset", _wrapped_remesh_levelset_2d)
 
     # Store original C++ method for surface (no lagrangian for MMGS)
-    _original_remesh_levelset_s = MmgMeshS.remesh_levelset
+    _original_remesh_levelset_s: Callable[..., Any] = MmgMeshS.remesh_levelset
 
     def _wrapped_remesh_levelset_s(
         self: MmgMeshS,
@@ -617,9 +620,9 @@ def _add_convenience_methods() -> None:
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         stats = _original_remesh_levelset_s(self, levelset, **kwargs)
-        return _dict_to_remesh_result(stats)  # type: ignore[arg-type]
+        return _dict_to_remesh_result(cast("dict[str, Any]", stats))
 
-    MmgMeshS.remesh_levelset = _wrapped_remesh_levelset_s  # type: ignore[method-assign]
+    replace_method(MmgMeshS, "remesh_levelset", _wrapped_remesh_levelset_s)
 
     def _remesh_optimize(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
@@ -642,10 +645,11 @@ def _add_convenience_methods() -> None:
             Statistics from the remeshing operation.
 
         """
-        opts: dict[str, int] = {"optim": 1, "noinsert": 1}
+        opts: dict[str, int | float] = {"optim": 1, "noinsert": 1}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(**opts)  # type: ignore[arg-type, return-value]
+        # Type checker can't narrow union types when calling with **kwargs
+        return self.remesh(**opts)  # type: ignore[arg-type]
 
     def _remesh_uniform(
         self: MmgMesh3D | MmgMesh2D | MmgMeshS,
@@ -668,19 +672,20 @@ def _add_convenience_methods() -> None:
             Statistics from the remeshing operation.
 
         """
-        opts: dict[str, float | int] = {"hsiz": size}
+        opts: dict[str, int | float] = {"hsiz": size}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(**opts)  # type: ignore[arg-type, return-value]
+        # Type checker can't narrow union types when calling with **kwargs
+        return self.remesh(**opts)  # type: ignore[arg-type]
 
-    MmgMesh3D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
-    MmgMesh3D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+    add_method(MmgMesh3D, "remesh_optimize", _remesh_optimize)
+    add_method(MmgMesh3D, "remesh_uniform", _remesh_uniform)
 
-    MmgMesh2D.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
-    MmgMesh2D.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+    add_method(MmgMesh2D, "remesh_optimize", _remesh_optimize)
+    add_method(MmgMesh2D, "remesh_uniform", _remesh_uniform)
 
-    MmgMeshS.remesh_optimize = _remesh_optimize  # type: ignore[attr-defined]
-    MmgMeshS.remesh_uniform = _remesh_uniform  # type: ignore[attr-defined]
+    add_method(MmgMeshS, "remesh_optimize", _remesh_optimize)
+    add_method(MmgMeshS, "remesh_uniform", _remesh_uniform)
 
 
 _add_convenience_methods()
@@ -695,6 +700,7 @@ _sizing_mesh_refs: dict[int, "_weakref.ref[MmgMesh3D | MmgMesh2D | MmgMeshS]"] =
 def _add_sizing_methods() -> None:
     """Add local sizing methods to mesh classes."""
     from collections.abc import Sequence  # noqa: PLC0415
+    from typing import cast  # noqa: PLC0415
 
     import numpy as np  # noqa: PLC0415
     from numpy.typing import NDArray  # noqa: PLC0415
@@ -925,44 +931,46 @@ def _add_sizing_methods() -> None:
             apply_sizing_constraints(self, constraints, existing_metric)
 
     # Add methods to all mesh classes
-    MmgMesh3D.set_size_sphere = _set_size_sphere  # type: ignore[attr-defined]
-    MmgMesh3D.set_size_box = _set_size_box  # type: ignore[attr-defined]
-    MmgMesh3D.set_size_cylinder = _set_size_cylinder  # type: ignore[attr-defined]
-    MmgMesh3D.set_size_from_point = _set_size_from_point  # type: ignore[attr-defined]
-    MmgMesh3D.clear_local_sizing = _clear_local_sizing  # type: ignore[attr-defined]
-    MmgMesh3D.get_local_sizing_count = _get_local_sizing_count  # type: ignore[attr-defined]
-    MmgMesh3D.apply_local_sizing = _apply_local_sizing  # type: ignore[attr-defined]
+    add_method(MmgMesh3D, "set_size_sphere", _set_size_sphere)
+    add_method(MmgMesh3D, "set_size_box", _set_size_box)
+    add_method(MmgMesh3D, "set_size_cylinder", _set_size_cylinder)
+    add_method(MmgMesh3D, "set_size_from_point", _set_size_from_point)
+    add_method(MmgMesh3D, "clear_local_sizing", _clear_local_sizing)
+    add_method(MmgMesh3D, "get_local_sizing_count", _get_local_sizing_count)
+    add_method(MmgMesh3D, "apply_local_sizing", _apply_local_sizing)
 
-    MmgMesh2D.set_size_sphere = _set_size_sphere  # type: ignore[attr-defined]
-    MmgMesh2D.set_size_box = _set_size_box  # type: ignore[attr-defined]
-    MmgMesh2D.set_size_from_point = _set_size_from_point  # type: ignore[attr-defined]
-    MmgMesh2D.clear_local_sizing = _clear_local_sizing  # type: ignore[attr-defined]
-    MmgMesh2D.get_local_sizing_count = _get_local_sizing_count  # type: ignore[attr-defined]
-    MmgMesh2D.apply_local_sizing = _apply_local_sizing  # type: ignore[attr-defined]
+    add_method(MmgMesh2D, "set_size_sphere", _set_size_sphere)
+    add_method(MmgMesh2D, "set_size_box", _set_size_box)
+    add_method(MmgMesh2D, "set_size_from_point", _set_size_from_point)
+    add_method(MmgMesh2D, "clear_local_sizing", _clear_local_sizing)
+    add_method(MmgMesh2D, "get_local_sizing_count", _get_local_sizing_count)
+    add_method(MmgMesh2D, "apply_local_sizing", _apply_local_sizing)
 
-    MmgMeshS.set_size_sphere = _set_size_sphere  # type: ignore[attr-defined]
-    MmgMeshS.set_size_box = _set_size_box  # type: ignore[attr-defined]
-    MmgMeshS.set_size_cylinder = _set_size_cylinder  # type: ignore[attr-defined]
-    MmgMeshS.set_size_from_point = _set_size_from_point  # type: ignore[attr-defined]
-    MmgMeshS.clear_local_sizing = _clear_local_sizing  # type: ignore[attr-defined]
-    MmgMeshS.get_local_sizing_count = _get_local_sizing_count  # type: ignore[attr-defined]
-    MmgMeshS.apply_local_sizing = _apply_local_sizing  # type: ignore[attr-defined]
+    add_method(MmgMeshS, "set_size_sphere", _set_size_sphere)
+    add_method(MmgMeshS, "set_size_box", _set_size_box)
+    add_method(MmgMeshS, "set_size_cylinder", _set_size_cylinder)
+    add_method(MmgMeshS, "set_size_from_point", _set_size_from_point)
+    add_method(MmgMeshS, "clear_local_sizing", _clear_local_sizing)
+    add_method(MmgMeshS, "get_local_sizing_count", _get_local_sizing_count)
+    add_method(MmgMeshS, "apply_local_sizing", _apply_local_sizing)
 
     # Add sizing methods to unified Mesh class (delegate to _impl)
+    # The Mesh._impl already has these methods added above, so we can call them
+    # The typing is handled by having these methods defined in _mesh.py
     def _mesh_set_size_sphere(
         self: Mesh,
         center: Sequence[float] | NDArray[np.float64],
         radius: float,
         size: float,
     ) -> None:
-        self._impl.set_size_sphere(center, radius, size)  # type: ignore[attr-defined]
+        _set_size_sphere(self._impl, center, radius, size)
 
     def _mesh_set_size_box(
         self: Mesh,
         bounds: Sequence[Sequence[float]] | NDArray[np.float64],
         size: float,
     ) -> None:
-        self._impl.set_size_box(bounds, size)  # type: ignore[attr-defined]
+        _set_size_box(self._impl, bounds, size)
 
     def _mesh_set_size_cylinder(
         self: Mesh,
@@ -977,7 +985,9 @@ def _add_sizing_methods() -> None:
         if self.kind == MeshKind.TRIANGULAR_2D:
             msg = "set_size_cylinder() is not available for TRIANGULAR_2D meshes"
             raise TypeError(msg)
-        self._impl.set_size_cylinder(point1, point2, radius, size)  # type: ignore[attr-defined]
+        # Type narrowing: after the check, _impl is MmgMesh3D | MmgMeshS
+        impl = cast("MmgMesh3D | MmgMeshS", self._impl)
+        _set_size_cylinder(impl, point1, point2, radius, size)
 
     def _mesh_set_size_from_point(
         self: Mesh,
@@ -986,29 +996,24 @@ def _add_sizing_methods() -> None:
         far_size: float,
         influence_radius: float,
     ) -> None:
-        self._impl.set_size_from_point(  # type: ignore[attr-defined]
-            point,
-            near_size,
-            far_size,
-            influence_radius,
-        )
+        _set_size_from_point(self._impl, point, near_size, far_size, influence_radius)
 
     def _mesh_clear_local_sizing(self: Mesh) -> None:
-        self._impl.clear_local_sizing()  # type: ignore[attr-defined]
+        _clear_local_sizing(self._impl)
 
     def _mesh_get_local_sizing_count(self: Mesh) -> int:
-        return self._impl.get_local_sizing_count()  # type: ignore[attr-defined]
+        return _get_local_sizing_count(self._impl)
 
     def _mesh_apply_local_sizing(self: Mesh) -> None:
-        self._impl.apply_local_sizing()  # type: ignore[attr-defined]
+        _apply_local_sizing(self._impl)
 
-    Mesh.set_size_sphere = _mesh_set_size_sphere  # type: ignore[attr-defined]
-    Mesh.set_size_box = _mesh_set_size_box  # type: ignore[attr-defined]
-    Mesh.set_size_cylinder = _mesh_set_size_cylinder  # type: ignore[attr-defined]
-    Mesh.set_size_from_point = _mesh_set_size_from_point  # type: ignore[attr-defined]
-    Mesh.clear_local_sizing = _mesh_clear_local_sizing  # type: ignore[attr-defined]
-    Mesh.get_local_sizing_count = _mesh_get_local_sizing_count  # type: ignore[attr-defined]
-    Mesh.apply_local_sizing = _mesh_apply_local_sizing  # type: ignore[attr-defined]
+    add_method(Mesh, "set_size_sphere", _mesh_set_size_sphere)
+    add_method(Mesh, "set_size_box", _mesh_set_size_box)
+    add_method(Mesh, "set_size_cylinder", _mesh_set_size_cylinder)
+    add_method(Mesh, "set_size_from_point", _mesh_set_size_from_point)
+    add_method(Mesh, "clear_local_sizing", _mesh_clear_local_sizing)
+    add_method(Mesh, "get_local_sizing_count", _mesh_get_local_sizing_count)
+    add_method(Mesh, "apply_local_sizing", _mesh_apply_local_sizing)
 
 
 _add_sizing_methods()
@@ -1036,14 +1041,14 @@ def _wrap_remesh_with_sizing() -> None:
             # Apply sizing constraints before remeshing
             constraints = _sizing_constraints_store.get(id(self))
             if constraints:
-                self.apply_local_sizing()  # type: ignore[attr-defined]
+                self.apply_local_sizing()
             return wrapped_remesh(self, *args, **kwargs)
 
         return _sizing_remesh
 
-    MmgMesh3D.remesh = _make_sizing_wrapper(_sizing_aware_remesh_3d)  # type: ignore[method-assign]
-    MmgMesh2D.remesh = _make_sizing_wrapper(_sizing_aware_remesh_2d)  # type: ignore[method-assign]
-    MmgMeshS.remesh = _make_sizing_wrapper(_sizing_aware_remesh_s)  # type: ignore[method-assign]
+    replace_method(MmgMesh3D, "remesh", _make_sizing_wrapper(_sizing_aware_remesh_3d))
+    replace_method(MmgMesh2D, "remesh", _make_sizing_wrapper(_sizing_aware_remesh_2d))
+    replace_method(MmgMeshS, "remesh", _make_sizing_wrapper(_sizing_aware_remesh_s))
 
 
 _wrap_remesh_with_sizing()
@@ -1150,9 +1155,9 @@ def _add_validation_methods() -> None:
 
         return _validate
 
-    MmgMesh3D.validate = _make_validate_method(validate_mesh_3d)  # type: ignore[attr-defined]
-    MmgMesh2D.validate = _make_validate_method(validate_mesh_2d)  # type: ignore[attr-defined]
-    MmgMeshS.validate = _make_validate_method(validate_mesh_surface)  # type: ignore[attr-defined]
+    add_method(MmgMesh3D, "validate", _make_validate_method(validate_mesh_3d))
+    add_method(MmgMesh2D, "validate", _make_validate_method(validate_mesh_2d))
+    add_method(MmgMeshS, "validate", _make_validate_method(validate_mesh_surface))
 
 
 _add_validation_methods()
@@ -1208,9 +1213,9 @@ def _add_interactive_methods() -> None:
         editor.run()
         editor.apply_to_mesh()
 
-    MmgMesh3D.edit_sizing = _edit_sizing  # type: ignore[attr-defined]
-    MmgMesh2D.edit_sizing = _edit_sizing  # type: ignore[attr-defined]
-    MmgMeshS.edit_sizing = _edit_sizing  # type: ignore[attr-defined]
+    add_method(MmgMesh3D, "edit_sizing", _edit_sizing)
+    add_method(MmgMesh2D, "edit_sizing", _edit_sizing)
+    add_method(MmgMeshS, "edit_sizing", _edit_sizing)
 
     # Also add to unified Mesh class
     def _mesh_edit_sizing(
@@ -1235,13 +1240,14 @@ def _add_interactive_methods() -> None:
             Default radius for sphere and cylinder constraints.
 
         """
-        self._impl.edit_sizing(  # type: ignore[attr-defined]
+        _edit_sizing(
+            self._impl,
             mode=mode,
             default_size=default_size,
             default_radius=default_radius,
         )
 
-    Mesh.edit_sizing = _mesh_edit_sizing  # type: ignore[attr-defined]
+    add_method(Mesh, "edit_sizing", _mesh_edit_sizing)
 
 
 _add_interactive_methods()
