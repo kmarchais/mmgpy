@@ -7,12 +7,52 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 #include "mmg/mmg3d/libmmg3d.h"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+// Cross-platform stderr capture for MMG warning collection.
+// MMG outputs warnings to stderr (via fprintf), so we need to capture
+// at the file descriptor level rather than C++ stream level.
+class StderrCapture {
+public:
+  StderrCapture();
+  ~StderrCapture();
+
+  // Non-copyable
+  StderrCapture(const StderrCapture &) = delete;
+  StderrCapture &operator=(const StderrCapture &) = delete;
+
+  // Get all captured output
+  std::string get() const;
+
+private:
+  void start_capture();
+  void stop_capture();
+
+  int original_stderr_fd;
+  int pipe_read_fd;
+  int pipe_write_fd;
+  bool capturing;
+  std::string captured_output;
+
+#ifdef _WIN32
+  static constexpr int INVALID_FD = -1;
+#else
+  static constexpr int INVALID_FD = -1;
+#endif
+};
+
+// Parse MMG warning messages from captured stderr output.
+// Looks for patterns:
+// - "## Warning: ..."
+// - " ** WARNING: ..."
+// - "MMG5_warning: ..."
+std::vector<std::string> parse_mmg_warnings(const std::string &output);
 
 template <typename T>
 T safe_cast(const py::handle &obj, const std::string &param_name) {
@@ -68,6 +108,7 @@ py::dict merge_options_with_default(const py::dict &options, const char *key,
 // Build the remesh result dictionary from before/after stats
 py::dict build_remesh_result(const RemeshStats &before,
                              const RemeshStats &after, double duration_seconds,
-                             int return_code);
+                             int return_code,
+                             const std::vector<std::string> &warnings = {});
 
 #endif // MMG_COMMON_HPP

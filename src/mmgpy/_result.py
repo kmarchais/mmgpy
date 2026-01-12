@@ -42,8 +42,9 @@ class RemeshResult:
         Wall-clock time for the remeshing operation in seconds.
         Measures only the MMG library call, excluding stats collection overhead.
     warnings : tuple[str, ...]
-        Any warnings from MMG (non-fatal issues). Currently always empty;
-        reserved for future implementation to capture MMG warning messages.
+        Any warnings from MMG (non-fatal issues). Contains warning messages
+        captured from MMG's stderr output during remeshing. Common warnings
+        include edge size clamping, geometric constraint violations, etc.
     return_code : int
         MMG return code (0 = success). Note: If remeshing fails, an exception
         is raised before RemeshResult is created, so this will always be 0
