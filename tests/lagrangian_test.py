@@ -495,8 +495,8 @@ class TestIntegration:
 class TestMmgMeshSLagrangianNotSupported:
     """Tests for MmgMeshS Lagrangian motion not being supported."""
 
-    def test_remesh_lagrangian_raises_not_implemented(self) -> None:
-        """Test that MmgMeshS.remesh_lagrangian raises NotImplementedError."""
+    def test_remesh_lagrangian_raises_runtime_error(self) -> None:
+        """Test that MmgMeshS.remesh_lagrangian raises RuntimeError."""
         # Create a simple surface mesh (icosahedron)
         t = (1.0 + np.sqrt(5.0)) / 2.0
         vertices = np.array(
@@ -550,7 +550,7 @@ class TestMmgMeshSLagrangianNotSupported:
         displacement[:, 0] = 0.1  # Try to move in x
 
         with pytest.raises(
-            NotImplementedError,
+            RuntimeError,
             match="not supported for surface meshes",
         ):
             mesh.remesh_lagrangian(displacement)
@@ -566,7 +566,7 @@ class TestMmgMeshSLagrangianNotSupported:
         mesh = MmgMeshS(vertices, triangles)
         displacement = np.zeros((3, 3), dtype=np.float64)
 
-        with pytest.raises(NotImplementedError) as exc_info:
+        with pytest.raises(RuntimeError) as exc_info:
             mesh.remesh_lagrangian(displacement)
 
         error_msg = str(exc_info.value)

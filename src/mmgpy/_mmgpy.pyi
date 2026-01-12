@@ -2067,7 +2067,7 @@ class MmgMeshS:
         displacement: NDArray[np.float64],
         **kwargs: float | None,
     ) -> None:
-        """Not implemented - raises NotImplementedError.
+        """Not supported - raises RuntimeError.
 
         Lagrangian motion is not supported for surface meshes (MmgMeshS).
 
@@ -2082,13 +2082,13 @@ class MmgMeshS:
         Parameters
         ----------
         displacement : NDArray[np.float64]
-            Not used - raises NotImplementedError immediately.
+            Not used - raises RuntimeError immediately.
         **kwargs : float | None
-            Not used - raises NotImplementedError immediately.
+            Not used - raises RuntimeError immediately.
 
         Raises
         ------
-        NotImplementedError
+        RuntimeError
             Always raised - Lagrangian motion is not supported for surface meshes.
 
         """

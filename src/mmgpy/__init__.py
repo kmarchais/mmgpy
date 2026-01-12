@@ -195,7 +195,6 @@ def _run_mmg() -> None:  # pragma: no cover
 from . import interactive, lagrangian, metrics, progress, repair, sizing
 from ._io import read
 from ._mesh import Mesh, MeshCheckpoint, MeshKind
-from ._mmgpy import MmgMeshS  # type: ignore[attr-defined]
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import CancellationError, ProgressEvent, rich_progress
 from ._pyvista import from_pyvista, to_pyvista
@@ -208,43 +207,6 @@ from ._validation import (
     ValidationReport,
 )
 from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
-
-
-def _mmgmeshs_remesh_lagrangian_not_supported(
-    self: MmgMeshS,
-    *args,  # noqa: ANN002
-    **kwargs,  # noqa: ANN003
-) -> None:
-    """Raise NotImplementedError - Lagrangian motion not supported for surface meshes.
-
-    MMGS (surface mesh remeshing) does not support Lagrangian motion because:
-
-    1. Lagrangian motion requires solving elasticity PDEs via the ELAS library
-       to propagate boundary displacements to interior vertices
-    2. Surface meshes have no volumetric interior - all vertices are on the surface
-    3. The ELAS library supports 2D/3D elasticity but not shell/membrane elasticity
-
-    For moving surface mesh vertices, use `mmgpy.move_mesh()` instead:
-
-        >>> import mmgpy
-        >>> mesh = mmgpy.MmgMeshS(vertices, triangles)
-        >>> mmgpy.move_mesh(mesh, displacement, hausd=0.01)
-
-    """
-    msg = (
-        "Lagrangian motion is not supported for surface meshes (MmgMeshS).\n\n"
-        "Reason: Lagrangian motion requires solving elasticity PDEs to propagate\n"
-        "boundary displacements to interior vertices. Surface meshes have no\n"
-        "volumetric interior - the ELAS library only supports 2D/3D elasticity,\n"
-        "not shell/membrane elasticity needed for surfaces.\n\n"
-        "Alternative: Use mmgpy.move_mesh() to move vertices and remesh:\n"
-        "    mmgpy.move_mesh(mesh, displacement, hausd=0.01)"
-    )
-    raise NotImplementedError(msg)
-
-
-MmgMeshS.remesh_lagrangian = _mmgmeshs_remesh_lagrangian_not_supported  # type: ignore[method-assign]
-
 from .sizing import (
     BoxSize,
     CylinderSize,
