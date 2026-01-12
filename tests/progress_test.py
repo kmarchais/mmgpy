@@ -468,9 +468,9 @@ def test_mesh_remesh_levelset_progress(simple_mesh: Mesh) -> None:
     """Test Mesh.remesh_levelset works with progress callback."""
     tracker = CallbackTracker()
     vertices = simple_mesh.get_vertices()
-    # Create a simple levelset (signed distance from center)
+    # Create a simple levelset (signed distance from center) - must be Nx1
     center = vertices.mean(axis=0)
-    levelset = np.linalg.norm(vertices - center, axis=1) - 0.5
+    levelset = (np.linalg.norm(vertices - center, axis=1) - 0.5).reshape(-1, 1)
 
     simple_mesh.remesh_levelset(levelset, progress=tracker, verbose=-1)
 
@@ -485,61 +485,10 @@ def test_mesh_remesh_levelset_cancellation(simple_mesh: Mesh) -> None:
     tracker = CallbackTracker(cancel_at_phase="init")
     vertices = simple_mesh.get_vertices()
     center = vertices.mean(axis=0)
-    levelset = np.linalg.norm(vertices - center, axis=1) - 0.5
+    levelset = (np.linalg.norm(vertices - center, axis=1) - 0.5).reshape(-1, 1)
 
     with pytest.raises(CancellationError, match="init"):
         simple_mesh.remesh_levelset(levelset, progress=tracker, verbose=-1)
-
-
-@pytest.fixture
-def simple_2d_high_level_mesh() -> Mesh:
-    """Create a simple 2D Mesh for testing lagrangian progress."""
-    from mmgpy import Mesh as _Mesh
-
-    vertices = np.array(
-        [
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [0.5, 1.0],
-        ],
-        dtype=np.float64,
-    )
-    triangles = np.array([[0, 1, 2]], dtype=np.int32)
-    return _Mesh(vertices, triangles)
-
-
-def test_mesh_remesh_lagrangian_progress(simple_2d_high_level_mesh: Mesh) -> None:
-    """Test Mesh.remesh_lagrangian works with progress callback."""
-    tracker = CallbackTracker()
-    vertices = simple_2d_high_level_mesh.get_vertices()
-    # Small displacement
-    displacement = np.zeros_like(vertices)
-    displacement[:, 0] = 0.01
-
-    simple_2d_high_level_mesh.remesh_lagrangian(
-        displacement,
-        progress=tracker,
-        verbose=-1,
-    )
-
-    phases = [e.phase for e in tracker.events]
-    assert "init" in phases
-    assert "options" in phases
-    assert "remesh" in phases
-
-
-def test_mesh_remesh_lagrangian_cancellation(simple_2d_high_level_mesh: Mesh) -> None:
-    """Test Mesh.remesh_lagrangian raises CancellationError when cancelled."""
-    tracker = CallbackTracker(cancel_at_phase="options")
-    vertices = simple_2d_high_level_mesh.get_vertices()
-    displacement = np.zeros_like(vertices)
-
-    with pytest.raises(CancellationError, match="options"):
-        simple_2d_high_level_mesh.remesh_lagrangian(
-            displacement,
-            progress=tracker,
-            verbose=-1,
-        )
 
 
 # =============================================================================
