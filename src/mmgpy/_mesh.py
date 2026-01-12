@@ -273,7 +273,11 @@ class MeshCheckpoint:
     -----
     The checkpoint stores a complete copy of the mesh data including vertices,
     elements, reference markers, and solution fields (metric, displacement,
-    levelset, tensor). For large meshes, this may consume significant memory.
+    levelset). For large meshes, this may consume significant memory.
+
+    Note: The tensor field is not saved because it shares memory with metric
+    in MMG's internal representation. Only one of metric or tensor can be
+    set at a time.
 
     Examples
     --------
@@ -1892,9 +1896,12 @@ class Mesh:
         Notes
         -----
         The checkpoint stores a complete copy of the mesh data including
-        vertices, elements, reference markers, and any solution fields
-        (metric, displacement, levelset, tensor). For large meshes, this
-        may consume significant memory.
+        vertices, elements, reference markers, and solution fields
+        (metric, displacement, levelset). For large meshes, this may
+        consume significant memory.
+
+        Note: The tensor field is not saved because it shares memory with
+        metric in MMG's internal representation.
 
         Examples
         --------
@@ -1922,13 +1929,13 @@ class Mesh:
             impl_3d = cast("MmgMesh3D", self._impl)
             tetrahedra, tetrahedra_refs = impl_3d.get_tetrahedra_with_refs()
 
-        # Save metric field if set (the primary sizing field for remeshing)
-        # Note: We only save metric because other fields (tensor, levelset,
-        # displacement) can have memory overlap issues in MMG when restored.
+        # Save solution fields (metric, displacement, levelset)
+        # Note: tensor is not saved because it shares memory with metric in MMG
         fields: dict[str, NDArray[np.float64]] = {}
-        metric_data = self._try_get_field("metric")
-        if metric_data is not None:
-            fields["metric"] = metric_data.copy()
+        for field_name in ("metric", "displacement", "levelset"):
+            field_data = self._try_get_field(field_name)
+            if field_data is not None:
+                fields[field_name] = field_data.copy()
 
         return MeshCheckpoint(
             _mesh=self,
