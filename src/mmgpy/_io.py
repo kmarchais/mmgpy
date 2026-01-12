@@ -92,7 +92,8 @@ def _has_non_triangle_cells(mesh: meshio.Mesh) -> bool:
 
 def _meshio_to_pyvista_polydata(mesh: meshio.Mesh) -> pv.PolyData:
     """Convert meshio mesh to PyVista PolyData for triangulation."""
-    points = mesh.points
+    # Ensure points are in native byte order (meshio may use big-endian)
+    points = np.ascontiguousarray(mesh.points, dtype=np.float64)
     cells = []
     for block in mesh.cells:
         if block.type in _SURFACE_CELL_TYPES:

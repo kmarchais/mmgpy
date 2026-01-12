@@ -66,6 +66,47 @@ def quad_mesh_file(tmp_path_factory: TempPathFactory) -> Path:
     return mesh_path
 
 
+@pytest.fixture
+def mixed_cells_mesh_file(tmp_path_factory: TempPathFactory) -> Path:
+    """Create mesh file with quads AND non-surface cells (edges)."""
+    import meshio
+
+    tmp_dir = tmp_path_factory.mktemp("mixed_mesh")
+    mesh_path = tmp_dir / "mixed.vtk"
+    # Create a 3x3 grid of quads (9 quads = 18 triangles after triangulation)
+    points = np.array([[i, j, 1.0] for j in range(4) for i in range(4)], dtype=float)
+
+    quads = []
+    for j in range(3):
+        for i in range(3):
+            p0 = j * 4 + i
+            p1 = p0 + 1
+            p2 = p1 + 4
+            p3 = p0 + 4
+            quads.append([p0, p1, p2, p3])
+    quads = np.array(quads)
+
+    cells = [
+        ("quad", quads),
+        ("line", np.array([[0, 1], [1, 2]])),  # Non-surface cells
+    ]
+    meshio.Mesh(points, cells).write(mesh_path)
+    return mesh_path
+
+
+@pytest.fixture
+def no_surface_cells_mesh_file(tmp_path_factory: TempPathFactory) -> Path:
+    """Create mesh file with ONLY non-surface cells (lines)."""
+    import meshio
+
+    tmp_dir = tmp_path_factory.mktemp("no_surface")
+    mesh_path = tmp_dir / "lines_only.vtk"
+    points = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype=float)
+    cells = [("line", np.array([[0, 1], [1, 2]]))]
+    meshio.Mesh(points, cells).write(mesh_path)
+    return mesh_path
+
+
 class TestPyVistaTriangulation:
     """Tests for PyVista mesh triangulation."""
 
@@ -135,6 +176,33 @@ class TestFileTriangulation:
         with caplog.at_level(logging.WARNING, logger="mmgpy"):
             mmgpy.read(quad_mesh_file)
         assert "non-triangular elements" in caplog.text
+
+    def test_mixed_cells_mesh_triangulated(self, mixed_cells_mesh_file: Path) -> None:
+        """Test mesh with mixed surface and non-surface cells is triangulated."""
+        mesh = mmgpy.read(mixed_cells_mesh_file)
+        triangles = mesh.get_triangles()
+        assert triangles.shape[1] == 3
+        assert len(triangles) == 18  # 9 quads become 18 triangles
+
+    def test_no_surface_cells_raises_error(
+        self,
+        no_surface_cells_mesh_file: Path,
+    ) -> None:
+        """Test that mesh with no surface cells raises ValueError."""
+        with pytest.raises(ValueError, match="Cannot determine mesh kind"):
+            mmgpy.read(no_surface_cells_mesh_file)
+
+    def test_meshio_to_pyvista_no_surface_cells(self) -> None:
+        """Test _meshio_to_pyvista_polydata raises error when no surface cells."""
+        import meshio
+
+        from mmgpy._io import _meshio_to_pyvista_polydata
+
+        # Create mesh with only line cells (no surface cells)
+        points = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype=float)
+        mesh = meshio.Mesh(points, [("line", np.array([[0, 1], [1, 2]]))])
+        with pytest.raises(ValueError, match="No surface cells"):
+            _meshio_to_pyvista_polydata(mesh)
 
 
 class TestRemeshingWithTriangulation:
