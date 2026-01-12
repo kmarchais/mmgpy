@@ -2107,3 +2107,74 @@ class MmgMeshS:
             Statistics dictionary with before/after metrics.
 
         """
+
+    def remesh_lagrangian(
+        self,
+        displacement: NDArray[np.float64],
+        *,
+        boundary_mask: NDArray[np.bool_] | None = None,
+        propagate: bool = True,
+        n_steps: int = 1,
+        hmin: float | None = None,
+        hmax: float | None = None,
+        hsiz: float | None = None,
+        hausd: float | None = None,
+        hgrad: float | None = None,
+        verbose: int | bool | None = None,
+        **kwargs: float | bool | None,
+    ) -> dict[str, Any]:
+        """Remesh following Lagrangian motion (Python implementation).
+
+        Since MMGS does not natively support Lagrangian motion, this method
+        provides an equivalent capability using a pure Python implementation
+        with Laplacian smoothing for displacement propagation and standard
+        MMGS remeshing for quality maintenance.
+
+        This method is added for API consistency with MmgMesh3D and MmgMesh2D.
+
+        Parameters
+        ----------
+        displacement : NDArray[np.float64]
+            Displacement vectors, shape (n_vertices, 3).
+        boundary_mask : NDArray[np.bool_] | None
+            Optional boolean array indicating which vertices have prescribed
+            displacement. If None, all vertices are displaced directly.
+        propagate : bool
+            If True and boundary_mask is provided, propagate boundary
+            displacement to interior using Laplacian smoothing.
+        n_steps : int
+            Number of incremental steps to apply displacement.
+            Use more steps for large displacements to avoid mesh inversion.
+        hmin : float | None
+            Minimum edge size.
+        hmax : float | None
+            Maximum edge size.
+        hsiz : float | None
+            Uniform target edge size.
+        hausd : float | None
+            Hausdorff distance for geometry approximation.
+        hgrad : float | None
+            Gradation parameter (controls size transition).
+        verbose : int | bool | None
+            Verbosity level. True/False converted to 1/-1.
+        **kwargs : float | int | bool | None
+            Additional MMG options.
+
+        Returns
+        -------
+        dict[str, Any]
+            Statistics dictionary with keys:
+            - before: dict with mesh statistics before remeshing
+            - after: dict with mesh statistics after remeshing
+            - duration: float, time in seconds
+            - return_code: int, 1 for success
+            - warnings: list[str], any warnings
+
+        Note
+        ----
+        Unlike the native MMG3D/MMG2D Lagrangian implementations which use
+        the ELAS library for displacement propagation, this implementation
+        uses Laplacian smoothing. This provides comparable results for
+        smooth displacement fields but may differ for complex deformations.
+
+        """

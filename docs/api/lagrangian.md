@@ -31,6 +31,10 @@ show_root_heading: true
 options:
 show_root_heading: true
 
+::: mmgpy.remesh_lagrangian_surface
+options:
+show_root_heading: true
+
 ## Mesh Method
 
 Meshes have a `remesh_lagrangian()` method for direct use:
@@ -216,6 +220,55 @@ print(f"  Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_afte
 mesh.save("ellipsoid.vtk")
 ```
 
+## Surface Mesh Support
+
+Surface meshes (`MmgMeshS`) now support Lagrangian motion via a Python implementation.
+While MMGS does not natively support Lagrangian motion (unlike MMG3D and MMG2D),
+mmgpy provides equivalent functionality using Laplacian smoothing for displacement
+propagation combined with standard MMGS remeshing.
+
+### Surface Mesh Example
+
+```python
+import mmgpy
+import numpy as np
+
+# Create or load a surface mesh
+mesh = mmgpy.MmgMeshS(vertices, triangles)
+
+# Define displacement (radial expansion)
+center = vertices.mean(axis=0)
+directions = vertices - center
+norms = np.linalg.norm(directions, axis=1, keepdims=True)
+directions = directions / (norms + 1e-10)
+displacement = directions * 0.1  # 10% expansion
+
+# Apply Lagrangian motion
+result = mesh.remesh_lagrangian(
+    displacement,
+    n_steps=2,      # Multiple steps for large deformations
+    hausd=0.01,     # Hausdorff distance for surface approximation
+    verbose=False,
+)
+
+print(f"Vertices: {result['before']['vertices']} -> {result['after']['vertices']}")
+print(f"Quality: {result['before']['quality_mean']:.3f} -> {result['after']['quality_mean']:.3f}")
+```
+
+### API Notes for Surface Meshes
+
+The `MmgMeshS.remesh_lagrangian()` method accepts additional parameters:
+
+- `boundary_mask`: Optional array indicating boundary vertices with prescribed displacement
+- `propagate`: If True (default), propagate boundary displacement to interior using Laplacian smoothing
+- `n_steps`: Number of incremental steps (useful for large displacements)
+
+!!! note "Implementation Note"
+Unlike MmgMesh3D and MmgMesh2D which use MMG's native Lagrangian implementation
+(requiring the ELAS library), MmgMeshS uses a pure Python implementation.
+This provides comparable results for smooth displacement fields but may
+differ for complex deformations.
+
 ## Tips
 
 1. **Small steps**: For large deformations, use multiple small steps
@@ -223,3 +276,4 @@ mesh.save("ellipsoid.vtk")
 3. **Boundary handling**: Use `propagate_displacement` for interior smoothness
 4. **Remesh parameters**: Combine with `hmax`, `hausd` for size control
 5. **Validation**: Validate mesh after each Lagrangian step
+6. **Surface meshes**: Use `n_steps` parameter for smoother deformation on surface meshes

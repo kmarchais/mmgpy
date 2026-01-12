@@ -12,6 +12,7 @@ Key functions:
 
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -387,8 +388,196 @@ def detect_boundary_vertices(
     return boundary_mask
 
 
+# Threshold for near-zero detection in quality computation
+# Well above denormal range (~2e-308) but catches degenerate triangles
+_NEAR_ZERO_THRESHOLD = 1e-30
+
+
+def _compute_triangle_quality(
+    v0: NDArray[np.float64],
+    v1: NDArray[np.float64],
+    v2: NDArray[np.float64],
+) -> float:
+    """Compute triangle quality (ratio to equilateral).
+
+    Uses the standard formula: Q = 4 * sqrt(3) * area / (a^2 + b^2 + c^2).
+
+    Args:
+        v0: First triangle vertex coordinates (3D array).
+        v1: Second triangle vertex coordinates (3D array).
+        v2: Third triangle vertex coordinates (3D array).
+
+    Returns:
+        Quality value in [0, 1], where 1 is equilateral.
+
+    """
+    # Edge vectors
+    e0 = v1 - v0
+    e1 = v2 - v0
+    e2 = v2 - v1
+
+    # Edge lengths squared
+    a2 = np.dot(e0, e0)
+    b2 = np.dot(e1, e1)
+    c2 = np.dot(e2, e2)
+
+    # Area via cross product
+    cross = np.cross(e0, e1)
+    area2 = np.dot(cross, cross)
+
+    if area2 < _NEAR_ZERO_THRESHOLD:
+        return 0.0
+
+    sum_edges = a2 + b2 + c2
+    if sum_edges < _NEAR_ZERO_THRESHOLD:
+        return 0.0
+
+    return 4.0 * np.sqrt(3.0) * np.sqrt(area2) / (2.0 * sum_edges)
+
+
+def _collect_surface_mesh_stats(
+    mesh: MmgMeshS,
+) -> dict[str, Any]:
+    """Collect statistics for a surface mesh.
+
+    Args:
+        mesh: MmgMeshS mesh object.
+
+    Returns:
+        Dictionary with mesh statistics.
+
+    """
+    vertices = mesh.get_vertices()
+    triangles = mesh.get_triangles()
+
+    n_vertices = len(vertices)
+    n_triangles = len(triangles)
+
+    # Try to get edges count
+    try:
+        edges = mesh.get_edges()
+        n_edges = len(edges)
+    except (AttributeError, RuntimeError):
+        n_edges = 0
+
+    # Compute quality statistics
+    qualities = []
+    for tri in triangles:
+        v0, v1, v2 = vertices[tri[0]], vertices[tri[1]], vertices[tri[2]]
+        qualities.append(_compute_triangle_quality(v0, v1, v2))
+
+    qualities_arr = np.array(qualities) if qualities else np.array([0.0])
+
+    return {
+        "vertices": n_vertices,
+        "triangles": n_triangles,
+        "edges": n_edges,
+        "elements": n_triangles,  # Primary elements for surface mesh
+        "quality_min": float(np.min(qualities_arr)),
+        "quality_mean": float(np.mean(qualities_arr)),
+    }
+
+
+def remesh_lagrangian_surface(
+    mesh: MmgMeshS,
+    displacement: NDArray[np.float64],
+    *,
+    boundary_mask: NDArray[np.bool_] | None = None,
+    propagate: bool = True,
+    n_steps: int = 1,
+    **remesh_options: float | bool | None,
+) -> dict[str, Any]:
+    """Perform Lagrangian motion remeshing on a surface mesh.
+
+    Since MMGS (the MMG surface mesh library) does not natively support
+    Lagrangian motion, this function provides an equivalent capability using
+    a pure Python implementation with Laplacian smoothing for displacement
+    propagation and standard MMGS remeshing for quality maintenance.
+
+    This function provides the same API as MmgMesh3D.remesh_lagrangian() and
+    MmgMesh2D.remesh_lagrangian() for consistency across all mesh types.
+
+    Args:
+        mesh: MmgMeshS surface mesh object to modify in-place.
+        displacement: Nx3 array of displacement vectors for each vertex.
+            If boundary_mask is provided and propagate=True, only boundary
+            values need to be correct; interior values will be computed.
+        boundary_mask: Optional boolean array indicating which vertices have
+            prescribed displacement. If None, all vertices are treated as
+            having prescribed displacement (no propagation).
+        propagate: If True and boundary_mask is provided, propagate boundary
+            displacement to interior vertices using Laplacian smoothing.
+            This creates a smooth transition from displaced boundaries.
+        n_steps: Number of incremental steps to apply the displacement.
+            Use more steps (e.g., 5-10) for large displacements to avoid
+            mesh inversion. Each step applies displacement/n_steps and remeshes.
+        **remesh_options: Options passed to mesh.remesh().
+            Common options: hmin, hmax, hsiz, hausd, hgrad, verbose.
+
+    Returns:
+        Statistics dictionary with keys:
+        - before: dict with mesh statistics before remeshing
+        - after: dict with mesh statistics after remeshing
+        - duration: float, time in seconds
+        - return_code: int, 1 for success
+        - warnings: list[str], any warnings (always empty for Python impl)
+
+    Raises:
+        ValueError: If displacement dimensions don't match mesh vertices.
+        RuntimeError: If remeshing fails.
+
+    Note:
+        Unlike the native MMG3D/MMG2D Lagrangian implementations which use
+        the ELAS library for displacement propagation, this implementation
+        uses Laplacian smoothing. This provides comparable results for
+        smooth displacement fields but may differ for complex deformations.
+
+    Example:
+        >>> import numpy as np
+        >>> import mmgpy
+        >>> mesh = mmgpy.MmgMeshS(vertices, triangles)
+        >>> # Define displacement: inflate sphere by 10%
+        >>> vertices = mesh.get_vertices()
+        >>> displacement = 0.1 * vertices  # Radial expansion
+        >>> result = mmgpy.lagrangian.remesh_lagrangian_surface(
+        ...     mesh, displacement, hausd=0.01
+        ... )
+        >>> print(f"Remeshed in {result['duration']:.3f}s")
+
+    """
+    # Collect before stats
+    before = _collect_surface_mesh_stats(mesh)
+
+    start_time = time.perf_counter()
+
+    # Use move_mesh to perform the actual Lagrangian motion
+    move_mesh(
+        mesh,
+        displacement,
+        boundary_mask=boundary_mask,
+        propagate=propagate,
+        n_steps=n_steps,
+        **remesh_options,
+    )
+
+    end_time = time.perf_counter()
+    duration = end_time - start_time
+
+    # Collect after stats
+    after = _collect_surface_mesh_stats(mesh)
+
+    return {
+        "before": before,
+        "after": after,
+        "duration": duration,
+        "return_code": 1,  # Success
+        "warnings": [],  # Python implementation doesn't capture warnings
+    }
+
+
 __all__ = [
     "detect_boundary_vertices",
     "move_mesh",
     "propagate_displacement",
+    "remesh_lagrangian_surface",
 ]

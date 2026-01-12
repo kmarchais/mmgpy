@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Lagrangian motion support for surface meshes (`MmgMeshS.remesh_lagrangian()`) via Python implementation using Laplacian smoothing ([#117](https://github.com/kmarchais/mmgpy/issues/117))
+- New `remesh_lagrangian_surface()` function in `mmgpy.lagrangian` module
+- Surface mesh Lagrangian motion example with animated GIF generation
 - Comprehensive MMGS (surface mesh) test suite with PyVista quality validation ([#55](https://github.com/kmarchais/mmgpy/pull/55))
 - Tensor metric support for anisotropic mesh adaptation ([#54](https://github.com/kmarchais/mmgpy/pull/54))
 - Low-level mesh construction API exposing MMG internal functions ([#52](https://github.com/kmarchais/mmgpy/pull/52))

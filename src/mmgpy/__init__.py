@@ -195,6 +195,7 @@ def _run_mmg() -> None:  # pragma: no cover
 from . import interactive, lagrangian, metrics, progress, repair, sizing
 from ._io import read
 from ._mesh import Mesh, MeshCheckpoint, MeshKind
+from ._mmgpy import MmgMeshS  # type: ignore[attr-defined]
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import CancellationError, ProgressEvent, rich_progress
 from ._pyvista import from_pyvista, to_pyvista
@@ -206,7 +207,88 @@ from ._validation import (
     ValidationIssue,
     ValidationReport,
 )
-from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
+from .lagrangian import (
+    detect_boundary_vertices,
+    move_mesh,
+    propagate_displacement,
+    remesh_lagrangian_surface,
+)
+
+
+# Add remesh_lagrangian method to MmgMeshS for API consistency with MmgMesh3D/MmgMesh2D
+# This is done via monkey-patching since MMGS doesn't natively support Lagrangian motion
+def _mmgmeshs_remesh_lagrangian(  # noqa: PLR0913
+    self: MmgMeshS,
+    displacement,  # noqa: ANN001
+    *,
+    boundary_mask=None,  # noqa: ANN001
+    propagate: bool = True,
+    n_steps: int = 1,
+    hmin: float | None = None,
+    hmax: float | None = None,
+    hsiz: float | None = None,
+    hausd: float | None = None,
+    hgrad: float | None = None,
+    verbose: int | bool | None = None,
+    **remesh_options,  # noqa: ANN003
+) -> dict:
+    """Remesh following Lagrangian motion (Python implementation).
+
+    Since MMGS does not natively support Lagrangian motion, this method
+    provides an equivalent capability using a pure Python implementation
+    with Laplacian smoothing and standard MMGS remeshing.
+
+    Parameters
+    ----------
+    displacement : NDArray[np.float64]
+        Displacement vectors, shape (n_vertices, 3).
+    boundary_mask : NDArray[np.bool_] | None
+        Optional mask indicating boundary vertices with prescribed displacement.
+        If None, all vertices are displaced directly.
+    propagate : bool
+        If True and boundary_mask is provided, propagate boundary
+        displacement to interior using Laplacian smoothing.
+    n_steps : int
+        Number of incremental steps for large displacements.
+    hmin : float | None
+        Minimum edge size.
+    hmax : float | None
+        Maximum edge size.
+    hsiz : float | None
+        Uniform target edge size.
+    hausd : float | None
+        Hausdorff distance for geometry approximation.
+    hgrad : float | None
+        Gradation parameter.
+    verbose : int | bool | None
+        Verbosity level.
+    **remesh_options
+        Additional remeshing options.
+
+    Returns
+    -------
+    dict[str, Any]
+        Statistics dictionary with before/after metrics.
+
+    """
+    # Pass explicit parameters and any additional options
+    return remesh_lagrangian_surface(
+        self,
+        displacement,
+        boundary_mask=boundary_mask,
+        propagate=propagate,
+        n_steps=n_steps,
+        hmin=hmin,
+        hmax=hmax,
+        hsiz=hsiz,
+        hausd=hausd,
+        hgrad=hgrad,
+        verbose=verbose,
+        **remesh_options,
+    )
+
+
+MmgMeshS.remesh_lagrangian = _mmgmeshs_remesh_lagrangian  # type: ignore[method-assign]
 from .sizing import (
     BoxSize,
     CylinderSize,
@@ -253,6 +335,7 @@ __all__ = [
     "progress",
     "propagate_displacement",
     "read",
+    "remesh_lagrangian_surface",
     "repair",
     "rich_progress",
     "set_log_file",

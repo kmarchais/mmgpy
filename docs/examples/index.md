@@ -265,6 +265,36 @@ result = mesh.remesh_levelset(levelset)
 
 ---
 
+### Lagrangian Motion (Surface)
+
+Apply displacement to surface mesh while maintaining quality.
+
+```python
+"""Surface mesh Lagrangian motion remeshing."""
+import mmgpy
+import numpy as np
+
+mesh = mmgpy.MmgMeshS(vertices, triangles)
+original_vertices = mesh.get_vertices()
+
+# Create radial expansion displacement
+center = original_vertices.mean(axis=0)
+directions = original_vertices - center
+norms = np.linalg.norm(directions, axis=1, keepdims=True)
+displacement = directions / (norms + 1e-10) * 0.1
+
+# Remesh with motion (Python implementation for surface meshes)
+result = mesh.remesh_lagrangian(
+    displacement,
+    n_steps=2,
+    hausd=0.01,
+)
+```
+
+[View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/lagrangian_motion.py)
+
+---
+
 ## Running Examples
 
 Clone the repository and run examples:
