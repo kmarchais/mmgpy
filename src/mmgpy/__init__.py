@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import platform
 import site
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 from ._logging import (
     disable_logging,
@@ -191,176 +189,6 @@ def _run_mmg() -> None:  # pragma: no cover
     run_func()
 
 
-# RPATH utilities
-# ================
-# RPATH is normally set by CMake at install time. These utilities are provided
-# for diagnostics and manual fixing if needed.
-
-
-def check_rpath() -> dict[str, Any]:  # pragma: no cover
-    """Check RPATH status of MMG executables and libraries.
-
-    Returns a dict with 'executables' and 'libraries' keys, each containing
-    a list of dicts with 'name', 'path', 'rpath', 'expected', and 'ok' keys.
-    On Windows, also includes a 'message' key explaining RPATH is not used.
-
-    Example:
-        >>> import mmgpy
-        >>> status = mmgpy.check_rpath()
-        >>> for exe in status['executables']:
-        ...     print(f"{exe['name']}: {'OK' if exe['ok'] else 'NEEDS FIX'}")
-
-    """
-    system = platform.system()
-    if system == "Windows":
-        return {
-            "executables": [],
-            "libraries": [],
-            "message": "RPATH not used on Windows",
-        }
-
-    site_packages = Path(site.getsitepackages()[0])
-    result: dict[str, Any] = {
-        "executables": [],
-        "libraries": [],
-    }
-
-    bin_dir = site_packages / "bin"
-    lib_dir = site_packages / "mmgpy" / "lib"
-
-    if system == "Darwin":
-        expected_exe_rpath = "@loader_path/../mmgpy/lib"
-        expected_lib_rpath = "@loader_path"
-    else:
-        expected_exe_rpath = "$ORIGIN/../mmgpy/lib"
-        expected_lib_rpath = "$ORIGIN"
-
-    if bin_dir.exists():
-        for exe in bin_dir.glob("mmg*_O3"):
-            rpath = _get_rpath(exe, system)
-            result["executables"].append(
-                {
-                    "name": exe.name,
-                    "path": str(exe),
-                    "rpath": rpath,
-                    "expected": expected_exe_rpath,
-                    "ok": expected_exe_rpath in rpath if rpath else False,
-                },
-            )
-
-    if lib_dir.exists():
-        pattern = "libmmg*.dylib" if system == "Darwin" else "libmmg*.so*"
-        for lib in lib_dir.glob(pattern):
-            if lib.is_symlink():
-                continue
-            rpath = _get_rpath(lib, system)
-            result["libraries"].append(
-                {
-                    "name": lib.name,
-                    "path": str(lib),
-                    "rpath": rpath,
-                    "expected": expected_lib_rpath,
-                    "ok": expected_lib_rpath in rpath if rpath else False,
-                },
-            )
-
-    return result
-
-
-def _get_rpath(binary: Path, system: str) -> str:  # pragma: no cover
-    """Get RPATH of a binary file."""
-    if system == "Darwin":
-        proc = subprocess.run(
-            ["/usr/bin/otool", "-l", str(binary)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
-            return ""
-        rpaths = []
-        lines = proc.stdout.split("\n")
-        for i, line in enumerate(lines):
-            if "LC_RPATH" in line and i + 2 < len(lines):
-                path_line = lines[i + 2].strip()
-                if path_line.startswith("path "):
-                    rpaths.append(path_line.split()[1])
-        return ":".join(rpaths)
-    proc = subprocess.run(
-        ["patchelf", "--print-rpath", str(binary)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return proc.stdout.strip() if proc.returncode == 0 else ""
-
-
-def _fix_rpath() -> None:  # pragma: no cover
-    """Fix RPATH for MMG executables (manual utility).
-
-    Normally RPATH is set by CMake at install time. Use this function only if
-    executables fail to find their libraries after installation.
-
-    Example:
-        >>> import mmgpy
-        >>> mmgpy._fix_rpath()  # Only if check_rpath() shows issues
-
-    """
-    system = platform.system()
-    if system not in ("Darwin", "Linux"):
-        _logger.debug("RPATH fix not applicable for %s", system)
-        return
-
-    site_packages = Path(site.getsitepackages()[0])
-    bin_dir = site_packages / "bin"
-
-    if not bin_dir.exists():
-        _logger.warning("Bin directory not found: %s", bin_dir)
-        return
-
-    executables = list(bin_dir.glob("mmg*_O3"))
-    if not executables:
-        _logger.info("No MMG executables found to fix")
-        return
-
-    if system == "Darwin":
-        target_rpath = "@loader_path/../mmgpy/lib"
-        for exe in executables:
-            subprocess.run(
-                ["/usr/bin/install_name_tool", "-delete_rpath", "@rpath", str(exe)],
-                capture_output=True,
-                check=False,
-            )
-            result = subprocess.run(
-                ["/usr/bin/install_name_tool", "-add_rpath", target_rpath, str(exe)],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if result.returncode == 0:
-                _logger.info("Fixed RPATH for %s", exe.name)
-            else:
-                _logger.error("Failed to fix %s: %s", exe.name, result.stderr)
-    else:
-        target_rpath = "$ORIGIN/../mmgpy/lib"
-        patchelf = "patchelf"
-        venv_patchelf = Path(sys.executable).parent / "patchelf"
-        if venv_patchelf.exists():
-            patchelf = str(venv_patchelf)
-
-        for exe in executables:
-            result = subprocess.run(
-                [patchelf, "--set-rpath", target_rpath, str(exe)],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if result.returncode == 0:
-                _logger.info("Fixed RPATH for %s", exe.name)
-            else:
-                _logger.error("Failed to fix %s: %s", exe.name, result.stderr)
-
-
 from . import interactive, lagrangian, metrics, progress, repair, sizing
 from ._io import read
 from ._mesh import Mesh, MeshCheckpoint, MeshKind
@@ -407,7 +235,6 @@ __all__ = [
     "ValidationReport",
     "__version__",
     "apply_sizing_constraints",
-    "check_rpath",
     "detect_boundary_vertices",
     "disable_logging",
     "enable_debug",
