@@ -7000,9 +7000,11 @@ the mesh is automatically rolled back to its checkpoint state.</p>
     A context manager for transactional mesh modifications.</p>
 <h5 id="mmgpy.Mesh.checkpoint--notes">Notes<a class="headerlink" href="#mmgpy.Mesh.checkpoint--notes" title="Permanent link">&para;</a></h5>
 <p>The checkpoint stores a complete copy of the mesh data including
-vertices, elements, reference markers, and any solution fields
-(metric, displacement, levelset, tensor). For large meshes, this
-may consume significant memory.</p>
+vertices, elements, reference markers, and solution fields
+(metric, displacement, levelset). For large meshes, this may
+consume significant memory.</p>
+<p>Note: The tensor field is not saved because it shares memory with
+metric in MMG's internal representation.</p>
 <h5 id="mmgpy.Mesh.checkpoint--examples">Examples<a class="headerlink" href="#mmgpy.Mesh.checkpoint--examples" title="Permanent link">&para;</a></h5>
 <blockquote>
 <blockquote>
