@@ -74,7 +74,7 @@ _TRI_VERTS = 3
 _2D_DETECTION_TOLERANCE = 1e-8
 
 
-def _is_interactive_terminal() -> bool:
+def _is_interactive_terminal() -> bool:  # pragma: no cover
     """Check if we're running in an interactive terminal.
 
     Returns False in CI environments, pytest, or when stdout is not a TTY.
@@ -116,7 +116,7 @@ def _resolve_progress_callback(
 
     if progress is True:
         # Only show progress bar in interactive terminals
-        if _is_interactive_terminal():
+        if _is_interactive_terminal():  # pragma: no cover
             reporter = RichProgressReporter(transient=True)
             return reporter, reporter
         return None, None
