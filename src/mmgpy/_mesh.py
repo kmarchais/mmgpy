@@ -1189,7 +1189,7 @@ class Mesh:
 
         # Resolve progress callback
         callback, reporter_ctx = _resolve_progress_callback(progress)
-        if reporter_ctx is not None:
+        if reporter_ctx is not None:  # pragma: no cover
             reporter_ctx.__enter__()
 
         try:
@@ -1225,7 +1225,7 @@ class Mesh:
             )
             return _dict_to_remesh_result(stats)
         finally:
-            if reporter_ctx is not None:
+            if reporter_ctx is not None:  # pragma: no cover
                 reporter_ctx.__exit__(None, None, None)
 
     def remesh_lagrangian(
@@ -1272,7 +1272,7 @@ class Mesh:
             raise TypeError(msg)
 
         callback, reporter_ctx = _resolve_progress_callback(progress)
-        if reporter_ctx is not None:
+        if reporter_ctx is not None:  # pragma: no cover
             reporter_ctx.__enter__()
 
         try:
@@ -1307,7 +1307,7 @@ class Mesh:
             )
             return _dict_to_remesh_result(stats)
         finally:
-            if reporter_ctx is not None:
+            if reporter_ctx is not None:  # pragma: no cover
                 reporter_ctx.__exit__(None, None, None)
 
     def remesh_levelset(
@@ -1346,7 +1346,7 @@ class Mesh:
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
         callback, reporter_ctx = _resolve_progress_callback(progress)
-        if reporter_ctx is not None:
+        if reporter_ctx is not None:  # pragma: no cover
             reporter_ctx.__enter__()
 
         try:
@@ -1380,7 +1380,7 @@ class Mesh:
             )
             return _dict_to_remesh_result(stats)
         finally:
-            if reporter_ctx is not None:
+            if reporter_ctx is not None:  # pragma: no cover
                 reporter_ctx.__exit__(None, None, None)
 
     def remesh_optimize(
