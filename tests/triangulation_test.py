@@ -107,6 +107,27 @@ def no_surface_cells_mesh_file(tmp_path_factory: TempPathFactory) -> Path:
     return mesh_path
 
 
+@pytest.fixture
+def quad_2d_mesh_file(tmp_path_factory: TempPathFactory) -> Path:
+    """Create mesh file with 2D quads (z=0) for mmg2d triangulation path."""
+    import meshio
+
+    tmp_dir = tmp_path_factory.mktemp("quad_2d")
+    mesh_path = tmp_dir / "quad_2d.vtk"
+    points = np.array([[i, j, 0.0] for j in range(4) for i in range(4)], dtype=float)
+    quads = []
+    for j in range(3):
+        for i in range(3):
+            p0 = j * 4 + i
+            p1 = p0 + 1
+            p2 = p1 + 4
+            p3 = p0 + 4
+            quads.append([p0, p1, p2, p3])
+    quads = np.array(quads)
+    meshio.Mesh(points, [("quad", quads)]).write(mesh_path)
+    return mesh_path
+
+
 class TestPyVistaTriangulation:
     """Tests for PyVista mesh triangulation."""
 
@@ -203,6 +224,23 @@ class TestFileTriangulation:
         mesh = meshio.Mesh(points, [("line", np.array([[0, 1], [1, 2]]))])
         with pytest.raises(ValueError, match="No surface cells"):
             _meshio_to_pyvista_polydata(mesh)
+
+    def test_2d_quad_file_is_triangulated(self, quad_2d_mesh_file: Path) -> None:
+        """Test that 2D quad meshes from files are triangulated via mmg2d path."""
+        mesh = mmgpy.read(quad_2d_mesh_file)
+        assert mesh.kind == MeshKind.TRIANGULAR_2D
+        triangles = mesh.get_triangles()
+        assert triangles.shape[1] == 3
+        assert len(triangles) == 18  # 9 quads become 18 triangles
+
+    def test_triangulate_if_needed_empty_mesh(self) -> None:
+        """Test _triangulate_if_needed handles empty mesh without error."""
+        from mmgpy._pyvista import _triangulate_if_needed
+
+        empty = pv.PolyData()
+        result, was_triangulated = _triangulate_if_needed(empty)
+        assert result.n_cells == 0
+        assert was_triangulated is False
 
 
 class TestRemeshingWithTriangulation:
