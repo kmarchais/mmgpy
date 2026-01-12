@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 from mmgpy.lagrangian import (
     _build_adjacency_from_elements,
     detect_boundary_vertices,
@@ -490,3 +490,85 @@ class TestIntegration:
         # Verify mesh is valid
         assert len(output_vertices) > 0
         assert len(output_elements) > 0
+
+
+class TestMmgMeshSLagrangianNotSupported:
+    """Tests for MmgMeshS Lagrangian motion not being supported."""
+
+    def test_remesh_lagrangian_raises_not_implemented(self) -> None:
+        """Test that MmgMeshS.remesh_lagrangian raises NotImplementedError."""
+        # Create a simple surface mesh (icosahedron)
+        t = (1.0 + np.sqrt(5.0)) / 2.0
+        vertices = np.array(
+            [
+                [-1, t, 0],
+                [1, t, 0],
+                [-1, -t, 0],
+                [1, -t, 0],
+                [0, -1, t],
+                [0, 1, t],
+                [0, -1, -t],
+                [0, 1, -t],
+                [t, 0, -1],
+                [t, 0, 1],
+                [-t, 0, -1],
+                [-t, 0, 1],
+            ],
+            dtype=np.float64,
+        )
+        # Normalize to unit sphere
+        vertices /= np.linalg.norm(vertices[0])
+
+        triangles = np.array(
+            [
+                [0, 11, 5],
+                [0, 5, 1],
+                [0, 1, 7],
+                [0, 7, 10],
+                [0, 10, 11],
+                [1, 5, 9],
+                [5, 11, 4],
+                [11, 10, 2],
+                [10, 7, 6],
+                [7, 1, 8],
+                [3, 9, 4],
+                [3, 4, 2],
+                [3, 2, 6],
+                [3, 6, 8],
+                [3, 8, 9],
+                [4, 9, 5],
+                [2, 4, 11],
+                [6, 2, 10],
+                [8, 6, 7],
+                [9, 8, 1],
+            ],
+            dtype=np.int32,
+        )
+
+        mesh = MmgMeshS(vertices, triangles)
+        displacement = np.zeros((len(vertices), 3), dtype=np.float64)
+        displacement[:, 0] = 0.1  # Try to move in x
+
+        with pytest.raises(
+            NotImplementedError,
+            match="not supported for surface meshes",
+        ):
+            mesh.remesh_lagrangian(displacement)
+
+    def test_error_message_suggests_alternative(self) -> None:
+        """Test that the error message suggests move_mesh as an alternative."""
+        vertices = np.array(
+            [[0, 0, 0], [1, 0, 0], [0.5, 1, 0]],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2]], dtype=np.int32)
+
+        mesh = MmgMeshS(vertices, triangles)
+        displacement = np.zeros((3, 3), dtype=np.float64)
+
+        with pytest.raises(NotImplementedError) as exc_info:
+            mesh.remesh_lagrangian(displacement)
+
+        error_msg = str(exc_info.value)
+        assert "move_mesh" in error_msg
+        assert "ELAS" in error_msg or "elasticity" in error_msg

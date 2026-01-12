@@ -2062,6 +2062,37 @@ class MmgMeshS:
 
         """
 
+    def remesh_lagrangian(
+        self,
+        displacement: NDArray[np.float64],
+        **kwargs: float | None,
+    ) -> None:
+        """Not implemented - raises NotImplementedError.
+
+        Lagrangian motion is not supported for surface meshes (MmgMeshS).
+
+        Reason: Lagrangian motion requires solving elasticity PDEs to propagate
+        boundary displacements to interior vertices. Surface meshes have no
+        volumetric interior - the ELAS library only supports 2D/3D elasticity,
+        not shell/membrane elasticity needed for surfaces.
+
+        Alternative: Use mmgpy.move_mesh() to move vertices and remesh:
+            mmgpy.move_mesh(mesh, displacement, hausd=0.01)
+
+        Parameters
+        ----------
+        displacement : NDArray[np.float64]
+            Not used - raises NotImplementedError immediately.
+        **kwargs : float | None
+            Not used - raises NotImplementedError immediately.
+
+        Raises
+        ------
+        NotImplementedError
+            Always raised - Lagrangian motion is not supported for surface meshes.
+
+        """
+
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
