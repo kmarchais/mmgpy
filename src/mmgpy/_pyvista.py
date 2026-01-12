@@ -19,12 +19,15 @@ Example:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, overload
 
 import numpy as np
 import pyvista as pv
 
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+
+logger = logging.getLogger("mmgpy")
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -33,6 +36,37 @@ _DIMS_2D = 2
 _DIMS_3D = 3
 _TRIANGLE_VERTS = 3
 _2D_DETECTION_TOLERANCE = 1e-8
+
+_TRIANGULATION_WARNING = (
+    "Input mesh contains non-triangular elements (quads, polygons). "
+    "Converting to triangles. Note: output will always be triangular "
+    "as MMG only supports triangular elements."
+)
+
+
+def _triangulate_if_needed(mesh: pv.PolyData) -> tuple[pv.PolyData, bool]:
+    """Triangulate mesh if it contains non-triangular faces.
+
+    Parameters
+    ----------
+    mesh : pv.PolyData
+        Input mesh that may contain quads or other polygons.
+
+    Returns
+    -------
+    tuple[pv.PolyData, bool]
+        Tuple of (triangulated_mesh, was_triangulated).
+        If mesh was already all triangles, returns (mesh, False).
+
+    """
+    if mesh.n_cells == 0:
+        return mesh, False
+
+    if mesh.is_all_triangles:
+        return mesh, False
+
+    triangulated = mesh.triangulate()
+    return triangulated, True
 
 
 def _is_2d_mesh(points: NDArray[np.floating]) -> bool:
@@ -82,6 +116,10 @@ def _from_pyvista_to_mmg3d(mesh: pv.UnstructuredGrid) -> MmgMesh3D:
 
 def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
     """Convert PolyData with 2D triangles to MmgMesh2D."""
+    mesh, was_triangulated = _triangulate_if_needed(mesh)
+    if was_triangulated:
+        logger.warning(_TRIANGULATION_WARNING)
+
     points = np.array(mesh.points, dtype=np.float64)
     if points.shape[1] == _DIMS_3D:
         vertices = np.ascontiguousarray(points[:, :2])
@@ -94,6 +132,10 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
 
 def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
     """Convert PolyData with 3D surface triangles to MmgMeshS."""
+    mesh, was_triangulated = _triangulate_if_needed(mesh)
+    if was_triangulated:
+        logger.warning(_TRIANGULATION_WARNING)
+
     vertices = np.array(mesh.points, dtype=np.float64)
     triangles = _extract_triangles_from_polydata(mesh)
 

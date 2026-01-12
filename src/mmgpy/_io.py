@@ -20,6 +20,7 @@ Example:
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -29,6 +30,8 @@ import pyvista as pv
 
 from mmgpy._mesh import _DIMS_3D, MeshKind, _is_2d_points
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+
+logger = logging.getLogger("mmgpy")
 
 if TYPE_CHECKING:
     from mmgpy._mesh import Mesh
@@ -64,6 +67,43 @@ _SURFACE_CELL_TYPES = frozenset(
         "quad9",
     },
 )
+
+# Non-triangular surface cell types that need triangulation
+_NON_TRIANGLE_SURFACE_TYPES = frozenset(
+    {
+        "quad",
+        "quad8",
+        "quad9",
+    },
+)
+
+_TRIANGULATION_WARNING = (
+    "Input mesh contains non-triangular elements (quads, polygons). "
+    "Converting to triangles. Note: output will always be triangular "
+    "as MMG only supports triangular elements."
+)
+
+
+def _has_non_triangle_cells(mesh: meshio.Mesh) -> bool:
+    """Check if meshio mesh has non-triangular surface cells."""
+    cell_types = {block.type for block in mesh.cells}
+    return bool(cell_types & _NON_TRIANGLE_SURFACE_TYPES)
+
+
+def _meshio_to_pyvista_polydata(mesh: meshio.Mesh) -> pv.PolyData:
+    """Convert meshio mesh to PyVista PolyData for triangulation."""
+    # Ensure points are in native byte order (meshio may use big-endian)
+    points = np.ascontiguousarray(mesh.points, dtype=np.float64)
+    cells = []
+    for block in mesh.cells:
+        if block.type in _SURFACE_CELL_TYPES:
+            n_verts = block.data.shape[1]
+            for cell in block.data:
+                cells.extend([n_verts, *cell])
+    if not cells:
+        msg = "No surface cells found in mesh"
+        raise ValueError(msg)
+    return pv.PolyData(points, faces=cells)
 
 
 def _detect_mesh_kind(mesh: meshio.Mesh) -> MeshKind:
@@ -123,8 +163,33 @@ def _meshio_to_mmg3d(mesh: meshio.Mesh) -> MmgMesh3D:
     return MmgMesh3D(vertices, tetrahedra)
 
 
+def _extract_triangles_from_polydata(pv_mesh: pv.PolyData) -> np.ndarray:
+    """Extract triangle connectivity from triangulated PolyData."""
+    faces = pv_mesh.faces
+    n_triangles = pv_mesh.n_cells
+    triangles = np.empty((n_triangles, 3), dtype=np.int32)
+    idx = 0
+    for i in range(n_triangles):
+        n_verts = faces[idx]
+        triangles[i] = faces[idx + 1 : idx + 4]
+        idx += n_verts + 1
+    return triangles
+
+
 def _meshio_to_mmg2d(mesh: meshio.Mesh) -> MmgMesh2D:
     """Convert meshio mesh to MmgMesh2D."""
+    if _has_non_triangle_cells(mesh):
+        logger.warning(_TRIANGULATION_WARNING)
+        pv_mesh = _meshio_to_pyvista_polydata(mesh)
+        pv_mesh = pv_mesh.triangulate()
+        points = np.array(pv_mesh.points, dtype=np.float64)
+        if points.shape[1] == _DIMS_3D:
+            vertices = np.ascontiguousarray(points[:, :2])
+        else:
+            vertices = np.ascontiguousarray(points)
+        triangles = _extract_triangles_from_polydata(pv_mesh)
+        return MmgMesh2D(vertices, triangles)
+
     points = mesh.points
 
     # Extract 2D vertices (drop z if present)
@@ -151,6 +216,14 @@ def _meshio_to_mmg2d(mesh: meshio.Mesh) -> MmgMesh2D:
 
 def _meshio_to_mmgs(mesh: meshio.Mesh) -> MmgMeshS:
     """Convert meshio mesh to MmgMeshS."""
+    if _has_non_triangle_cells(mesh):
+        logger.warning(_TRIANGULATION_WARNING)
+        pv_mesh = _meshio_to_pyvista_polydata(mesh)
+        pv_mesh = pv_mesh.triangulate()
+        vertices = np.array(pv_mesh.points, dtype=np.float64)
+        triangles = _extract_triangles_from_polydata(pv_mesh)
+        return MmgMeshS(vertices, triangles)
+
     vertices = np.ascontiguousarray(mesh.points, dtype=np.float64)
 
     # Collect all triangle blocks
