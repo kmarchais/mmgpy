@@ -17,6 +17,36 @@ This is useful for:
 - Fluid-structure interaction
 - Morphing between shapes
 
+## Supported Mesh Types
+
+| Mesh Type                     | `remesh_lagrangian()` | Alternative       |
+| ----------------------------- | --------------------- | ----------------- |
+| **MmgMesh3D** (tetrahedral)   | ✅ Supported          | -                 |
+| **MmgMesh2D** (2D triangular) | ✅ Supported          | -                 |
+| **MmgMeshS** (surface)        | ❌ Not supported      | Use `move_mesh()` |
+
+### Why Surface Meshes Don't Support Lagrangian Motion
+
+Lagrangian motion in MMG requires the ELAS library to solve elasticity PDEs that propagate
+boundary displacements to interior vertices. Surface meshes (MmgMeshS) have no volumetric
+interior—all vertices are on the surface. The ELAS library only supports 2D/3D volumetric
+elasticity, not shell/membrane elasticity needed for surfaces.
+
+For surface meshes, use `mmgpy.move_mesh()` instead, which directly moves vertices and
+remeshes to maintain quality:
+
+```python
+import mmgpy
+import numpy as np
+
+mesh = mmgpy.MmgMeshS(vertices, triangles)
+displacement = np.zeros((len(vertices), 3))
+displacement[:, 0] = 0.1  # Move in x direction
+
+# Use move_mesh for surface meshes
+mmgpy.move_mesh(mesh, displacement, hausd=0.01)
+```
+
 ## Functions
 
 ::: mmgpy.move_mesh

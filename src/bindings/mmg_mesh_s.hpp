@@ -82,6 +82,10 @@ public:
   py::dict remesh_levelset(const py::array_t<double> &levelset,
                            const py::dict &options = py::dict());
 
+  // Lagrangian motion - not supported for surface meshes
+  [[noreturn]] void remesh_lagrangian(const py::array_t<double> &displacement,
+                                      const py::dict &options = py::dict());
+
   // Delete copy constructor and assignment operator
   MmgMeshS(const MmgMeshS &) = delete;
   MmgMeshS &operator=(const MmgMeshS &) = delete;
