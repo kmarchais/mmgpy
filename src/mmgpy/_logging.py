@@ -215,12 +215,13 @@ def set_log_file(
     _file_handler.setFormatter(formatter)
 
     # Set level for file handler
+    # Use NOTSET (0) by default so handler defers to logger's level
     if level is not None:
         if isinstance(level, str):
             level = getattr(logging, level.upper())
         _file_handler.setLevel(level)
     else:
-        _file_handler.setLevel(logger.level)
+        _file_handler.setLevel(logging.NOTSET)
 
     logger.addHandler(_file_handler)
 
