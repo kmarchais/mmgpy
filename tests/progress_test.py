@@ -491,6 +491,76 @@ def test_mesh_remesh_levelset_cancellation(simple_mesh: Mesh) -> None:
         simple_mesh.remesh_levelset(levelset, progress=tracker, verbose=-1)
 
 
+def _lagrangian_available() -> bool:
+    """Check if Lagrangian motion is available."""
+    from mmgpy import Mesh as _Mesh
+
+    vertices = np.array(
+        [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+        dtype=np.float64,
+    )
+    triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+    mesh = _Mesh(vertices, triangles)
+    displacement = np.zeros((4, 2), dtype=np.float64)
+    try:
+        mesh.remesh_lagrangian(displacement, progress=False, verbose=-1)
+    except RuntimeError as e:
+        if "lag" in str(e).lower():
+            return False
+        raise
+    return True
+
+
+@pytest.fixture
+def simple_2d_high_level_mesh() -> Mesh:
+    """Create a simple 2D Mesh for testing lagrangian progress."""
+    from mmgpy import Mesh as _Mesh
+
+    # Use a proper square mesh with 2 triangles
+    vertices = np.array(
+        [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+        dtype=np.float64,
+    )
+    triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+    return _Mesh(vertices, triangles)
+
+
+@pytest.mark.skipif(not _lagrangian_available(), reason="Lagrangian not available")
+def test_mesh_remesh_lagrangian_progress(simple_2d_high_level_mesh: Mesh) -> None:
+    """Test Mesh.remesh_lagrangian works with progress callback."""
+    tracker = CallbackTracker()
+    vertices = simple_2d_high_level_mesh.get_vertices()
+    # Small displacement
+    displacement = np.zeros_like(vertices)
+    displacement[:, 0] = 0.01
+
+    simple_2d_high_level_mesh.remesh_lagrangian(
+        displacement,
+        progress=tracker,
+        verbose=-1,
+    )
+
+    phases = [e.phase for e in tracker.events]
+    assert "init" in phases
+    assert "options" in phases
+    assert "remesh" in phases
+
+
+@pytest.mark.skipif(not _lagrangian_available(), reason="Lagrangian not available")
+def test_mesh_remesh_lagrangian_cancellation(simple_2d_high_level_mesh: Mesh) -> None:
+    """Test Mesh.remesh_lagrangian raises CancellationError when cancelled."""
+    tracker = CallbackTracker(cancel_at_phase="options")
+    vertices = simple_2d_high_level_mesh.get_vertices()
+    displacement = np.zeros_like(vertices)
+
+    with pytest.raises(CancellationError, match="options"):
+        simple_2d_high_level_mesh.remesh_lagrangian(
+            displacement,
+            progress=tracker,
+            verbose=-1,
+        )
+
+
 # =============================================================================
 # Tests for _is_interactive_terminal and _resolve_progress_callback
 # =============================================================================
