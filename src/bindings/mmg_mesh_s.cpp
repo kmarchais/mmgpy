@@ -922,3 +922,22 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
 
   return build_remesh_result(before, after, duration, ret, warnings);
 }
+
+void MmgMeshS::remesh_lagrangian(const py::array_t<double> & /*displacement*/,
+                                 const py::dict & /*options*/) {
+  // MMGS does not support Lagrangian motion because:
+  // 1. Lagrangian motion requires the ELAS library to solve elasticity PDEs
+  //    that propagate boundary displacements to interior vertices
+  // 2. Surface meshes have no volumetric interior - all vertices are on the
+  //    surface
+  // 3. ELAS only supports 2D/3D volumetric elasticity, not shell/membrane
+  //    elasticity needed for surfaces
+  throw std::runtime_error(
+      "Lagrangian motion is not supported for surface meshes (MmgMeshS).\n\n"
+      "Reason: Lagrangian motion requires solving elasticity PDEs to propagate "
+      "boundary displacements to interior vertices. Surface meshes have no "
+      "volumetric interior - the ELAS library only supports 2D/3D elasticity, "
+      "not shell/membrane elasticity needed for surfaces.\n\n"
+      "Alternative: Use mmgpy.move_mesh() to move vertices and remesh:\n"
+      "    mmgpy.move_mesh(mesh, displacement, hausd=0.01)");
+}
