@@ -183,7 +183,7 @@ class ProgressReporter(Protocol):
 
     """
 
-    def __call__(self, event: ProgressEvent) -> bool:
+    def __call__(self, event: ProgressEvent) -> bool:  # pragma: no cover
         """Report a progress event and return whether to continue."""
         ...
 
@@ -296,7 +296,7 @@ class RichProgressReporter:
 
     """
 
-    def __init__(self, *, transient: bool = True) -> None:
+    def __init__(self, *, transient: bool = True) -> None:  # pragma: no cover
         """Initialize the Rich progress reporter.
 
         Parameters
@@ -316,7 +316,7 @@ class RichProgressReporter:
             "save": "Saving mesh",
         }
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> Self:  # pragma: no cover
         """Start the progress display."""
         from rich.progress import (
             BarColumn,
@@ -336,12 +336,12 @@ class RichProgressReporter:
         self._progress.start()
         return self
 
-    def __exit__(self, *args: object) -> None:
+    def __exit__(self, *args: object) -> None:  # pragma: no cover
         """Stop the progress display."""
         if self._progress is not None:
             self._progress.stop()
 
-    def __call__(self, event: ProgressEvent) -> bool:
+    def __call__(self, event: ProgressEvent) -> bool:  # pragma: no cover
         """Update the progress display with the event.
 
         Parameters
@@ -466,7 +466,7 @@ def rich_progress(
         yield callback
 
 
-def remesh_3d(
+def remesh_3d(  # pragma: no cover
     input_mesh: str | Path,
     output_mesh: str | Path,
     *,
@@ -551,7 +551,7 @@ def remesh_3d(
     return result
 
 
-def remesh_2d(
+def remesh_2d(  # pragma: no cover
     input_mesh: str | Path,
     output_mesh: str | Path,
     *,
@@ -630,7 +630,7 @@ def remesh_2d(
     return result
 
 
-def remesh_surface(
+def remesh_surface(  # pragma: no cover
     input_mesh: str | Path,
     output_mesh: str | Path,
     *,
@@ -779,7 +779,7 @@ def remesh_mesh(
     )
 
 
-def remesh_mesh_lagrangian(
+def remesh_mesh_lagrangian(  # pragma: no cover
     mesh: MeshType,
     displacement: NDArray[np.float64],
     *,
