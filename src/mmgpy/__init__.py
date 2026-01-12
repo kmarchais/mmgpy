@@ -8,9 +8,12 @@ import sys
 from pathlib import Path
 
 from ._logging import (
+    configure_logging,
     disable_logging,
     enable_debug,
+    get_log_file,
     get_logger,
+    set_log_file,
     set_log_level,
 )
 
@@ -235,10 +238,13 @@ __all__ = [
     "ValidationReport",
     "__version__",
     "apply_sizing_constraints",
+    "configure_logging",
     "detect_boundary_vertices",
     "disable_logging",
     "enable_debug",
     "from_pyvista",
+    "get_log_file",
+    "get_logger",
     "interactive",
     "lagrangian",
     "metrics",
@@ -248,6 +254,7 @@ __all__ = [
     "read",
     "repair",
     "rich_progress",
+    "set_log_file",
     "set_log_level",
     "sizing",
     "to_pyvista",
