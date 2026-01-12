@@ -426,6 +426,39 @@ class TestCheckpointFieldPreservation:
         restored_ls = mesh.get_field("levelset")
         npt.assert_array_equal(restored_ls, original_ls)
 
+    def test_checkpoint_does_not_save_tensor_field(self) -> None:
+        """Test that tensor field is intentionally not saved due to memory overlap.
+
+        The tensor field shares memory with metric in MMG's internal representation,
+        so only one can be set at a time. Checkpoint intentionally saves metric but
+        not tensor to avoid conflicts.
+        """
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+
+        # Create a simple isotropic tensor (6 components: xx, xy, xz, yy, yz, zz)
+        original_tensor = np.tile([0.1, 0.0, 0.0, 0.1, 0.0, 0.1], (n_verts, 1))
+        mesh.set_field("tensor", original_tensor)
+
+        # Verify tensor is set
+        npt.assert_array_almost_equal(mesh.get_field("tensor"), original_tensor)
+
+        with mesh.checkpoint():
+            mesh.remesh(hmax=0.5, verbose=-1)
+            # No commit - should rollback
+
+        # After rollback, tensor is NOT restored (intentional behavior)
+        # The mesh geometry is restored, but tensor field is lost
+        # This documents the intentional design decision
+        try:
+            restored_tensor = mesh.get_field("tensor")
+            # If we get here, check that tensor values have changed
+            # (due to remeshing interpolation or being unset)
+            assert not np.array_equal(restored_tensor, original_tensor)
+        except RuntimeError:
+            # Field not set - this is also acceptable behavior
+            pass
+
 
 class TestCopyContextManager:
     """Tests for the copy() context manager."""
