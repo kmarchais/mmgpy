@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
 
@@ -9,6 +11,9 @@ from mmgpy import CancellationError, ProgressEvent
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D
 from mmgpy._progress import _emit_event, remesh_mesh, rich_progress
 from mmgpy.progress import LoggingProgressReporter
+
+if TYPE_CHECKING:
+    from mmgpy import Mesh
 
 
 class CallbackTracker:
@@ -382,3 +387,124 @@ def test_cancellation_error_import() -> None:
 
     assert CancelErr1 is CancelErr2
     assert CancelErr2 is CancelErr3
+
+
+# =============================================================================
+# Tests for Mesh class progress parameter
+# =============================================================================
+
+
+@pytest.fixture
+def simple_mesh() -> Mesh:
+    """Create a simple Mesh for testing progress parameter."""
+    from mmgpy import Mesh as _Mesh
+
+    vertices = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.5, 1.0, 0.0],
+            [0.5, 0.5, 1.0],
+        ],
+        dtype=np.float64,
+    )
+    elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
+    return _Mesh(vertices, elements)
+
+
+def test_mesh_remesh_progress_false(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh works with progress=False."""
+    result = simple_mesh.remesh(hmax=0.5, progress=False, verbose=-1)
+    assert result is not None
+    assert result.vertices_after > 0
+
+
+def test_mesh_remesh_progress_none(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh works with progress=None."""
+    result = simple_mesh.remesh(hmax=0.5, progress=None, verbose=-1)
+    assert result is not None
+
+
+def test_mesh_remesh_progress_callback(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh works with custom callback."""
+    tracker = CallbackTracker()
+
+    result = simple_mesh.remesh(hmax=0.5, progress=tracker, verbose=-1)
+
+    assert result is not None
+    phases = [e.phase for e in tracker.events]
+    assert "init" in phases
+    assert "options" in phases
+    assert "remesh" in phases
+
+
+def test_mesh_remesh_cancellation(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh raises CancellationError when callback cancels."""
+    tracker = CallbackTracker(cancel_at_phase="remesh")
+
+    with pytest.raises(CancellationError, match="remesh"):
+        simple_mesh.remesh(hmax=0.5, progress=tracker, verbose=-1)
+
+
+def test_mesh_remesh_reports_details(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh callback receives vertex count details."""
+    tracker = CallbackTracker()
+
+    simple_mesh.remesh(hmax=0.3, progress=tracker, verbose=-1)
+
+    complete_events = [
+        e for e in tracker.events if e.phase == "remesh" and e.status == "complete"
+    ]
+    assert len(complete_events) == 1
+
+    details = complete_events[0].details
+    assert details is not None
+    assert "initial_vertices" in details
+    assert "final_vertices" in details
+    assert "vertex_change" in details
+
+
+# =============================================================================
+# Tests for _is_interactive_terminal and _resolve_progress_callback
+# =============================================================================
+
+
+def test_is_interactive_terminal_in_pytest() -> None:
+    """Test _is_interactive_terminal returns False when pytest is loaded."""
+    from mmgpy._mesh import _is_interactive_terminal
+
+    # pytest is loaded during test execution
+    assert _is_interactive_terminal() is False
+
+
+def test_resolve_progress_callback_with_true() -> None:
+    """Test _resolve_progress_callback with True returns None in non-interactive."""
+    from mmgpy._mesh import _resolve_progress_callback
+
+    # In pytest, progress=True should return (None, None) since not interactive
+    progress_true = True
+    callback, ctx = _resolve_progress_callback(progress_true)
+    assert callback is None
+    assert ctx is None
+
+
+def test_resolve_progress_callback_with_false() -> None:
+    """Test _resolve_progress_callback with False returns None."""
+    from mmgpy._mesh import _resolve_progress_callback
+
+    progress_false = False
+    callback, ctx = _resolve_progress_callback(progress_false)
+    assert callback is None
+    assert ctx is None
+
+
+def test_resolve_progress_callback_with_callable() -> None:
+    """Test _resolve_progress_callback with callable returns the callable."""
+    from mmgpy._mesh import _resolve_progress_callback
+
+    def my_callback(_event: ProgressEvent) -> bool:
+        return True
+
+    callback, ctx = _resolve_progress_callback(my_callback)
+    assert callback is my_callback
+    assert ctx is None
