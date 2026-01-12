@@ -355,6 +355,110 @@ class TestCheckpointFieldPreservation:
         restored_metric = mesh.get_field("metric")
         npt.assert_array_equal(restored_metric, original_metric)
 
+    def test_checkpoint_preserves_levelset_field(self) -> None:
+        """Test that levelset field is preserved on rollback."""
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+        rng = np.random.default_rng(42)
+
+        original_ls = rng.random((n_verts, 1)) - 0.5  # Random values [-0.5, 0.5]
+        mesh.set_field("levelset", original_ls)
+
+        with mesh.checkpoint():
+            mesh.remesh(hmax=0.5, verbose=-1)
+
+        restored_ls = mesh.get_field("levelset")
+        npt.assert_array_equal(restored_ls, original_ls)
+
+    def test_checkpoint_preserves_all_fields(self) -> None:
+        """Test that all fields are preserved together on rollback."""
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+        rng = np.random.default_rng(42)
+
+        original_metric = np.ones((n_verts, 1), dtype=np.float64) * 0.1
+        original_disp = rng.random((n_verts, 3))
+        original_ls = rng.random((n_verts, 1)) - 0.5
+
+        mesh.set_field("metric", original_metric)
+        mesh.set_field("displacement", original_disp)
+        mesh.set_field("levelset", original_ls)
+
+        with mesh.checkpoint():
+            mesh.remesh(hmax=0.5, verbose=-1)
+
+        npt.assert_array_equal(mesh.get_field("metric"), original_metric)
+        npt.assert_array_equal(mesh.get_field("displacement"), original_disp)
+        npt.assert_array_equal(mesh.get_field("levelset"), original_ls)
+
+    def test_checkpoint_restores_overwritten_field(self) -> None:
+        """Test that rollback restores fields even if they were overwritten."""
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+        rng = np.random.default_rng(42)
+
+        original_disp = rng.random((n_verts, 3))
+        mesh.set_field("displacement", original_disp)
+
+        with mesh.checkpoint():
+            mesh.remesh(hmax=0.5, verbose=-1)
+            new_n = len(mesh.get_vertices())
+            # Overwrite with different data
+            mesh.set_field("displacement", np.ones((new_n, 3)) * 999.0)
+
+        restored_disp = mesh.get_field("displacement")
+        npt.assert_array_equal(restored_disp, original_disp)
+
+    def test_checkpoint_restores_overwritten_levelset(self) -> None:
+        """Test that rollback restores levelset even if it was overwritten."""
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+        rng = np.random.default_rng(42)
+
+        original_ls = rng.random((n_verts, 1)) - 0.5
+        mesh.set_field("levelset", original_ls)
+
+        with mesh.checkpoint():
+            mesh.remesh(hmax=0.5, verbose=-1)
+            new_n = len(mesh.get_vertices())
+            mesh.set_field("levelset", np.ones((new_n, 1)) * 999.0)
+
+        restored_ls = mesh.get_field("levelset")
+        npt.assert_array_equal(restored_ls, original_ls)
+
+    def test_checkpoint_does_not_save_tensor_field(self) -> None:
+        """Test that tensor field is intentionally not saved due to memory overlap.
+
+        The tensor field shares memory with metric in MMG's internal representation,
+        so only one can be set at a time. Checkpoint intentionally saves metric but
+        not tensor to avoid conflicts.
+        """
+        mesh = create_3d_mesh()
+        n_verts = len(mesh.get_vertices())
+
+        # Create a simple isotropic tensor (6 components: xx, xy, xz, yy, yz, zz)
+        original_tensor = np.tile([0.1, 0.0, 0.0, 0.1, 0.0, 0.1], (n_verts, 1))
+        mesh.set_field("tensor", original_tensor)
+
+        # Verify tensor is set
+        npt.assert_array_almost_equal(mesh.get_field("tensor"), original_tensor)
+
+        with mesh.checkpoint():
+            mesh.remesh(hmax=0.5, verbose=-1)
+            # No commit - should rollback
+
+        # After rollback, tensor is NOT restored (intentional behavior)
+        # The mesh geometry is restored, but tensor field is lost
+        # This documents the intentional design decision
+        try:
+            restored_tensor = mesh.get_field("tensor")
+            # If we get here, check that tensor values have changed
+            # (due to remeshing interpolation or being unset)
+            assert not np.array_equal(restored_tensor, original_tensor)
+        except RuntimeError:
+            # Field not set - this is also acceptable behavior
+            pass
+
 
 class TestCopyContextManager:
     """Tests for the copy() context manager."""
