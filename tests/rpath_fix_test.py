@@ -1,94 +1,74 @@
-"""Test RPATH fixing utility."""
+"""Test that MMG executables can run (validates RPATH is correct)."""
 
 import platform
 import subprocess
-from pathlib import Path
+
+import pytest
 
 
-def test_rpath_fix_utility() -> None:  # noqa: PLR0912, C901
-    """Test that the RPATH fix utility works and provides debugging info."""
-    if platform.system() != "Darwin":
-        print("RPATH fix test only relevant on macOS")
-        return
+def test_mmg3d_executable_can_run() -> None:
+    """Test that mmg3d_O3 executable can actually run.
 
-    # Run our RPATH fix utility explicitly
-    print("=== Running RPATH fix utility ===")
-    try:
-        import mmgpy
-
-        mmgpy._fix_rpath()
-    except Exception as e:
-        print(f"RPATH fix utility failed: {e}")
-        raise
-
-    # Check if MMG executables exist and have correct RPATH
-    import site
-
-    site_packages = Path(site.getsitepackages()[0])
-    bin_dir = site_packages / "bin"
-
-    print(f"\n=== Checking executables in {bin_dir} ===")
-    if not bin_dir.exists():
-        print(f"ERROR: {bin_dir} does not exist!")
-        return
-
-    executables = list(bin_dir.glob("mmg*_O3"))
-    print(f"Found executables: {[exe.name for exe in executables]}")
-
-    for exe in executables:
-        print(f"\n--- Checking {exe.name} ---")
-        if not exe.exists():
-            print(f"ERROR: {exe} does not exist!")
-            continue
-
-        # Check RPATH using otool
-        result = subprocess.run(
-            ["/usr/bin/otool", "-l", str(exe)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        if result.returncode == 0:
-            if "@loader_path/../mmgpy/lib" in result.stdout:
-                print(f"✓ {exe.name} has correct RPATH")
-            else:
-                print(f"✗ {exe.name} missing correct RPATH")
-                # Show actual RPATH entries
-                lines = result.stdout.split("\n")
-                for i, line in enumerate(lines):
-                    if "LC_RPATH" in line:
-                        print(f"  Found LC_RPATH at line {i}")
-                        # Print next few lines to show the path
-                        for j in range(i, min(i + 4, len(lines))):
-                            if lines[j].strip():
-                                print(f"    {lines[j]}")
-        else:
-            print(f"ERROR: Could not read {exe.name} with otool: {result.stderr}")
-
-
-def test_mmg_executable_can_run() -> None:
-    """Test that MMG executable can actually run (RPATH test)."""
+    This is the real test of RPATH correctness - if the executable can run
+    and display help, then the dynamic linker can find all required libraries.
+    """
     exe = "mmg3d_O3.exe" if platform.system() == "Windows" else "mmg3d_O3"
 
-    # Try to run the executable with --help to see if RPATH works
     try:
         result = subprocess.run(
-            [exe, "--help"],
+            [exe, "-h"],
             capture_output=True,
             text=True,
             timeout=10,
             check=False,
         )
-        print(f"\n=== Testing {exe} execution ===")
-        print(f"Return code: {result.returncode}")
-        if result.returncode == 0:
-            print("✓ Executable runs successfully")
-        else:
-            print(f"✗ Executable failed: {result.stderr}")
     except FileNotFoundError:
-        print(f"✗ Executable {exe} not found in PATH")
-    except subprocess.TimeoutExpired:
-        print(f"✗ Executable {exe} timed out")
-    except Exception as e:
-        print(f"✗ Unexpected error running {exe}: {e}")
+        pytest.skip(f"Executable {exe} not found in PATH")
+    except subprocess.TimeoutExpired as e:
+        msg = f"Executable {exe} timed out - possible library loading issue"
+        raise AssertionError(msg) from e
+
+    assert result.returncode == 0
+    assert "mmg3d" in result.stdout.lower() or "usage" in result.stdout.lower()
+
+
+def test_mmg2d_executable_can_run() -> None:
+    """Test that mmg2d_O3 executable can actually run."""
+    exe = "mmg2d_O3.exe" if platform.system() == "Windows" else "mmg2d_O3"
+
+    try:
+        result = subprocess.run(
+            [exe, "-h"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except FileNotFoundError:
+        pytest.skip(f"Executable {exe} not found in PATH")
+    except subprocess.TimeoutExpired as e:
+        msg = f"Executable {exe} timed out - possible library loading issue"
+        raise AssertionError(msg) from e
+
+    assert result.returncode == 0
+
+
+def test_mmgs_executable_can_run() -> None:
+    """Test that mmgs_O3 executable can actually run."""
+    exe = "mmgs_O3.exe" if platform.system() == "Windows" else "mmgs_O3"
+
+    try:
+        result = subprocess.run(
+            [exe, "-h"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except FileNotFoundError:
+        pytest.skip(f"Executable {exe} not found in PATH")
+    except subprocess.TimeoutExpired as e:
+        msg = f"Executable {exe} timed out - possible library loading issue"
+        raise AssertionError(msg) from e
+
+    assert result.returncode == 0

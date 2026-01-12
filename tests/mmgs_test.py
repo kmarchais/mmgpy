@@ -66,15 +66,6 @@ def generated_meshes(
         options=mesh_params,
     )
 
-    # Ensure RPATH is fixed on macOS before running CLI executable
-    if platform.system() == "Darwin":
-        try:
-            import mmgpy
-
-            mmgpy._fix_rpath()
-        except (OSError, RuntimeError):
-            pass  # RPATH fix may fail if already applied or not needed
-
     # Generate reference mesh using executable
     exe: str = "mmgs_O3.exe" if platform.system() == "Windows" else "mmgs_O3"
     command: list[str] = [
