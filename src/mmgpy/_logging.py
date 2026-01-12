@@ -210,7 +210,7 @@ def set_log_file(
 
     # Set formatter for file output (more detailed than console)
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     _file_handler.setFormatter(formatter)
 

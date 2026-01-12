@@ -97,6 +97,10 @@ class TestFileLogging:
             logger = get_logger()
             logger.info("Test file logging message")
 
+            # Flush handlers to ensure content is written
+            for handler in logger.handlers:
+                handler.flush()
+
             # Check file was created and contains the message
             assert log_file.exists()
             content = log_file.read_text()
@@ -140,6 +144,10 @@ class TestFileLogging:
         try:
             logger = get_logger()
             logger.debug("Debug message for file")
+
+            # Flush handlers to ensure content is written
+            for handler in logger.handlers:
+                handler.flush()
 
             content = log_file.read_text()
             assert "Debug message for file" in content
@@ -223,6 +231,10 @@ class TestFileLogging:
             logger = get_logger()
             logger.info("Format test message")
 
+            # Flush handlers to ensure content is written
+            for handler in logger.handlers:
+                handler.flush()
+
             content = log_file.read_text()
             # Check format includes timestamp, name, level, and message
             assert "mmgpy" in content
@@ -262,7 +274,7 @@ class TestConfigureLogging:
         log_file = tmp_path / "custom.log"
         custom_handler = logging.FileHandler(log_file)
         custom_handler.setFormatter(
-            logging.Formatter("CUSTOM: %(levelname)s - %(message)s")
+            logging.Formatter("CUSTOM: %(levelname)s - %(message)s"),
         )
 
         logger = get_logger()
@@ -296,7 +308,9 @@ class TestExternalLoggerIntegration:
         assert logger is get_logger()
 
     def test_file_and_console_coexist(
-        self, tmp_path: Path, caplog: LogCaptureFixture
+        self,
+        tmp_path: Path,
+        caplog: LogCaptureFixture,
     ) -> None:
         """Test that file and console logging can work simultaneously."""
         log_file = tmp_path / "test.log"
@@ -309,6 +323,10 @@ class TestExternalLoggerIntegration:
             with caplog.at_level(logging.INFO, logger="mmgpy"):
                 logger.info("Dual output test")
 
+            # Flush handlers to ensure content is written
+            for handler in logger.handlers:
+                handler.flush()
+
             # Check file has the message
             file_content = log_file.read_text()
             assert "Dual output test" in file_content
@@ -319,7 +337,9 @@ class TestExternalLoggerIntegration:
             mmgpy.set_log_file(None)
 
     def test_different_levels_for_handlers(
-        self, tmp_path: Path, caplog: LogCaptureFixture
+        self,
+        tmp_path: Path,
+        caplog: LogCaptureFixture,
     ) -> None:
         """Test file and console can have different log levels."""
         log_file = tmp_path / "debug.log"
@@ -334,6 +354,10 @@ class TestExternalLoggerIntegration:
             with caplog.at_level(logging.DEBUG, logger="mmgpy"):
                 logger.debug("Debug only message")
                 logger.warning("Warning message")
+
+            # Flush handlers to ensure content is written
+            for handler in logger.handlers:
+                handler.flush()
 
             # File should have debug message
             file_content = log_file.read_text()
