@@ -49,21 +49,80 @@ import pyvista as pv
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Sequence
+    from collections.abc import Callable, Generator, Sequence
     from types import TracebackType
 
     from numpy.typing import NDArray
 
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
+    from mmgpy._progress import (
+        ProgressCallback,
+        ProgressEvent,
+        RichProgressReporter,
+    )
     from mmgpy._result import RemeshResult
     from mmgpy._validation import ValidationReport
     from mmgpy.sizing import SizingConstraint
+
+    # Progress can be True (default rich), False (disabled), or a callback
+    ProgressParam = bool | Callable[[ProgressEvent], bool] | None
 
 _DIMS_2D = 2
 _DIMS_3D = 3
 _TETRA_VERTS = 4
 _TRI_VERTS = 3
 _2D_DETECTION_TOLERANCE = 1e-8
+
+
+def _is_interactive_terminal() -> bool:
+    """Check if we're running in an interactive terminal.
+
+    Returns False in CI environments, pytest, or when stdout is not a TTY.
+    """
+    import os  # noqa: PLC0415
+    import sys  # noqa: PLC0415
+
+    # Check for common CI environment variables
+    ci_vars = ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS", "CIRCLECI", "JENKINS_URL")
+    if any(os.environ.get(var) for var in ci_vars):
+        return False
+
+    # Check if running under pytest
+    if "pytest" in sys.modules:
+        return False
+
+    # Check if stdout is a TTY
+    return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+
+
+def _resolve_progress_callback(
+    progress: ProgressParam,
+) -> tuple[ProgressCallback | None, RichProgressReporter | None]:
+    """Resolve progress parameter to callback and optional context manager.
+
+    Parameters
+    ----------
+    progress : bool | Callable | None
+        The progress parameter from remesh methods.
+
+    Returns
+    -------
+    tuple[ProgressCallback | None, RichProgressReporter | None]
+        A tuple of (callback, reporter_ctx). If reporter_ctx is not None,
+        it must be used as a context manager to manage the Rich display.
+
+    """
+    from mmgpy._progress import RichProgressReporter  # noqa: PLC0415
+
+    if progress is True:
+        # Only show progress bar in interactive terminals
+        if _is_interactive_terminal():
+            reporter = RichProgressReporter(transient=True)
+            return reporter, reporter
+        return None, None
+    if callable(progress):
+        return progress, None
+    return None, None
 
 
 def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
@@ -1052,6 +1111,8 @@ class Mesh:
     def remesh(
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
+        *,
+        progress: ProgressParam = True,
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         """Remesh the mesh in-place.
@@ -1060,6 +1121,12 @@ class Mesh:
         ----------
         options : Mmg3DOptions | Mmg2DOptions | MmgSOptions, optional
             Options object for remeshing parameters.
+        progress : bool | Callable[[ProgressEvent], bool] | None, default=True
+            Progress reporting option:
+            - True: Show Rich progress bar (default)
+            - False or None: No progress reporting
+            - Callable: Custom callback that receives ProgressEvent and returns
+              True to continue or False to cancel
         **kwargs : float
             Individual remeshing parameters (hmin, hmax, hsiz, hausd, etc.).
 
@@ -1068,12 +1135,29 @@ class Mesh:
         RemeshResult
             Statistics from the remeshing operation.
 
+        Raises
+        ------
+        CancellationError
+            If the progress callback returns False to cancel the operation.
+
+        Examples
+        --------
+        >>> mesh.remesh(hmax=0.1)  # Shows progress bar by default
+
+        >>> mesh.remesh(hmax=0.1, progress=False)  # No progress bar
+
+        >>> def my_callback(event):
+        ...     print(f"{event.phase}: {event.message}")
+        ...     return True  # Continue
+        >>> mesh.remesh(hmax=0.1, progress=my_callback)
+
         """
         from mmgpy._options import (  # noqa: PLC0415
             Mmg2DOptions,
             Mmg3DOptions,
             MmgSOptions,
         )
+        from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
         # Validate and convert options object
         if options is not None:
@@ -1103,13 +1187,52 @@ class Mesh:
         if self._sizing_constraints:
             self._apply_sizing_to_metric()
 
-        # Call raw C++ method and convert result
-        stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
-        return _dict_to_remesh_result(stats)
+        # Resolve progress callback
+        callback, reporter_ctx = _resolve_progress_callback(progress)
+        if reporter_ctx is not None:
+            reporter_ctx.__enter__()
+
+        try:
+            # Emit progress events
+            if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
+                raise CancellationError.for_phase("init")  # noqa: EM101
+
+            initial_vertices = len(self._impl.get_vertices())
+
+            if not _emit_event(callback, "options", "start", "Options", progress=0.0):
+                raise CancellationError.for_phase("options")  # noqa: EM101
+
+            _emit_event(callback, "options", "complete", "Options set", progress=1.0)
+
+            if not _emit_event(callback, "remesh", "start", "Remeshing", progress=0.0):
+                raise CancellationError.for_phase("remesh")  # noqa: EM101
+
+            # Call raw C++ method and convert result
+            stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
+            final_vertices = len(self._impl.get_vertices())
+
+            _emit_event(
+                callback,
+                "remesh",
+                "complete",
+                "Remeshing complete",
+                progress=1.0,
+                details={
+                    "initial_vertices": initial_vertices,
+                    "final_vertices": final_vertices,
+                    "vertex_change": final_vertices - initial_vertices,
+                },
+            )
+            return _dict_to_remesh_result(stats)
+        finally:
+            if reporter_ctx is not None:
+                reporter_ctx.__exit__(None, None, None)
 
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
+        *,
+        progress: ProgressParam = True,
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         """Remesh with Lagrangian motion.
@@ -1120,6 +1243,12 @@ class Mesh:
         ----------
         displacement : ndarray
             Displacement field for each vertex.
+        progress : bool | Callable[[ProgressEvent], bool] | None, default=True
+            Progress reporting option:
+            - True: Show Rich progress bar (default)
+            - False or None: No progress reporting
+            - Callable: Custom callback that receives ProgressEvent and returns
+              True to continue or False to cancel
         **kwargs : float
             Additional remeshing parameters.
 
@@ -1132,18 +1261,60 @@ class Mesh:
         ------
         TypeError
             If mesh is TRIANGULAR_SURFACE.
+        CancellationError
+            If the progress callback returns False to cancel the operation.
 
         """
+        from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+
         if self._kind == MeshKind.TRIANGULAR_SURFACE:
             msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
             raise TypeError(msg)
-        impl = cast("MmgMesh3D | MmgMesh2D", self._impl)
-        stats = impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[arg-type]
-        return _dict_to_remesh_result(stats)
+
+        callback, reporter_ctx = _resolve_progress_callback(progress)
+        if reporter_ctx is not None:
+            reporter_ctx.__enter__()
+
+        try:
+            if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
+                raise CancellationError.for_phase("init")  # noqa: EM101
+
+            initial_vertices = len(self._impl.get_vertices())
+
+            if not _emit_event(callback, "options", "start", "Disp", progress=0.0):
+                raise CancellationError.for_phase("options")  # noqa: EM101
+
+            _emit_event(callback, "options", "complete", "Disp set", progress=1.0)
+
+            if not _emit_event(callback, "remesh", "start", "Lagrangian", progress=0.0):
+                raise CancellationError.for_phase("remesh")  # noqa: EM101
+
+            impl = cast("MmgMesh3D | MmgMesh2D", self._impl)
+            stats = impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[arg-type]
+            final_vertices = len(self._impl.get_vertices())
+
+            _emit_event(
+                callback,
+                "remesh",
+                "complete",
+                "Lagrangian complete",
+                progress=1.0,
+                details={
+                    "initial_vertices": initial_vertices,
+                    "final_vertices": final_vertices,
+                    "vertex_change": final_vertices - initial_vertices,
+                },
+            )
+            return _dict_to_remesh_result(stats)
+        finally:
+            if reporter_ctx is not None:
+                reporter_ctx.__exit__(None, None, None)
 
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
+        *,
+        progress: ProgressParam = True,
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         """Remesh with level-set discretization.
@@ -1152,6 +1323,12 @@ class Mesh:
         ----------
         levelset : ndarray
             Level-set field for each vertex.
+        progress : bool | Callable[[ProgressEvent], bool] | None, default=True
+            Progress reporting option:
+            - True: Show Rich progress bar (default)
+            - False or None: No progress reporting
+            - Callable: Custom callback that receives ProgressEvent and returns
+              True to continue or False to cancel
         **kwargs : float
             Additional remeshing parameters.
 
@@ -1160,11 +1337,58 @@ class Mesh:
         RemeshResult
             Statistics from the remeshing operation.
 
-        """
-        stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
-        return _dict_to_remesh_result(stats)
+        Raises
+        ------
+        CancellationError
+            If the progress callback returns False to cancel the operation.
 
-    def remesh_optimize(self, *, verbose: int | None = None) -> RemeshResult:
+        """
+        from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+
+        callback, reporter_ctx = _resolve_progress_callback(progress)
+        if reporter_ctx is not None:
+            reporter_ctx.__enter__()
+
+        try:
+            if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
+                raise CancellationError.for_phase("init")  # noqa: EM101
+
+            initial_vertices = len(self._impl.get_vertices())
+
+            if not _emit_event(callback, "options", "start", "Level-set", progress=0.0):
+                raise CancellationError.for_phase("options")  # noqa: EM101
+
+            _emit_event(callback, "options", "complete", "Level-set set", progress=1.0)
+
+            if not _emit_event(callback, "remesh", "start", "LS remesh", progress=0.0):
+                raise CancellationError.for_phase("remesh")  # noqa: EM101
+
+            stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
+            final_vertices = len(self._impl.get_vertices())
+
+            _emit_event(
+                callback,
+                "remesh",
+                "complete",
+                "Level-set complete",
+                progress=1.0,
+                details={
+                    "initial_vertices": initial_vertices,
+                    "final_vertices": final_vertices,
+                    "vertex_change": final_vertices - initial_vertices,
+                },
+            )
+            return _dict_to_remesh_result(stats)
+        finally:
+            if reporter_ctx is not None:
+                reporter_ctx.__exit__(None, None, None)
+
+    def remesh_optimize(
+        self,
+        *,
+        progress: ProgressParam = True,
+        verbose: int | None = None,
+    ) -> RemeshResult:
         """Optimize mesh quality without changing topology.
 
         Only moves vertices to improve element quality.
@@ -1172,6 +1396,11 @@ class Mesh:
 
         Parameters
         ----------
+        progress : bool | Callable[[ProgressEvent], bool] | None, default=True
+            Progress reporting option:
+            - True: Show Rich progress bar (default)
+            - False or None: No progress reporting
+            - Callable: Custom callback
         verbose : int | None
             Verbosity level (-1=silent, 0=errors, 1=info).
 
@@ -1184,12 +1413,13 @@ class Mesh:
         opts: dict[str, int | float] = {"optim": 1, "noinsert": 1}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(**opts)  # type: ignore[arg-type]
+        return self.remesh(progress=progress, **opts)  # type: ignore[arg-type]
 
     def remesh_uniform(
         self,
         size: float,
         *,
+        progress: ProgressParam = True,
         verbose: int | None = None,
     ) -> RemeshResult:
         """Remesh with uniform element size.
@@ -1198,6 +1428,11 @@ class Mesh:
         ----------
         size : float
             Target edge size for all elements.
+        progress : bool | Callable[[ProgressEvent], bool] | None, default=True
+            Progress reporting option:
+            - True: Show Rich progress bar (default)
+            - False or None: No progress reporting
+            - Callable: Custom callback
         verbose : int | None
             Verbosity level (-1=silent, 0=errors, 1=info).
 
@@ -1210,7 +1445,7 @@ class Mesh:
         opts: dict[str, int | float] = {"hsiz": size}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(**opts)  # type: ignore[arg-type]
+        return self.remesh(progress=progress, **opts)  # type: ignore[arg-type]
 
     # =========================================================================
     # Local sizing constraints
