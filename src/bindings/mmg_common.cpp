@@ -6,8 +6,10 @@
 #include <sstream>
 
 #ifdef _WIN32
+#include <BaseTsd.h>
 #include <fcntl.h>
 #include <io.h>
+typedef SSIZE_T ssize_t;
 #define pipe(fds) _pipe(fds, 65536, _O_BINARY)
 #define read _read
 #define write _write
