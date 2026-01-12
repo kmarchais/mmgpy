@@ -1224,6 +1224,9 @@ py::dict MmgMesh::remesh(const py::dict &options) {
 
   set_mesh_options_3D(mesh, met, options);
 
+  // Capture stderr to collect MMG warnings
+  StderrCapture capture;
+
   auto start = std::chrono::high_resolution_clock::now();
 
   int ret;
@@ -1242,13 +1245,17 @@ py::dict MmgMesh::remesh(const py::dict &options) {
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
+  // Stop capture and parse warnings before potentially throwing
+  std::string captured = capture.get();
+  std::vector<std::string> warnings = parse_mmg_warnings(captured);
+
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 
   RemeshStats after = collect_mesh_stats_3d(mesh, met);
 
-  return build_remesh_result(before, after, duration, ret);
+  return build_remesh_result(before, after, duration, ret, warnings);
 }
 
 py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
@@ -1260,10 +1267,17 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
       merge_options_with_default(options, "lag", py::int_(1));
   set_mesh_options_3D(mesh, met, lag_options);
 
+  // Capture stderr to collect MMG warnings
+  StderrCapture capture;
+
   auto start = std::chrono::high_resolution_clock::now();
   int ret = MMG3D_mmg3dmov(mesh, met, disp);
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
+
+  // Stop capture and parse warnings before potentially throwing
+  std::string captured = capture.get();
+  std::vector<std::string> warnings = parse_mmg_warnings(captured);
 
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error("MMG3D Lagrangian motion remeshing failed (ret=" +
@@ -1272,7 +1286,7 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
 
   RemeshStats after = collect_mesh_stats_3d(mesh, met);
 
-  return build_remesh_result(before, after, duration, ret);
+  return build_remesh_result(before, after, duration, ret, warnings);
 }
 
 py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
@@ -1283,10 +1297,17 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
   set_mesh_options_3D(mesh, met, ls_options);
 
+  // Capture stderr to collect MMG warnings
+  StderrCapture capture;
+
   auto start = std::chrono::high_resolution_clock::now();
   int ret = MMG3D_mmg3dls(mesh, ls, met);
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
+
+  // Stop capture and parse warnings before potentially throwing
+  std::string captured = capture.get();
+  std::vector<std::string> warnings = parse_mmg_warnings(captured);
 
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error("MMG3D level-set discretization failed (ret=" +
@@ -1295,5 +1316,5 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
 
   RemeshStats after = collect_mesh_stats_3d(mesh, met);
 
-  return build_remesh_result(before, after, duration, ret);
+  return build_remesh_result(before, after, duration, ret, warnings);
 }
