@@ -1281,12 +1281,30 @@ class Mesh:
 
             initial_vertices = len(self._impl.get_vertices())
 
-            if not _emit_event(callback, "options", "start", "Disp", progress=0.0):
+            if not _emit_event(
+                callback,
+                "options",
+                "start",
+                "Displacement",
+                progress=0.0,
+            ):
                 raise CancellationError.for_phase("options")  # noqa: EM101
 
-            _emit_event(callback, "options", "complete", "Disp set", progress=1.0)
+            _emit_event(
+                callback,
+                "options",
+                "complete",
+                "Displacement set",
+                progress=1.0,
+            )
 
-            if not _emit_event(callback, "remesh", "start", "Lagrangian", progress=0.0):
+            if not _emit_event(
+                callback,
+                "remesh",
+                "start",
+                "Lagrangian remeshing",
+                progress=0.0,
+            ):
                 raise CancellationError.for_phase("remesh")  # noqa: EM101
 
             impl = cast("MmgMesh3D | MmgMesh2D", self._impl)
@@ -1360,7 +1378,13 @@ class Mesh:
 
             _emit_event(callback, "options", "complete", "Level-set set", progress=1.0)
 
-            if not _emit_event(callback, "remesh", "start", "LS remesh", progress=0.0):
+            if not _emit_event(
+                callback,
+                "remesh",
+                "start",
+                "Level-set remeshing",
+                progress=0.0,
+            ):
                 raise CancellationError.for_phase("remesh")  # noqa: EM101
 
             stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
