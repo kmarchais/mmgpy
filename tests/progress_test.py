@@ -438,8 +438,24 @@ def test_mesh_remesh_progress_callback(simple_mesh: Mesh) -> None:
     assert "remesh" in phases
 
 
-def test_mesh_remesh_cancellation(simple_mesh: Mesh) -> None:
-    """Test Mesh.remesh raises CancellationError when callback cancels."""
+def test_mesh_remesh_cancellation_at_init(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh raises CancellationError when cancelled at init."""
+    tracker = CallbackTracker(cancel_at_phase="init")
+
+    with pytest.raises(CancellationError, match="init"):
+        simple_mesh.remesh(hmax=0.5, progress=tracker, verbose=-1)
+
+
+def test_mesh_remesh_cancellation_at_options(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh raises CancellationError when cancelled at options."""
+    tracker = CallbackTracker(cancel_at_phase="options")
+
+    with pytest.raises(CancellationError, match="options"):
+        simple_mesh.remesh(hmax=0.5, progress=tracker, verbose=-1)
+
+
+def test_mesh_remesh_cancellation_at_remesh(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh raises CancellationError when callback cancels at remesh."""
     tracker = CallbackTracker(cancel_at_phase="remesh")
 
     with pytest.raises(CancellationError, match="remesh"):
@@ -480,14 +496,36 @@ def test_mesh_remesh_levelset_progress(simple_mesh: Mesh) -> None:
     assert "remesh" in phases
 
 
-def test_mesh_remesh_levelset_cancellation(simple_mesh: Mesh) -> None:
-    """Test Mesh.remesh_levelset raises CancellationError when cancelled."""
+def test_mesh_remesh_levelset_cancellation_at_init(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh_levelset raises CancellationError when cancelled at init."""
     tracker = CallbackTracker(cancel_at_phase="init")
     vertices = simple_mesh.get_vertices()
     center = vertices.mean(axis=0)
     levelset = (np.linalg.norm(vertices - center, axis=1) - 0.5).reshape(-1, 1)
 
     with pytest.raises(CancellationError, match="init"):
+        simple_mesh.remesh_levelset(levelset, progress=tracker, verbose=-1)
+
+
+def test_mesh_remesh_levelset_cancellation_at_options(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh_levelset raises CancellationError at options."""
+    tracker = CallbackTracker(cancel_at_phase="options")
+    vertices = simple_mesh.get_vertices()
+    center = vertices.mean(axis=0)
+    levelset = (np.linalg.norm(vertices - center, axis=1) - 0.5).reshape(-1, 1)
+
+    with pytest.raises(CancellationError, match="options"):
+        simple_mesh.remesh_levelset(levelset, progress=tracker, verbose=-1)
+
+
+def test_mesh_remesh_levelset_cancellation_at_remesh(simple_mesh: Mesh) -> None:
+    """Test Mesh.remesh_levelset raises CancellationError at remesh."""
+    tracker = CallbackTracker(cancel_at_phase="remesh")
+    vertices = simple_mesh.get_vertices()
+    center = vertices.mean(axis=0)
+    levelset = (np.linalg.norm(vertices - center, axis=1) - 0.5).reshape(-1, 1)
+
+    with pytest.raises(CancellationError, match="remesh"):
         simple_mesh.remesh_levelset(levelset, progress=tracker, verbose=-1)
 
 
@@ -547,13 +585,49 @@ def test_mesh_remesh_lagrangian_progress(simple_2d_high_level_mesh: Mesh) -> Non
 
 
 @pytest.mark.skipif(not _lagrangian_available(), reason="Lagrangian not available")
-def test_mesh_remesh_lagrangian_cancellation(simple_2d_high_level_mesh: Mesh) -> None:
-    """Test Mesh.remesh_lagrangian raises CancellationError when cancelled."""
+def test_mesh_remesh_lagrangian_cancellation_at_init(
+    simple_2d_high_level_mesh: Mesh,
+) -> None:
+    """Test Mesh.remesh_lagrangian raises CancellationError at init."""
+    tracker = CallbackTracker(cancel_at_phase="init")
+    vertices = simple_2d_high_level_mesh.get_vertices()
+    displacement = np.zeros_like(vertices)
+
+    with pytest.raises(CancellationError, match="init"):
+        simple_2d_high_level_mesh.remesh_lagrangian(
+            displacement,
+            progress=tracker,
+            verbose=-1,
+        )
+
+
+@pytest.mark.skipif(not _lagrangian_available(), reason="Lagrangian not available")
+def test_mesh_remesh_lagrangian_cancellation_at_options(
+    simple_2d_high_level_mesh: Mesh,
+) -> None:
+    """Test Mesh.remesh_lagrangian raises CancellationError at options."""
     tracker = CallbackTracker(cancel_at_phase="options")
     vertices = simple_2d_high_level_mesh.get_vertices()
     displacement = np.zeros_like(vertices)
 
     with pytest.raises(CancellationError, match="options"):
+        simple_2d_high_level_mesh.remesh_lagrangian(
+            displacement,
+            progress=tracker,
+            verbose=-1,
+        )
+
+
+@pytest.mark.skipif(not _lagrangian_available(), reason="Lagrangian not available")
+def test_mesh_remesh_lagrangian_cancellation_at_remesh(
+    simple_2d_high_level_mesh: Mesh,
+) -> None:
+    """Test Mesh.remesh_lagrangian raises CancellationError at remesh."""
+    tracker = CallbackTracker(cancel_at_phase="remesh")
+    vertices = simple_2d_high_level_mesh.get_vertices()
+    displacement = np.zeros_like(vertices)
+
+    with pytest.raises(CancellationError, match="remesh"):
         simple_2d_high_level_mesh.remesh_lagrangian(
             displacement,
             progress=tracker,
