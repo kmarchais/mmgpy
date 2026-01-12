@@ -153,7 +153,6 @@ ignore = [
 ]
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
-    "S607",   # partial executable paths for patchelf are intentional
     "E402",   # imports inside functions are intentional for lazy loading
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
