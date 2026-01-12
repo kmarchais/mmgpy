@@ -196,7 +196,7 @@ from . import interactive, lagrangian, metrics, progress, repair, sizing
 from ._io import read
 from ._mesh import Mesh, MeshCheckpoint, MeshKind
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
-from ._progress import ProgressEvent, rich_progress
+from ._progress import CancellationError, ProgressEvent, rich_progress
 from ._pyvista import from_pyvista, to_pyvista
 from ._result import RemeshResult
 from ._validation import (
@@ -219,6 +219,7 @@ from .sizing import (
 __all__ = [
     "MMG_VERSION",
     "BoxSize",
+    "CancellationError",
     "CylinderSize",
     "IssueSeverity",
     "Mesh",
