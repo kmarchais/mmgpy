@@ -296,6 +296,8 @@ omit = [
     "*/interactive/*",  # PyVista UI code requires display, hard to test in CI
     "*/ui/app.py",      # Trame UI app requires browser, hard to test in CI
     "*/ui/__main__.py", # Entry point for UI
+    "*/ui/viewer.py",   # Trame viewer mixin requires browser
+    "*/ui/remeshing.py", # Trame remeshing mixin requires browser
 ]
 
 [tool.coverage.report]
