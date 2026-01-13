@@ -121,6 +121,7 @@ ignore = [
     "S603",    # subprocess calls allowed in tests
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
+    "ANN",     # type annotations not required for tests
 ]
 ".github/scripts/**/*.py" = [
     "INP001",  # CI scripts are not a package
@@ -184,9 +185,9 @@ ignore = [
 ]
 "src/mmgpy/ui/**/*.py" = [
     "PLC0415", # imports inside functions for lazy loading
-    "S307",    # eval used safely for user formulas in levelset computation
     "PLR0915", # many statements for UI building methods
     "PLR0912", # many branches for UI logic
+    "PLR0911", # many returns in recursive AST evaluator (parsers.py)
     "PLR2004", # magic values for UI constants
     "ARG002",  # unused kwargs in callbacks (trame pattern)
     "ANN",     # type annotations not required for UI callbacks
@@ -199,7 +200,6 @@ ignore = [
     "SIM117",  # nested withs are clearer in trame
     "RUF001",  # unicode multiplication sign intentional
     "RUF046",  # int(floor()) is explicit and clear
-    "NPY002",  # legacy numpy random is fine for demo
     "PLW2901", # loop variable reassignment is intentional
     "TRY003",  # exception messages in UI are user-facing
     "TRY301",  # simple raises are fine in validation code
@@ -290,7 +290,8 @@ branch = true
 omit = [
     "*/_mmgpy*",
     "*/interactive/*",  # PyVista UI code requires display, hard to test in CI
-    "*/ui/*",           # Trame UI code requires browser, hard to test in CI
+    "*/ui/app.py",      # Trame UI app requires browser, hard to test in CI
+    "*/ui/__main__.py", # Entry point for UI
 ]
 
 [tool.coverage.report]

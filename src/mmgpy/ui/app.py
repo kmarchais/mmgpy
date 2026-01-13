@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import re
+import base64
+import logging
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -16,125 +17,28 @@ from trame.widgets import html
 from trame.widgets import vtk as vtk_widgets
 from trame.widgets import vuetify3 as v3
 
+from mmgpy.ui.parsers import evaluate_levelset_formula, parse_sol_file
+from mmgpy.ui.samples import get_sample_mesh
+from mmgpy.ui.utils import (
+    DEFAULT_REMESH_MODE_ITEMS,
+    DEFAULT_SCALAR_FIELD_OPTIONS,
+    DEFAULT_STATE,
+    compute_preset_values,
+    get_mesh_diagonal,
+    reset_solution_state,
+    round_to_significant,
+    to_float,
+)
+
 if TYPE_CHECKING:
     from mmgpy import Mesh
 
+logger = logging.getLogger(__name__)
+
 pv.OFF_SCREEN = True
 
-
-def parse_sol_file(content: str) -> dict[str, dict]:
-    """Parse a Medit .sol file and return solution fields.
-
-    Parameters
-    ----------
-    content : str
-        Content of the .sol file.
-
-    Returns
-    -------
-    dict[str, dict]
-        Dictionary mapping field names to dicts with:
-        - "data": numpy array
-        - "location": "vertices", "triangles", or "tetrahedra"
-
-    """
-    lines = content.strip().split("\n")
-    fields: dict[str, dict] = {}
-
-    i = 0
-    dimension = 3
-
-    # Map keyword to location name
-    location_map = {
-        "SolAtVertices": "vertices",
-        "SolAtTriangles": "triangles",
-        "SolAtTetrahedra": "tetrahedra",
-    }
-
-    while i < len(lines):
-        line = lines[i].strip()
-
-        if line.startswith("Dimension"):
-            match = re.search(r"\d+", line)
-            if match:
-                dimension = int(match.group())
-            elif i + 1 < len(lines):
-                i += 1
-                dimension = int(lines[i].strip())
-            i += 1
-            continue
-
-        # Check for any SolAt* keyword
-        location = None
-        for keyword, loc_name in location_map.items():
-            if line.startswith(keyword):
-                location = loc_name
-                break
-
-        if location is not None:
-            i += 1
-            if i >= len(lines):
-                break
-
-            n_entities = int(lines[i].strip())
-            i += 1
-            if i >= len(lines):
-                break
-
-            type_line = lines[i].strip().split()
-            n_solutions = int(type_line[0])
-            sol_types = [int(t) for t in type_line[1 : 1 + n_solutions]]
-
-            i += 1
-            values: list[list[float]] = []
-            while len(values) < n_entities and i < len(lines):
-                line = lines[i].strip()
-                if line == "End" or line.startswith(("Mesh", "Sol")):
-                    break
-                if line == "":
-                    i += 1
-                    continue
-                row_values = [float(v) for v in line.split()]
-                values.append(row_values)
-                i += 1
-
-            if values:
-                data = np.array(values, dtype=np.float64)
-                col_idx = 0
-                for sol_idx, sol_type in enumerate(sol_types):
-                    if sol_type == 1:
-                        base = f"solution_{sol_idx}" if n_solutions > 1 else "solution"
-                        name = f"{base}@{location}"
-                        if data.ndim == 1:
-                            fields[name] = {"data": data, "location": location}
-                        else:
-                            fields[name] = {
-                                "data": data[:, col_idx],
-                                "location": location,
-                            }
-                        col_idx += 1
-                    elif sol_type == 2:
-                        base = f"vector_{sol_idx}" if n_solutions > 1 else "vector"
-                        name = f"{base}@{location}"
-                        fields[name] = {
-                            "data": data[:, col_idx : col_idx + dimension],
-                            "location": location,
-                        }
-                        col_idx += dimension
-                    elif sol_type == 3:
-                        tensor_size = 6 if dimension == 3 else 3
-                        base = f"tensor_{sol_idx}" if n_solutions > 1 else "tensor"
-                        name = f"{base}@{location}"
-                        fields[name] = {
-                            "data": data[:, col_idx : col_idx + tensor_size],
-                            "location": location,
-                        }
-                        col_idx += tensor_size
-            continue
-
-        i += 1
-
-    return fields
+# Random number generator for reproducible displacement fields
+_rng = np.random.default_rng()
 
 
 class MmgpyApp:
@@ -146,7 +50,18 @@ class MmgpyApp:
         mesh: Mesh | None = None,
         debug: bool = False,
     ) -> None:
-        """Initialize the application."""
+        """Initialize the application.
+
+        Parameters
+        ----------
+        server : str | None
+            Server name for trame. If None, creates a new server.
+        mesh : Mesh | None
+            Pre-loaded mesh to display.
+        debug : bool
+            Enable debug mode with HTML structure printing.
+
+        """
         self.server = get_server(server, client_type="vue3")
         self.state = self.server.state
         self.ctrl = self.server.controller
@@ -171,88 +86,13 @@ class MmgpyApp:
 
     def _init_state(self) -> None:
         """Initialize application state."""
-        self.state.setdefault("drawer_open", True)
-        self.state.setdefault("active_tab", "remesh")
+        # Apply default state values
+        for key, value in DEFAULT_STATE.items():
+            self.state.setdefault(key, value)
 
-        self.state.setdefault("mesh_loaded", False)
-        self.state.setdefault("mesh_info", "")
-        self.state.setdefault("mesh_kind", "")
-        self.state.setdefault("mesh_stats", None)
-        self.state.setdefault("info_panel_open", True)
-
-        self.state.setdefault("hmin", None)
-        self.state.setdefault("hmax", 0.1)
-        self.state.setdefault("hsiz", None)
-        self.state.setdefault("hausd", 0.01)
-        self.state.setdefault("hgrad", 1.3)
-        self.state.setdefault("ar", 45.0)
-        self.state.setdefault("verbose", 1)
-
-        self.state.setdefault(
-            "selected_options",
-            [],
-        )  # Multi-select: optim, noinsert, noswap, nomove
-        self.state.setdefault("nosurf", False)
-
-        self.state.setdefault("use_preset", "custom")
-        self.state.setdefault("remesh_mode", "standard")
-        self.state.setdefault("remesh_source", "original")  # "original" or "current"
-
-        self.state.setdefault("levelset_formula", "x**2 + y**2 + z**2 - 0.25")
-        self.state.setdefault("displacement_scale", 0.1)
-        self.state.setdefault("use_solution_as_metric", False)
-        self.state.setdefault("use_solution_as_levelset", False)
-        self.state.setdefault("solution_type", "")  # "levelset" or "metric"
-
-        self.state.setdefault("sizing_mode", "sphere")
-        self.state.setdefault("sizing_constraints", [])
-
-        self.state.setdefault("validation_report", None)
-        self.state.setdefault("remesh_result", None)
-        self.state.setdefault("is_remeshing", False)
-
-        self.state.setdefault("show_edges", True)
-        self.state.setdefault("show_scalar", "none")
-        self.state.setdefault("color_map", "RdYlBu")
-        self.state.setdefault(
-            "scalar_field_options",
-            [
-                {"title": "No Color", "value": "none"},
-                {"type": "subheader", "title": "— Quality —"},
-                {"title": "In-Radius Ratio", "value": "quality"},
-                {"title": "Scaled Jacobian", "value": "pv_quality"},
-                {"type": "subheader", "title": "— Other —"},
-                {"title": "Area/Volume", "value": "area_volume"},
-                {"title": "Refs", "value": "refs"},
-            ],
-        )
-        self.state.setdefault("opacity", 1.0)
-        self.state.setdefault("smooth_shading", False)
-
-        # Slice view for tetrahedral meshes (extract cells, not clip)
-        self.state.setdefault("slice_enabled", False)
-        self.state.setdefault("slice_axis", 0)  # 0=X, 1=Y, 2=Z
-        self.state.setdefault("slice_threshold", 0.5)  # 0-1 relative to bounds
-
-        self.state.setdefault("file_upload", None)
-        self.state.setdefault("sol_file_upload", None)
-        self.state.setdefault("mesh_filename", "")
-        self.state.setdefault("sol_filename", "")
-        self.state.setdefault("solution_fields", {})  # name -> array
-        self.state.setdefault("export_format", "vtk")
-
-        self.state.setdefault("current_view", "isometric")
-        self.state.setdefault("parallel_projection", False)
-
-        self.state.setdefault(
-            "remesh_mode_items",
-            [
-                {"title": "Standard Remesh", "value": "standard"},
-                {"title": "Levelset Discretization", "value": "levelset"},
-                {"title": "Lagrangian Motion", "value": "lagrangian"},
-                {"title": "Optimize Only", "value": "optimize"},
-            ],
-        )
+        # Set complex defaults that need special handling
+        self.state.setdefault("scalar_field_options", DEFAULT_SCALAR_FIELD_OPTIONS)
+        self.state.setdefault("remesh_mode_items", DEFAULT_REMESH_MODE_ITEMS)
 
     def _setup_callbacks(self) -> None:
         """Set up state change callbacks."""
@@ -336,20 +176,18 @@ class MmgpyApp:
 
         self.state.current_view = view
 
-        if view == "xy":
-            self._plotter.view_xy()
-        elif view == "-xy":
-            self._plotter.view_xy(negative=True)
-        elif view == "xz":
-            self._plotter.view_xz()
-        elif view == "-xz":
-            self._plotter.view_xz(negative=True)
-        elif view == "yz":
-            self._plotter.view_yz()
-        elif view == "-yz":
-            self._plotter.view_yz(negative=True)
-        elif view == "isometric":
-            self._plotter.view_isometric()
+        view_methods = {
+            "xy": lambda: self._plotter.view_xy(),
+            "-xy": lambda: self._plotter.view_xy(negative=True),
+            "xz": lambda: self._plotter.view_xz(),
+            "-xz": lambda: self._plotter.view_xz(negative=True),
+            "yz": lambda: self._plotter.view_yz(),
+            "-yz": lambda: self._plotter.view_yz(negative=True),
+            "isometric": lambda: self._plotter.view_isometric(),
+        }
+
+        if view in view_methods:
+            view_methods[view]()
 
         if self._render_window is not None:
             self._render_window.Render()
@@ -388,28 +226,32 @@ class MmgpyApp:
 
         try:
             self._mesh = Mesh(tmp_path)
-            self._original_mesh = Mesh(tmp_path)  # Store original for re-remeshing
-            self._update_mesh_info()
-            self._apply_adaptive_defaults()  # Set params based on mesh scale
-            self._update_viewer()
-            self.state.mesh_loaded = True
-            self.state.mesh_filename = client_file.name
-            self.state.sol_filename = ""
-            self.state.remesh_result = None
-            self.state.solution_fields = {}
-            self.state.use_solution_as_metric = False
-            self.state.use_solution_as_levelset = False
-            self.state.solution_type = ""
-            self._solution_metric = None
-            self._solution_fields = {}
-            self._original_solution_metric = None
-            self._original_solution_fields = {}
-        except Exception as e:
-            self.state.mesh_info = f"Error loading mesh: {e}"
+            self._original_mesh = Mesh(tmp_path)
+            self._update_mesh_state_after_load(client_file.name)
+        except Exception:
+            logger.exception("Error loading mesh file: %s", client_file.name)
+            self.state.mesh_info = "Error loading mesh. Check file format."
         finally:
             self.state.file_upload = None
             self.state.flush()
             Path(tmp_path).unlink(missing_ok=True)
+
+    def _update_mesh_state_after_load(self, filename: str) -> None:
+        """Update state after loading a mesh."""
+        self._update_mesh_info()
+        self._apply_adaptive_defaults()
+        self._update_viewer()
+        self.state.mesh_loaded = True
+        self.state.mesh_filename = filename
+        self.state.remesh_result = None
+
+        # Reset solution state
+        for key, value in reset_solution_state().items():
+            setattr(self.state, key, value)
+        self._solution_metric = None
+        self._solution_fields = {}
+        self._original_solution_metric = None
+        self._original_solution_fields = {}
 
     def _handle_sol_file_upload(self, sol_file_upload) -> None:
         """Handle uploaded solution file."""
@@ -458,7 +300,6 @@ class MmgpyApp:
 
             # Warn user if fields were skipped due to count mismatch
             if mismatched_fields and not valid_fields:
-                # Build informative error message
                 field_parts = []
                 for name, info in mismatched_fields.items():
                     field_parts.append(
@@ -476,76 +317,72 @@ class MmgpyApp:
                 self.state.sol_filename = ""
                 return
 
-            # Store solution fields in app instance for visualization
-            self._solution_fields = valid_fields
-            # Store deep copy as original (for remeshing from original mesh)
-            self._original_solution_fields = {
-                name: {"data": info["data"].copy(), "location": info["location"]}
-                for name, info in valid_fields.items()
-            }
-            self.state.solution_fields = {
-                name: {
-                    "shape": info["data"].shape,
-                    "location": info["location"],
-                }
-                for name, info in valid_fields.items()
-            }
-            self._update_scalar_field_options()
+            self._process_valid_solution_fields(valid_fields, client_file.name)
 
-            if valid_fields:
-                first_field = next(iter(valid_fields.keys()))
-                self.state.show_scalar = f"user_{first_field}"
-                first_info = valid_fields[first_field]
-
-                # Only use vertex-based solutions for metric/levelset
-                if first_info["location"] == "vertices":
-                    data = first_info["data"]
-                    self._solution_metric = data.copy()
-                    self._original_solution_metric = data.copy()
-
-                    # Auto-detect: levelset (has negatives) vs metric (all positive)
-                    has_negative = np.any(data < 0)
-                    has_zero_or_negative = np.any(data <= 0)
-
-                    if has_negative:
-                        # Signed distance field → use as levelset
-                        self.state.solution_type = "levelset"
-                        self.state.use_solution_as_levelset = True
-                        self.state.use_solution_as_metric = False
-                        self.state.remesh_mode = "levelset"
-                    elif has_zero_or_negative:
-                        # Has zeros but no negatives → ambiguous, default to levelset
-                        self.state.solution_type = "levelset"
-                        self.state.use_solution_as_levelset = True
-                        self.state.use_solution_as_metric = False
-                        self.state.remesh_mode = "levelset"
-                    else:
-                        # All positive → use as metric (sizing field)
-                        self.state.solution_type = "metric"
-                        self.state.use_solution_as_metric = True
-                        self.state.use_solution_as_levelset = False
-
-            self._update_viewer(reset_camera=False)
-            self.state.sol_filename = client_file.name
-        except Exception as e:
-            self.state.remesh_result = {"error": f"Error loading solution: {e}"}
+        except Exception:
+            logger.exception("Error loading solution file: %s", client_file.name)
+            self.state.remesh_result = {"error": "Error loading solution file"}
         finally:
             self.state.sol_file_upload = None
 
+    def _process_valid_solution_fields(
+        self,
+        valid_fields: dict,
+        filename: str,
+    ) -> None:
+        """Process and store valid solution fields."""
+        # Store solution fields in app instance for visualization
+        self._solution_fields = valid_fields
+        # Store deep copy as original (for remeshing from original mesh)
+        self._original_solution_fields = {
+            name: {"data": info["data"].copy(), "location": info["location"]}
+            for name, info in valid_fields.items()
+        }
+        self.state.solution_fields = {
+            name: {
+                "shape": info["data"].shape,
+                "location": info["location"],
+            }
+            for name, info in valid_fields.items()
+        }
+        self._update_scalar_field_options()
+
+        if valid_fields:
+            first_field = next(iter(valid_fields.keys()))
+            self.state.show_scalar = f"user_{first_field}"
+            first_info = valid_fields[first_field]
+
+            # Only use vertex-based solutions for metric/levelset
+            if first_info["location"] == "vertices":
+                data = first_info["data"]
+                self._solution_metric = data.copy()
+                self._original_solution_metric = data.copy()
+
+                # Auto-detect: levelset (has negatives) vs metric (all positive)
+                has_negative = np.any(data < 0)
+                has_zero_or_negative = np.any(data <= 0)
+
+                if has_negative or has_zero_or_negative:
+                    # Signed distance field or ambiguous -> use as levelset
+                    self.state.solution_type = "levelset"
+                    self.state.use_solution_as_levelset = True
+                    self.state.use_solution_as_metric = False
+                    self.state.remesh_mode = "levelset"
+                else:
+                    # All positive -> use as metric (sizing field)
+                    self.state.solution_type = "metric"
+                    self.state.use_solution_as_metric = True
+                    self.state.use_solution_as_levelset = False
+
+        self._update_viewer(reset_camera=False)
+        self.state.sol_filename = filename
+
     def _update_scalar_field_options(self) -> None:
         """Update scalar field dropdown options based on available fields."""
-        base_options = [
-            {"title": "No Color", "value": "none"},
-            {"type": "subheader", "title": "— Quality —"},
-            {"title": "In-Radius Ratio", "value": "quality"},
-            {"title": "Scaled Jacobian", "value": "pv_quality"},
-            {"type": "subheader", "title": "— Other —"},
-            {"title": "Area/Volume", "value": "area_volume"},
-            {"title": "Refs", "value": "refs"},
-        ]
+        base_options = list(DEFAULT_SCALAR_FIELD_OPTIONS)
 
         if self._solution_fields:
-            base_options.append({"type": "subheader", "title": "— Solution —"})
+            base_options.append({"type": "subheader", "title": "-- Solution --"})
             for name, info in self._solution_fields.items():
                 # Create display name: "solution (vertices)" or "solution (triangles)"
                 base_name = name.split("@")[0] if "@" in name else name
@@ -559,108 +396,14 @@ class MmgpyApp:
         """Load a sample mesh."""
         from mmgpy import Mesh
 
-        def create_tetra_cube():
-            """Create a tetrahedral cube mesh from interior points."""
-            # Create a grid of points inside the cube
-            n = 5  # Points per axis
-            x = np.linspace(-0.5, 0.5, n)
-            y = np.linspace(-0.5, 0.5, n)
-            z = np.linspace(-0.5, 0.5, n)
-            xx, yy, zz = np.meshgrid(x, y, z)
-            points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
-            cloud = pv.PolyData(points)
-            return cloud.delaunay_3d()
-
-        def create_tetra_sphere():
-            """Create a tetrahedral sphere mesh from structured interior points."""
-            # Create structured points inside a sphere using spherical shells
-            points = [[0, 0, 0]]  # Center point
-            n_shells = 3
-            for shell in range(1, n_shells + 1):
-                r = shell / n_shells
-                # Number of points increases with shell radius
-                n_phi = 4 + shell * 2
-                n_theta = 8 + shell * 4
-                for i in range(n_phi):
-                    phi = np.pi * (i + 0.5) / n_phi  # Avoid poles
-                    for j in range(n_theta):
-                        theta = 2 * np.pi * j / n_theta
-                        x = r * np.sin(phi) * np.cos(theta)
-                        y = r * np.sin(phi) * np.sin(theta)
-                        z = r * np.cos(phi)
-                        points.append([x, y, z])
-            points = np.array(points)
-            cloud = pv.PolyData(points)
-            return cloud.delaunay_3d()
-
-        def create_2d_disc():
-            """Create a 2D triangular disc mesh with good quality."""
-            # Use small inner radius to avoid degenerate center triangles
-            # Then use delaunay_2d for better quality
-            n_rings = 5
-            n_sectors = 16
-            points = []
-            for i in range(n_rings + 1):
-                r = 0.1 + 0.9 * i / n_rings  # Start from r=0.1 to avoid center issues
-                if i == 0:
-                    # Add center point
-                    points.append([0, 0, 0])
-                else:
-                    for j in range(n_sectors):
-                        theta = 2 * np.pi * j / n_sectors
-                        points.append([r * np.cos(theta), r * np.sin(theta), 0])
-            points = np.array(points)
-            cloud = pv.PolyData(points)
-            return cloud.delaunay_2d()
-
-        def create_2d_rectangle():
-            """Create a 2D triangular rectangle mesh."""
-            plane = pv.Plane(i_resolution=10, j_resolution=10)
-            return plane.triangulate()
-
-        samples = {
-            # Surface meshes (mmgs)
-            "sphere": lambda: pv.Sphere(theta_resolution=20, phi_resolution=20),
-            "cube": lambda: pv.Cube().triangulate(),
-            "cylinder": lambda: pv.Cylinder(resolution=20).triangulate(),
-            "cone": lambda: pv.Cone(resolution=20).triangulate(),
-            "torus": lambda: pv.ParametricTorus(u_res=30, v_res=30),
-            "bunny": lambda: pv.examples.download_bunny(),
-            # Tetrahedral meshes (mmg3d)
-            "tetra_cube": create_tetra_cube,
-            "tetra_sphere": create_tetra_sphere,
-            # 2D meshes (mmg2d)
-            "disc_2d": create_2d_disc,
-            "rect_2d": create_2d_rectangle,
-        }
-
-        if sample_name not in samples:
+        pv_mesh = get_sample_mesh(sample_name)
+        if pv_mesh is None:
+            logger.warning("Unknown sample mesh: %s", sample_name)
             return
 
-        pv_mesh = samples[sample_name]()
-
-        if hasattr(pv_mesh, "triangulate") and pv_mesh.n_cells > 0:
-            # Only triangulate if not already tetrahedral
-            if not (hasattr(pv_mesh, "celltypes") and 10 in pv_mesh.celltypes):
-                pv_mesh = pv_mesh.triangulate()
-
         self._mesh = Mesh(pv_mesh)
-        self._original_mesh = Mesh(pv_mesh)  # Store original for re-remeshing
-        self._update_mesh_info()
-        self._apply_adaptive_defaults()  # Set params based on mesh scale
-        self._update_viewer()
-        self.state.mesh_loaded = True
-        self.state.mesh_filename = f"sample:{sample_name}"
-        self.state.sol_filename = ""
-        self.state.solution_fields = {}
-        self.state.use_solution_as_metric = False
-        self.state.use_solution_as_levelset = False
-        self.state.solution_type = ""
-        self._solution_metric = None
-        self._solution_fields = {}
-        self._original_solution_metric = None
-        self._original_solution_fields = {}
-        self.state.remesh_result = None
+        self._original_mesh = Mesh(pv_mesh)
+        self._update_mesh_state_after_load(f"sample:{sample_name}")
 
     def _update_mesh_info(self) -> None:
         """Update mesh information display."""
@@ -692,6 +435,7 @@ class MmgpyApp:
         size = bounds[1] - bounds[0]
 
         # Compute quality statistics
+        quality_stats = None
         try:
             qualities = self._mesh.get_element_qualities()
             quality_stats = {
@@ -701,7 +445,7 @@ class MmgpyApp:
                 "std": float(np.std(qualities)),
             }
         except Exception:
-            quality_stats = None
+            logger.debug("Could not compute quality statistics")
 
         # Build detailed mesh stats
         self.state.mesh_stats = {
@@ -724,27 +468,24 @@ class MmgpyApp:
 
         self.state.mesh_info = (
             f"Vertices: {n_verts:,} | {elem_type.title()}: {n_elements:,}\n"
-            f"Size: {size[0]:.3f} × {size[1]:.3f} × {size[2]:.3f}"
+            f"Size: {size[0]:.3f} x {size[1]:.3f} x {size[2]:.3f}"
             if len(size) == 3
             else f"Vertices: {n_verts:,} | {elem_type.title()}: {n_elements:,}\n"
-            f"Size: {size[0]:.3f} × {size[1]:.3f}"
+            f"Size: {size[0]:.3f} x {size[1]:.3f}"
         )
         self.state.mesh_kind = kind
         self._update_scalar_field_options()
 
     def _update_viewer(self, *, reset_camera: bool = True) -> None:
         """Update the 3D viewer with current mesh."""
-        if self._mesh is None:
-            return
-
-        if self._plotter is None:
+        if self._mesh is None or self._plotter is None:
             return
 
         self._plotter.clear()
 
         pv_mesh = self._mesh.to_pyvista()
 
-        # Compute normals for smooth shading (only for PolyData, not UnstructuredGrid)
+        # Compute normals for smooth shading
         if pv_mesh.n_cells > 0 and hasattr(pv_mesh, "compute_normals"):
             try:
                 pv_mesh = pv_mesh.compute_normals(
@@ -753,109 +494,15 @@ class MmgpyApp:
                     split_vertices=True,
                 )
             except Exception:
-                pass  # Skip if normals computation fails
+                logger.debug("Could not compute normals for mesh")
 
-        scalars = None
-        if self.state.show_scalar == "quality":
-            try:
-                qualities = self._mesh.get_element_qualities()
-                if len(qualities) == pv_mesh.n_cells:
-                    pv_mesh.cell_data["quality"] = qualities
-                    scalars = "quality"
-            except Exception:
-                pass
-        elif self.state.show_scalar == "pv_quality":
-            try:
-                pv_mesh = pv_mesh.cell_quality(quality_measure="scaled_jacobian")
-                scalars = "scaled_jacobian"
-            except Exception:
-                pass
-        elif self.state.show_scalar == "area_volume":
-            try:
-                pv_mesh = pv_mesh.compute_cell_sizes(
-                    length=False,
-                    area=True,
-                    volume=True,
-                )
-                # Use Area for 2D/surface meshes, Volume for 3D
-                if (
-                    "Volume" in pv_mesh.cell_data
-                    and pv_mesh.cell_data["Volume"].max() > 0
-                ):
-                    scalars = "Volume"
-                elif "Area" in pv_mesh.cell_data:
-                    scalars = "Area"
-            except Exception:
-                pass
-        elif self.state.show_scalar == "refs":
-            if "refs" in pv_mesh.cell_data:
-                scalars = "refs"
-        elif self.state.show_scalar.startswith("user_"):
-            field_name = self.state.show_scalar[5:]
-            try:
-                if field_name in self._solution_fields:
-                    field_info = self._solution_fields[field_name]
-                    field_data = field_info["data"]
-                    location = field_info["location"]
+        scalars = self._compute_scalars(pv_mesh)
+        cmap, scalar_bar_title = self._get_colormap_settings(scalars)
 
-                    # Flatten if needed
-                    if field_data.ndim == 1:
-                        values = field_data
-                    elif field_data.shape[1] == 1:
-                        values = field_data[:, 0]
-                    else:
-                        values = np.linalg.norm(field_data, axis=1)
+        # Apply slice/threshold for tetrahedral meshes
+        pv_mesh = self._apply_slice_if_needed(pv_mesh)
 
-                    # Add to appropriate data array based on location
-                    if location == "vertices":
-                        pv_mesh.point_data[field_name] = values
-                    else:  # triangles or tetrahedra
-                        pv_mesh.cell_data[field_name] = values
-                    scalars = field_name
-            except Exception:
-                pass
-
-        # Select colormap and scalar bar title based on field type
-        scalar_bar_title = None
-        if scalars is None:
-            cmap = None
-        elif self.state.show_scalar == "quality":
-            cmap = "RdYlGn"  # Quality fields: red (bad) -> yellow -> green (good)
-            scalar_bar_title = "In-Radius Ratio"
-        elif self.state.show_scalar == "pv_quality":
-            cmap = "RdYlGn"
-            scalar_bar_title = "Scaled Jacobian"
-        elif self.state.show_scalar == "refs":
-            cmap = "tab10"  # Discrete colormap for reference markers
-            scalar_bar_title = "Reference"
-        elif self.state.show_scalar == "area_volume":
-            cmap = "viridis"
-            scalar_bar_title = "Area" if scalars == "Area" else "Volume"
-        elif self.state.show_scalar.startswith("user_"):
-            cmap = "viridis"
-            scalar_bar_title = self.state.show_scalar[5:]
-        else:
-            cmap = "viridis"
-
-        # Apply slice/threshold for tetrahedral meshes to see inside
-        if self.state.slice_enabled and self.state.mesh_kind == "tetrahedral":
-            try:
-                axis = int(self.state.slice_axis)
-                threshold = float(self.state.slice_threshold)
-                bounds = pv_mesh.bounds
-                # Convert threshold (0-1) to actual coordinate
-                min_val = bounds[axis * 2]
-                max_val = bounds[axis * 2 + 1]
-                cut_value = min_val + threshold * (max_val - min_val)
-                # Extract cells where cell center is below threshold
-                cell_centers = pv_mesh.cell_centers().points[:, axis]
-                mask = cell_centers < cut_value
-                if mask.any():
-                    pv_mesh = pv_mesh.extract_cells(mask)
-            except Exception:
-                pass
-
-        # Add mesh with improved rendering settings
+        # Add mesh with rendering settings
         self._plotter.add_mesh(
             pv_mesh,
             show_edges=self.state.show_edges,
@@ -875,42 +522,169 @@ class MmgpyApp:
             specular_power=30,
         )
 
-        # Visualize sizing constraints
         self._visualize_constraints()
-
-        # Setup lighting
         self._plotter.enable_lightkit()
 
         if reset_camera:
-            self._plotter.reset_camera()
+            self._setup_camera_for_mesh(pv_mesh)
 
-            # Set default view based on mesh type
-            is_2d_mesh = False
-            if self.state.mesh_kind == "triangular_2d":
-                bounds = pv_mesh.bounds
-                z_range = bounds[5] - bounds[4]
-                xy_range = max(bounds[1] - bounds[0], bounds[3] - bounds[2])
-                is_2d_mesh = z_range < xy_range * 0.01
-
-            if is_2d_mesh:
-                self._plotter.view_xy()
-                self._plotter.enable_parallel_projection()
-                self.state.current_view = "xy"
-                self.state.parallel_projection = True
-            else:
-                self._plotter.view_isometric()
-                self._plotter.disable_parallel_projection()
-                self.state.current_view = "isometric"
-                self.state.parallel_projection = False
-
-        # Update the view - render and push to client
+        # Update the view
         if self._render_window is not None:
             self._render_window.Render()
-        # Use the view's update method directly if available
         if hasattr(self, "_view") and self._view is not None:
             self._view.update()
-        # Also flush state to ensure client receives update
         self.state.flush()
+
+    def _compute_scalars(self, pv_mesh) -> str | None:
+        """Compute scalar field for visualization."""
+        scalars = None
+        show_scalar = self.state.show_scalar
+
+        if show_scalar == "quality":
+            try:
+                qualities = self._mesh.get_element_qualities()
+                if len(qualities) == pv_mesh.n_cells:
+                    pv_mesh.cell_data["quality"] = qualities
+                    scalars = "quality"
+            except Exception:
+                logger.debug("Could not compute quality scalars")
+
+        elif show_scalar == "pv_quality":
+            try:
+                pv_mesh_quality = pv_mesh.cell_quality(
+                    quality_measure="scaled_jacobian",
+                )
+                pv_mesh.cell_data["scaled_jacobian"] = pv_mesh_quality.cell_data[
+                    "CellQuality"
+                ]
+                scalars = "scaled_jacobian"
+            except Exception:
+                logger.debug("Could not compute PyVista quality scalars")
+
+        elif show_scalar == "area_volume":
+            try:
+                pv_mesh_sizes = pv_mesh.compute_cell_sizes(
+                    length=False,
+                    area=True,
+                    volume=True,
+                )
+                if (
+                    "Volume" in pv_mesh_sizes.cell_data
+                    and pv_mesh_sizes.cell_data["Volume"].max() > 0
+                ):
+                    pv_mesh.cell_data["Volume"] = pv_mesh_sizes.cell_data["Volume"]
+                    scalars = "Volume"
+                elif "Area" in pv_mesh_sizes.cell_data:
+                    pv_mesh.cell_data["Area"] = pv_mesh_sizes.cell_data["Area"]
+                    scalars = "Area"
+            except Exception:
+                logger.debug("Could not compute area/volume scalars")
+
+        elif show_scalar == "refs":
+            if "refs" in pv_mesh.cell_data:
+                scalars = "refs"
+
+        elif show_scalar.startswith("user_"):
+            scalars = self._compute_user_scalars(pv_mesh, show_scalar[5:])
+
+        return scalars
+
+    def _compute_user_scalars(self, pv_mesh, field_name: str) -> str | None:
+        """Compute user-defined scalar field."""
+        if field_name not in self._solution_fields:
+            return None
+
+        try:
+            field_info = self._solution_fields[field_name]
+            field_data = field_info["data"]
+            location = field_info["location"]
+
+            # Flatten if needed
+            if field_data.ndim == 1:
+                values = field_data
+            elif field_data.shape[1] == 1:
+                values = field_data[:, 0]
+            else:
+                values = np.linalg.norm(field_data, axis=1)
+
+            # Add to appropriate data array based on location
+            if location == "vertices":
+                pv_mesh.point_data[field_name] = values
+            else:
+                pv_mesh.cell_data[field_name] = values
+        except Exception:
+            logger.debug("Could not compute user scalars for %s", field_name)
+            return None
+        else:
+            return field_name
+
+    def _get_colormap_settings(
+        self,
+        scalars: str | None,
+    ) -> tuple[str | None, str | None]:
+        """Get colormap and scalar bar title based on scalar field."""
+        if scalars is None:
+            return None, None
+
+        show_scalar = self.state.show_scalar
+
+        colormap_map = {
+            "quality": ("RdYlGn", "In-Radius Ratio"),
+            "pv_quality": ("RdYlGn", "Scaled Jacobian"),
+            "refs": ("tab10", "Reference"),
+            "area_volume": ("viridis", "Area" if scalars == "Area" else "Volume"),
+        }
+
+        if show_scalar in colormap_map:
+            return colormap_map[show_scalar]
+
+        if show_scalar.startswith("user_"):
+            return "viridis", show_scalar[5:]
+
+        return "viridis", None
+
+    def _apply_slice_if_needed(self, pv_mesh):
+        """Apply slice/threshold for tetrahedral meshes."""
+        if not (self.state.slice_enabled and self.state.mesh_kind == "tetrahedral"):
+            return pv_mesh
+
+        try:
+            axis = int(self.state.slice_axis)
+            threshold = float(self.state.slice_threshold)
+            bounds = pv_mesh.bounds
+            min_val = bounds[axis * 2]
+            max_val = bounds[axis * 2 + 1]
+            cut_value = min_val + threshold * (max_val - min_val)
+            cell_centers = pv_mesh.cell_centers().points[:, axis]
+            mask = cell_centers < cut_value
+            if mask.any():
+                return pv_mesh.extract_cells(mask)
+        except Exception:
+            logger.debug("Could not apply slice to mesh")
+
+        return pv_mesh
+
+    def _setup_camera_for_mesh(self, pv_mesh) -> None:
+        """Set up camera based on mesh type."""
+        self._plotter.reset_camera()
+
+        is_2d_mesh = False
+        if self.state.mesh_kind == "triangular_2d":
+            bounds = pv_mesh.bounds
+            z_range = bounds[5] - bounds[4]
+            xy_range = max(bounds[1] - bounds[0], bounds[3] - bounds[2])
+            is_2d_mesh = z_range < xy_range * 0.01
+
+        if is_2d_mesh:
+            self._plotter.view_xy()
+            self._plotter.enable_parallel_projection()
+            self.state.current_view = "xy"
+            self.state.parallel_projection = True
+        else:
+            self._plotter.view_isometric()
+            self._plotter.disable_parallel_projection()
+            self.state.current_view = "isometric"
+            self.state.parallel_projection = False
 
     def _visualize_constraints(self) -> None:
         """Visualize sizing constraints on the plotter."""
@@ -968,13 +742,8 @@ class MmgpyApp:
             elif constraint_type == "point":
                 point = params.get("point", [0, 0, 0])
                 influence_radius = params.get("influence_radius", 0.5)
-                # Show point as a small sphere
                 point_sphere = pv.Sphere(center=point, radius=0.02)
-                self._plotter.add_mesh(
-                    point_sphere,
-                    color="red",
-                )
-                # Show influence radius as wireframe sphere
+                self._plotter.add_mesh(point_sphere, color="red")
                 influence_sphere = pv.Sphere(
                     center=point,
                     radius=influence_radius,
@@ -989,41 +758,19 @@ class MmgpyApp:
                     line_width=1,
                 )
 
-    def _get_mesh_diagonal(self) -> float:
-        """Get the diagonal length of the mesh bounding box."""
-        if self._mesh is None:
-            return 1.0  # Default for no mesh
-        bounds = self._mesh.get_bounds()
-        size = bounds[1] - bounds[0]
-        return float(np.linalg.norm(size))
-
-    def _round_to_significant(self, x: float, sig: int = 2) -> float:
-        """Round a number to a specified number of significant figures."""
-        if x == 0:
-            return 0.0
-        from math import floor, log10
-
-        return round(x, -int(floor(log10(abs(x)))) + (sig - 1))
-
     def _apply_adaptive_defaults(self) -> None:
         """Set default remeshing parameters based on mesh scale."""
-        diagonal = self._get_mesh_diagonal()
+        diagonal = get_mesh_diagonal(self._mesh)
 
-        # Medium preset as default (relative to mesh diagonal)
         self._applying_preset = True
         try:
-            self.state.hmax = self._round_to_significant(
-                diagonal / 25,
-            )  # ~4% of diagonal
-            self.state.hausd = self._round_to_significant(
-                diagonal / 500,
-            )  # ~0.2% of diagonal
+            self.state.hmax = round_to_significant(diagonal / 25)
+            self.state.hausd = round_to_significant(diagonal / 500)
             self.state.hgrad = 1.3
             self.state.hmin = None
             self.state.use_preset = "medium"
         finally:
             self._applying_preset = False
-        # Force UI update
         self.state.flush()
 
     def _apply_preset_trigger(self, preset: str) -> None:
@@ -1034,38 +781,23 @@ class MmgpyApp:
     def _apply_preset(self, preset: str) -> None:
         """Apply a remeshing preset scaled to mesh size."""
         if preset == "custom":
-            return  # Don't change values for custom
+            return
 
-        diagonal = self._get_mesh_diagonal()
+        diagonal = get_mesh_diagonal(self._mesh)
+        values = compute_preset_values(preset, diagonal)
 
-        # Presets as fractions of mesh diagonal
-        # hmax: controls target edge length
-        # hausd: controls geometric deviation (accuracy)
-        # hgrad: gradation ratio (scale-independent)
-        preset_ratios = {
-            "fine": {"hmax": diagonal / 50, "hausd": diagonal / 1000, "hgrad": 1.2},
-            "medium": {"hmax": diagonal / 25, "hausd": diagonal / 500, "hgrad": 1.3},
-            "coarse": {"hmax": diagonal / 10, "hausd": diagonal / 200, "hgrad": 1.5},
-            "optimize": {"optim": True, "noinsert": True},
-        }
-
-        if preset in preset_ratios:
+        if values:
             self._applying_preset = True
             try:
-                for key, value in preset_ratios[preset].items():
-                    if isinstance(value, float) and key != "hgrad":
-                        # Round to 2 significant figures for nicer display
-                        value = self._round_to_significant(value)
+                for key, value in values.items():
                     setattr(self.state, key, value)
             finally:
                 self._applying_preset = False
-            # Force UI update
             self.state.flush()
 
     def _run_remesh(self) -> None:
         """Execute remeshing operation."""
         from mmgpy import Mesh
-        from mmgpy._transfer import transfer_fields
 
         if self._mesh is None:
             return
@@ -1087,7 +819,7 @@ class MmgpyApp:
                 source_solution_fields = self._solution_fields
                 source_solution_metric = self._solution_metric
 
-            # Store old mesh info for field transfer (before creating fresh mesh)
+            # Store old mesh info for field transfer
             old_vertices = source_mesh.get_vertices()
             kind = source_mesh.kind.value
             if kind == "tetrahedral":
@@ -1095,8 +827,7 @@ class MmgpyApp:
             else:
                 old_elements = source_mesh.get_triangles()
 
-            # Create a fresh Mesh object to avoid MMG internal state issues
-            # (e.g., metric fields from previous remesh conflicting with optim option)
+            # Create a fresh Mesh object
             pv_mesh = source_mesh.to_pyvista()
             self._mesh = Mesh(pv_mesh)
 
@@ -1109,90 +840,8 @@ class MmgpyApp:
                         metric = metric.reshape(-1, 1)
                     self._mesh.set_field("metric", metric.astype(np.float64))
 
-            options = {}
-
-            # Helper to safely convert to float (handles None, empty string, etc.)
-            def to_float(val):
-                if val is None or val == "":
-                    return None
-                return float(val)
-
-            hmin = to_float(self.state.hmin)
-            hmax = to_float(self.state.hmax)
-            hsiz = to_float(self.state.hsiz)
-            hausd = to_float(self.state.hausd)
-            hgrad = to_float(self.state.hgrad)
-            ar = to_float(self.state.ar)
-
-            # Validate parameters
-            if hmin is not None and hmin <= 0:
-                raise ValueError("hmin must be > 0")
-            if hmax is not None and hmax <= 0:
-                raise ValueError("hmax must be > 0")
-            if hsiz is not None and hsiz <= 0:
-                raise ValueError("hsiz must be > 0")
-            if hausd is not None and hausd <= 0:
-                raise ValueError("hausd must be > 0")
-            if hgrad is not None and hgrad <= 1.0:
-                raise ValueError("hgrad must be > 1.0")
-            if hmin is not None and hmax is not None and hmin > hmax:
-                raise ValueError("hmin must be <= hmax")
-
-            if hmin is not None:
-                options["hmin"] = hmin
-            if hmax is not None:
-                options["hmax"] = hmax
-            if hsiz is not None:
-                options["hsiz"] = hsiz
-            if hausd is not None:
-                options["hausd"] = hausd
-            if hgrad is not None:
-                options["hgrad"] = hgrad
-            if ar is not None:
-                options["ar"] = ar
-
-            options["verbose"] = int(self.state.verbose or 1)
-
-            # Get selected options from multi-select button group
-            selected = self.state.selected_options or []
-            if "optim" in selected:
-                options["optim"] = 1
-            if "noinsert" in selected:
-                options["noinsert"] = 1
-            if "noswap" in selected:
-                options["noswap"] = 1
-            if "nomove" in selected:
-                options["nomove"] = 1
-            if "nosurf" in selected and self.state.mesh_kind == "tetrahedral":
-                options["nosurf"] = 1
-
-            mode = self.state.remesh_mode
-
-            if mode == "standard":
-                result = self._mesh.remesh(progress=False, **options)
-            elif mode == "levelset":
-                # Use solution file as levelset if enabled, otherwise compute from formula
-                if (
-                    self.state.use_solution_as_levelset
-                    and source_solution_metric is not None
-                ):
-                    levelset = source_solution_metric
-                    if levelset.ndim == 1:
-                        levelset = levelset.reshape(-1, 1)
-                else:
-                    levelset = self._compute_levelset()
-                result = self._mesh.remesh_levelset(levelset, progress=False, **options)
-            elif mode == "lagrangian":
-                displacement = self._compute_displacement()
-                result = self._mesh.remesh_lagrangian(
-                    displacement,
-                    progress=False,
-                    **options,
-                )
-            elif mode == "optimize":
-                result = self._mesh.remesh_optimize(progress=False)
-            else:
-                result = self._mesh.remesh(progress=False, **options)
+            options = self._build_remesh_options()
+            result = self._execute_remesh(source_solution_metric, options)
 
             self.state.remesh_result = {
                 "vertices_before": result.vertices_before,
@@ -1205,69 +854,176 @@ class MmgpyApp:
                 "warnings": list(result.warnings),
             }
 
-            # Transfer solution fields to new mesh via interpolation
-            if source_solution_fields:
-                new_vertices = self._mesh.get_vertices()
-                # Only transfer vertex-based fields
-                vertex_fields = {
-                    name: info["data"]
-                    for name, info in source_solution_fields.items()
-                    if info["location"] == "vertices"
-                }
-                if vertex_fields:
-                    try:
-                        transferred = transfer_fields(
-                            source_vertices=old_vertices,
-                            source_elements=old_elements,
-                            target_points=new_vertices,
-                            fields=vertex_fields,
-                        )
-                        # Update current solution fields with transferred values
-                        for name, new_data in transferred.items():
-                            if name in self._solution_fields:
-                                self._solution_fields[name]["data"] = new_data
-                            else:
-                                loc = source_solution_fields[name]["location"]
-                                self._solution_fields[name] = {
-                                    "data": new_data,
-                                    "location": loc,
-                                }
-                        # Update current solution metric
-                        first_field = next(iter(vertex_fields.keys()))
-                        self._solution_metric = transferred[first_field].copy()
-                        self._update_scalar_field_options()
-                    except Exception:
-                        # If transfer fails, clear solution state
-                        self.state.sol_filename = ""
-                        self.state.solution_fields = {}
-                        self._solution_fields = {}
-                        self._solution_metric = None
-                        self.state.use_solution_as_metric = False
-                        self.state.use_solution_as_levelset = False
-                        self.state.solution_type = ""
-                        if self.state.show_scalar.startswith("user_"):
-                            self.state.show_scalar = "quality"
-                        self._update_scalar_field_options()
+            # Transfer solution fields
+            self._transfer_solution_fields(
+                source_solution_fields,
+                old_vertices,
+                old_elements,
+            )
 
             self._update_mesh_info()
             self._update_viewer(reset_camera=False)
 
         except Exception as e:
+            logger.exception("Remeshing failed")
             self.state.remesh_result = {"error": str(e)}
         finally:
             self.state.is_remeshing = False
-            # Ensure remesh result is pushed to client
             self.state.flush()
 
+    def _build_remesh_options(self) -> dict:
+        """Build options dictionary for remeshing."""
+        options = {}
+
+        hmin = to_float(self.state.hmin)
+        hmax = to_float(self.state.hmax)
+        hsiz = to_float(self.state.hsiz)
+        hausd = to_float(self.state.hausd)
+        hgrad = to_float(self.state.hgrad)
+        ar = to_float(self.state.ar)
+
+        # Validate parameters
+        if hmin is not None and hmin <= 0:
+            msg = "hmin must be > 0"
+            raise ValueError(msg)
+        if hmax is not None and hmax <= 0:
+            msg = "hmax must be > 0"
+            raise ValueError(msg)
+        if hsiz is not None and hsiz <= 0:
+            msg = "hsiz must be > 0"
+            raise ValueError(msg)
+        if hausd is not None and hausd <= 0:
+            msg = "hausd must be > 0"
+            raise ValueError(msg)
+        if hgrad is not None and hgrad <= 1.0:
+            msg = "hgrad must be > 1.0"
+            raise ValueError(msg)
+        if hmin is not None and hmax is not None and hmin > hmax:
+            msg = "hmin must be <= hmax"
+            raise ValueError(msg)
+
+        if hmin is not None:
+            options["hmin"] = hmin
+        if hmax is not None:
+            options["hmax"] = hmax
+        if hsiz is not None:
+            options["hsiz"] = hsiz
+        if hausd is not None:
+            options["hausd"] = hausd
+        if hgrad is not None:
+            options["hgrad"] = hgrad
+        if ar is not None:
+            options["ar"] = ar
+
+        options["verbose"] = int(self.state.verbose or 1)
+
+        # Get selected options from multi-select button group
+        selected = self.state.selected_options or []
+        if "optim" in selected:
+            options["optim"] = 1
+        if "noinsert" in selected:
+            options["noinsert"] = 1
+        if "noswap" in selected:
+            options["noswap"] = 1
+        if "nomove" in selected:
+            options["nomove"] = 1
+        if "nosurf" in selected and self.state.mesh_kind == "tetrahedral":
+            options["nosurf"] = 1
+
+        return options
+
+    def _execute_remesh(self, source_solution_metric, options: dict):
+        """Execute the appropriate remesh operation."""
+        mode = self.state.remesh_mode
+
+        if mode == "standard":
+            return self._mesh.remesh(progress=False, **options)
+
+        if mode == "levelset":
+            if (
+                self.state.use_solution_as_levelset
+                and source_solution_metric is not None
+            ):
+                levelset = source_solution_metric
+                if levelset.ndim == 1:
+                    levelset = levelset.reshape(-1, 1)
+            else:
+                levelset = self._compute_levelset()
+            return self._mesh.remesh_levelset(levelset, progress=False, **options)
+
+        if mode == "lagrangian":
+            displacement = self._compute_displacement()
+            return self._mesh.remesh_lagrangian(
+                displacement,
+                progress=False,
+                **options,
+            )
+
+        if mode == "optimize":
+            return self._mesh.remesh_optimize(progress=False)
+
+        return self._mesh.remesh(progress=False, **options)
+
+    def _transfer_solution_fields(
+        self,
+        source_solution_fields: dict,
+        old_vertices: np.ndarray,
+        old_elements: np.ndarray,
+    ) -> None:
+        """Transfer solution fields to new mesh."""
+        if not source_solution_fields:
+            return
+
+        from mmgpy._transfer import transfer_fields
+
+        new_vertices = self._mesh.get_vertices()
+        vertex_fields = {
+            name: info["data"]
+            for name, info in source_solution_fields.items()
+            if info["location"] == "vertices"
+        }
+
+        if not vertex_fields:
+            return
+
+        try:
+            transferred = transfer_fields(
+                source_vertices=old_vertices,
+                source_elements=old_elements,
+                target_points=new_vertices,
+                fields=vertex_fields,
+            )
+            for name, new_data in transferred.items():
+                if name in self._solution_fields:
+                    self._solution_fields[name]["data"] = new_data
+                else:
+                    loc = source_solution_fields[name]["location"]
+                    self._solution_fields[name] = {
+                        "data": new_data,
+                        "location": loc,
+                    }
+            first_field = next(iter(vertex_fields.keys()))
+            self._solution_metric = transferred[first_field].copy()
+            self._update_scalar_field_options()
+        except Exception:
+            logger.warning(
+                "Failed to transfer solution fields, clearing solution state",
+            )
+            for key, value in reset_solution_state().items():
+                setattr(self.state, key, value)
+            self._solution_fields = {}
+            self._solution_metric = None
+            if self.state.show_scalar.startswith("user_"):
+                self.state.show_scalar = "quality"
+            self._update_scalar_field_options()
+
     def _compute_levelset(self) -> np.ndarray:
-        """Compute levelset field from formula."""
+        """Compute levelset field from formula using safe evaluation."""
         vertices = self._mesh.get_vertices()
         x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
 
         formula = self.state.levelset_formula
-        levelset = eval(formula, {"x": x, "y": y, "z": z, "np": np})
-
-        return np.asarray(levelset, dtype=np.float64).reshape(-1, 1)
+        return evaluate_levelset_formula(formula, x, y, z)
 
     def _compute_displacement(self) -> np.ndarray:
         """Compute displacement field."""
@@ -1276,7 +1032,7 @@ class MmgpyApp:
         dim = vertices.shape[1]
 
         scale = float(self.state.displacement_scale)
-        displacement = np.random.randn(n_verts, dim) * scale
+        displacement = _rng.standard_normal((n_verts, dim)) * scale
 
         return displacement.astype(np.float64)
 
@@ -1337,7 +1093,6 @@ class MmgpyApp:
         constraints.append({"type": constraint_type, "params": params})
         self.state.sizing_constraints = constraints
 
-        # Update viewer to show the new constraint
         self._update_viewer()
 
     def _clear_sizing_constraints(self) -> None:
@@ -1345,21 +1100,88 @@ class MmgpyApp:
         if self._mesh is not None:
             self._mesh.clear_local_sizing()
         self.state.sizing_constraints = []
-
-        # Update viewer to remove constraint visualizations
         self._update_viewer()
 
     def _export_mesh(self) -> None:
-        """Export mesh to file (triggers download)."""
+        """Export mesh to file and trigger download."""
+        if self._mesh is None:
+            return
+
+        export_format = self.state.export_format
+        filename = self.state.mesh_filename.split(":")[
+            -1
+        ]  # Remove "sample:" prefix if present
+        if not filename:
+            filename = "mesh"
+
+        # Remove existing extension and add new one
+        base_name = Path(filename).stem
+        new_filename = f"{base_name}.{export_format}"
+
+        try:
+            # Export to temporary file
+            with tempfile.NamedTemporaryFile(
+                suffix=f".{export_format}",
+                delete=False,
+            ) as tmp:
+                tmp_path = tmp.name
+
+            pv_mesh = self._mesh.to_pyvista()
+            pv_mesh.save(tmp_path)
+
+            # Read file and encode as base64 for download
+            with Path(tmp_path).open("rb") as f:
+                content = f.read()
+
+            # Trigger download via JavaScript
+            b64_content = base64.b64encode(content).decode("utf-8")
+
+            # Determine MIME type
+            mime_types = {
+                "vtk": "application/octet-stream",
+                "vtu": "application/octet-stream",
+                "stl": "model/stl",
+                "obj": "model/obj",
+                "ply": "application/x-ply",
+                "mesh": "application/octet-stream",
+            }
+            mime_type = mime_types.get(export_format, "application/octet-stream")
+
+            # Execute JavaScript to trigger download
+            self.server.js_call(
+                "utils",
+                "download",
+                new_filename,
+                f"data:{mime_type};base64,{b64_content}",
+            )
+
+            logger.info("Exported mesh to %s", new_filename)
+
+        except Exception:
+            logger.exception("Failed to export mesh")
+            self.state.remesh_result = {"error": "Failed to export mesh"}
+        finally:
+            if "tmp_path" in locals():
+                Path(tmp_path).unlink(missing_ok=True)
 
     def _reset_mesh(self) -> None:
         """Reset to original mesh state."""
         self._mesh = None
+        self._original_mesh = None
+        self._solution_metric = None
+        self._solution_fields = {}
+        self._original_solution_metric = None
+        self._original_solution_fields = {}
+
         self.state.mesh_loaded = False
         self.state.mesh_info = ""
         self.state.mesh_kind = ""
+        self.state.mesh_filename = ""
         self.state.validation_report = None
         self.state.remesh_result = None
+
+        for key, value in reset_solution_state().items():
+            setattr(self.state, key, value)
 
         if self._plotter is not None:
             self._plotter.close()
@@ -1371,6 +1193,22 @@ class MmgpyApp:
         with SinglePageWithDrawerLayout(self.server, full_height=True) as layout:
             layout.title.set_text("mmgpy")
             layout.icon.click = "drawer_open = !drawer_open"
+
+            # Add JavaScript utility for file download
+            html.Script(
+                """
+                window.utils = {
+                    download: function(filename, dataUrl) {
+                        const link = document.createElement('a');
+                        link.href = dataUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                };
+                """,
+            )
 
             with layout.toolbar:
                 v3.VSpacer()
@@ -1540,7 +1378,7 @@ class MmgpyApp:
             click="sol_file_upload = null",
         )
 
-        # Show detected solution type (two separate alerts for proper rendering)
+        # Show detected solution type
         v3.VAlert(
             text="Solution detected as levelset (signed distance)",
             type="info",
@@ -1558,7 +1396,7 @@ class MmgpyApp:
             classes="mb-2",
         )
 
-        # Use solution as metric option (for standard remeshing)
+        # Use solution as metric option
         v3.VCheckbox(
             v_model=("use_solution_as_metric",),
             label="Use solution as metric (sizing field)",
@@ -1569,7 +1407,7 @@ class MmgpyApp:
             title="Use loaded solution values to control local mesh size",
         )
 
-        # Use solution as levelset option (for levelset mode)
+        # Use solution as levelset option
         v3.VCheckbox(
             v_model=("use_solution_as_levelset",),
             label="Use solution as levelset (iso-surface at 0)",
@@ -1580,7 +1418,7 @@ class MmgpyApp:
             title="Use loaded solution as the levelset field for iso-surface extraction",
         )
 
-        # Mode selection (Lagrangian not available for surface meshes)
+        # Mode selection
         v3.VSelect(
             v_model=("remesh_mode",),
             label="Mode",
@@ -1592,7 +1430,7 @@ class MmgpyApp:
             title="Standard: global remesh | Levelset: iso-surface | Lagrangian: move vertices | Optimize: quality only",
         )
 
-        # Preset buttons (values adapt to mesh scale) - disabled when Optimize is checked
+        # Preset buttons
         with v3.VBtnToggle(
             v_model=("use_preset",),
             density="compact",
@@ -1630,7 +1468,7 @@ class MmgpyApp:
                 click="trigger('apply_preset', ['custom'])",
             )
 
-        # Size control - disabled when Optimize is checked (size params have no effect)
+        # Size control
         with v3.VRow(dense=True):
             with v3.VCol(cols=6):
                 v3.VTextField(
@@ -1705,7 +1543,7 @@ class MmgpyApp:
                     title="Angle detection threshold (degrees). Sharp edges below this angle are preserved.",
                 )
 
-        # Optimization options (two rows of connected button toggles)
+        # Optimization options
         html.Div("Options", classes="text-caption text-grey mb-1")
         with v3.VBtnToggle(
             v_model=("selected_options",),
@@ -1749,7 +1587,6 @@ class MmgpyApp:
                 style="flex: 1;",
                 title="Keep vertices fixed",
             )
-        # nosurf option - only for tetrahedral meshes
         with v3.VBtnToggle(
             v_model=("selected_options",),
             density="compact",
@@ -1766,7 +1603,7 @@ class MmgpyApp:
                 title="Don't modify surface mesh (3D only)",
             )
 
-        # Warning when all modification options are disabled
+        # Warning when all options disabled
         v3.VAlert(
             text="Warning: No Insert + No Swap + No Move disables most improvements",
             type="warning",
@@ -1776,7 +1613,7 @@ class MmgpyApp:
             classes="mb-3",
         )
 
-        # Levelset options (shown only for levelset mode, disabled when using solution)
+        # Levelset options
         v3.VTextField(
             v_model=("levelset_formula",),
             label=(
@@ -1792,7 +1629,7 @@ class MmgpyApp:
             title="Python expression using x, y, z, np (iso-surface at 0)",
         )
 
-        # Lagrangian options (shown only for lagrangian mode)
+        # Lagrangian options
         v3.VSlider(
             v_model=("displacement_scale",),
             label="Displacement Scale",
@@ -1841,7 +1678,7 @@ class MmgpyApp:
             title="Execute remeshing",
         )
 
-        # Result alert
+        # Result alerts
         v3.VAlert(
             text="Remesh complete!",
             type="success",
@@ -1902,7 +1739,7 @@ class MmgpyApp:
                     if self._plotter is None:
                         self._plotter = pv.Plotter()
                         self._plotter.add_mesh(pv.Sphere(), opacity=0.0)
-                        self._plotter.add_axes()  # Add orientation gizmo
+                        self._plotter.add_axes()
                         self._render_window = self._plotter.ren_win
 
                     # 3D viewer
@@ -1917,198 +1754,7 @@ class MmgpyApp:
                     self.ctrl.view_reset_camera = self._view.reset_camera
 
                     # Top-right toolbar overlay
-                    with v3.VCard(
-                        classes="position-absolute",
-                        style="top: 8px; right: 8px; z-index: 10;",
-                        variant="elevated",
-                        v_show="mesh_loaded",
-                    ):
-                        with v3.VToolbar(density="compact", color="surface"):
-                            v3.VSelect(
-                                v_model=("show_scalar",),
-                                items=("scalar_field_options",),
-                                density="compact",
-                                variant="outlined",
-                                hide_details=True,
-                                style="min-width: 160px;",
-                                title="Color by scalar field",
-                            )
-                            v3.VBtn(
-                                icon=("show_edges ? 'mdi-grid' : 'mdi-grid-off'",),
-                                click="show_edges = !show_edges",
-                                title="Toggle edges",
-                                variant="text",
-                                classes="ml-1",
-                            )
-                            v3.VBtn(
-                                icon=("smooth_shading ? 'mdi-blur' : 'mdi-blur-off'",),
-                                click="smooth_shading = !smooth_shading",
-                                title="Toggle smooth shading",
-                                variant="text",
-                            )
-                            # Opacity menu
-                            with v3.VMenu(close_on_content_click=False):
-                                with v3.Template(v_slot_activator="{ props }"):
-                                    v3.VBtn(
-                                        icon="mdi-opacity",
-                                        v_bind="props",
-                                        title="Opacity",
-                                        variant="text",
-                                    )
-                                with v3.VCard(classes="pa-2", style="width: 150px;"):
-                                    v3.VSlider(
-                                        v_model=("opacity",),
-                                        min=0.1,
-                                        max=1.0,
-                                        step=0.1,
-                                        density="compact",
-                                        hide_details=True,
-                                        thumb_label=True,
-                                    )
-                            # Slice control for tetrahedral meshes
-                            with v3.VMenu(
-                                v_show="mesh_kind === 'tetrahedral'",
-                                close_on_content_click=False,
-                            ):
-                                with v3.Template(v_slot_activator="{ props }"):
-                                    v3.VBtn(
-                                        icon=(
-                                            "slice_enabled ? 'mdi-box-cutter' : 'mdi-cube-scan'",
-                                        ),
-                                        v_bind="props",
-                                        title="Slice view (see inside tetrahedra)",
-                                        variant="text",
-                                    )
-                                with v3.VCard(classes="pa-3", style="width: 200px;"):
-                                    v3.VSwitch(
-                                        v_model=("slice_enabled",),
-                                        label="Enable slice",
-                                        density="compact",
-                                        hide_details=True,
-                                        classes="mb-2",
-                                    )
-                                    html.Span(
-                                        "Axis",
-                                        classes="text-caption text-grey mb-1",
-                                    )
-                                    with v3.VBtnToggle(
-                                        v_model=("slice_axis",),
-                                        density="compact",
-                                        mandatory=True,
-                                        divided=True,
-                                        classes="mb-3",
-                                        disabled=("!slice_enabled",),
-                                    ):
-                                        v3.VBtn(value=0, text="X", size="small")
-                                        v3.VBtn(value=1, text="Y", size="small")
-                                        v3.VBtn(value=2, text="Z", size="small")
-                                    v3.VSlider(
-                                        v_model=("slice_threshold",),
-                                        label="Position",
-                                        min=0.0,
-                                        max=1.0,
-                                        step=0.01,
-                                        density="compact",
-                                        hide_details=True,
-                                        thumb_label=True,
-                                        disabled=("!slice_enabled",),
-                                    )
-                            # View controls menu
-                            with v3.VMenu(close_on_content_click=False):
-                                with v3.Template(v_slot_activator="{ props }"):
-                                    v3.VBtn(
-                                        icon="mdi-video-3d",
-                                        v_bind="props",
-                                        title="Camera views",
-                                        variant="text",
-                                    )
-                                with v3.VCard(
-                                    classes="pa-3",
-                                    style="min-width: 220px;",
-                                ):
-                                    html.Span(
-                                        "View",
-                                        classes="text-caption text-grey mb-1",
-                                    )
-                                    with v3.VBtnToggle(
-                                        v_model=("current_view",),
-                                        density="compact",
-                                        mandatory=True,
-                                        divided=True,
-                                        classes="mb-2",
-                                        style="width: 100%;",
-                                    ):
-                                        v3.VBtn(
-                                            value="xy",
-                                            text="+Z",
-                                            size="small",
-                                            title="Top (XY plane)",
-                                            click="trigger('set_view', ['xy'])",
-                                        )
-                                        v3.VBtn(
-                                            value="-xy",
-                                            text="-Z",
-                                            size="small",
-                                            title="Bottom (XY plane)",
-                                            click="trigger('set_view', ['-xy'])",
-                                        )
-                                        v3.VBtn(
-                                            value="xz",
-                                            text="+Y",
-                                            size="small",
-                                            title="Front (XZ plane)",
-                                            click="trigger('set_view', ['xz'])",
-                                        )
-                                        v3.VBtn(
-                                            value="-xz",
-                                            text="-Y",
-                                            size="small",
-                                            title="Back (XZ plane)",
-                                            click="trigger('set_view', ['-xz'])",
-                                        )
-                                    with v3.VBtnToggle(
-                                        v_model=("current_view",),
-                                        density="compact",
-                                        mandatory=True,
-                                        divided=True,
-                                        classes="mb-3",
-                                        style="width: 100%;",
-                                    ):
-                                        v3.VBtn(
-                                            value="yz",
-                                            text="+X",
-                                            size="small",
-                                            title="Right (YZ plane)",
-                                            click="trigger('set_view', ['yz'])",
-                                        )
-                                        v3.VBtn(
-                                            value="-yz",
-                                            text="-X",
-                                            size="small",
-                                            title="Left (YZ plane)",
-                                            click="trigger('set_view', ['-yz'])",
-                                        )
-                                        v3.VBtn(
-                                            value="isometric",
-                                            text="ISO",
-                                            size="small",
-                                            title="Isometric view",
-                                            click="trigger('set_view', ['isometric'])",
-                                        )
-                                    v3.VDivider(classes="mb-3")
-                                    v3.VSwitch(
-                                        v_model=("parallel_projection",),
-                                        label="Parallel projection",
-                                        density="compact",
-                                        hide_details=True,
-                                        click="trigger('toggle_parallel_projection')",
-                                    )
-                            v3.VBtn(
-                                icon="mdi-information-outline",
-                                click="info_panel_open = !info_panel_open",
-                                title="Toggle info panel",
-                                variant="text",
-                            )
+                    self._build_viewer_toolbar()
 
                 # Right info panel
                 with v3.VCol(
@@ -2118,6 +1764,201 @@ class MmgpyApp:
                     style="max-width: 300px; min-width: 280px;",
                 ):
                     self._build_info_panel()
+
+    def _build_viewer_toolbar(self) -> None:
+        """Build the viewer toolbar overlay."""
+        with v3.VCard(
+            classes="position-absolute",
+            style="top: 8px; right: 8px; z-index: 10;",
+            variant="elevated",
+            v_show="mesh_loaded",
+        ):
+            with v3.VToolbar(density="compact", color="surface"):
+                v3.VSelect(
+                    v_model=("show_scalar",),
+                    items=("scalar_field_options",),
+                    density="compact",
+                    variant="outlined",
+                    hide_details=True,
+                    style="min-width: 160px;",
+                    title="Color by scalar field",
+                )
+                v3.VBtn(
+                    icon=("show_edges ? 'mdi-grid' : 'mdi-grid-off'",),
+                    click="show_edges = !show_edges",
+                    title="Toggle edges",
+                    variant="text",
+                    classes="ml-1",
+                )
+                v3.VBtn(
+                    icon=("smooth_shading ? 'mdi-blur' : 'mdi-blur-off'",),
+                    click="smooth_shading = !smooth_shading",
+                    title="Toggle smooth shading",
+                    variant="text",
+                )
+                # Opacity menu
+                with v3.VMenu(close_on_content_click=False):
+                    with v3.Template(v_slot_activator="{ props }"):
+                        v3.VBtn(
+                            icon="mdi-opacity",
+                            v_bind="props",
+                            title="Opacity",
+                            variant="text",
+                        )
+                    with v3.VCard(classes="pa-2", style="width: 150px;"):
+                        v3.VSlider(
+                            v_model=("opacity",),
+                            min=0.1,
+                            max=1.0,
+                            step=0.1,
+                            density="compact",
+                            hide_details=True,
+                            thumb_label=True,
+                        )
+                # Slice control for tetrahedral meshes
+                with v3.VMenu(
+                    v_show="mesh_kind === 'tetrahedral'",
+                    close_on_content_click=False,
+                ):
+                    with v3.Template(v_slot_activator="{ props }"):
+                        v3.VBtn(
+                            icon=(
+                                "slice_enabled ? 'mdi-box-cutter' : 'mdi-cube-scan'",
+                            ),
+                            v_bind="props",
+                            title="Slice view (see inside tetrahedra)",
+                            variant="text",
+                        )
+                    with v3.VCard(classes="pa-3", style="width: 200px;"):
+                        v3.VSwitch(
+                            v_model=("slice_enabled",),
+                            label="Enable slice",
+                            density="compact",
+                            hide_details=True,
+                            classes="mb-2",
+                        )
+                        html.Span(
+                            "Axis",
+                            classes="text-caption text-grey mb-1",
+                        )
+                        with v3.VBtnToggle(
+                            v_model=("slice_axis",),
+                            density="compact",
+                            mandatory=True,
+                            divided=True,
+                            classes="mb-3",
+                            disabled=("!slice_enabled",),
+                        ):
+                            v3.VBtn(value=0, text="X", size="small")
+                            v3.VBtn(value=1, text="Y", size="small")
+                            v3.VBtn(value=2, text="Z", size="small")
+                        v3.VSlider(
+                            v_model=("slice_threshold",),
+                            label="Position",
+                            min=0.0,
+                            max=1.0,
+                            step=0.01,
+                            density="compact",
+                            hide_details=True,
+                            thumb_label=True,
+                            disabled=("!slice_enabled",),
+                        )
+                # View controls menu
+                with v3.VMenu(close_on_content_click=False):
+                    with v3.Template(v_slot_activator="{ props }"):
+                        v3.VBtn(
+                            icon="mdi-video-3d",
+                            v_bind="props",
+                            title="Camera views",
+                            variant="text",
+                        )
+                    with v3.VCard(
+                        classes="pa-3",
+                        style="min-width: 220px;",
+                    ):
+                        html.Span(
+                            "View",
+                            classes="text-caption text-grey mb-1",
+                        )
+                        with v3.VBtnToggle(
+                            v_model=("current_view",),
+                            density="compact",
+                            mandatory=True,
+                            divided=True,
+                            classes="mb-2",
+                            style="width: 100%;",
+                        ):
+                            v3.VBtn(
+                                value="xy",
+                                text="+Z",
+                                size="small",
+                                title="Top (XY plane)",
+                                click="trigger('set_view', ['xy'])",
+                            )
+                            v3.VBtn(
+                                value="-xy",
+                                text="-Z",
+                                size="small",
+                                title="Bottom (XY plane)",
+                                click="trigger('set_view', ['-xy'])",
+                            )
+                            v3.VBtn(
+                                value="xz",
+                                text="+Y",
+                                size="small",
+                                title="Front (XZ plane)",
+                                click="trigger('set_view', ['xz'])",
+                            )
+                            v3.VBtn(
+                                value="-xz",
+                                text="-Y",
+                                size="small",
+                                title="Back (XZ plane)",
+                                click="trigger('set_view', ['-xz'])",
+                            )
+                        with v3.VBtnToggle(
+                            v_model=("current_view",),
+                            density="compact",
+                            mandatory=True,
+                            divided=True,
+                            classes="mb-3",
+                            style="width: 100%;",
+                        ):
+                            v3.VBtn(
+                                value="yz",
+                                text="+X",
+                                size="small",
+                                title="Right (YZ plane)",
+                                click="trigger('set_view', ['yz'])",
+                            )
+                            v3.VBtn(
+                                value="-yz",
+                                text="-X",
+                                size="small",
+                                title="Left (YZ plane)",
+                                click="trigger('set_view', ['-yz'])",
+                            )
+                            v3.VBtn(
+                                value="isometric",
+                                text="ISO",
+                                size="small",
+                                title="Isometric view",
+                                click="trigger('set_view', ['isometric'])",
+                            )
+                        v3.VDivider(classes="mb-3")
+                        v3.VSwitch(
+                            v_model=("parallel_projection",),
+                            label="Parallel projection",
+                            density="compact",
+                            hide_details=True,
+                            click="trigger('toggle_parallel_projection')",
+                        )
+                v3.VBtn(
+                    icon="mdi-information-outline",
+                    click="info_panel_open = !info_panel_open",
+                    title="Toggle info panel",
+                    variant="text",
+                )
 
     def _build_info_panel(self) -> None:
         """Build the right-side mesh info panel."""
@@ -2171,7 +2012,7 @@ class MmgpyApp:
                     v3.VListItem(
                         title="Size",
                         subtitle=(
-                            "`${mesh_stats?.size?.map(v => v.toFixed(3)).join(' × ') || '-'}`",
+                            "`${mesh_stats?.size?.map(v => v.toFixed(3)).join(' x ') || '-'}`",
                         ),
                     )
 
@@ -2188,14 +2029,14 @@ class MmgpyApp:
                         ),
                     )
                     v3.VListItem(
-                        title="Mean ± Std",
+                        title="Mean +/- Std",
                         subtitle=(
-                            "`${mesh_stats?.quality?.mean?.toFixed(4) || '-'} ± "
+                            "`${mesh_stats?.quality?.mean?.toFixed(4) || '-'} +/- "
                             "${mesh_stats?.quality?.std?.toFixed(4) || '-'}`",
                         ),
                     )
 
-                # Remesh result section (shown after successful remeshing)
+                # Remesh result section
                 with v3.VCard(
                     variant="tonal",
                     color="success",
@@ -2208,21 +2049,21 @@ class MmgpyApp:
                             v3.VListItem(
                                 title="Vertices",
                                 subtitle=(
-                                    "`${remesh_result?.vertices_before} → "
+                                    "`${remesh_result?.vertices_before} -> "
                                     "${remesh_result?.vertices_after}`",
                                 ),
                             )
                             v3.VListItem(
                                 title="Elements",
                                 subtitle=(
-                                    "`${remesh_result?.elements_before} → "
+                                    "`${remesh_result?.elements_before} -> "
                                     "${remesh_result?.elements_after}`",
                                 ),
                             )
                             v3.VListItem(
                                 title="Quality (In-Radius Ratio)",
                                 subtitle=(
-                                    "`${remesh_result?.quality_before} → "
+                                    "`${remesh_result?.quality_before} -> "
                                     "${remesh_result?.quality_after}`",
                                 ),
                             )
