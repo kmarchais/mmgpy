@@ -118,6 +118,7 @@ ignore = [
     "PLC0415", # imports inside functions are intentional for fixtures
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "PLR2004", # magic values allowed in tests
+    "PLR0913", # many arguments allowed in test helper functions
     "S603",    # subprocess calls allowed in tests
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
