@@ -17,17 +17,16 @@ from trame.widgets import html
 from trame.widgets import vtk as vtk_widgets
 from trame.widgets import vuetify3 as v3
 
-from mmgpy.ui.parsers import evaluate_levelset_formula, parse_sol_file
+from mmgpy.ui.parsers import parse_sol_file
+from mmgpy.ui.remeshing import RemeshingMixin
 from mmgpy.ui.samples import get_sample_mesh
 from mmgpy.ui.utils import (
     DEFAULT_REMESH_MODE_ITEMS,
     DEFAULT_SCALAR_FIELD_OPTIONS,
     DEFAULT_STATE,
-    compute_preset_values,
-    get_mesh_diagonal,
     reset_solution_state,
-    to_float,
 )
+from mmgpy.ui.viewer import ViewerMixin
 
 if TYPE_CHECKING:
     from mmgpy import Mesh
@@ -36,13 +35,13 @@ logger = logging.getLogger(__name__)
 
 pv.OFF_SCREEN = True
 
-# Random number generator for reproducible displacement fields
-# Using fixed seed for deterministic Lagrangian motion demo
-_rng = np.random.default_rng(42)
 
+class MmgpyApp(ViewerMixin, RemeshingMixin):
+    """Main mmgpy web application.
 
-class MmgpyApp:
-    """Main mmgpy web application."""
+    Inherits visualization functionality from ViewerMixin and
+    remeshing functionality from RemeshingMixin.
+    """
 
     def __init__(
         self,
@@ -168,50 +167,6 @@ class MmgpyApp:
         """Set preset to custom when user manually changes values."""
         if self.state.use_preset != "custom":
             self.state.use_preset = "custom"
-
-    def _set_view(self, view: str) -> None:
-        """Set the viewer to a predefined view."""
-        if self._plotter is None:
-            return
-
-        self.state.current_view = view
-
-        view_methods = {
-            "xy": lambda: self._plotter.view_xy(),
-            "-xy": lambda: self._plotter.view_xy(negative=True),
-            "xz": lambda: self._plotter.view_xz(),
-            "-xz": lambda: self._plotter.view_xz(negative=True),
-            "yz": lambda: self._plotter.view_yz(),
-            "-yz": lambda: self._plotter.view_yz(negative=True),
-            "isometric": lambda: self._plotter.view_isometric(),
-        }
-
-        if view in view_methods:
-            view_methods[view]()
-
-        if self._render_window is not None:
-            self._render_window.Render()
-        if hasattr(self, "_view") and self._view is not None:
-            self._view.update()
-        self.state.flush()
-
-    def _toggle_parallel_projection(self) -> None:
-        """Toggle between parallel and perspective projection."""
-        if self._plotter is None:
-            return
-
-        self.state.parallel_projection = not self.state.parallel_projection
-
-        if self.state.parallel_projection:
-            self._plotter.enable_parallel_projection()
-        else:
-            self._plotter.disable_parallel_projection()
-
-        if self._render_window is not None:
-            self._render_window.Render()
-        if hasattr(self, "_view") and self._view is not None:
-            self._view.update()
-        self.state.flush()
 
     def _handle_file_upload(self, file_upload) -> None:
         """Handle uploaded mesh file."""
@@ -468,694 +423,13 @@ class MmgpyApp:
 
         self.state.mesh_info = (
             f"Vertices: {n_verts:,} | {elem_type.title()}: {n_elements:,}\n"
-            f"Size: {size[0]:.3f} x {size[1]:.3f} x {size[2]:.3f}"
+            f"Size: {size[0]:.3f} × {size[1]:.3f} × {size[2]:.3f}"
             if len(size) == 3
             else f"Vertices: {n_verts:,} | {elem_type.title()}: {n_elements:,}\n"
-            f"Size: {size[0]:.3f} x {size[1]:.3f}"
+            f"Size: {size[0]:.3f} × {size[1]:.3f}"
         )
         self.state.mesh_kind = kind
         self._update_scalar_field_options()
-
-    def _update_viewer(self, *, reset_camera: bool = True) -> None:
-        """Update the 3D viewer with current mesh."""
-        if self._mesh is None or self._plotter is None:
-            return
-
-        self._plotter.clear()
-
-        pv_mesh = self._mesh.to_pyvista()
-
-        # Compute normals for smooth shading
-        if pv_mesh.n_cells > 0 and hasattr(pv_mesh, "compute_normals"):
-            try:
-                pv_mesh = pv_mesh.compute_normals(
-                    cell_normals=True,
-                    point_normals=True,
-                    split_vertices=True,
-                )
-            except Exception:
-                logger.debug("Could not compute normals for mesh")
-
-        scalars = self._compute_scalars(pv_mesh)
-        cmap, scalar_bar_title = self._get_colormap_settings(scalars)
-
-        # Apply slice/threshold for tetrahedral meshes
-        pv_mesh = self._apply_slice_if_needed(pv_mesh)
-
-        # Add mesh with rendering settings
-        self._plotter.add_mesh(
-            pv_mesh,
-            show_edges=self.state.show_edges,
-            opacity=self.state.opacity,
-            scalars=scalars,
-            color="white" if scalars is None else None,
-            cmap=cmap,
-            show_scalar_bar=scalars is not None,
-            scalar_bar_args={"title": scalar_bar_title} if scalar_bar_title else None,
-            smooth_shading=self.state.smooth_shading,
-            pbr=False,
-            metallic=0.0,
-            roughness=0.5,
-            diffuse=0.8,
-            ambient=0.2,
-            specular=0.3,
-            specular_power=30,
-        )
-
-        self._visualize_constraints()
-        self._plotter.enable_lightkit()
-
-        if reset_camera:
-            self._setup_camera_for_mesh(pv_mesh)
-
-        # Update the view
-        if self._render_window is not None:
-            self._render_window.Render()
-        if hasattr(self, "_view") and self._view is not None:
-            self._view.update()
-        self.state.flush()
-
-    def _compute_scalars(self, pv_mesh) -> str | None:
-        """Compute scalar field for visualization."""
-        scalars = None
-        show_scalar = self.state.show_scalar
-
-        if show_scalar == "quality":
-            try:
-                qualities = self._mesh.get_element_qualities()
-                if len(qualities) == pv_mesh.n_cells:
-                    pv_mesh.cell_data["quality"] = qualities
-                    scalars = "quality"
-            except Exception:
-                logger.debug("Could not compute quality scalars")
-
-        elif show_scalar == "pv_quality":
-            try:
-                pv_mesh_quality = pv_mesh.cell_quality(
-                    quality_measure="scaled_jacobian",
-                )
-                pv_mesh.cell_data["scaled_jacobian"] = pv_mesh_quality.cell_data[
-                    "CellQuality"
-                ]
-                scalars = "scaled_jacobian"
-            except Exception:
-                logger.debug("Could not compute PyVista quality scalars")
-
-        elif show_scalar == "area_volume":
-            try:
-                pv_mesh_sizes = pv_mesh.compute_cell_sizes(
-                    length=False,
-                    area=True,
-                    volume=True,
-                )
-                if (
-                    "Volume" in pv_mesh_sizes.cell_data
-                    and pv_mesh_sizes.cell_data["Volume"].max() > 0
-                ):
-                    pv_mesh.cell_data["Volume"] = pv_mesh_sizes.cell_data["Volume"]
-                    scalars = "Volume"
-                elif "Area" in pv_mesh_sizes.cell_data:
-                    pv_mesh.cell_data["Area"] = pv_mesh_sizes.cell_data["Area"]
-                    scalars = "Area"
-            except Exception:
-                logger.debug("Could not compute area/volume scalars")
-
-        elif show_scalar == "face_orientation":
-            scalars = self._compute_face_orientation(pv_mesh)
-
-        elif show_scalar == "refs":
-            if "refs" in pv_mesh.cell_data:
-                scalars = "refs"
-
-        elif show_scalar.startswith("user_"):
-            scalars = self._compute_user_scalars(pv_mesh, show_scalar[5:])
-
-        return scalars
-
-    def _compute_user_scalars(self, pv_mesh, field_name: str) -> str | None:
-        """Compute user-defined scalar field."""
-        if field_name not in self._solution_fields:
-            return None
-
-        try:
-            field_info = self._solution_fields[field_name]
-            field_data = field_info["data"]
-            location = field_info["location"]
-
-            # Flatten if needed
-            if field_data.ndim == 1:
-                values = field_data
-            elif field_data.shape[1] == 1:
-                values = field_data[:, 0]
-            else:
-                values = np.linalg.norm(field_data, axis=1)
-
-            # Add to appropriate data array based on location
-            if location == "vertices":
-                pv_mesh.point_data[field_name] = values
-            else:
-                pv_mesh.cell_data[field_name] = values
-        except Exception:
-            logger.debug("Could not compute user scalars for %s", field_name)
-            return None
-        else:
-            return field_name
-
-    def _compute_face_orientation(self, pv_mesh) -> str | None:
-        """Compute face orientation for visualization (like Blender's blue/red overlay).
-
-        Shows whether faces are consistently oriented:
-        - Blue (positive): face normal points outward from mesh centroid
-        - Red (negative): face normal points inward toward mesh centroid
-
-        This helps identify flipped/inconsistent triangles in a surface mesh.
-        """
-        try:
-            # Get face normals (compute if not present)
-            if "Normals" not in pv_mesh.cell_data:
-                pv_mesh = pv_mesh.compute_normals(
-                    cell_normals=True,
-                    point_normals=False,
-                    inplace=False,
-                )
-
-            face_normals = pv_mesh.cell_data.get("Normals")
-            if face_normals is None:
-                return None
-
-            # Compute face centers
-            face_centers = pv_mesh.cell_centers().points
-
-            # Compute mesh centroid
-            centroid = pv_mesh.center
-
-            # Vector from centroid to each face center
-            centroid_to_face = face_centers - centroid
-
-            # Dot product: positive = outward facing, negative = inward facing
-            # Normalize to get values in [-1, 1] range
-            dot_products = np.sum(face_normals * centroid_to_face, axis=1)
-
-            # Normalize by the magnitude of centroid_to_face to get cosine of angle
-            magnitudes = np.linalg.norm(centroid_to_face, axis=1)
-            magnitudes[magnitudes == 0] = 1  # Avoid division by zero
-            orientation = dot_products / magnitudes
-
-            pv_mesh.cell_data["face_orientation"] = orientation
-        except Exception:
-            logger.debug("Could not compute face orientation")
-            return None
-        else:
-            return "face_orientation"
-
-    def _get_colormap_settings(
-        self,
-        scalars: str | None,
-    ) -> tuple[str | None, str | None]:
-        """Get colormap and scalar bar title based on scalar field."""
-        if scalars is None:
-            return None, None
-
-        show_scalar = self.state.show_scalar
-
-        colormap_map = {
-            "quality": ("RdYlGn", "In-Radius Ratio"),
-            "pv_quality": ("RdYlGn", "Scaled Jacobian"),
-            "face_orientation": ("bwr", "Face Orientation"),  # blue=outward, red=inward
-            "refs": ("tab10", "Reference"),
-            "area_volume": ("viridis", "Area" if scalars == "Area" else "Volume"),
-        }
-
-        if show_scalar in colormap_map:
-            return colormap_map[show_scalar]
-
-        if show_scalar.startswith("user_"):
-            return "viridis", show_scalar[5:]
-
-        return "viridis", None
-
-    def _apply_slice_if_needed(self, pv_mesh):
-        """Apply slice/threshold for tetrahedral meshes."""
-        if not (self.state.slice_enabled and self.state.mesh_kind == "tetrahedral"):
-            return pv_mesh
-
-        try:
-            axis = int(self.state.slice_axis)
-            threshold = float(self.state.slice_threshold)
-            bounds = pv_mesh.bounds
-            min_val = bounds[axis * 2]
-            max_val = bounds[axis * 2 + 1]
-            cut_value = min_val + threshold * (max_val - min_val)
-            cell_centers = pv_mesh.cell_centers().points[:, axis]
-            mask = cell_centers < cut_value
-            if mask.any():
-                return pv_mesh.extract_cells(mask)
-        except Exception:
-            logger.debug("Could not apply slice to mesh")
-
-        return pv_mesh
-
-    def _setup_camera_for_mesh(self, pv_mesh) -> None:
-        """Set up camera based on mesh type."""
-        self._plotter.reset_camera()
-
-        is_2d_mesh = False
-        if self.state.mesh_kind == "triangular_2d":
-            bounds = pv_mesh.bounds
-            z_range = bounds[5] - bounds[4]
-            xy_range = max(bounds[1] - bounds[0], bounds[3] - bounds[2])
-            is_2d_mesh = z_range < xy_range * 0.01
-
-        if is_2d_mesh:
-            self._plotter.view_xy()
-            self._plotter.enable_parallel_projection()
-            self.state.current_view = "xy"
-            self.state.parallel_projection = True
-        else:
-            self._plotter.view_isometric()
-            self._plotter.disable_parallel_projection()
-            self.state.current_view = "isometric"
-            self.state.parallel_projection = False
-
-    def _visualize_constraints(self) -> None:
-        """Visualize sizing constraints on the plotter."""
-        if self._plotter is None:
-            return
-
-        constraints = self.state.sizing_constraints or []
-
-        for constraint in constraints:
-            constraint_type = constraint.get("type")
-            params = constraint.get("params", {})
-
-            if constraint_type == "sphere":
-                center = params.get("center", [0, 0, 0])
-                radius = params.get("radius", 0.5)
-                sphere = pv.Sphere(
-                    center=center,
-                    radius=radius,
-                    theta_resolution=16,
-                    phi_resolution=16,
-                )
-                self._plotter.add_mesh(
-                    sphere,
-                    color="orange",
-                    opacity=0.3,
-                    style="wireframe",
-                    line_width=2,
-                )
-
-            elif constraint_type == "box":
-                bounds_data = params.get(
-                    "bounds",
-                    [[-0.5, -0.5, -0.5], [0.5, 0.5, 0.5]],
-                )
-                min_pt = bounds_data[0]
-                max_pt = bounds_data[1]
-                box = pv.Box(
-                    bounds=[
-                        min_pt[0],
-                        max_pt[0],
-                        min_pt[1],
-                        max_pt[1],
-                        min_pt[2],
-                        max_pt[2],
-                    ],
-                )
-                self._plotter.add_mesh(
-                    box,
-                    color="cyan",
-                    opacity=0.3,
-                    style="wireframe",
-                    line_width=2,
-                )
-
-            elif constraint_type == "point":
-                point = params.get("point", [0, 0, 0])
-                influence_radius = params.get("influence_radius", 0.5)
-                point_sphere = pv.Sphere(center=point, radius=0.02)
-                self._plotter.add_mesh(point_sphere, color="red")
-                influence_sphere = pv.Sphere(
-                    center=point,
-                    radius=influence_radius,
-                    theta_resolution=16,
-                    phi_resolution=16,
-                )
-                self._plotter.add_mesh(
-                    influence_sphere,
-                    color="red",
-                    opacity=0.2,
-                    style="wireframe",
-                    line_width=1,
-                )
-
-    def _apply_adaptive_defaults(self) -> None:
-        """Set default remeshing parameters based on mesh scale.
-
-        Uses the 'medium' preset values to initialize parameters.
-        """
-        diagonal = get_mesh_diagonal(self._mesh)
-        values = compute_preset_values("medium", diagonal)
-
-        self._applying_preset = True
-        try:
-            self.state.hmax = values.get("hmax")
-            self.state.hausd = values.get("hausd")
-            self.state.hgrad = values.get("hgrad", 1.3)
-            self.state.hmin = None
-            self.state.use_preset = "medium"
-        finally:
-            self._applying_preset = False
-        self.state.flush()
-
-    def _apply_preset_trigger(self, preset: str) -> None:
-        """Trigger handler for preset buttons."""
-        self.state.use_preset = preset
-        self._apply_preset(preset)
-
-    def _apply_preset(self, preset: str) -> None:
-        """Apply a remeshing preset scaled to mesh size."""
-        if preset == "custom":
-            return
-
-        diagonal = get_mesh_diagonal(self._mesh)
-        values = compute_preset_values(preset, diagonal)
-
-        if values:
-            self._applying_preset = True
-            try:
-                for key, value in values.items():
-                    setattr(self.state, key, value)
-            finally:
-                self._applying_preset = False
-            self.state.flush()
-
-    def _run_remesh(self) -> None:
-        """Execute remeshing operation."""
-        from mmgpy import Mesh
-
-        if self._mesh is None:
-            return
-
-        self.state.is_remeshing = True
-
-        try:
-            # Choose source mesh and solution based on option
-            use_original = (
-                self.state.remesh_source == "original"
-                and self._original_mesh is not None
-            )
-            if use_original:
-                source_mesh = self._original_mesh
-                source_solution_fields = self._original_solution_fields
-                source_solution_metric = self._original_solution_metric
-            else:
-                source_mesh = self._mesh
-                source_solution_fields = self._solution_fields
-                source_solution_metric = self._solution_metric
-
-            # Store old mesh info for field transfer
-            old_vertices = source_mesh.get_vertices()
-            kind = source_mesh.kind.value
-            if kind == "tetrahedral":
-                old_elements = source_mesh.get_tetrahedra()
-            else:
-                old_elements = source_mesh.get_triangles()
-
-            # Create a fresh Mesh object
-            pv_mesh = source_mesh.to_pyvista()
-            self._mesh = Mesh(pv_mesh)
-
-            # Apply solution as metric if enabled
-            if self.state.use_solution_as_metric and source_solution_metric is not None:
-                n_vertices = len(self._mesh.get_vertices())
-                if len(source_solution_metric) == n_vertices:
-                    metric = source_solution_metric
-                    if metric.ndim == 1:
-                        metric = metric.reshape(-1, 1)
-                    self._mesh.set_field("metric", metric.astype(np.float64))
-
-            options = self._build_remesh_options()
-            result = self._execute_remesh(source_solution_metric, options)
-
-            self.state.remesh_result = {
-                "vertices_before": result.vertices_before,
-                "vertices_after": result.vertices_after,
-                "elements_before": result.elements_before,
-                "elements_after": result.elements_after,
-                "quality_before": f"{result.quality_mean_before:.3f}",
-                "quality_after": f"{result.quality_mean_after:.3f}",
-                "duration": f"{result.duration_seconds:.2f}s",
-                "warnings": list(result.warnings),
-            }
-
-            # Transfer solution fields
-            self._transfer_solution_fields(
-                source_solution_fields,
-                old_vertices,
-                old_elements,
-            )
-
-            self._update_mesh_info()
-            self._update_viewer(reset_camera=False)
-
-        except Exception as e:
-            logger.exception("Remeshing failed")
-            self.state.remesh_result = {"error": str(e)}
-        finally:
-            self.state.is_remeshing = False
-            self.state.flush()
-
-    def _build_remesh_options(self) -> dict:
-        """Build options dictionary for remeshing."""
-        options = {}
-
-        hmin = to_float(self.state.hmin)
-        hmax = to_float(self.state.hmax)
-        hsiz = to_float(self.state.hsiz)
-        hausd = to_float(self.state.hausd)
-        hgrad = to_float(self.state.hgrad)
-        ar = to_float(self.state.ar)
-
-        # Validate parameters
-        if hmin is not None and hmin <= 0:
-            msg = "hmin must be > 0"
-            raise ValueError(msg)
-        if hmax is not None and hmax <= 0:
-            msg = "hmax must be > 0"
-            raise ValueError(msg)
-        if hsiz is not None and hsiz <= 0:
-            msg = "hsiz must be > 0"
-            raise ValueError(msg)
-        if hausd is not None and hausd <= 0:
-            msg = "hausd must be > 0"
-            raise ValueError(msg)
-        if hgrad is not None and hgrad <= 1.0:
-            msg = "hgrad must be > 1.0"
-            raise ValueError(msg)
-        if hmin is not None and hmax is not None and hmin > hmax:
-            msg = "hmin must be <= hmax"
-            raise ValueError(msg)
-
-        if hmin is not None:
-            options["hmin"] = hmin
-        if hmax is not None:
-            options["hmax"] = hmax
-        if hsiz is not None:
-            options["hsiz"] = hsiz
-        if hausd is not None:
-            options["hausd"] = hausd
-        if hgrad is not None:
-            options["hgrad"] = hgrad
-        if ar is not None:
-            options["ar"] = ar
-
-        options["verbose"] = int(self.state.verbose or 1)
-
-        # Get selected options from multi-select button group
-        selected = self.state.selected_options or []
-        if "optim" in selected:
-            options["optim"] = 1
-        if "noinsert" in selected:
-            options["noinsert"] = 1
-        if "noswap" in selected:
-            options["noswap"] = 1
-        if "nomove" in selected:
-            options["nomove"] = 1
-        if "nosurf" in selected and self.state.mesh_kind == "tetrahedral":
-            options["nosurf"] = 1
-
-        return options
-
-    def _execute_remesh(self, source_solution_metric, options: dict):
-        """Execute the appropriate remesh operation."""
-        mode = self.state.remesh_mode
-
-        if mode == "standard":
-            return self._mesh.remesh(progress=False, **options)
-
-        if mode == "levelset":
-            if (
-                self.state.use_solution_as_levelset
-                and source_solution_metric is not None
-            ):
-                levelset = source_solution_metric
-                if levelset.ndim == 1:
-                    levelset = levelset.reshape(-1, 1)
-            else:
-                levelset = self._compute_levelset()
-            return self._mesh.remesh_levelset(levelset, progress=False, **options)
-
-        if mode == "lagrangian":
-            displacement = self._compute_displacement()
-            return self._mesh.remesh_lagrangian(
-                displacement,
-                progress=False,
-                **options,
-            )
-
-        if mode == "optimize":
-            return self._mesh.remesh_optimize(progress=False)
-
-        return self._mesh.remesh(progress=False, **options)
-
-    def _transfer_solution_fields(
-        self,
-        source_solution_fields: dict,
-        old_vertices: np.ndarray,
-        old_elements: np.ndarray,
-    ) -> None:
-        """Transfer solution fields to new mesh."""
-        if not source_solution_fields:
-            return
-
-        from mmgpy._transfer import transfer_fields
-
-        new_vertices = self._mesh.get_vertices()
-        vertex_fields = {
-            name: info["data"]
-            for name, info in source_solution_fields.items()
-            if info["location"] == "vertices"
-        }
-
-        if not vertex_fields:
-            return
-
-        try:
-            transferred = transfer_fields(
-                source_vertices=old_vertices,
-                source_elements=old_elements,
-                target_points=new_vertices,
-                fields=vertex_fields,
-            )
-            for name, new_data in transferred.items():
-                if name in self._solution_fields:
-                    self._solution_fields[name]["data"] = new_data
-                else:
-                    loc = source_solution_fields[name]["location"]
-                    self._solution_fields[name] = {
-                        "data": new_data,
-                        "location": loc,
-                    }
-            first_field = next(iter(vertex_fields.keys()))
-            self._solution_metric = transferred[first_field].copy()
-            self._update_scalar_field_options()
-        except Exception:
-            logger.warning(
-                "Failed to transfer solution fields, clearing solution state",
-            )
-            for key, value in reset_solution_state().items():
-                setattr(self.state, key, value)
-            self._solution_fields = {}
-            self._solution_metric = None
-            if self.state.show_scalar.startswith("user_"):
-                self.state.show_scalar = "quality"
-            self._update_scalar_field_options()
-
-    def _compute_levelset(self) -> np.ndarray:
-        """Compute levelset field from formula using safe evaluation."""
-        vertices = self._mesh.get_vertices()
-        x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
-
-        formula = self.state.levelset_formula
-        return evaluate_levelset_formula(formula, x, y, z)
-
-    def _compute_displacement(self) -> np.ndarray:
-        """Compute displacement field."""
-        vertices = self._mesh.get_vertices()
-        n_verts = len(vertices)
-        dim = vertices.shape[1]
-
-        scale = float(self.state.displacement_scale)
-        displacement = _rng.standard_normal((n_verts, dim)) * scale
-
-        return displacement.astype(np.float64)
-
-    def _run_validation(self) -> None:
-        """Run mesh validation."""
-        if self._mesh is None:
-            return
-
-        report = self._mesh.validate(detailed=True)
-
-        quality_data = None
-        if report.quality:
-            quality_data = {
-                "min": f"{report.quality.min:.3f}",
-                "max": f"{report.quality.max:.3f}",
-                "mean": f"{report.quality.mean:.3f}",
-                "std": f"{report.quality.std:.3f}",
-                "histogram": list(report.quality.histogram),
-            }
-
-        self.state.validation_report = {
-            "is_valid": report.is_valid,
-            "mesh_type": report.mesh_type,
-            "errors": [
-                {"check": i.check_name, "message": i.message} for i in report.errors
-            ],
-            "warnings": [
-                {"check": i.check_name, "message": i.message} for i in report.warnings
-            ],
-            "quality": quality_data,
-        }
-
-    def _add_sizing_constraint(self, constraint_type: str, params: dict) -> None:
-        """Add a sizing constraint."""
-        if self._mesh is None:
-            return
-
-        if constraint_type == "sphere":
-            self._mesh.set_size_sphere(
-                center=params["center"],
-                radius=params["radius"],
-                size=params["size"],
-            )
-        elif constraint_type == "box":
-            self._mesh.set_size_box(
-                bounds=params["bounds"],
-                size=params["size"],
-            )
-        elif constraint_type == "point":
-            self._mesh.set_size_from_point(
-                point=params["point"],
-                near_size=params["near_size"],
-                far_size=params["far_size"],
-                influence_radius=params["influence_radius"],
-            )
-
-        constraints = list(self.state.sizing_constraints)
-        constraints.append({"type": constraint_type, "params": params})
-        self.state.sizing_constraints = constraints
-
-        self._update_viewer()
-
-    def _clear_sizing_constraints(self) -> None:
-        """Clear all sizing constraints."""
-        if self._mesh is not None:
-            self._mesh.clear_local_sizing()
-        self.state.sizing_constraints = []
-        self._update_viewer()
 
     def _export_mesh(self) -> None:
         """Export mesh to file and trigger download."""
@@ -2074,7 +1348,7 @@ class MmgpyApp:
                     v3.VListItem(
                         title="Size",
                         subtitle=(
-                            "`${mesh_stats?.size?.map(v => v.toFixed(3)).join(' x ') || '-'}`",
+                            "`${mesh_stats?.size?.map(v => v.toFixed(3)).join(' × ') || '-'}`",
                         ),
                     )
 
@@ -2091,9 +1365,9 @@ class MmgpyApp:
                         ),
                     )
                     v3.VListItem(
-                        title="Mean +/- Std",
+                        title="Mean ± Std",
                         subtitle=(
-                            "`${mesh_stats?.quality?.mean?.toFixed(4) || '-'} +/- "
+                            "`${mesh_stats?.quality?.mean?.toFixed(4) || '-'} ± "
                             "${mesh_stats?.quality?.std?.toFixed(4) || '-'}`",
                         ),
                     )
@@ -2111,21 +1385,21 @@ class MmgpyApp:
                             v3.VListItem(
                                 title="Vertices",
                                 subtitle=(
-                                    "`${remesh_result?.vertices_before} -> "
+                                    "`${remesh_result?.vertices_before} → "
                                     "${remesh_result?.vertices_after}`",
                                 ),
                             )
                             v3.VListItem(
                                 title="Elements",
                                 subtitle=(
-                                    "`${remesh_result?.elements_before} -> "
+                                    "`${remesh_result?.elements_before} → "
                                     "${remesh_result?.elements_after}`",
                                 ),
                             )
                             v3.VListItem(
                                 title="Quality (In-Radius Ratio)",
                                 subtitle=(
-                                    "`${remesh_result?.quality_before} -> "
+                                    "`${remesh_result?.quality_before} → "
                                     "${remesh_result?.quality_after}`",
                                 ),
                             )
