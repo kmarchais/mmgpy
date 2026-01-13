@@ -262,6 +262,21 @@ MeshVersionFormatted
         # Should only have 2 values since it stops at MeshVersionFormatted
         assert len(fields["solution@vertices"]["data"]) == 2
 
+    def test_parse_single_entity_scalar(self):
+        """Test parsing when there's only one entity (data.ndim == 1)."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+1
+1 1
+0.5
+End
+"""
+        fields = parse_sol_file(content)
+        assert "solution@vertices" in fields
+        # Single value should still work
+        assert fields["solution@vertices"]["data"].shape == (1,)
+
 
 class TestSafeFormulaEvaluator:
     """Tests for SafeFormulaEvaluator class."""
@@ -365,6 +380,80 @@ class TestSafeFormulaEvaluator:
         x, y, z = coords
         with pytest.raises(ValueError, match="Invalid formula syntax"):
             evaluator.evaluate("x +", x, y, z)
+
+    def test_unsupported_constant_type(self, evaluator, coords):
+        """Test that string constants raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Unsupported constant type"):
+            evaluator.evaluate("'hello'", x, y, z)
+
+    def test_unsupported_binary_operator(self, evaluator, coords):
+        """Test that unsupported binary operators raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Unsupported binary operator"):
+            evaluator.evaluate("x @ y", x, y, z)  # Matrix multiplication
+
+    def test_unsupported_unary_operator(self, evaluator, coords):
+        """Test that unsupported unary operators raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Unsupported unary operator"):
+            evaluator.evaluate("~x", x, y, z)  # Bitwise not
+
+    def test_complex_comparison(self, evaluator, coords):
+        """Test that chained comparisons raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Only simple comparisons"):
+            evaluator.evaluate("0 < x < 1", x, y, z)
+
+    def test_unsupported_comparison_operator(self, evaluator, coords):
+        """Test that unsupported comparison operators raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Unsupported comparison operator"):
+            evaluator.evaluate("x is y", x, y, z)
+
+    def test_ternary_expression(self, evaluator, coords):
+        """Test ternary (if-else) expressions work."""
+        x, y, z = coords
+        result = evaluator.evaluate("1.0 if x > 0.5 else 0.0", x, y, z)
+        expected = np.where(x > 0.5, 1.0, 0.0)
+        np.testing.assert_array_almost_equal(result, expected)
+
+    def test_unsupported_expression_type(self, evaluator, coords):
+        """Test that unsupported expression types raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Unsupported expression type"):
+            evaluator.evaluate("[x, y]", x, y, z)  # List expression
+
+    def test_non_np_attribute_call(self, evaluator, coords):
+        """Test that non-np attribute calls raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match=r"Only np\.function"):
+            evaluator.evaluate("x.sum()", x, y, z)
+
+    def test_direct_numpy_function_call(self, evaluator, coords):
+        """Test direct numpy function call (sin instead of np.sin)."""
+        x, y, z = coords
+        result = evaluator.evaluate("sin(x)", x, y, z)
+        expected = np.sin(x)
+        np.testing.assert_array_almost_equal(result, expected)
+
+    def test_invalid_function_call(self, evaluator, coords):
+        """Test that lambda or other callable raises ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Invalid function call"):
+            evaluator.evaluate("(lambda a: a)(x)", x, y, z)
+
+    def test_unsupported_numpy_attribute(self, evaluator, coords):
+        """Test that unsupported numpy attributes raise ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match="Unsupported numpy attribute"):
+            evaluator.evaluate("np.inf + x", x, y, z)
+
+    def test_non_np_attribute_access(self, evaluator, coords):
+        """Test that non-np attribute access raises ValueError."""
+        x, y, z = coords
+        with pytest.raises(ValueError, match=r"Only np\.pi and np\.e"):
+            evaluator.evaluate("x.shape", x, y, z)
 
 
 class TestEvaluateLevelsetFormula:
