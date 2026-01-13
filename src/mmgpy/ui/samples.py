@@ -5,9 +5,46 @@ from __future__ import annotations
 import numpy as np
 import pyvista as pv
 
+# =============================================================================
+# Sample mesh generation constants
+# =============================================================================
+
+# Tetrahedral cube: points per axis for structured grid
+TETRA_CUBE_POINTS_PER_AXIS = 5
+
+# Tetrahedral sphere: concentric shells for point distribution
+TETRA_SPHERE_NUM_SHELLS = 3
+TETRA_SPHERE_BASE_PHI_POINTS = 4  # Base number of latitude points
+TETRA_SPHERE_PHI_INCREMENT = 2  # Additional phi points per shell
+TETRA_SPHERE_BASE_THETA_POINTS = 8  # Base number of longitude points
+TETRA_SPHERE_THETA_INCREMENT = 4  # Additional theta points per shell
+
+# 2D disc: ring and sector configuration
+DISC_2D_NUM_RINGS = 5
+DISC_2D_NUM_SECTORS = 16
+DISC_2D_INNER_RADIUS = 0.1  # Avoid degenerate triangles at center
+
+# 2D rectangle: grid resolution
+RECT_2D_RESOLUTION = 10
+
+# Surface mesh resolutions (for pyvista primitives)
+SURFACE_SPHERE_RESOLUTION = 20
+SURFACE_CYLINDER_RESOLUTION = 20
+SURFACE_CONE_RESOLUTION = 20
+SURFACE_TORUS_U_RESOLUTION = 30
+SURFACE_TORUS_V_RESOLUTION = 30
+
+
+# =============================================================================
+# Sample mesh generator functions
+# =============================================================================
+
 
 def create_tetra_cube() -> pv.UnstructuredGrid:
     """Create a tetrahedral cube mesh from interior points.
+
+    Uses a structured grid of points inside a unit cube, then applies
+    Delaunay tetrahedralization.
 
     Returns
     -------
@@ -15,7 +52,7 @@ def create_tetra_cube() -> pv.UnstructuredGrid:
         A tetrahedral mesh of a unit cube centered at origin.
 
     """
-    n = 5  # Points per axis
+    n = TETRA_CUBE_POINTS_PER_AXIS
     x = np.linspace(-0.5, 0.5, n)
     y = np.linspace(-0.5, 0.5, n)
     z = np.linspace(-0.5, 0.5, n)
@@ -30,6 +67,7 @@ def create_tetra_sphere() -> pv.UnstructuredGrid:
 
     Uses spherical shells to create a structured point distribution
     inside the sphere, then applies Delaunay tetrahedralization.
+    Point density increases with shell radius for better quality.
 
     Returns
     -------
@@ -38,14 +76,13 @@ def create_tetra_sphere() -> pv.UnstructuredGrid:
 
     """
     points = [[0, 0, 0]]  # Center point
-    n_shells = 3
-    for shell in range(1, n_shells + 1):
-        r = shell / n_shells
-        # Number of points increases with shell radius
-        n_phi = 4 + shell * 2
-        n_theta = 8 + shell * 4
+    for shell in range(1, TETRA_SPHERE_NUM_SHELLS + 1):
+        r = shell / TETRA_SPHERE_NUM_SHELLS
+        # Increase point density with shell radius
+        n_phi = TETRA_SPHERE_BASE_PHI_POINTS + shell * TETRA_SPHERE_PHI_INCREMENT
+        n_theta = TETRA_SPHERE_BASE_THETA_POINTS + shell * TETRA_SPHERE_THETA_INCREMENT
         for i in range(n_phi):
-            phi = np.pi * (i + 0.5) / n_phi  # Avoid poles
+            phi = np.pi * (i + 0.5) / n_phi  # Offset to avoid poles
             for j in range(n_theta):
                 theta = 2 * np.pi * j / n_theta
                 x = r * np.sin(phi) * np.cos(theta)
@@ -60,8 +97,8 @@ def create_tetra_sphere() -> pv.UnstructuredGrid:
 def create_2d_disc() -> pv.PolyData:
     """Create a 2D triangular disc mesh with good quality.
 
-    Uses a small inner radius to avoid degenerate center triangles,
-    then applies 2D Delaunay triangulation.
+    Uses concentric rings with a small inner radius to avoid
+    degenerate center triangles, then applies 2D Delaunay triangulation.
 
     Returns
     -------
@@ -69,17 +106,15 @@ def create_2d_disc() -> pv.PolyData:
         A 2D triangular mesh of a unit disc in the XY plane.
 
     """
-    n_rings = 5
-    n_sectors = 16
     points = []
-    for i in range(n_rings + 1):
-        r = 0.1 + 0.9 * i / n_rings  # Start from r=0.1 to avoid center issues
+    for i in range(DISC_2D_NUM_RINGS + 1):
+        # Start from inner radius to avoid center issues
+        r = DISC_2D_INNER_RADIUS + (1 - DISC_2D_INNER_RADIUS) * i / DISC_2D_NUM_RINGS
         if i == 0:
-            # Add center point
-            points.append([0, 0, 0])
+            points.append([0, 0, 0])  # Center point
         else:
-            for j in range(n_sectors):
-                theta = 2 * np.pi * j / n_sectors
+            for j in range(DISC_2D_NUM_SECTORS):
+                theta = 2 * np.pi * j / DISC_2D_NUM_SECTORS
                 points.append([r * np.cos(theta), r * np.sin(theta), 0])
     points = np.array(points)
     cloud = pv.PolyData(points)
@@ -95,7 +130,7 @@ def create_2d_rectangle() -> pv.PolyData:
         A 2D triangular mesh of a unit rectangle in the XY plane.
 
     """
-    plane = pv.Plane(i_resolution=10, j_resolution=10)
+    plane = pv.Plane(i_resolution=RECT_2D_RESOLUTION, j_resolution=RECT_2D_RESOLUTION)
     return plane.triangulate()
 
 
@@ -103,7 +138,10 @@ def create_2d_rectangle() -> pv.PolyData:
 SAMPLE_MESHES: dict[str, dict] = {
     # Surface meshes (mmgs)
     "sphere": {
-        "create": lambda: pv.Sphere(theta_resolution=20, phi_resolution=20),
+        "create": lambda: pv.Sphere(
+            theta_resolution=SURFACE_SPHERE_RESOLUTION,
+            phi_resolution=SURFACE_SPHERE_RESOLUTION,
+        ),
         "category": "surface",
         "icon": "mdi-sphere",
     },
@@ -113,17 +151,22 @@ SAMPLE_MESHES: dict[str, dict] = {
         "icon": "mdi-cube-outline",
     },
     "cylinder": {
-        "create": lambda: pv.Cylinder(resolution=20).triangulate(),
+        "create": lambda: pv.Cylinder(
+            resolution=SURFACE_CYLINDER_RESOLUTION,
+        ).triangulate(),
         "category": "surface",
         "icon": "mdi-cylinder",
     },
     "cone": {
-        "create": lambda: pv.Cone(resolution=20).triangulate(),
+        "create": lambda: pv.Cone(resolution=SURFACE_CONE_RESOLUTION).triangulate(),
         "category": "surface",
         "icon": "mdi-cone",
     },
     "torus": {
-        "create": lambda: pv.ParametricTorus(u_res=30, v_res=30),
+        "create": lambda: pv.ParametricTorus(
+            u_res=SURFACE_TORUS_U_RESOLUTION,
+            v_res=SURFACE_TORUS_V_RESOLUTION,
+        ),
         "category": "surface",
         "icon": "mdi-circle-double",
     },

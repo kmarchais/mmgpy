@@ -173,13 +173,24 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         from mmgpy import Mesh
 
         client_file = ClientFile(file_upload)
-        suffix = Path(client_file.name).suffix
 
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-            tmp.write(client_file.content)
-            tmp_path = tmp.name
+        # Check file size limit (50 MB)
+        max_size_mb = 50
+        if len(client_file.content) > max_size_mb * 1024 * 1024:
+            self.state.remesh_result = {
+                "error": f"File too large. Maximum size is {max_size_mb} MB.",
+            }
+            self.state.file_upload = None
+            return
+
+        suffix = Path(client_file.name).suffix
+        tmp_path = None
 
         try:
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                tmp.write(client_file.content)
+                tmp_path = tmp.name
+
             self._mesh = Mesh(tmp_path)
             self._original_mesh = Mesh(tmp_path)
             self._update_mesh_state_after_load(client_file.name)
@@ -189,7 +200,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         finally:
             self.state.file_upload = None
             self.state.flush()
-            Path(tmp_path).unlink(missing_ok=True)
+            if tmp_path is not None:
+                Path(tmp_path).unlink(missing_ok=True)
 
     def _update_mesh_state_after_load(self, filename: str) -> None:
         """Update state after loading a mesh."""
@@ -214,6 +226,16 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             return
 
         client_file = ClientFile(sol_file_upload)
+
+        # Check file size limit (10 MB for solution files)
+        max_size_mb = 10
+        if len(client_file.content) > max_size_mb * 1024 * 1024:
+            self.state.remesh_result = {
+                "error": f"Solution file too large. Maximum size is {max_size_mb} MB.",
+            }
+            self.state.sol_file_upload = None
+            return
+
         content = client_file.content.decode("utf-8")
 
         try:
@@ -421,12 +443,15 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             "quality": quality_stats,
         }
 
+        # Build size string based on dimensionality
+        is_3d = len(size) >= 3 and size[2] != 0
+        if is_3d:
+            size_str = f"{size[0]:.3f} × {size[1]:.3f} × {size[2]:.3f}"
+        else:
+            size_str = f"{size[0]:.3f} × {size[1]:.3f}"
         self.state.mesh_info = (
             f"Vertices: {n_verts:,} | {elem_type.title()}: {n_elements:,}\n"
-            f"Size: {size[0]:.3f} × {size[1]:.3f} × {size[2]:.3f}"
-            if len(size) == 3
-            else f"Vertices: {n_verts:,} | {elem_type.title()}: {n_elements:,}\n"
-            f"Size: {size[0]:.3f} × {size[1]:.3f}"
+            f"Size: {size_str}"
         )
         self.state.mesh_kind = kind
         self._update_scalar_field_options()
@@ -681,7 +706,16 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
     def _build_remesh_panel(self) -> None:
         """Build remeshing options panel."""
-        # File upload
+        self._build_file_upload_section()
+        self._build_solution_options_section()
+        self._build_mode_and_preset_section()
+        self._build_size_parameters_section()
+        self._build_advanced_options_section()
+        self._build_mode_specific_options()
+        self._build_run_section()
+
+    def _build_file_upload_section(self) -> None:
+        """Build file upload inputs for mesh and solution files."""
         v3.VFileInput(
             v_model=("file_upload",),
             label=("mesh_filename ? `Mesh: ${mesh_filename}` : 'Upload Mesh'",),
@@ -692,11 +726,9 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             hide_details=True,
             clearable=True,
             classes="mb-2",
-            title="Supported formats: VTK, VTU, VTP, STL, OBJ, PLY, Medit (.mesh), Gmsh (.msh)",
+            title="Supported formats: VTK, VTU, VTP, STL, OBJ, PLY, Medit (.mesh), Gmsh (.msh). Max 50 MB.",
             click="file_upload = null",
         )
-
-        # Solution file upload
         v3.VFileInput(
             v_model=("sol_file_upload",),
             label=(
@@ -710,11 +742,12 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             clearable=True,
             classes="mb-2",
             disabled=("!mesh_loaded",),
-            title="Load solution file to visualize scalar/vector fields",
+            title="Load solution file to visualize scalar/vector fields. Max 10 MB.",
             click="sol_file_upload = null",
         )
 
-        # Show detected solution type
+    def _build_solution_options_section(self) -> None:
+        """Build solution type alerts and usage options."""
         v3.VAlert(
             text="Solution detected as levelset (signed distance)",
             type="info",
@@ -731,8 +764,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             v_show="sol_filename && solution_type === 'metric'",
             classes="mb-2",
         )
-
-        # Use solution as metric option
         v3.VCheckbox(
             v_model=("use_solution_as_metric",),
             label="Use solution as metric (sizing field)",
@@ -742,8 +773,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             disabled=("!sol_filename || remesh_mode !== 'standard'",),
             title="Use loaded solution values to control local mesh size",
         )
-
-        # Use solution as levelset option
         v3.VCheckbox(
             v_model=("use_solution_as_levelset",),
             label="Use solution as levelset (iso-surface at 0)",
@@ -754,7 +783,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             title="Use loaded solution as the levelset field for iso-surface extraction",
         )
 
-        # Mode selection
+    def _build_mode_and_preset_section(self) -> None:
+        """Build mode selection and preset buttons."""
         v3.VSelect(
             v_model=("remesh_mode",),
             label="Mode",
@@ -765,8 +795,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             classes="mb-3",
             title="Standard: global remesh | Levelset: iso-surface | Lagrangian: move vertices | Optimize: quality only",
         )
-
-        # Preset buttons
         with v3.VBtnToggle(
             v_model=("use_preset",),
             density="compact",
@@ -804,7 +832,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 click="trigger('apply_preset', ['custom'])",
             )
 
-        # Size control
+    def _build_size_parameters_section(self) -> None:
+        """Build size control parameters (hmax, hmin, hausd, hgrad, ar)."""
         with v3.VRow(dense=True):
             with v3.VCol(cols=6):
                 v3.VTextField(
@@ -879,7 +908,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     title="Angle detection threshold (degrees). Sharp edges below this angle are preserved.",
                 )
 
-        # Optimization options
+    def _build_advanced_options_section(self) -> None:
+        """Build advanced optimization options (optim, noinsert, noswap, etc.)."""
         html.Div("Options", classes="text-caption text-grey mb-1")
         with v3.VBtnToggle(
             v_model=("selected_options",),
@@ -938,18 +968,21 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 style="flex: 1;",
                 title="Don't modify surface mesh (3D only)",
             )
-
-        # Warning when all options disabled
         v3.VAlert(
             text="Warning: No Insert + No Swap + No Move disables most improvements",
             type="warning",
             density="compact",
             variant="tonal",
-            v_show="selected_options.includes('noinsert') && selected_options.includes('noswap') && selected_options.includes('nomove')",
+            v_show=(
+                "selected_options.includes('noinsert') && "
+                "selected_options.includes('noswap') && "
+                "selected_options.includes('nomove')"
+            ),
             classes="mb-3",
         )
 
-        # Levelset options
+    def _build_mode_specific_options(self) -> None:
+        """Build mode-specific options (levelset formula, lagrangian, source)."""
         v3.VTextField(
             v_model=("levelset_formula",),
             label=(
@@ -964,8 +997,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             disabled=("use_solution_as_levelset",),
             title="Python expression using x, y, z, np (iso-surface at 0)",
         )
-
-        # Lagrangian options
         v3.VSlider(
             v_model=("displacement_scale",),
             label="Displacement Scale",
@@ -979,8 +1010,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             v_show="remesh_mode === 'lagrangian'",
             title="Scale factor for vertex displacement",
         )
-
-        # Source mesh option
         html.Div("Remesh from", classes="text-caption text-grey mb-1")
         with v3.VBtnToggle(
             v_model=("remesh_source",),
@@ -1002,7 +1031,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 title="Remesh from last result (iterative)",
             )
 
-        # Run button
+    def _build_run_section(self) -> None:
+        """Build run button and result alerts."""
         v3.VBtn(
             "Run Remesh",
             click="trigger('run_remesh')",
@@ -1013,8 +1043,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             prepend_icon="mdi-play",
             title="Execute remeshing",
         )
-
-        # Result alerts
         v3.VAlert(
             text="Remesh complete!",
             type="success",
