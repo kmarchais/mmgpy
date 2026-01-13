@@ -67,6 +67,12 @@ mmg3d_O3 = "mmgpy:_run_mmg3d"
 mmgs = "mmgpy:_run_mmgs"
 mmgs_O3 = "mmgpy:_run_mmgs"
 
+[project.entry-points."mmgpy.ui"]
+ui = "mmgpy.ui:run_ui"
+
+[project.gui-scripts]
+mmgpy-ui = "mmgpy.ui:run_ui"
+
 [dependency-groups]
 dev = [
     "imageio>=2.37.2",
@@ -80,6 +86,12 @@ dev = [
 docs = [
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
+]
+ui = [
+    "trame>=3.12.0",
+    "trame-vtk>=2.10.2",
+    "trame-vtklocal>=0.16.0",
+    "trame-vuetify>=3.2.0",
 ]
 
 [tool.pytest.ini_options]
@@ -109,6 +121,7 @@ ignore = [
     "S603",    # subprocess calls allowed in tests
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
+    "ANN",     # type annotations not required for tests
 ]
 ".github/scripts/**/*.py" = [
     "INP001",  # CI scripts are not a package
@@ -170,12 +183,43 @@ ignore = [
 "src/mmgpy/interactive/*.py" = [
     "PLC0415", # imports inside functions to avoid circular imports
 ]
+"src/mmgpy/ui/**/*.py" = [
+    # Trame/UI patterns
+    "PLC0415", # imports inside functions for lazy loading
+    "ARG002",  # unused kwargs in callbacks (trame pattern)
+    "ANN",     # type annotations not required for UI callbacks
+    "FBT",     # boolean positional args for debug flag
+    "SIM117",  # nested withs for trame context managers
+    "E501",    # long lines in UI strings (tooltips, JS expressions)
+    # Complexity (parser and validation logic)
+    "C901",    # complex functions in parsers and remeshing
+    "PLR0911", # many returns in recursive AST evaluator
+    "PLR0912", # many branches in parser and validation logic
+    "PLR0915", # many statements in sol file parser
+    "PLR2004", # magic values (MMG solution types, VTK cell types)
+    # Error handling
+    "BLE001",  # broad exception catching for UI error handling
+    "S110",    # try-except-pass for optional features
+    "SIM105",  # try-except-pass for optional feature detection
+    # Exception messages
+    "TRY003",  # exception messages are user-facing
+    "TRY301",  # simple raises in validation code
+    "EM101",   # string literals in exceptions for clarity
+    "EM102",   # f-string in exceptions for user messages
+    # Other
+    "RUF001",  # unicode multiplication sign intentional (×)
+    "RUF046",  # int(floor()) is explicit for significant figures
+    "PLW2901", # loop variable reassignment in parsers.py
+    "SIM102",  # nested ifs clearer in samples.py triangulate check
+    "T201",    # print used for debug HTML output
+]
 
 [tool.ty.src]
 # Exclude tests, scripts, examples, and certain modules from type checking
 # Progress module uses union types that cause complex type inference issues
 # Interactive module uses PyVista types that have incomplete stubs
-exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**"]
+# UI module uses trame which has no type stubs
+exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time
@@ -250,6 +294,11 @@ branch = true
 omit = [
     "*/_mmgpy*",
     "*/interactive/*",  # PyVista UI code requires display, hard to test in CI
+    "*/ui/__init__.py", # UI entry points require trame server
+    "*/ui/__main__.py", # Entry point for UI
+    "*/ui/app.py",      # Trame UI app requires browser
+    "*/ui/viewer.py",   # Trame viewer mixin requires browser
+    "*/ui/remeshing.py", # Trame remeshing mixin requires browser
 ]
 
 [tool.coverage.report]
