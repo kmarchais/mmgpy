@@ -67,6 +67,9 @@ if TYPE_CHECKING:
     # Progress can be True (default rich), False (disabled), or a callback
     ProgressParam = bool | Callable[[ProgressEvent], bool] | None
 
+    # Field transfer can be True (all fields), False (no transfer), or list of names
+    FieldTransferParam = bool | Sequence[str] | None
+
 _DIMS_2D = 2
 _DIMS_3D = 3
 _TETRA_VERTS = 4
@@ -427,11 +430,12 @@ class Mesh:
 
     """
 
-    __slots__ = ("_impl", "_kind", "_sizing_constraints")
+    __slots__ = ("_impl", "_kind", "_sizing_constraints", "_user_fields")
 
     _impl: MmgMesh3D | MmgMesh2D | MmgMeshS
     _kind: MeshKind
     _sizing_constraints: list[SizingConstraint]
+    _user_fields: dict[str, NDArray[np.float64]]
 
     def __init__(
         self,
@@ -443,6 +447,7 @@ class Mesh:
         from mmgpy._io import read as _read_mesh  # noqa: PLC0415
 
         self._sizing_constraints = []
+        self._user_fields = {}
 
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
@@ -494,6 +499,7 @@ class Mesh:
         mesh._impl = impl  # noqa: SLF001
         mesh._kind = kind  # noqa: SLF001
         mesh._sizing_constraints = []  # noqa: SLF001
+        mesh._user_fields = {}  # noqa: SLF001
         return mesh
 
     @property
@@ -795,6 +801,98 @@ class Mesh:
     def __getitem__(self, key: str) -> NDArray[np.float64]:
         """Get a solution field using dictionary syntax."""
         return self._impl[key]
+
+    # =========================================================================
+    # User field operations (arbitrary fields for transfer)
+    # =========================================================================
+
+    def set_user_field(self, name: str, values: NDArray[np.float64]) -> None:
+        """Set a user-defined field for transfer during remeshing.
+
+        Unlike MMG's built-in fields (metric, displacement, levelset), user fields
+        are arbitrary data arrays that can be transferred to the new mesh after
+        remeshing via interpolation.
+
+        Parameters
+        ----------
+        name : str
+            Field name (any string except reserved names like "metric").
+        values : ndarray
+            Field values, shape (n_vertices,) for scalars or
+            (n_vertices, n_components) for vectors/tensors.
+
+        Examples
+        --------
+        >>> mesh.set_user_field("temperature", temperature_array)
+        >>> mesh.set_user_field("velocity", velocity_array)  # (N, 3) vector
+        >>> mesh.remesh(hmax=0.1, transfer_fields=True)
+        >>> new_temp = mesh.get_user_field("temperature")
+
+        """
+        n_vertices = len(self.get_vertices())
+        values = np.asarray(values, dtype=np.float64)
+        if values.shape[0] != n_vertices:
+            msg = (
+                f"Field '{name}' has {values.shape[0]} values but mesh "
+                f"has {n_vertices} vertices"
+            )
+            raise ValueError(msg)
+        self._user_fields[name] = values
+
+    def get_user_field(self, name: str) -> NDArray[np.float64]:
+        """Get a user-defined field.
+
+        Parameters
+        ----------
+        name : str
+            Field name.
+
+        Returns
+        -------
+        ndarray
+            Field values at vertices.
+
+        Raises
+        ------
+        KeyError
+            If the field does not exist.
+
+        """
+        if name not in self._user_fields:
+            msg = f"User field '{name}' not found. Available: {list(self._user_fields)}"
+            raise KeyError(msg)
+        return self._user_fields[name]
+
+    def get_user_fields(self) -> dict[str, NDArray[np.float64]]:
+        """Get all user-defined fields.
+
+        Returns
+        -------
+        dict[str, ndarray]
+            Dictionary mapping field names to values.
+
+        """
+        return dict(self._user_fields)
+
+    def clear_user_fields(self) -> None:
+        """Remove all user-defined fields."""
+        self._user_fields.clear()
+
+    def has_user_field(self, name: str) -> bool:
+        """Check if a user field exists.
+
+        Parameters
+        ----------
+        name : str
+            Field name.
+
+        Returns
+        -------
+        bool
+            True if the field exists.
+
+        """
+        return name in self._user_fields
 
     # =========================================================================
     # Geometry operations
@@ -1112,11 +1210,70 @@ class Mesh:
     # Remeshing operations
     # =========================================================================
 
-    def remesh(
+    def _prepare_field_transfer(
+        self,
+        transfer_fields: FieldTransferParam,
+    ) -> tuple[
+        dict[str, NDArray[np.float64]],
+        NDArray[np.float64] | None,
+        NDArray[np.int32] | None,
+    ]:
+        """Prepare for field transfer before remeshing.
+
+        Returns fields to transfer, old vertices, and old elements.
+        """
+        fields_to_transfer: dict[str, NDArray[np.float64]] = {}
+        if not transfer_fields:
+            return fields_to_transfer, None, None
+
+        if transfer_fields is True:
+            fields_to_transfer = dict(self._user_fields)
+        else:
+            for name in transfer_fields:
+                if name in self._user_fields:
+                    fields_to_transfer[name] = self._user_fields[name]
+                else:
+                    msg = f"User field '{name}' not found for transfer"
+                    raise KeyError(msg)
+
+        if not fields_to_transfer:
+            return fields_to_transfer, None, None
+
+        old_vertices = self._impl.get_vertices().copy()
+        if self._kind == MeshKind.TETRAHEDRAL:
+            impl_3d = cast("MmgMesh3D", self._impl)
+            old_elements = impl_3d.get_tetrahedra().copy()
+        else:
+            old_elements = self._impl.get_triangles().copy()
+
+        return fields_to_transfer, old_vertices, old_elements
+
+    def _execute_field_transfer(
+        self,
+        fields_to_transfer: dict[str, NDArray[np.float64]],
+        old_vertices: NDArray[np.float64],
+        old_elements: NDArray[np.int32],
+        interpolation: str,
+    ) -> None:
+        """Execute field transfer after remeshing."""
+        from mmgpy._transfer import transfer_fields as _transfer  # noqa: PLC0415
+
+        new_vertices = self._impl.get_vertices()
+        self._user_fields = _transfer(
+            source_vertices=old_vertices,
+            source_elements=old_elements,
+            target_points=new_vertices,
+            fields=fields_to_transfer,
+            method=interpolation,
+        )
+
+    def remesh(  # noqa: C901
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         *,
         progress: ProgressParam = True,
+        transfer_fields: FieldTransferParam = False,
+        interpolation: str = "linear",
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
         """Remesh the mesh in-place.
@@ -1131,6 +1288,15 @@ class Mesh:
             - False or None: No progress reporting
             - Callable: Custom callback that receives ProgressEvent and returns
               True to continue or False to cancel
+        transfer_fields : bool | Sequence[str] | None, default=False
+            Transfer user-defined fields to the new mesh via interpolation:
+            - False or None: No field transfer (default)
+            - True: Transfer all user fields
+            - List of field names: Transfer only specified fields
+        interpolation : str, default="linear"
+            Interpolation method for field transfer:
+            - "linear": Barycentric interpolation (recommended)
+            - "nearest": Nearest vertex value
         **kwargs : float
             Individual remeshing parameters (hmin, hmax, hsiz, hausd, etc.).
 
@@ -1149,6 +1315,14 @@ class Mesh:
         >>> mesh.remesh(hmax=0.1)  # Shows progress bar by default
 
         >>> mesh.remesh(hmax=0.1, progress=False)  # No progress bar
+
+        >>> # Transfer fields during remeshing
+        >>> mesh.set_user_field("temperature", temperature_array)
+        >>> mesh.remesh(hmax=0.1, transfer_fields=True)
+        >>> new_temp = mesh.get_user_field("temperature")
+
+        >>> # Transfer specific fields
+        >>> mesh.remesh(hmax=0.1, transfer_fields=["temperature", "velocity"])
 
         >>> def my_callback(event):
         ...     print(f"{event.phase}: {event.message}")
@@ -1191,6 +1365,11 @@ class Mesh:
         if self._sizing_constraints:
             self._apply_sizing_to_metric()
 
+        # Prepare field transfer
+        fields_to_transfer, old_vertices, old_elements = self._prepare_field_transfer(
+            transfer_fields,
+        )
+
         # Resolve progress callback
         callback, reporter_ctx = _resolve_progress_callback(progress)
         if reporter_ctx is not None:  # pragma: no cover
@@ -1214,6 +1393,19 @@ class Mesh:
             # Call raw C++ method and convert result
             stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
             final_vertices = len(self._impl.get_vertices())
+
+            # Transfer fields to new mesh if captured
+            if (
+                fields_to_transfer
+                and old_vertices is not None
+                and old_elements is not None
+            ):
+                self._execute_field_transfer(
+                    fields_to_transfer,
+                    old_vertices,
+                    old_elements,
+                    interpolation,
+                )
 
             _emit_event(
                 callback,
