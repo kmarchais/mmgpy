@@ -26,7 +26,6 @@ from mmgpy.ui.utils import (
     compute_preset_values,
     get_mesh_diagonal,
     reset_solution_state,
-    round_to_significant,
     to_float,
 )
 
@@ -38,7 +37,8 @@ logger = logging.getLogger(__name__)
 pv.OFF_SCREEN = True
 
 # Random number generator for reproducible displacement fields
-_rng = np.random.default_rng()
+# Using fixed seed for deterministic Lagrangian motion demo
+_rng = np.random.default_rng(42)
 
 
 class MmgpyApp:
@@ -580,6 +580,9 @@ class MmgpyApp:
             except Exception:
                 logger.debug("Could not compute area/volume scalars")
 
+        elif show_scalar == "face_orientation":
+            scalars = self._compute_face_orientation(pv_mesh)
+
         elif show_scalar == "refs":
             if "refs" in pv_mesh.cell_data:
                 scalars = "refs"
@@ -618,6 +621,53 @@ class MmgpyApp:
         else:
             return field_name
 
+    def _compute_face_orientation(self, pv_mesh) -> str | None:
+        """Compute face orientation for visualization (like Blender's blue/red overlay).
+
+        Shows whether faces are consistently oriented:
+        - Blue (positive): face normal points outward from mesh centroid
+        - Red (negative): face normal points inward toward mesh centroid
+
+        This helps identify flipped/inconsistent triangles in a surface mesh.
+        """
+        try:
+            # Get face normals (compute if not present)
+            if "Normals" not in pv_mesh.cell_data:
+                pv_mesh = pv_mesh.compute_normals(
+                    cell_normals=True,
+                    point_normals=False,
+                    inplace=False,
+                )
+
+            face_normals = pv_mesh.cell_data.get("Normals")
+            if face_normals is None:
+                return None
+
+            # Compute face centers
+            face_centers = pv_mesh.cell_centers().points
+
+            # Compute mesh centroid
+            centroid = pv_mesh.center
+
+            # Vector from centroid to each face center
+            centroid_to_face = face_centers - centroid
+
+            # Dot product: positive = outward facing, negative = inward facing
+            # Normalize to get values in [-1, 1] range
+            dot_products = np.sum(face_normals * centroid_to_face, axis=1)
+
+            # Normalize by the magnitude of centroid_to_face to get cosine of angle
+            magnitudes = np.linalg.norm(centroid_to_face, axis=1)
+            magnitudes[magnitudes == 0] = 1  # Avoid division by zero
+            orientation = dot_products / magnitudes
+
+            pv_mesh.cell_data["face_orientation"] = orientation
+        except Exception:
+            logger.debug("Could not compute face orientation")
+            return None
+        else:
+            return "face_orientation"
+
     def _get_colormap_settings(
         self,
         scalars: str | None,
@@ -631,6 +681,7 @@ class MmgpyApp:
         colormap_map = {
             "quality": ("RdYlGn", "In-Radius Ratio"),
             "pv_quality": ("RdYlGn", "Scaled Jacobian"),
+            "face_orientation": ("bwr", "Face Orientation"),  # blue=outward, red=inward
             "refs": ("tab10", "Reference"),
             "area_volume": ("viridis", "Area" if scalars == "Area" else "Volume"),
         }
@@ -759,14 +810,18 @@ class MmgpyApp:
                 )
 
     def _apply_adaptive_defaults(self) -> None:
-        """Set default remeshing parameters based on mesh scale."""
+        """Set default remeshing parameters based on mesh scale.
+
+        Uses the 'medium' preset values to initialize parameters.
+        """
         diagonal = get_mesh_diagonal(self._mesh)
+        values = compute_preset_values("medium", diagonal)
 
         self._applying_preset = True
         try:
-            self.state.hmax = round_to_significant(diagonal / 25)
-            self.state.hausd = round_to_significant(diagonal / 500)
-            self.state.hgrad = 1.3
+            self.state.hmax = values.get("hmax")
+            self.state.hausd = values.get("hausd")
+            self.state.hgrad = values.get("hgrad", 1.3)
             self.state.hmin = None
             self.state.use_preset = "medium"
         finally:
@@ -1177,16 +1232,23 @@ class MmgpyApp:
         self.state.mesh_info = ""
         self.state.mesh_kind = ""
         self.state.mesh_filename = ""
+        self.state.mesh_stats = None
         self.state.validation_report = None
         self.state.remesh_result = None
+        self.state.scalar_field_options = list(DEFAULT_SCALAR_FIELD_OPTIONS)
 
         for key, value in reset_solution_state().items():
             setattr(self.state, key, value)
 
+        # Clear plotter contents but keep it alive to avoid invalidating _view widget
         if self._plotter is not None:
-            self._plotter.close()
-            self._plotter = None
-            self._render_window = None
+            self._plotter.clear()
+            # Render the cleared state
+            if self._render_window is not None:
+                self._render_window.Render()
+            if hasattr(self, "_view") and self._view is not None:
+                self._view.update()
+        self.state.flush()
 
     def _build_ui(self):
         """Build the trame UI."""

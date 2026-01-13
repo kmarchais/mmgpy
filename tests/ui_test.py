@@ -492,3 +492,38 @@ class TestSampleMeshes:
         assert "sphere" in categories["surface"]
         assert "tetra_cube" in categories["tetrahedral"]
         assert "disc_2d" in categories["2d"]
+
+
+class TestDefaultScalarFieldOptions:
+    """Tests for DEFAULT_SCALAR_FIELD_OPTIONS."""
+
+    def test_contains_face_orientation(self):
+        """Test that face orientation option is available."""
+        from mmgpy.ui.utils import DEFAULT_SCALAR_FIELD_OPTIONS
+
+        values = [
+            opt.get("value") for opt in DEFAULT_SCALAR_FIELD_OPTIONS if "value" in opt
+        ]
+        assert "face_orientation" in values
+
+    def test_contains_quality_options(self):
+        """Test that quality options are available."""
+        from mmgpy.ui.utils import DEFAULT_SCALAR_FIELD_OPTIONS
+
+        values = [
+            opt.get("value") for opt in DEFAULT_SCALAR_FIELD_OPTIONS if "value" in opt
+        ]
+        assert "quality" in values
+        assert "pv_quality" in values
+
+    def test_has_section_headers(self):
+        """Test that section headers exist."""
+        from mmgpy.ui.utils import DEFAULT_SCALAR_FIELD_OPTIONS
+
+        headers = [
+            opt.get("title")
+            for opt in DEFAULT_SCALAR_FIELD_OPTIONS
+            if opt.get("type") == "subheader"
+        ]
+        assert any("Quality" in h for h in headers)
+        assert any("Orientation" in h for h in headers)

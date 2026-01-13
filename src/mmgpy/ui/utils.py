@@ -171,6 +171,8 @@ DEFAULT_SCALAR_FIELD_OPTIONS: list[dict[str, str]] = [
     {"type": "subheader", "title": "-- Quality --"},
     {"title": "In-Radius Ratio", "value": "quality"},
     {"title": "Scaled Jacobian", "value": "pv_quality"},
+    {"type": "subheader", "title": "-- Orientation --"},
+    {"title": "Face Orientation", "value": "face_orientation"},
     {"type": "subheader", "title": "-- Other --"},
     {"title": "Area/Volume", "value": "area_volume"},
     {"title": "Refs", "value": "refs"},
