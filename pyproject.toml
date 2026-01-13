@@ -67,6 +67,12 @@ mmg3d_O3 = "mmgpy:_run_mmg3d"
 mmgs = "mmgpy:_run_mmgs"
 mmgs_O3 = "mmgpy:_run_mmgs"
 
+[project.entry-points."mmgpy.ui"]
+ui = "mmgpy.ui:run_ui"
+
+[project.gui-scripts]
+mmgpy-ui = "mmgpy.ui:run_ui"
+
 [dependency-groups]
 dev = [
     "imageio>=2.37.2",
@@ -80,6 +86,12 @@ dev = [
 docs = [
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
+]
+ui = [
+    "trame>=3.12.0",
+    "trame-vtk>=2.10.2",
+    "trame-vtklocal>=0.16.0",
+    "trame-vuetify>=3.2.0",
 ]
 
 [tool.pytest.ini_options]
@@ -170,12 +182,40 @@ ignore = [
 "src/mmgpy/interactive/*.py" = [
     "PLC0415", # imports inside functions to avoid circular imports
 ]
+"src/mmgpy/ui/**/*.py" = [
+    "PLC0415", # imports inside functions for lazy loading
+    "S307",    # eval used safely for user formulas in levelset computation
+    "PLR0915", # many statements for UI building methods
+    "PLR0912", # many branches for UI logic
+    "PLR2004", # magic values for UI constants
+    "ARG002",  # unused kwargs in callbacks (trame pattern)
+    "ANN",     # type annotations not required for UI callbacks
+    "FBT",     # boolean positional args are fine for debug flag
+    "C901",    # complex functions for UI setup
+    "BLE001",  # broad exception catching for UI error handling
+    "S110",    # try-except-pass used for optional features
+    "SIM102",  # nested ifs are clearer in some UI code
+    "SIM105",  # try-except-pass for optional feature detection
+    "SIM117",  # nested withs are clearer in trame
+    "RUF001",  # unicode multiplication sign intentional
+    "RUF046",  # int(floor()) is explicit and clear
+    "NPY002",  # legacy numpy random is fine for demo
+    "PLW2901", # loop variable reassignment is intentional
+    "TRY003",  # exception messages in UI are user-facing
+    "TRY301",  # simple raises are fine in validation code
+    "EM101",   # string literals in exceptions are clearer
+    "EM102",   # f-string in exceptions for user messages
+    "PERF401", # list.append is clearer in some UI code
+    "E501",    # line length relaxed for UI strings
+    "T201",    # print used for debug HTML output
+]
 
 [tool.ty.src]
 # Exclude tests, scripts, examples, and certain modules from type checking
 # Progress module uses union types that cause complex type inference issues
 # Interactive module uses PyVista types that have incomplete stubs
-exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**"]
+# UI module uses trame which has no type stubs
+exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time
@@ -250,6 +290,7 @@ branch = true
 omit = [
     "*/_mmgpy*",
     "*/interactive/*",  # PyVista UI code requires display, hard to test in CI
+    "*/ui/*",           # Trame UI code requires browser, hard to test in CI
 ]
 
 [tool.coverage.report]
