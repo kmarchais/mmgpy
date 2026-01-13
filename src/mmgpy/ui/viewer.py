@@ -101,6 +101,20 @@ class ViewerMixin:
         # Apply slice/threshold for tetrahedral meshes
         pv_mesh = self._apply_slice_if_needed(pv_mesh)
 
+        # Determine text color based on theme
+        is_dark = getattr(self.state, "theme_name", "light") == "dark"
+        text_color = "white" if is_dark else "black"
+
+        # Build scalar bar args with theme-aware colors
+        scalar_bar_args = None
+        if scalar_bar_title:
+            scalar_bar_args = {
+                "title": scalar_bar_title,
+                "title_font_size": 14,
+                "label_font_size": 12,
+                "color": text_color,
+            }
+
         # Add mesh with rendering settings
         self._plotter.add_mesh(
             pv_mesh,
@@ -110,7 +124,7 @@ class ViewerMixin:
             color="white" if scalars is None else None,
             cmap=cmap,
             show_scalar_bar=scalars is not None,
-            scalar_bar_args={"title": scalar_bar_title} if scalar_bar_title else None,
+            scalar_bar_args=scalar_bar_args,
             smooth_shading=self.state.smooth_shading,
             pbr=False,
             metallic=0.0,
@@ -123,6 +137,9 @@ class ViewerMixin:
 
         self._visualize_constraints()
         self._plotter.enable_lightkit()
+
+        # Add axes with theme-aware colors
+        self._add_axes_with_theme(is_dark)
 
         if reset_camera:
             self._setup_camera_for_mesh(pv_mesh)
@@ -335,6 +352,25 @@ class ViewerMixin:
             self._plotter.disable_parallel_projection()
             self.state.current_view = "isometric"
             self.state.parallel_projection = False
+
+    def _add_axes_with_theme(self, is_dark: bool) -> None:
+        """Add axes widget with theme-aware colors."""
+        if self._plotter is None:
+            return
+
+        # Set axes label colors based on theme
+        text_color = "white" if is_dark else "black"
+
+        # Add axes with custom colors
+        self._plotter.add_axes(
+            xlabel="X",
+            ylabel="Y",
+            zlabel="Z",
+            color=text_color,
+            x_color="red",
+            y_color="green",
+            z_color="blue",
+        )
 
     def _visualize_constraints(self) -> None:
         """Visualize sizing constraints on the plotter."""

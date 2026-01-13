@@ -127,11 +127,9 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             base_modes = [
                 {"title": "Standard Remesh", "value": "standard"},
                 {"title": "Levelset Discretization", "value": "levelset"},
-                {"title": "Optimize Only", "value": "optimize"},
             ]
             if mesh_kind != "triangular_surface":
-                base_modes.insert(
-                    2,
+                base_modes.append(
                     {"title": "Lagrangian Motion", "value": "lagrangian"},
                 )
             self.state.remesh_mode_items = base_modes
@@ -140,6 +138,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 and mesh_kind == "triangular_surface"
             ):
                 self.state.remesh_mode = "standard"
+
+        @self.state.change("theme_name")
+        def on_theme_change(theme_name, **_):
+            self._update_viewer_background(theme_name == "dark")
 
         self.ctrl.load_sample_mesh = self._load_sample_mesh
         self.ctrl.run_remesh = self._run_remesh
@@ -162,6 +164,25 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         self.server.trigger("toggle_parallel_projection")(
             self._toggle_parallel_projection,
         )
+        self.server.trigger("toggle_theme")(self._toggle_theme)
+
+    def _toggle_theme(self) -> None:
+        """Toggle between light and dark theme."""
+        current = self.state.theme_name
+        self.state.theme_name = "dark" if current == "light" else "light"
+
+    def _update_viewer_background(self, dark_theme: bool) -> None:
+        """Update viewer background and colors based on theme."""
+        if self._plotter is None:
+            return
+        # Use dark gray for dark theme, white for light
+        if dark_theme:
+            self._plotter.set_background("#1e1e1e")
+        else:
+            self._plotter.set_background("white")
+        # Re-render the mesh to update axes and scalar bar colors
+        if self._mesh is not None:
+            self._update_viewer(reset_camera=False)
 
     def _set_custom_preset(self) -> None:
         """Set preset to custom when user manually changes values."""
@@ -551,11 +572,15 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
     def _build_ui(self):
         """Build the trame UI."""
-        with SinglePageWithDrawerLayout(self.server, full_height=True) as layout:
+        with SinglePageWithDrawerLayout(
+            self.server,
+            full_height=True,
+            theme=("theme_name", "light"),
+        ) as layout:
             layout.title.set_text("mmgpy")
             layout.icon.click = "drawer_open = !drawer_open"
 
-            # Add JavaScript utility for file download
+            # Add JavaScript utilities
             html.Script(
                 """
                 window.utils = {
@@ -568,6 +593,26 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                         document.body.removeChild(link);
                     }
                 };
+
+                // Detect system theme preference and set initial theme
+                (function() {
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const checkAndSetInitial = () => {
+                        if (window.trame?.state) {
+                            // Only set if not already set by user
+                            const current = window.trame.state.get('theme_name');
+                            if (!current || current === 'light') {
+                                // Follow system preference on first load
+                                if (prefersDark) {
+                                    window.trame.state.set('theme_name', 'dark');
+                                }
+                            }
+                        } else {
+                            setTimeout(checkAndSetInitial, 100);
+                        }
+                    };
+                    checkAndSetInitial();
+                })();
                 """,
             )
 
@@ -582,8 +627,11 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             with layout.content:
                 self._build_content()
 
-            if self._debug:
-                with layout.footer:
+            # Clear default trame footer content and add our own
+            layout.footer.clear()
+            with layout.footer:
+                self._build_footer()
+                if self._debug:
                     v3.VBtn(
                         "Print HTML",
                         click=lambda: print(layout.html),
@@ -593,66 +641,30 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
         return layout
 
+    def _build_footer(self) -> None:
+        """Build footer with version and GitHub link."""
+        try:
+            from importlib.metadata import version
+
+            ver = version("mmgpy")
+        except Exception:
+            ver = "dev"
+
+        with html.Div(
+            classes="d-flex justify-center align-center",
+            style="width: 100%; gap: 8px;",
+        ):
+            html.Span(f"mmgpy v{ver}", classes="text-caption")
+            html.Span("•", classes="text-caption")
+            html.A(
+                "GitHub",
+                href="https://github.com/kmarchais/mmgpy",
+                target="_blank",
+                classes="text-caption",
+            )
+
     def _build_toolbar(self) -> None:
         """Build toolbar content."""
-        # Sample meshes menu
-        with v3.VMenu():
-            with v3.Template(v_slot_activator="{ props }"):
-                v3.VBtn(
-                    icon="mdi-shape",
-                    v_bind="props",
-                    title="Load sample mesh",
-                    variant="text",
-                )
-            with v3.VList(density="compact"):
-                v3.VListSubheader("Surface Meshes (mmgs)")
-                v3.VListItem(
-                    title="Sphere",
-                    click="trigger('load_sample_mesh', ['sphere'])",
-                    prepend_icon="mdi-sphere",
-                )
-                v3.VListItem(
-                    title="Cube",
-                    click="trigger('load_sample_mesh', ['cube'])",
-                    prepend_icon="mdi-cube-outline",
-                )
-                v3.VListItem(
-                    title="Torus",
-                    click="trigger('load_sample_mesh', ['torus'])",
-                    prepend_icon="mdi-circle-double",
-                )
-                v3.VListItem(
-                    title="Bunny",
-                    click="trigger('load_sample_mesh', ['bunny'])",
-                    prepend_icon="mdi-rabbit",
-                )
-                v3.VDivider()
-                v3.VListSubheader("Tetrahedral Meshes (mmg3d)")
-                v3.VListItem(
-                    title="Tetra Cube",
-                    click="trigger('load_sample_mesh', ['tetra_cube'])",
-                    prepend_icon="mdi-cube",
-                )
-                v3.VListItem(
-                    title="Tetra Sphere",
-                    click="trigger('load_sample_mesh', ['tetra_sphere'])",
-                    prepend_icon="mdi-sphere",
-                )
-                v3.VDivider()
-                v3.VListSubheader("2D Meshes (mmg2d)")
-                v3.VListItem(
-                    title="Disc",
-                    click="trigger('load_sample_mesh', ['disc_2d'])",
-                    prepend_icon="mdi-circle",
-                )
-                v3.VListItem(
-                    title="Rectangle",
-                    click="trigger('load_sample_mesh', ['rect_2d'])",
-                    prepend_icon="mdi-rectangle",
-                )
-
-        v3.VDivider(vertical=True, classes="mx-2")
-
         v3.VBtn(
             icon="mdi-refresh",
             click="trigger('reset_mesh')",
@@ -699,6 +711,19 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     click="export_format = 'mesh'; trigger('export_mesh')",
                 )
 
+        v3.VDivider(vertical=True, classes="mx-2")
+
+        # Theme toggle
+        v3.VBtn(
+            icon=("theme_name === 'dark' ? 'mdi-weather-sunny' : 'mdi-weather-night'",),
+            click="trigger('toggle_theme')",
+            title=(
+                "theme_name === 'dark' ? 'Switch to light theme' : "
+                "'Switch to dark theme'",
+            ),
+            variant="text",
+        )
+
     def _build_drawer(self) -> None:
         """Build drawer content - single panel layout."""
         with v3.VContainer(classes="pa-2"):
@@ -708,31 +733,94 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         """Build remeshing options panel."""
         self._build_file_upload_section()
         self._build_solution_options_section()
+        v3.VDivider(classes="mb-3")
         self._build_mode_and_preset_section()
+        v3.VDivider(classes="mb-3")
         self._build_size_parameters_section()
+        v3.VDivider(classes="mb-3")
         self._build_advanced_options_section()
         self._build_mode_specific_options()
+        v3.VDivider(classes="mb-3")
         self._build_run_section()
 
     def _build_file_upload_section(self) -> None:
         """Build file upload inputs for mesh and solution files."""
-        v3.VFileInput(
-            v_model=("file_upload",),
-            label=("mesh_filename ? `Mesh: ${mesh_filename}` : 'Upload Mesh'",),
-            accept=".vtk,.vtu,.vtp,.stl,.obj,.ply,.mesh,.msh",
-            prepend_icon="mdi-upload",
-            density="compact",
-            variant="outlined",
-            hide_details=True,
-            clearable=True,
-            classes="mb-2",
-            title="Supported formats: VTK, VTU, VTP, STL, OBJ, PLY, Medit (.mesh), Gmsh (.msh). Max 50 MB.",
-            click="file_upload = null",
-        )
+        # Import mesh row with file input and sample menu
+        with v3.VRow(dense=True, classes="mb-2", no_gutters=True):
+            with v3.VCol(classes="flex-grow-1"):
+                v3.VFileInput(
+                    v_model=("file_upload",),
+                    label=("mesh_filename ? `Mesh: ${mesh_filename}` : 'Import Mesh'",),
+                    accept=".vtk,.vtu,.vtp,.stl,.obj,.ply,.mesh,.msh",
+                    prepend_icon="mdi-import",
+                    density="compact",
+                    variant="outlined",
+                    hide_details=True,
+                    clearable=True,
+                    title="Supported formats: VTK, VTU, VTP, STL, OBJ, PLY, Medit (.mesh), Gmsh (.msh). Max 50 MB.",
+                    click="file_upload = null",
+                )
+            with v3.VCol(cols="auto", classes="pl-1 d-flex align-center"):
+                # Sample meshes menu
+                with v3.VMenu():
+                    with v3.Template(v_slot_activator="{ props }"):
+                        v3.VBtn(
+                            icon="mdi-shape",
+                            v_bind="props",
+                            title="Load sample mesh",
+                            variant="outlined",
+                            size="small",
+                        )
+                    with v3.VList(density="compact"):
+                        v3.VListSubheader("Surface Meshes (mmgs)")
+                        v3.VListItem(
+                            title="Sphere",
+                            click="trigger('load_sample_mesh', ['sphere'])",
+                            prepend_icon="mdi-sphere",
+                        )
+                        v3.VListItem(
+                            title="Cube",
+                            click="trigger('load_sample_mesh', ['cube'])",
+                            prepend_icon="mdi-cube-outline",
+                        )
+                        v3.VListItem(
+                            title="Torus",
+                            click="trigger('load_sample_mesh', ['torus'])",
+                            prepend_icon="mdi-circle-double",
+                        )
+                        v3.VListItem(
+                            title="Bunny",
+                            click="trigger('load_sample_mesh', ['bunny'])",
+                            prepend_icon="mdi-rabbit",
+                        )
+                        v3.VDivider()
+                        v3.VListSubheader("Tetrahedral Meshes (mmg3d)")
+                        v3.VListItem(
+                            title="Tetra Cube",
+                            click="trigger('load_sample_mesh', ['tetra_cube'])",
+                            prepend_icon="mdi-cube",
+                        )
+                        v3.VListItem(
+                            title="Tetra Sphere",
+                            click="trigger('load_sample_mesh', ['tetra_sphere'])",
+                            prepend_icon="mdi-sphere",
+                        )
+                        v3.VDivider()
+                        v3.VListSubheader("2D Meshes (mmg2d)")
+                        v3.VListItem(
+                            title="Disc",
+                            click="trigger('load_sample_mesh', ['disc_2d'])",
+                            prepend_icon="mdi-circle",
+                        )
+                        v3.VListItem(
+                            title="Rectangle",
+                            click="trigger('load_sample_mesh', ['rect_2d'])",
+                            prepend_icon="mdi-rectangle",
+                        )
         v3.VFileInput(
             v_model=("sol_file_upload",),
             label=(
-                "sol_filename ? `Solution: ${sol_filename}` : 'Upload Solution (.sol)'",
+                "sol_filename ? `Solution: ${sol_filename}` : 'Import Solution (.sol)'",
             ),
             accept=".sol",
             prepend_icon="mdi-chart-line",
@@ -766,25 +854,28 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         )
         v3.VCheckbox(
             v_model=("use_solution_as_metric",),
-            label="Use solution as metric (sizing field)",
+            label="As metric (sizing)",
             density="compact",
             hide_details=True,
             classes="mb-1",
             disabled=("!sol_filename || remesh_mode !== 'standard'",),
-            title="Use loaded solution values to control local mesh size",
+            title="Use solution values to control local mesh size",
         )
         v3.VCheckbox(
             v_model=("use_solution_as_levelset",),
-            label="Use solution as levelset (iso-surface at 0)",
+            label="As levelset (iso-surface)",
             density="compact",
             hide_details=True,
             classes="mb-3",
             disabled=("!sol_filename || remesh_mode !== 'levelset'",),
-            title="Use loaded solution as the levelset field for iso-surface extraction",
+            title="Use solution as levelset field for iso-surface extraction",
         )
 
     def _build_mode_and_preset_section(self) -> None:
         """Build mode selection and preset buttons."""
+        with html.Div(classes="d-flex align-center mb-2"):
+            v3.VIcon("mdi-tune", size="small", color="primary", classes="mr-2")
+            html.Span("Mode & Presets", classes="text-subtitle-2 font-weight-medium")
         v3.VSelect(
             v_model=("remesh_mode",),
             label="Mode",
@@ -793,20 +884,49 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             variant="outlined",
             hide_details=True,
             classes="mb-3",
-            title="Standard: global remesh | Levelset: iso-surface | Lagrangian: move vertices | Optimize: quality only",
+            title="Standard: global remesh | Levelset: iso-surface extraction | Lagrangian: move vertices",
         )
+        # Default/Custom row
+        with v3.VBtnToggle(
+            v_model=("use_preset",),
+            density="compact",
+            mandatory=True,
+            divided=True,
+            classes="mb-1",
+            style="width: 100%;",
+            disabled=("selected_options.includes('optim')",),
+        ):
+            v3.VBtn(
+                value="default",
+                text="Default",
+                size="small",
+                style="flex: 1;",
+                title="Use MMG's internal defaults",
+                click="trigger('apply_preset', ['default'])",
+            )
+            v3.VBtn(
+                value="custom",
+                text="Custom",
+                size="small",
+                style="flex: 1;",
+                title="Custom parameters",
+                click="trigger('apply_preset', ['custom'])",
+            )
+        # Sizing presets row
         with v3.VBtnToggle(
             v_model=("use_preset",),
             density="compact",
             mandatory=True,
             divided=True,
             classes="mb-3",
+            style="width: 100%;",
             disabled=("selected_options.includes('optim')",),
         ):
             v3.VBtn(
                 value="fine",
                 text="Fine",
                 size="small",
+                style="flex: 1;",
                 title="2% of diagonal, high accuracy",
                 click="trigger('apply_preset', ['fine'])",
             )
@@ -814,6 +934,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 value="medium",
                 text="Medium",
                 size="small",
+                style="flex: 1;",
                 title="4% of diagonal, balanced",
                 click="trigger('apply_preset', ['medium'])",
             )
@@ -821,19 +942,33 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 value="coarse",
                 text="Coarse",
                 size="small",
+                style="flex: 1;",
                 title="10% of diagonal, fast",
                 click="trigger('apply_preset', ['coarse'])",
             )
-            v3.VBtn(
-                value="custom",
-                text="Custom",
-                size="small",
-                title="Custom parameters",
-                click="trigger('apply_preset', ['custom'])",
-            )
 
     def _build_size_parameters_section(self) -> None:
-        """Build size control parameters (hmax, hmin, hausd, hgrad, ar)."""
+        """Build size control parameters (hsiz, hmax, hmin, hausd, hgrad, ar)."""
+        with html.Div(classes="d-flex align-center mb-2"):
+            v3.VIcon("mdi-resize", size="small", color="success", classes="mr-2")
+            html.Span("Size Parameters", classes="text-subtitle-2 font-weight-medium")
+        # Uniform size (hsiz) - overrides hmin/hmax
+        v3.VTextField(
+            v_model=("hsiz",),
+            label="hsiz (uniform size)",
+            type="number",
+            min=0.001,
+            step=0.01,
+            density="compact",
+            variant="outlined",
+            hide_details=True,
+            clearable=True,
+            classes="mb-2",
+            title="Uniform edge size. When set, overrides hmin/hmax.",
+            change="trigger('set_custom_preset')",
+            disabled=("selected_options.includes('optim')",),
+        )
+        # Range-based sizing (hmin/hmax)
         with v3.VRow(dense=True):
             with v3.VCol(cols=6):
                 v3.VTextField(
@@ -845,9 +980,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     density="compact",
                     variant="outlined",
                     hide_details=True,
-                    title="Maximum edge length (must be > 0)",
+                    clearable=True,
+                    title="Maximum edge length (default: auto)",
                     change="trigger('set_custom_preset')",
-                    disabled=("selected_options.includes('optim')",),
+                    disabled=("selected_options.includes('optim') || hsiz",),
                 )
             with v3.VCol(cols=6):
                 v3.VTextField(
@@ -862,7 +998,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     clearable=True,
                     title="Minimum edge length (optional, must be > 0)",
                     change="trigger('set_custom_preset')",
-                    disabled=("selected_options.includes('optim')",),
+                    disabled=("selected_options.includes('optim') || hsiz",),
                 )
         with v3.VRow(dense=True, classes="mb-2"):
             with v3.VCol(cols=6):
@@ -875,7 +1011,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     density="compact",
                     variant="outlined",
                     hide_details=True,
-                    title="Hausdorff distance (must be > 0)",
+                    clearable=True,
+                    title="Hausdorff distance for boundary accuracy (default: auto)",
                     change="trigger('set_custom_preset')",
                     disabled=("selected_options.includes('optim')",),
                 )
@@ -889,7 +1026,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     density="compact",
                     variant="outlined",
                     hide_details=True,
-                    title="Gradation (size ratio between neighbors)",
+                    clearable=True,
+                    title="Gradation (size ratio between adjacent elements, default: 1.3)",
                     change="trigger('set_custom_preset')",
                     disabled=("selected_options.includes('optim')",),
                 )
@@ -905,12 +1043,15 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     density="compact",
                     variant="outlined",
                     hide_details=True,
-                    title="Angle detection threshold (degrees). Sharp edges below this angle are preserved.",
+                    clearable=True,
+                    title="Angle detection threshold in degrees (default: 45)",
                 )
 
     def _build_advanced_options_section(self) -> None:
         """Build advanced optimization options (optim, noinsert, noswap, etc.)."""
-        html.Div("Options", classes="text-caption text-grey mb-1")
+        with html.Div(classes="d-flex align-center mb-2"):
+            v3.VIcon("mdi-cog", size="small", color="warning", classes="mr-2")
+            html.Span("Options", classes="text-subtitle-2 font-weight-medium")
         with v3.VBtnToggle(
             v_model=("selected_options",),
             density="compact",
@@ -920,7 +1061,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         ):
             v3.VBtn(
                 value="optim",
-                text="Optimize",
+                text="Optimize Only",
                 size="small",
                 style="flex: 1;",
                 title="ONLY optimize quality, don't change mesh size",
@@ -968,6 +1109,29 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 style="flex: 1;",
                 title="Don't modify surface mesh (3D only)",
             )
+            v3.VBtn(
+                value="nreg",
+                text="Smooth Normals",
+                size="small",
+                style="flex: 1;",
+                title="Enable normal regularization for smoother surfaces",
+            )
+        # Show nreg for surface meshes too (without nosurf)
+        with v3.VBtnToggle(
+            v_model=("selected_options",),
+            density="compact",
+            multiple=True,
+            divided=True,
+            style="width: 100%;",
+            v_show="mesh_kind === 'triangular_surface'",
+        ):
+            v3.VBtn(
+                value="nreg",
+                text="Smooth Normals",
+                size="small",
+                style="flex: 1;",
+                title="Enable normal regularization for smoother surfaces",
+            )
         v3.VAlert(
             text="Warning: No Insert + No Swap + No Move disables most improvements",
             type="warning",
@@ -978,8 +1142,25 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 "selected_options.includes('noswap') && "
                 "selected_options.includes('nomove')"
             ),
-            classes="mb-3",
+            classes="mb-2",
         )
+        # Advanced settings expansion panel
+        with v3.VExpansionPanels(variant="accordion", classes="mb-3"):
+            with v3.VExpansionPanel():
+                v3.VExpansionPanelTitle("Advanced Settings", classes="text-body-2")
+                with v3.VExpansionPanelText():
+                    v3.VTextField(
+                        v_model=("mem",),
+                        label="Memory limit (MB)",
+                        type="number",
+                        min=1,
+                        step=100,
+                        density="compact",
+                        variant="outlined",
+                        hide_details=True,
+                        clearable=True,
+                        title="Maximum memory usage in MB. Leave empty for automatic.",
+                    )
 
     def _build_mode_specific_options(self) -> None:
         """Build mode-specific options (levelset formula, lagrangian, source)."""
@@ -992,10 +1173,22 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             density="compact",
             variant="outlined",
             hide_details=True,
-            classes="mb-3",
+            classes="mb-2",
             v_show="remesh_mode === 'levelset'",
             disabled=("use_solution_as_levelset",),
-            title="Python expression using x, y, z, np (iso-surface at 0)",
+            title="Python expression using x, y, z, np (iso-surface extracted at isovalue)",
+        )
+        v3.VTextField(
+            v_model=("levelset_isovalue",),
+            label="Isovalue (ls)",
+            type="number",
+            step=0.1,
+            density="compact",
+            variant="outlined",
+            hide_details=True,
+            classes="mb-3",
+            v_show="remesh_mode === 'levelset'",
+            title="Iso-surface extraction value (default: 0.0)",
         )
         v3.VSlider(
             v_model=("displacement_scale",),
@@ -1102,8 +1295,11 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     # Initialize plotter
                     if self._plotter is None:
                         self._plotter = pv.Plotter()
+                        is_dark = self.state.theme_name == "dark"
+                        self._plotter.set_background("#1e1e1e" if is_dark else "white")
                         self._plotter.add_mesh(pv.Sphere(), opacity=0.0)
-                        self._plotter.add_axes()
+                        text_color = "white" if is_dark else "black"
+                        self._plotter.add_axes(color=text_color)
                         self._render_window = self._plotter.ren_win
 
                     # 3D viewer

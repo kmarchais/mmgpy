@@ -116,22 +116,26 @@ DEFAULT_STATE: dict[str, Any] = {
     "mesh_kind": "",
     "mesh_stats": None,
     "info_panel_open": True,
-    # Remeshing parameters
+    # Remeshing parameters (None = use MMG defaults)
     "hmin": None,
-    "hmax": 0.1,
+    "hmax": None,
     "hsiz": None,
-    "hausd": 0.01,
-    "hgrad": 1.3,
-    "ar": 45.0,
+    "hausd": None,
+    "hgrad": None,
+    "ar": None,
     "verbose": 1,
+    # Advanced parameters
+    "mem": None,
+    "nreg": False,
     # Options
     "selected_options": [],
     "nosurf": False,
-    "use_preset": "custom",
+    "use_preset": "default",
     "remesh_mode": "standard",
     "remesh_source": "original",
     # Levelset/Lagrangian
     "levelset_formula": "x**2 + y**2 + z**2 - 0.25",
+    "levelset_isovalue": 0.0,
     "displacement_scale": 0.1,
     "use_solution_as_metric": False,
     "use_solution_as_levelset": False,
@@ -163,6 +167,8 @@ DEFAULT_STATE: dict[str, Any] = {
     # Camera
     "current_view": "isometric",
     "parallel_projection": False,
+    # Theme
+    "theme_name": "light",  # "light" or "dark" - system preference detected on load
 }
 
 # Default scalar field options
@@ -178,20 +184,19 @@ DEFAULT_SCALAR_FIELD_OPTIONS: list[dict[str, str]] = [
     {"title": "Refs", "value": "refs"},
 ]
 
-# Default remesh mode items
+# Default remesh mode items (Optimize Only is handled by the toggle button)
 DEFAULT_REMESH_MODE_ITEMS: list[dict[str, str]] = [
     {"title": "Standard Remesh", "value": "standard"},
     {"title": "Levelset Discretization", "value": "levelset"},
     {"title": "Lagrangian Motion", "value": "lagrangian"},
-    {"title": "Optimize Only", "value": "optimize"},
 ]
 
 # Preset ratios for adaptive defaults
-PRESET_RATIOS: dict[str, dict[str, float | bool]] = {
+PRESET_RATIOS: dict[str, dict[str, float | bool | None]] = {
+    "default": {"clear_all": True},  # Let MMG use its internal defaults
     "fine": {"hmax_ratio": 1 / 50, "hausd_ratio": 1 / 1000, "hgrad": 1.2},
     "medium": {"hmax_ratio": 1 / 25, "hausd_ratio": 1 / 500, "hgrad": 1.3},
     "coarse": {"hmax_ratio": 1 / 10, "hausd_ratio": 1 / 200, "hgrad": 1.5},
-    "optimize": {"optim": True, "noinsert": True},
 }
 
 
@@ -201,7 +206,7 @@ def compute_preset_values(preset: str, diagonal: float) -> dict[str, Any]:
     Parameters
     ----------
     preset : str
-        Preset name: "fine", "medium", "coarse", or "optimize".
+        Preset name: "default", "fine", "medium", "coarse".
     diagonal : float
         The mesh bounding box diagonal length.
 
@@ -225,16 +230,22 @@ def compute_preset_values(preset: str, diagonal: float) -> dict[str, Any]:
     ratios = PRESET_RATIOS[preset]
     values: dict[str, Any] = {}
 
+    # Default preset: clear all size parameters to let MMG use its defaults
+    if ratios.get("clear_all"):
+        values["hsiz"] = None
+        values["hmin"] = None
+        values["hmax"] = None
+        values["hausd"] = None
+        values["hgrad"] = None
+        values["ar"] = None
+        return values
+
     if "hmax_ratio" in ratios:
         values["hmax"] = round_to_significant(diagonal * ratios["hmax_ratio"])
     if "hausd_ratio" in ratios:
         values["hausd"] = round_to_significant(diagonal * ratios["hausd_ratio"])
     if "hgrad" in ratios:
         values["hgrad"] = ratios["hgrad"]
-    if "optim" in ratios:
-        values["optim"] = ratios["optim"]
-    if "noinsert" in ratios:
-        values["noinsert"] = ratios["noinsert"]
 
     return values
 

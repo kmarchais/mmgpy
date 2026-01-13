@@ -214,6 +214,14 @@ class RemeshingMixin:
 
         options["verbose"] = int(self.state.verbose or 1)
 
+        # Memory limit
+        mem = to_float(self.state.mem)
+        if mem is not None:
+            if mem <= 0:
+                msg = "mem must be > 0"
+                raise ValueError(msg)
+            options["mem"] = int(mem)
+
         # Get selected options from multi-select button group
         selected = self.state.selected_options or []
         if "optim" in selected:
@@ -226,6 +234,8 @@ class RemeshingMixin:
             options["nomove"] = 1
         if "nosurf" in selected and self.state.mesh_kind == "tetrahedral":
             options["nosurf"] = 1
+        if "nreg" in selected:
+            options["nreg"] = 1
 
         return options
 
@@ -246,6 +256,10 @@ class RemeshingMixin:
                     levelset = levelset.reshape(-1, 1)
             else:
                 levelset = self._compute_levelset()
+            # Add levelset isovalue (ls) parameter
+            ls_value = to_float(self.state.levelset_isovalue)
+            if ls_value is not None:
+                options["ls"] = ls_value
             return self._mesh.remesh_levelset(levelset, progress=False, **options)
 
         if mode == "lagrangian":
@@ -256,9 +270,7 @@ class RemeshingMixin:
                 **options,
             )
 
-        if mode == "optimize":
-            return self._mesh.remesh_optimize(progress=False)
-
+        # Fallback to standard remesh
         return self._mesh.remesh(progress=False, **options)
 
     def _transfer_solution_fields(
