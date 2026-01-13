@@ -199,6 +199,7 @@ from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import CancellationError, ProgressEvent, rich_progress
 from ._pyvista import from_pyvista, to_pyvista
 from ._result import RemeshResult
+from ._transfer import interpolate_field, transfer_fields
 from ._validation import (
     IssueSeverity,
     QualityStats,
@@ -247,6 +248,7 @@ __all__ = [
     "get_log_file",
     "get_logger",
     "interactive",
+    "interpolate_field",
     "lagrangian",
     "metrics",
     "move_mesh",
@@ -259,4 +261,5 @@ __all__ = [
     "set_log_level",
     "sizing",
     "to_pyvista",
+    "transfer_fields",
 ]
