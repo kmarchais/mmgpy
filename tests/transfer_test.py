@@ -261,25 +261,32 @@ class TestFieldTransfer:
         with pytest.raises(KeyError, match="not found"):
             mesh.remesh(hmax=0.3, transfer_fields=["nonexistent"], progress=False)
 
+    def test_invalid_interpolation_method_raises(
+        self,
+        dense_cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that invalid interpolation method raises ValueError."""
+        vertices, elements = dense_cube_mesh
+        mesh = Mesh(vertices, elements)
+
+        with pytest.raises(ValueError, match="Invalid interpolation method"):
+            mesh.remesh(hmax=0.3, interpolation="invalid", progress=False)
+
     def test_no_transfer_by_default(
         self,
         dense_cube_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
-        """Test that fields are not transferred by default."""
+        """Test that fields are cleared by default (not transferred)."""
         vertices, elements = dense_cube_mesh
         mesh = Mesh(vertices, elements)
 
         mesh.set_user_field("temperature", np.ones(len(vertices)))
-        initial_count = len(vertices)
 
         mesh.remesh(hmax=0.3, progress=False)
-        final_count = len(mesh.get_vertices())
 
-        assert initial_count != final_count
-        assert (
-            not mesh.has_user_field("temperature")
-            or len(mesh.get_user_field("temperature")) != final_count
-        )
+        # Fields should be cleared when transfer_fields=False (default)
+        assert not mesh.has_user_field("temperature")
+        assert len(mesh.get_user_fields()) == 0
 
     def test_transfer_with_nearest_interpolation(
         self,

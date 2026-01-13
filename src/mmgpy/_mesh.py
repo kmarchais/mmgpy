@@ -1267,7 +1267,7 @@ class Mesh:
             method=interpolation,
         )
 
-    def remesh(  # noqa: C901
+    def remesh(  # noqa: C901, PLR0912
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         *,
@@ -1290,7 +1290,7 @@ class Mesh:
               True to continue or False to cancel
         transfer_fields : bool | Sequence[str] | None, default=False
             Transfer user-defined fields to the new mesh via interpolation:
-            - False or None: No field transfer (default)
+            - False or None: No field transfer (default), clears existing user fields
             - True: Transfer all user fields
             - List of field names: Transfer only specified fields
         interpolation : str, default="linear"
@@ -1299,6 +1299,16 @@ class Mesh:
             - "nearest": Nearest vertex value
         **kwargs : float
             Individual remeshing parameters (hmin, hmax, hsiz, hausd, etc.).
+
+        Notes
+        -----
+        Memory: When ``transfer_fields`` is enabled, the original mesh vertices
+        and elements are copied before remeshing, temporarily doubling memory
+        usage for large meshes.
+
+        Surface meshes (TRIANGULAR_SURFACE): Field transfer uses 3D Delaunay
+        triangulation for point location, which may not work well for nearly
+        planar surface meshes. Consider using volumetric meshes for field transfer.
 
         Returns
         -------
@@ -1336,6 +1346,15 @@ class Mesh:
             MmgSOptions,
         )
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+
+        # Validate interpolation method
+        valid_methods = ("linear", "nearest")
+        if interpolation not in valid_methods:
+            msg = (
+                f"Invalid interpolation method: {interpolation!r}. "
+                f"Must be one of {valid_methods}"
+            )
+            raise ValueError(msg)
 
         # Validate and convert options object
         if options is not None:
@@ -1394,7 +1413,7 @@ class Mesh:
             stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
             final_vertices = len(self._impl.get_vertices())
 
-            # Transfer fields to new mesh if captured
+            # Transfer fields to new mesh if captured, otherwise clear stale fields
             if (
                 fields_to_transfer
                 and old_vertices is not None
@@ -1406,6 +1425,9 @@ class Mesh:
                     old_elements,
                     interpolation,
                 )
+            else:
+                # Clear user fields as they have incorrect vertex count after remeshing
+                self._user_fields.clear()
 
             _emit_event(
                 callback,

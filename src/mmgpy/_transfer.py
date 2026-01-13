@@ -169,8 +169,13 @@ def interpolate_field(
 
     outside_mask = simplex_indices < 0
 
-    if method == "nearest":
+    # Build KDTree once if needed (for nearest method or fallback for outside points)
+    tree: cKDTree | None = None
+    if method == "nearest" or np.any(outside_mask):
         tree = cKDTree(source_vertices)
+
+    if method == "nearest":
+        assert tree is not None  # noqa: S101
         _, nearest_idx = tree.query(target_points)
         return field[nearest_idx].reshape(len(target_points), n_components).squeeze()
 
@@ -200,7 +205,7 @@ def interpolate_field(
         result[inside_indices] = np.einsum("ij,ijk->ik", bary, field_at_vertices)
 
     if np.any(outside_mask):
-        tree = cKDTree(source_vertices)
+        assert tree is not None  # noqa: S101
         outside_indices = np.where(outside_mask)[0]
         _, nearest_idx = tree.query(target_points[outside_indices])
         result[outside_indices] = field[nearest_idx]
