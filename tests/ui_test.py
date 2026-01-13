@@ -154,6 +154,114 @@ End
         fields = parse_sol_file(content)
         assert fields == {}
 
+    def test_parse_dimension_on_separate_line(self):
+        """Test parsing when dimension value is on a separate line."""
+        content = """MeshVersionFormatted 2
+Dimension
+3
+SolAtVertices
+2
+1 1
+0.5
+0.3
+End
+"""
+        fields = parse_sol_file(content)
+        assert "solution@vertices" in fields
+        np.testing.assert_array_almost_equal(
+            fields["solution@vertices"]["data"],
+            np.array([0.5, 0.3]),
+        )
+
+    def test_parse_with_empty_lines_in_data(self):
+        """Test parsing with empty lines between data values."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+3
+1 1
+0.5
+
+0.3
+
+0.1
+End
+"""
+        fields = parse_sol_file(content)
+        assert "solution@vertices" in fields
+        np.testing.assert_array_almost_equal(
+            fields["solution@vertices"]["data"],
+            np.array([0.5, 0.3, 0.1]),
+        )
+
+    def test_parse_truncated_after_solat(self):
+        """Test parsing file truncated right after SolAt keyword."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+"""
+        fields = parse_sol_file(content)
+        assert fields == {}
+
+    def test_parse_truncated_after_count(self):
+        """Test parsing file truncated after entity count."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+3
+"""
+        fields = parse_sol_file(content)
+        assert fields == {}
+
+    def test_parse_tensor_field_3d(self):
+        """Test parsing symmetric tensor (type 3) in 3D."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+2
+1 3
+1.0 2.0 3.0 4.0 5.0 6.0
+7.0 8.0 9.0 10.0 11.0 12.0
+End
+"""
+        fields = parse_sol_file(content)
+        assert "tensor@vertices" in fields
+        assert fields["tensor@vertices"]["location"] == "vertices"
+        # 3D tensor has 6 components (symmetric 3x3)
+        assert fields["tensor@vertices"]["data"].shape == (2, 6)
+
+    def test_parse_tensor_field_2d(self):
+        """Test parsing symmetric tensor (type 3) in 2D."""
+        content = """MeshVersionFormatted 2
+Dimension 2
+SolAtVertices
+2
+1 3
+1.0 2.0 3.0
+4.0 5.0 6.0
+End
+"""
+        fields = parse_sol_file(content)
+        assert "tensor@vertices" in fields
+        # 2D tensor has 3 components (symmetric 2x2)
+        assert fields["tensor@vertices"]["data"].shape == (2, 3)
+
+    def test_parse_data_ends_with_mesh_keyword(self):
+        """Test parsing stops when encountering Mesh keyword."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+3
+1 1
+0.5
+0.3
+MeshVersionFormatted
+"""
+        fields = parse_sol_file(content)
+        assert "solution@vertices" in fields
+        # Should only have 2 values since it stops at MeshVersionFormatted
+        assert len(fields["solution@vertices"]["data"]) == 2
+
 
 class TestSafeFormulaEvaluator:
     """Tests for SafeFormulaEvaluator class."""
@@ -347,6 +455,22 @@ class TestGetMeshDiagonal:
     def test_none_mesh(self):
         """Test with None mesh."""
         assert get_mesh_diagonal(None) == 1.0
+
+    def test_with_real_mesh(self):
+        """Test with a real mesh returns correct diagonal."""
+        import pyvista as pv
+
+        from mmgpy import Mesh
+
+        # Create a unit cube mesh
+        pv_mesh = pv.Cube().triangulate()
+        mesh = Mesh(pv_mesh)
+
+        diagonal = get_mesh_diagonal(mesh)
+
+        # Unit cube from -0.5 to 0.5, so diagonal is sqrt(3)
+        expected = np.sqrt(3)
+        assert abs(diagonal - expected) < 0.01
 
 
 class TestComputePresetValues:
