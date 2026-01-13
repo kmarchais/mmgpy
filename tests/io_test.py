@@ -627,6 +627,70 @@ class TestReadMeditNative:
 
             np.testing.assert_array_equal(mesh.get_elements(), tetra_cells)
 
+    def test_read_medit_with_comments(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test reading Medit file with comments (should be ignored)."""
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.mesh"
+            with filepath.open("w") as f:
+                f.write("# This is a comment\n")
+                f.write("MeshVersionFormatted 2\n")
+                f.write("# Another comment\n")
+                f.write("Dimension 3\n")
+                f.write("\n")  # Empty line
+                f.write(f"Vertices\n{len(tetra_vertices)}\n")
+                for v in tetra_vertices:
+                    f.write(f"{v[0]} {v[1]} {v[2]} 0\n")
+                f.write(f"Tetrahedra\n{len(tetra_cells)}\n")
+                for t in tetra_cells:
+                    f.write(f"{t[0] + 1} {t[1] + 1} {t[2] + 1} {t[3] + 1} 0\n")
+                f.write("End\n")
+
+            mesh = read(filepath)
+
+            assert mesh.kind == MeshKind.TETRAHEDRAL
+            assert len(mesh.get_vertices()) == 6
+
+    def test_read_medit_multiline_dimension(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test reading Medit file with multi-line dimension format."""
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.mesh"
+            with filepath.open("w") as f:
+                f.write("MeshVersionFormatted 2\n")
+                f.write("Dimension\n")  # Keyword on separate line
+                f.write("3\n")  # Value on next line
+                f.write(f"Vertices\n{len(tetra_vertices)}\n")
+                for v in tetra_vertices:
+                    f.write(f"{v[0]} {v[1]} {v[2]} 0\n")
+                f.write(f"Tetrahedra\n{len(tetra_cells)}\n")
+                for t in tetra_cells:
+                    f.write(f"{t[0] + 1} {t[1] + 1} {t[2] + 1} {t[3] + 1} 0\n")
+                f.write("End\n")
+
+            mesh = read(filepath)
+
+            assert mesh.kind == MeshKind.TETRAHEDRAL
+
+    def test_read_medit_unknown_kind_error(self) -> None:
+        """Test error when mesh kind cannot be determined."""
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "invalid.mesh"
+            with filepath.open("w") as f:
+                f.write("MeshVersionFormatted 2\n")
+                f.write("Dimension 3\n")
+                # No element types - cannot determine mesh kind
+                f.write("End\n")
+
+            with pytest.raises(ValueError, match="Cannot determine mesh kind"):
+                read(filepath)
+
 
 # Module export test
 
