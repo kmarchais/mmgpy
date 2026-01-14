@@ -197,6 +197,7 @@ PRESET_RATIOS: dict[str, dict[str, float | bool | None]] = {
     "fine": {"hmax_ratio": 1 / 50, "hausd_ratio": 1 / 1000, "hgrad": 1.2},
     "medium": {"hmax_ratio": 1 / 25, "hausd_ratio": 1 / 500, "hgrad": 1.3},
     "coarse": {"hmax_ratio": 1 / 10, "hausd_ratio": 1 / 200, "hgrad": 1.5},
+    "optimize": {"optim": True, "noinsert": True},  # Optimize only, no size change
 }
 
 
@@ -238,6 +239,13 @@ def compute_preset_values(preset: str, diagonal: float) -> dict[str, Any]:
         values["hausd"] = None
         values["hgrad"] = None
         values["ar"] = None
+        return values
+
+    # Optimize preset: set optimization flags
+    if ratios.get("optim"):
+        values["optim"] = True
+        if ratios.get("noinsert"):
+            values["noinsert"] = True
         return values
 
     if "hmax_ratio" in ratios:
