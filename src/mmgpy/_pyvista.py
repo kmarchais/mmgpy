@@ -124,7 +124,6 @@ def _from_pyvista_to_mmg3d(mesh: pv.UnstructuredGrid) -> MmgMesh3D:
 
 def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
     """Convert PolyData with 2D triangles to MmgMesh2D."""
-    original_mesh = mesh
     mesh, was_triangulated = _triangulate_if_needed(mesh)
     if was_triangulated:
         logger.warning(_TRIANGULATION_WARNING)
@@ -138,14 +137,9 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
 
     mmg_mesh = MmgMesh2D(vertices, triangles)
 
-    # Preserve triangle refs from cell_data if present (use triangulated mesh)
+    # Preserve triangle refs from cell_data if present
     if "refs" in mesh.cell_data:
         refs = np.asarray(mesh.cell_data["refs"], dtype=np.int32)
-        if len(refs) == len(triangles):
-            mmg_mesh.set_triangles(triangles, refs)
-    elif not was_triangulated and "refs" in original_mesh.cell_data:
-        # Fallback to original mesh refs if not triangulated
-        refs = np.asarray(original_mesh.cell_data["refs"], dtype=np.int32)
         if len(refs) == len(triangles):
             mmg_mesh.set_triangles(triangles, refs)
 
@@ -154,7 +148,6 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
 
 def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
     """Convert PolyData with 3D surface triangles to MmgMeshS."""
-    original_mesh = mesh
     mesh, was_triangulated = _triangulate_if_needed(mesh)
     if was_triangulated:
         logger.warning(_TRIANGULATION_WARNING)
@@ -164,14 +157,9 @@ def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
 
     mmg_mesh = MmgMeshS(vertices, triangles)
 
-    # Preserve triangle refs from cell_data if present (use triangulated mesh)
+    # Preserve triangle refs from cell_data if present
     if "refs" in mesh.cell_data:
         refs = np.asarray(mesh.cell_data["refs"], dtype=np.int32)
-        if len(refs) == len(triangles):
-            mmg_mesh.set_triangles(triangles, refs)
-    elif not was_triangulated and "refs" in original_mesh.cell_data:
-        # Fallback to original mesh refs if not triangulated
-        refs = np.asarray(original_mesh.cell_data["refs"], dtype=np.int32)
         if len(refs) == len(triangles):
             mmg_mesh.set_triangles(triangles, refs)
 
