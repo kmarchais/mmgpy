@@ -124,9 +124,43 @@ class RemeshingMixin:
             else:
                 old_elements = source_mesh.get_triangles()
 
+            # For tetrahedral meshes, preserve boundary triangle refs
+            # (they're stored separately in MMG and lost during PyVista round-trip)
+            boundary_triangles = None
+            boundary_refs = None
+            if kind == "tetrahedral":
+                try:
+                    boundary_triangles, boundary_refs = (
+                        source_mesh.get_triangles_with_refs()
+                    )
+                except Exception:
+                    pass
+
             # Create a fresh Mesh object
             pv_mesh = source_mesh.to_pyvista()
             self._mesh = Mesh(pv_mesh)
+
+            # Restore boundary triangle refs for tetrahedral meshes
+            # Need to resize mesh to include triangles before setting them
+            if boundary_triangles is not None and boundary_refs is not None:
+                try:
+                    # Access internal implementation to resize mesh
+                    impl = self._mesh._impl  # noqa: SLF001
+                    vertices = self._mesh.get_vertices()
+                    tetrahedra = self._mesh.get_tetrahedra()
+                    impl.set_mesh_size(
+                        vertices=len(vertices),
+                        tetrahedra=len(tetrahedra),
+                        triangles=len(boundary_triangles),
+                    )
+                    # Re-set vertices and tetrahedra after resize
+                    _, vert_refs = impl.get_vertices_with_refs()
+                    _, tet_refs = impl.get_tetrahedra_with_refs()
+                    impl.set_vertices(vertices, vert_refs)
+                    impl.set_tetrahedra(tetrahedra, tet_refs)
+                    impl.set_triangles(boundary_triangles, boundary_refs)
+                except Exception:
+                    logger.debug("Could not restore boundary triangle refs")
 
             # Apply solution as metric if enabled
             if self.state.use_solution_as_metric and source_solution_metric is not None:
@@ -236,6 +270,8 @@ class RemeshingMixin:
             options["nosurf"] = 1
         if "nreg" in selected:
             options["nreg"] = 1
+        if "opnbdy" in selected and self.state.mesh_kind == "tetrahedral":
+            options["opnbdy"] = 1
 
         return options
 

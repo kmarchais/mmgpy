@@ -120,7 +120,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         )
         def on_view_settings_change(**_):
             if self._mesh is not None:
-                self._update_viewer()
+                self._update_viewer(reset_camera=False)
 
         @self.state.change("mesh_kind")
         def on_mesh_kind_change(mesh_kind, **_):
@@ -228,6 +228,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         """Update state after loading a mesh."""
         self._update_mesh_info()
         self._apply_adaptive_defaults()
+        self._check_multi_material()
         self._update_viewer()
         self.state.mesh_loaded = True
         self.state.mesh_filename = filename
@@ -240,6 +241,57 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         self._solution_fields = {}
         self._original_solution_metric = None
         self._original_solution_fields = {}
+
+    def _check_multi_material(self) -> None:
+        """Check if mesh has multiple materials/regions and switch to refs visualization."""
+        if self._mesh is None:
+            return
+
+        try:
+            pv_mesh = self._mesh.to_pyvista()
+            element_refs_uniform = True
+
+            if "refs" in pv_mesh.cell_data:
+                refs = pv_mesh.cell_data["refs"]
+                unique_refs = np.unique(refs)
+                if len(unique_refs) > 1:
+                    # Multi-material mesh detected - switch to refs visualization
+                    self.state.show_scalar = "refs"
+                    logger.info(
+                        "Multi-material mesh detected with %d regions, "
+                        "switching to Refs visualization",
+                        len(unique_refs),
+                    )
+                    return
+                element_refs_uniform = len(unique_refs) <= 1
+
+            # For tetrahedral meshes, also check boundary triangle refs
+            if self._mesh.kind.value == "tetrahedral":
+                try:
+                    _, tri_refs = self._mesh.get_triangles_with_refs()
+                    unique_tri_refs = np.unique(tri_refs)
+                    if len(unique_tri_refs) > 1:
+                        # Multi-boundary mesh - auto-switch to boundary refs
+                        # if element refs are uniform
+                        if element_refs_uniform:
+                            self.state.show_scalar = "boundary_refs"
+                            logger.info(
+                                "Tetrahedral mesh with %d boundary regions (refs: %s), "
+                                "switching to Boundary Refs visualization",
+                                len(unique_tri_refs),
+                                unique_tri_refs.tolist(),
+                            )
+                        else:
+                            logger.info(
+                                "Tetrahedral mesh with %d boundary regions (refs: %s). "
+                                "Volume elements have multiple refs.",
+                                len(unique_tri_refs),
+                                unique_tri_refs.tolist(),
+                            )
+                except Exception:
+                    pass
+        except Exception:
+            pass  # Silently ignore errors
 
     def _handle_sol_file_upload(self, sol_file_upload) -> None:
         """Handle uploaded solution file."""
@@ -376,8 +428,40 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         self.state.sol_filename = filename
 
     def _update_scalar_field_options(self) -> None:
-        """Update scalar field dropdown options based on available fields."""
+        """Update scalar field dropdown options based on available fields and mesh type."""
         base_options = list(DEFAULT_SCALAR_FIELD_OPTIONS)
+
+        # Remove Face Orientation for tetrahedral meshes (volumetric, no front/back)
+        if self.state.mesh_kind == "tetrahedral":
+            base_options = [
+                opt
+                for opt in base_options
+                if opt.get("value") != "face_sides"
+                and opt.get("title") != "-- Orientation --"
+            ]
+            # Reset to "none" if face_sides was selected
+            if self.state.show_scalar == "face_sides":
+                self.state.show_scalar = "none"
+
+            # Add Boundary Refs option for tetrahedral meshes with boundary triangles
+            if self._mesh is not None:
+                try:
+                    _, tri_refs = self._mesh.get_triangles_with_refs()
+                    unique_tri_refs = np.unique(tri_refs)
+                    if len(unique_tri_refs) > 0:
+                        # Find the "-- Other --" section and add Boundary Refs after Refs
+                        for i, opt in enumerate(base_options):
+                            if opt.get("value") == "refs":
+                                base_options.insert(
+                                    i + 1,
+                                    {
+                                        "title": "Boundary Refs",
+                                        "value": "boundary_refs",
+                                    },
+                                )
+                                break
+                except Exception:
+                    pass
 
         if self._solution_fields:
             base_options.append({"type": "subheader", "title": "-- Solution --"})
@@ -445,6 +529,47 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         except Exception:
             logger.debug("Could not compute quality statistics")
 
+        # Compute edge length statistics
+        edge_stats = None
+        try:
+            pv_mesh = self._mesh.to_pyvista()
+            edge_lengths = self._compute_all_edge_lengths(pv_mesh)
+            if edge_lengths is not None and len(edge_lengths) > 0:
+                edge_stats = {
+                    "min": float(np.min(edge_lengths)),
+                    "max": float(np.max(edge_lengths)),
+                    "mean": float(np.mean(edge_lengths)),
+                    "median": float(np.median(edge_lengths)),
+                }
+        except Exception:
+            logger.debug("Could not compute edge length statistics")
+
+        # Compute refs statistics
+        refs_stats = None
+        try:
+            pv_mesh = self._mesh.to_pyvista()
+            if "refs" in pv_mesh.cell_data:
+                refs = pv_mesh.cell_data["refs"]
+                unique_refs = np.unique(refs)
+                refs_stats = {
+                    "element_refs": unique_refs.tolist(),
+                    "element_count": len(unique_refs),
+                }
+
+            # For tetrahedral meshes, also get boundary triangle refs
+            if kind == "tetrahedral":
+                try:
+                    _, tri_refs = self._mesh.get_triangles_with_refs()
+                    unique_tri_refs = np.unique(tri_refs)
+                    if refs_stats is None:
+                        refs_stats = {}
+                    refs_stats["boundary_refs"] = unique_tri_refs.tolist()
+                    refs_stats["boundary_count"] = len(unique_tri_refs)
+                except Exception:
+                    pass
+        except Exception:
+            logger.debug("Could not compute refs statistics")
+
         # Build detailed mesh stats
         self.state.mesh_stats = {
             "vertices": n_verts,
@@ -462,6 +587,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             },
             "size": size.tolist() if hasattr(size, "tolist") else list(size),
             "quality": quality_stats,
+            "edge_length": edge_stats,
+            "refs": refs_stats,
         }
 
         # Build size string based on dimensionality
@@ -626,6 +753,16 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
             with layout.content:
                 self._build_content()
+
+            # Right info drawer (separate from main content to isolate scroll)
+            with v3.VNavigationDrawer(
+                v_model=("info_panel_open",),
+                location="right",
+                width=300,
+                temporary=False,
+                permanent=False,
+            ):
+                self._build_info_panel()
 
             # Clear default trame footer content and add our own
             layout.footer.clear()
@@ -1116,6 +1253,22 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 style="flex: 1;",
                 title="Enable normal regularization for smoother surfaces",
             )
+        # Open boundary option for tetrahedral meshes with internal surfaces
+        with v3.VBtnToggle(
+            v_model=("selected_options",),
+            density="compact",
+            multiple=True,
+            divided=True,
+            style="width: 100%;",
+            v_show="mesh_kind === 'tetrahedral' && mesh_stats?.refs?.boundary_count > 1",
+        ):
+            v3.VBtn(
+                value="opnbdy",
+                text="Open Boundary",
+                size="small",
+                style="flex: 1;",
+                title="Preserve internal surfaces between regions with same ref (slower)",
+            )
         # Show nreg for surface meshes too (without nosurf)
         with v3.VBtnToggle(
             v_model=("selected_options",),
@@ -1316,15 +1469,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     # Top-right toolbar overlay
                     self._build_viewer_toolbar()
 
-                # Right info panel
-                with v3.VCol(
-                    cols="auto",
-                    classes="fill-height pa-0",
-                    v_show="mesh_loaded && info_panel_open",
-                    style="max-width: 300px; min-width: 280px;",
-                ):
-                    self._build_info_panel()
-
     def _build_viewer_toolbar(self) -> None:
         """Build the viewer toolbar overlay."""
         with v3.VCard(
@@ -1521,11 +1665,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 )
 
     def _build_info_panel(self) -> None:
-        """Build the right-side mesh info panel."""
+        """Build the right-side mesh info panel (inside drawer)."""
         with v3.VCard(
             classes="fill-height overflow-auto",
             variant="flat",
-            style="border-left: 1px solid rgba(0,0,0,0.12);",
         ):
             v3.VCardTitle("Mesh Info", classes="text-subtitle-1 py-2")
             with v3.VCardText(classes="pa-2"):
@@ -1593,6 +1736,50 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                         subtitle=(
                             "`${mesh_stats?.quality?.mean?.toFixed(4) || '-'} ± "
                             "${mesh_stats?.quality?.std?.toFixed(4) || '-'}`",
+                        ),
+                    )
+
+                v3.VDivider(classes="my-1")
+
+                # Edge Length section (for sizing hints)
+                with v3.VList(density="compact"):
+                    v3.VListSubheader("Edge Length (for hmin/hmax/hsiz)")
+                    v3.VListItem(
+                        title="Min / Max",
+                        subtitle=(
+                            "`${mesh_stats?.edge_length?.min?.toFixed(4) || '-'} / "
+                            "${mesh_stats?.edge_length?.max?.toFixed(4) || '-'}`",
+                        ),
+                    )
+                    v3.VListItem(
+                        title="Mean / Median",
+                        subtitle=(
+                            "`${mesh_stats?.edge_length?.mean?.toFixed(4) || '-'} / "
+                            "${mesh_stats?.edge_length?.median?.toFixed(4) || '-'}`",
+                        ),
+                    )
+
+                # Refs section (shown if mesh has refs)
+                with v3.VList(
+                    density="compact",
+                    v_show="mesh_stats?.refs",
+                ):
+                    v3.VDivider(classes="my-1")
+                    v3.VListSubheader("References (Material/Boundary IDs)")
+                    v3.VListItem(
+                        title="Element Refs",
+                        subtitle=(
+                            "`${mesh_stats?.refs?.element_count || 0} region(s): "
+                            "${mesh_stats?.refs?.element_refs?.join(', ') || '-'}`",
+                        ),
+                    )
+                    # Show boundary refs for tetrahedral meshes
+                    v3.VListItem(
+                        v_show="mesh_stats?.refs?.boundary_refs",
+                        title="Boundary Refs",
+                        subtitle=(
+                            "`${mesh_stats?.refs?.boundary_count || 0} region(s): "
+                            "${mesh_stats?.refs?.boundary_refs?.join(', ') || '-'}`",
                         ),
                     )
 

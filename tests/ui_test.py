@@ -729,7 +729,7 @@ class TestDefaultScalarFieldOptions:
         values = [
             opt.get("value") for opt in DEFAULT_SCALAR_FIELD_OPTIONS if "value" in opt
         ]
-        assert "face_orientation" in values
+        assert "face_sides" in values
 
     def test_contains_quality_options(self):
         """Test that quality options are available."""
@@ -741,6 +741,15 @@ class TestDefaultScalarFieldOptions:
         assert "quality" in values
         assert "pv_quality" in values
 
+    def test_contains_edge_length_option(self):
+        """Test that edge length option is available for sizing visualization."""
+        from mmgpy.ui.utils import DEFAULT_SCALAR_FIELD_OPTIONS
+
+        values = [
+            opt.get("value") for opt in DEFAULT_SCALAR_FIELD_OPTIONS if "value" in opt
+        ]
+        assert "edge_length" in values
+
     def test_has_section_headers(self):
         """Test that section headers exist."""
         from mmgpy.ui.utils import DEFAULT_SCALAR_FIELD_OPTIONS
@@ -751,4 +760,14 @@ class TestDefaultScalarFieldOptions:
             if opt.get("type") == "subheader"
         ]
         assert any("Quality" in h for h in headers)
+        assert any("Sizing" in h for h in headers)
         assert any("Orientation" in h for h in headers)
+
+    def test_contains_refs_option(self):
+        """Test that refs option is available."""
+        from mmgpy.ui.utils import DEFAULT_SCALAR_FIELD_OPTIONS
+
+        values = [
+            opt.get("value") for opt in DEFAULT_SCALAR_FIELD_OPTIONS if "value" in opt
+        ]
+        assert "refs" in values
