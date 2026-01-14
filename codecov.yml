@@ -1,0 +1,16 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+
+ignore:
+  - "src/mmgpy/ui/app.py" # Trame UI requires browser
+  - "src/mmgpy/ui/viewer.py" # Trame viewer mixin requires browser
+  - "src/mmgpy/ui/remeshing.py" # Trame remeshing mixin requires browser
+  - "src/mmgpy/interactive/*" # PyVista UI requires display
