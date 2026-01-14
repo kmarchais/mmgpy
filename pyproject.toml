@@ -66,12 +66,21 @@ mmg3d = "mmgpy:_run_mmg3d"
 mmg3d_O3 = "mmgpy:_run_mmg3d"
 mmgs = "mmgpy:_run_mmgs"
 mmgs_O3 = "mmgpy:_run_mmgs"
+mmgpy-ui = "mmgpy.ui.__main__:main"
 
 [project.entry-points."mmgpy.ui"]
 ui = "mmgpy.ui:run_ui"
 
 [project.gui-scripts]
-mmgpy-ui = "mmgpy.ui:run_ui"
+mmgpy-ui = "mmgpy.ui.__main__:main"
+
+[project.optional-dependencies]
+ui = [
+    "trame>=3.12.0",
+    "trame-vtk>=2.10.2",
+    "trame-vtklocal>=0.16.0",
+    "trame-vuetify>=3.2.0",
+]
 
 [dependency-groups]
 dev = [

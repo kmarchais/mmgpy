@@ -1,0 +1,18 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 70%
+        threshold: 5%
+
+ignore:
+  - "src/mmgpy/ui/app.py"
+  - "src/mmgpy/ui/viewer.py"
+  - "src/mmgpy/ui/remeshing.py"
+  - "src/mmgpy/ui/__init__.py"
+  - "src/mmgpy/ui/__main__.py"
+  - "src/mmgpy/interactive/"
