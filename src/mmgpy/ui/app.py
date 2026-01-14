@@ -1509,11 +1509,12 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 )
                 # Show original mesh button (only when original exists)
                 v3.VBtn(
-                    icon=("show_original_mesh ? 'mdi-history' : 'mdi-clock-outline'",),
-                    click="show_original_mesh = !show_original_mesh",
-                    title=(
-                        "`${show_original_mesh ? 'Showing original' : 'Show original'} mesh`"
+                    icon=(
+                        "show_original_mesh ? 'mdi-source-branch' : "
+                        "'mdi-source-branch-check'",
                     ),
+                    click="show_original_mesh = !show_original_mesh",
+                    title="Toggle original/current mesh",
                     variant="text",
                     color=("show_original_mesh ? 'warning' : ''",),
                     v_show="has_original_mesh",
