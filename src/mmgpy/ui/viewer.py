@@ -82,6 +82,14 @@ class ViewerMixin:
 
         self._plotter.clear()
 
+        # Determine which mesh to display (original or current)
+        display_mesh = self._mesh
+        if (
+            getattr(self.state, "show_original_mesh", False)
+            and self._original_mesh is not None
+        ):
+            display_mesh = self._original_mesh
+
         # Check if we need to show boundary refs for tetrahedral mesh
         show_boundary_refs = (
             self.state.show_scalar == "boundary_refs"
@@ -90,12 +98,12 @@ class ViewerMixin:
 
         if show_boundary_refs:
             # Extract boundary surface and color by boundary refs
-            pv_mesh = self._get_boundary_surface_with_refs()
+            pv_mesh = self._get_boundary_surface_with_refs(mesh=display_mesh)
             if pv_mesh is None:
                 # Fallback to regular mesh
-                pv_mesh = self._mesh.to_pyvista()
+                pv_mesh = display_mesh.to_pyvista()
         else:
-            pv_mesh = self._mesh.to_pyvista()
+            pv_mesh = display_mesh.to_pyvista()
 
         # Compute normals for smooth shading
         if pv_mesh.n_cells > 0 and hasattr(pv_mesh, "compute_normals"):
@@ -454,18 +462,29 @@ class ViewerMixin:
                     line_width=1,
                 )
 
-    def _get_boundary_surface_with_refs(self):
+    def _get_boundary_surface_with_refs(self, mesh=None):
         """Extract boundary surface from tetrahedral mesh with boundary refs.
 
-        Returns a PolyData mesh of the boundary triangles colored by their refs.
+        Parameters
+        ----------
+        mesh : Mesh, optional
+            The mesh to extract from. Defaults to self._mesh.
+
+        Returns
+        -------
+        pv.PolyData or None
+            PolyData mesh of the boundary triangles colored by their refs.
+
         """
-        if self._mesh is None:
+        if mesh is None:
+            mesh = self._mesh
+        if mesh is None:
             return None
 
         try:
             # Get boundary triangles and their refs from the mesh
-            triangles, refs = self._mesh.get_triangles_with_refs()
-            vertices = self._mesh.get_vertices()
+            triangles, refs = mesh.get_triangles_with_refs()
+            vertices = mesh.get_vertices()
 
             if len(triangles) == 0:
                 return None

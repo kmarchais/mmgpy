@@ -150,6 +150,8 @@ DEFAULT_STATE: dict[str, Any] = {
     # Viewer settings
     "show_edges": True,
     "show_scalar": "none",
+    "show_original_mesh": False,
+    "has_original_mesh": False,
     "color_map": "RdYlBu",
     "opacity": 1.0,
     "smooth_shading": False,

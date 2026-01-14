@@ -117,6 +117,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             "slice_enabled",
             "slice_axis",
             "slice_threshold",
+            "show_original_mesh",
         )
         def on_view_settings_change(**_):
             if self._mesh is not None:
@@ -214,6 +215,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
             self._mesh = Mesh(tmp_path)
             self._original_mesh = Mesh(tmp_path)
+            self.state.has_original_mesh = True
+            self.state.show_original_mesh = False
             self._update_mesh_state_after_load(client_file.name)
         except Exception:
             logger.exception("Error loading mesh file: %s", client_file.name)
@@ -485,6 +488,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
         self._mesh = Mesh(pv_mesh)
         self._original_mesh = Mesh(pv_mesh)
+        self.state.has_original_mesh = True
+        self.state.show_original_mesh = False
         self._update_mesh_state_after_load(f"sample:{sample_name}")
 
     def _update_mesh_info(self) -> None:
@@ -676,6 +681,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         self._original_solution_fields = {}
 
         self.state.mesh_loaded = False
+        self.state.has_original_mesh = False
+        self.state.show_original_mesh = False
         self.state.mesh_info = ""
         self.state.mesh_kind = ""
         self.state.mesh_filename = ""
@@ -1499,6 +1506,17 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     click="smooth_shading = !smooth_shading",
                     title="Toggle smooth shading",
                     variant="text",
+                )
+                # Show original mesh button (only when original exists)
+                v3.VBtn(
+                    icon=("show_original_mesh ? 'mdi-history' : 'mdi-clock-outline'",),
+                    click="show_original_mesh = !show_original_mesh",
+                    title=(
+                        "`${show_original_mesh ? 'Showing original' : 'Show original'} mesh`"
+                    ),
+                    variant="text",
+                    color=("show_original_mesh ? 'warning' : ''",),
+                    v_show="has_original_mesh",
                 )
                 # Opacity menu
                 with v3.VMenu(close_on_content_click=False):
