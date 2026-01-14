@@ -877,6 +877,16 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         """Build remeshing options panel."""
         self._build_file_upload_section()
         self._build_solution_options_section()
+        # Show original mesh toggle (only visible after remeshing)
+        v3.VSwitch(
+            v_model=("show_original_mesh",),
+            label="Show original mesh",
+            density="compact",
+            hide_details=True,
+            color="warning",
+            v_show="has_original_mesh && remesh_result",
+            classes="mb-2",
+        )
         v3.VDivider(classes="mb-3")
         self._build_mode_and_preset_section()
         v3.VDivider(classes="mb-3")
@@ -1506,18 +1516,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     click="smooth_shading = !smooth_shading",
                     title="Toggle smooth shading",
                     variant="text",
-                )
-                # Show original mesh button (only when original exists)
-                v3.VBtn(
-                    icon=(
-                        "show_original_mesh ? 'mdi-source-branch' : "
-                        "'mdi-source-branch-check'",
-                    ),
-                    click="show_original_mesh = !show_original_mesh",
-                    title="Toggle original/current mesh",
-                    variant="text",
-                    color=("show_original_mesh ? 'warning' : ''",),
-                    v_show="has_original_mesh",
                 )
                 # Opacity menu
                 with v3.VMenu(close_on_content_click=False):
