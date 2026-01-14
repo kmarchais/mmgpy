@@ -42,6 +42,17 @@ def run_ui(
     debug : bool, default=False
         Enable debug mode with HTML structure printing.
 
+    Examples
+    --------
+    >>> from mmgpy.ui import run_ui
+    >>> run_ui()  # Opens in browser
+
+    >>> run_ui(open_browser=False)  # Server only
+
+    >>> # From command line:
+    >>> # mmgpy-ui
+    >>> # uvx --from "mmgpy[ui]" mmgpy-ui
+
     """
     from mmgpy.ui.app import MmgpyApp
 

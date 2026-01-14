@@ -309,6 +309,51 @@ class TestRoundTrip:
             grid_back.cells_dict[pv.CellType.TETRA],
         )
 
+    def test_mmg3d_round_trip_preserves_refs(self, mmg3d_mesh: MmgMesh3D) -> None:
+        """Test MmgMesh3D → PyVista → MmgMesh3D preserves refs."""
+        # Set refs on the original mesh
+        elements = mmg3d_mesh.get_elements()
+        refs = np.array([i % 3 for i in range(len(elements))], dtype=np.int32)
+        mmg3d_mesh.set_tetrahedra(elements, refs)
+
+        # Round-trip
+        grid = to_pyvista(mmg3d_mesh)
+        mesh_back = from_pyvista(grid)
+
+        # Check refs are preserved
+        _, refs_back = mesh_back.get_tetrahedra_with_refs()
+        np.testing.assert_array_equal(refs, refs_back)
+
+    def test_mmg2d_round_trip_preserves_refs(self, mmg2d_mesh: MmgMesh2D) -> None:
+        """Test MmgMesh2D → PyVista → MmgMesh2D preserves refs."""
+        # Set refs on the original mesh
+        triangles = mmg2d_mesh.get_triangles()
+        refs = np.array([i % 5 for i in range(len(triangles))], dtype=np.int32)
+        mmg2d_mesh.set_triangles(triangles, refs)
+
+        # Round-trip
+        polydata = to_pyvista(mmg2d_mesh)
+        mesh_back = from_pyvista(polydata, mesh_type=MmgMesh2D)
+
+        # Check refs are preserved
+        _, refs_back = mesh_back.get_triangles_with_refs()
+        np.testing.assert_array_equal(refs, refs_back)
+
+    def test_mmgs_round_trip_preserves_refs(self, mmgs_mesh: MmgMeshS) -> None:
+        """Test MmgMeshS → PyVista → MmgMeshS preserves refs."""
+        # Set refs on the original mesh
+        triangles = mmgs_mesh.get_triangles()
+        refs = np.array([i % 4 for i in range(len(triangles))], dtype=np.int32)
+        mmgs_mesh.set_triangles(triangles, refs)
+
+        # Round-trip
+        polydata = to_pyvista(mmgs_mesh)
+        mesh_back = from_pyvista(polydata, mesh_type=MmgMeshS)
+
+        # Check refs are preserved
+        _, refs_back = mesh_back.get_triangles_with_refs()
+        np.testing.assert_array_equal(refs, refs_back)
+
 
 # Integration tests with remeshing
 

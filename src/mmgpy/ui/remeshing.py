@@ -124,9 +124,43 @@ class RemeshingMixin:
             else:
                 old_elements = source_mesh.get_triangles()
 
+            # For tetrahedral meshes, preserve boundary triangle refs
+            # (they're stored separately in MMG and lost during PyVista round-trip)
+            boundary_triangles = None
+            boundary_refs = None
+            if kind == "tetrahedral":
+                try:
+                    boundary_triangles, boundary_refs = (
+                        source_mesh.get_triangles_with_refs()
+                    )
+                except Exception:
+                    pass
+
             # Create a fresh Mesh object
             pv_mesh = source_mesh.to_pyvista()
             self._mesh = Mesh(pv_mesh)
+
+            # Restore boundary triangle refs for tetrahedral meshes
+            # Need to resize mesh to include triangles before setting them
+            if boundary_triangles is not None and boundary_refs is not None:
+                try:
+                    # Access internal implementation to resize mesh
+                    impl = self._mesh._impl  # noqa: SLF001
+                    vertices = self._mesh.get_vertices()
+                    tetrahedra = self._mesh.get_tetrahedra()
+                    impl.set_mesh_size(
+                        vertices=len(vertices),
+                        tetrahedra=len(tetrahedra),
+                        triangles=len(boundary_triangles),
+                    )
+                    # Re-set vertices and tetrahedra after resize
+                    _, vert_refs = impl.get_vertices_with_refs()
+                    _, tet_refs = impl.get_tetrahedra_with_refs()
+                    impl.set_vertices(vertices, vert_refs)
+                    impl.set_tetrahedra(tetrahedra, tet_refs)
+                    impl.set_triangles(boundary_triangles, boundary_refs)
+                except Exception:
+                    logger.debug("Could not restore boundary triangle refs")
 
             # Apply solution as metric if enabled
             if self.state.use_solution_as_metric and source_solution_metric is not None:
@@ -214,6 +248,14 @@ class RemeshingMixin:
 
         options["verbose"] = int(self.state.verbose or 1)
 
+        # Memory limit
+        mem = to_float(self.state.mem)
+        if mem is not None:
+            if mem <= 0:
+                msg = "mem must be > 0"
+                raise ValueError(msg)
+            options["mem"] = int(mem)
+
         # Get selected options from multi-select button group
         selected = self.state.selected_options or []
         if "optim" in selected:
@@ -226,6 +268,10 @@ class RemeshingMixin:
             options["nomove"] = 1
         if "nosurf" in selected and self.state.mesh_kind == "tetrahedral":
             options["nosurf"] = 1
+        if "nreg" in selected:
+            options["nreg"] = 1
+        if "opnbdy" in selected and self.state.mesh_kind == "tetrahedral":
+            options["opnbdy"] = 1
 
         return options
 
@@ -246,6 +292,10 @@ class RemeshingMixin:
                     levelset = levelset.reshape(-1, 1)
             else:
                 levelset = self._compute_levelset()
+            # Add levelset isovalue (ls) parameter
+            ls_value = to_float(self.state.levelset_isovalue)
+            if ls_value is not None:
+                options["ls"] = ls_value
             return self._mesh.remesh_levelset(levelset, progress=False, **options)
 
         if mode == "lagrangian":
@@ -256,9 +306,7 @@ class RemeshingMixin:
                 **options,
             )
 
-        if mode == "optimize":
-            return self._mesh.remesh_optimize(progress=False)
-
+        # Fallback to standard remesh
         return self._mesh.remesh(progress=False, **options)
 
     def _transfer_solution_fields(

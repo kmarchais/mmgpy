@@ -1307,6 +1307,14 @@ dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 
+[package.optional-dependencies]
+ui = [
+    { name = "trame" },
+    { name = "trame-vtk" },
+    { name = "trame-vtklocal" },
+    { name = "trame-vuetify" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "imageio" },
@@ -1336,8 +1344,13 @@ requires-dist = [
     { name = "pyvista", specifier = ">=0.46.4" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "scipy", specifier = ">=1.11.0,<1.17" },
+    { name = "trame", marker = "extra == 'ui'", specifier = ">=3.12.0" },
+    { name = "trame-vtk", marker = "extra == 'ui'", specifier = ">=2.10.2" },
+    { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.16.0" },
+    { name = "trame-vuetify", marker = "extra == 'ui'", specifier = ">=3.2.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0" },
 ]
+provides-extras = ["ui"]
 
 [package.metadata.requires-dev]
 dev = [

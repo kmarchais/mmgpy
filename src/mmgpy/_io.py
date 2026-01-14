@@ -90,7 +90,9 @@ def _parse_medit_header(path: Path) -> tuple[int | None, bool, bool]:
             elif keyword == "triangles":
                 has_triangles = True
 
-            if dimension is not None and (has_tetrahedra or has_triangles):
+            # Stop early only if we found tetrahedra (volumetric mesh)
+            # Continue scanning if only triangles found (might have tetrahedra later)
+            if dimension is not None and has_tetrahedra:
                 break
 
     return dimension, has_tetrahedra, has_triangles

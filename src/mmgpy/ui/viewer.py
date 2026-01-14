@@ -82,7 +82,28 @@ class ViewerMixin:
 
         self._plotter.clear()
 
-        pv_mesh = self._mesh.to_pyvista()
+        # Determine which mesh to display (original or current)
+        display_mesh = self._mesh
+        if (
+            getattr(self.state, "show_original_mesh", False)
+            and self._original_mesh is not None
+        ):
+            display_mesh = self._original_mesh
+
+        # Check if we need to show boundary refs for tetrahedral mesh
+        show_boundary_refs = (
+            self.state.show_scalar == "boundary_refs"
+            and self.state.mesh_kind == "tetrahedral"
+        )
+
+        if show_boundary_refs:
+            # Extract boundary surface and color by boundary refs
+            pv_mesh = self._get_boundary_surface_with_refs(mesh=display_mesh)
+            if pv_mesh is None:
+                # Fallback to regular mesh
+                pv_mesh = display_mesh.to_pyvista()
+        else:
+            pv_mesh = display_mesh.to_pyvista()
 
         # Compute normals for smooth shading
         if pv_mesh.n_cells > 0 and hasattr(pv_mesh, "compute_normals"):
@@ -101,16 +122,35 @@ class ViewerMixin:
         # Apply slice/threshold for tetrahedral meshes
         pv_mesh = self._apply_slice_if_needed(pv_mesh)
 
+        # Determine text color based on theme
+        is_dark = getattr(self.state, "theme_name", "light") == "dark"
+        text_color = "white" if is_dark else "black"
+
+        # Build scalar bar args with theme-aware colors
+        scalar_bar_args = None
+        if scalar_bar_title:
+            scalar_bar_args = {
+                "title": scalar_bar_title,
+                "title_font_size": 14,
+                "label_font_size": 12,
+                "color": text_color,
+            }
+
+        # Check if using face sides visualization (special backface coloring)
+        use_face_sides = self.state.show_scalar == "face_sides"
+
         # Add mesh with rendering settings
-        self._plotter.add_mesh(
+        actor = self._plotter.add_mesh(
             pv_mesh,
             show_edges=self.state.show_edges,
             opacity=self.state.opacity,
             scalars=scalars,
-            color="white" if scalars is None else None,
+            color="dodgerblue"
+            if use_face_sides
+            else ("white" if scalars is None else None),
             cmap=cmap,
-            show_scalar_bar=scalars is not None,
-            scalar_bar_args={"title": scalar_bar_title} if scalar_bar_title else None,
+            show_scalar_bar=scalars is not None and not use_face_sides,
+            scalar_bar_args=scalar_bar_args,
             smooth_shading=self.state.smooth_shading,
             pbr=False,
             metallic=0.0,
@@ -121,8 +161,38 @@ class ViewerMixin:
             specular_power=30,
         )
 
+        # Apply backface coloring for face sides visualization
+        if use_face_sides and actor is not None:
+            import vtk
+
+            back_prop = vtk.vtkProperty()
+            back_prop.SetColor(1.0, 0.3, 0.3)  # Red for back faces (inward)
+            back_prop.SetOpacity(self.state.opacity)
+            actor.SetBackfaceProperty(back_prop)
+
+            # Add legend for face orientation (bottom right, stacked)
+            self._plotter.add_text(
+                "Outward",
+                position=(0.85, 0.08),
+                font_size=10,
+                color="dodgerblue",
+                name="face_legend_out",
+                viewport=True,
+            )
+            self._plotter.add_text(
+                "Inward",
+                position=(0.85, 0.03),
+                font_size=10,
+                color=(1.0, 0.3, 0.3),
+                name="face_legend_in",
+                viewport=True,
+            )
+
         self._visualize_constraints()
         self._plotter.enable_lightkit()
+
+        # Add axes with theme-aware colors
+        self._add_axes_with_theme(is_dark)
 
         if reset_camera:
             self._setup_camera_for_mesh(pv_mesh)
@@ -154,7 +224,7 @@ class ViewerMixin:
                     quality_measure="scaled_jacobian",
                 )
                 pv_mesh.cell_data["scaled_jacobian"] = pv_mesh_quality.cell_data[
-                    "CellQuality"
+                    "scaled_jacobian"
                 ]
                 scalars = "scaled_jacobian"
             except Exception:
@@ -179,12 +249,23 @@ class ViewerMixin:
             except Exception:
                 logger.debug("Could not compute area/volume scalars")
 
-        elif show_scalar == "face_orientation":
-            scalars = self._compute_face_orientation(pv_mesh)
+        elif show_scalar == "edge_length":
+            try:
+                edge_lengths = self._compute_edge_lengths_per_cell(pv_mesh)
+                if edge_lengths is not None:
+                    pv_mesh.cell_data["edge_length"] = edge_lengths
+                    scalars = "edge_length"
+            except Exception:
+                logger.debug("Could not compute edge length scalars")
 
         elif show_scalar == "refs":
             if "refs" in pv_mesh.cell_data:
                 scalars = "refs"
+
+        elif show_scalar == "boundary_refs":
+            # For tetrahedral meshes, visualize boundary triangle refs
+            # This is handled specially in _update_viewer
+            scalars = "boundary_refs"
 
         elif show_scalar.startswith("user_"):
             scalars = self._compute_user_scalars(pv_mesh, show_scalar[5:])
@@ -220,53 +301,6 @@ class ViewerMixin:
         else:
             return field_name
 
-    def _compute_face_orientation(self, pv_mesh) -> str | None:
-        """Compute face orientation for visualization (like Blender's blue/red overlay).
-
-        Shows whether faces are consistently oriented:
-        - Blue (positive): face normal points outward from mesh centroid
-        - Red (negative): face normal points inward toward mesh centroid
-
-        This helps identify flipped/inconsistent triangles in a surface mesh.
-        """
-        try:
-            # Get face normals (compute if not present)
-            if "Normals" not in pv_mesh.cell_data:
-                pv_mesh = pv_mesh.compute_normals(
-                    cell_normals=True,
-                    point_normals=False,
-                    inplace=False,
-                )
-
-            face_normals = pv_mesh.cell_data.get("Normals")
-            if face_normals is None:
-                return None
-
-            # Compute face centers
-            face_centers = pv_mesh.cell_centers().points
-
-            # Compute mesh centroid
-            centroid = pv_mesh.center
-
-            # Vector from centroid to each face center
-            centroid_to_face = face_centers - centroid
-
-            # Dot product: positive = outward facing, negative = inward facing
-            # Normalize to get values in [-1, 1] range
-            dot_products = np.sum(face_normals * centroid_to_face, axis=1)
-
-            # Normalize by the magnitude of centroid_to_face to get cosine of angle
-            magnitudes = np.linalg.norm(centroid_to_face, axis=1)
-            magnitudes[magnitudes == 0] = 1  # Avoid division by zero
-            orientation = dot_products / magnitudes
-
-            pv_mesh.cell_data["face_orientation"] = orientation
-        except Exception:
-            logger.debug("Could not compute face orientation")
-            return None
-        else:
-            return "face_orientation"
-
     def _get_colormap_settings(
         self,
         scalars: str | None,
@@ -280,8 +314,9 @@ class ViewerMixin:
         colormap_map = {
             "quality": ("RdYlGn", "In-Radius Ratio"),
             "pv_quality": ("RdYlGn", "Scaled Jacobian"),
-            "face_orientation": ("bwr", "Face Orientation"),  # blue=outward, red=inward
+            "edge_length": ("viridis", "Edge Length"),
             "refs": ("tab10", "Reference"),
+            "boundary_refs": ("tab10", "Boundary Ref"),
             "area_volume": ("viridis", "Area" if scalars == "Area" else "Volume"),
         }
 
@@ -335,6 +370,25 @@ class ViewerMixin:
             self._plotter.disable_parallel_projection()
             self.state.current_view = "isometric"
             self.state.parallel_projection = False
+
+    def _add_axes_with_theme(self, is_dark: bool) -> None:
+        """Add axes widget with theme-aware colors."""
+        if self._plotter is None:
+            return
+
+        # Set axes label colors based on theme
+        text_color = "white" if is_dark else "black"
+
+        # Add axes with custom colors
+        self._plotter.add_axes(
+            xlabel="X",
+            ylabel="Y",
+            zlabel="Z",
+            color=text_color,
+            x_color="red",
+            y_color="green",
+            z_color="blue",
+        )
 
     def _visualize_constraints(self) -> None:
         """Visualize sizing constraints on the plotter."""
@@ -407,3 +461,127 @@ class ViewerMixin:
                     style="wireframe",
                     line_width=1,
                 )
+
+    def _get_boundary_surface_with_refs(self, mesh=None):
+        """Extract boundary surface from tetrahedral mesh with boundary refs.
+
+        Parameters
+        ----------
+        mesh : Mesh, optional
+            The mesh to extract from. Defaults to self._mesh.
+
+        Returns
+        -------
+        pv.PolyData or None
+            PolyData mesh of the boundary triangles colored by their refs.
+
+        """
+        if mesh is None:
+            mesh = self._mesh
+        if mesh is None:
+            return None
+
+        try:
+            # Get boundary triangles and their refs from the mesh
+            triangles, refs = mesh.get_triangles_with_refs()
+            vertices = mesh.get_vertices()
+
+            if len(triangles) == 0:
+                return None
+
+            # Create PolyData from boundary triangles
+            faces = np.column_stack(
+                [
+                    np.full(len(triangles), 3, dtype=np.int64),
+                    triangles,
+                ],
+            ).ravel()
+
+            boundary_mesh = pv.PolyData(vertices, faces)
+
+            # Add refs as cell data for coloring
+            boundary_mesh.cell_data["boundary_refs"] = refs
+
+        except Exception:
+            logger.debug("Could not extract boundary surface with refs")
+            return None
+
+        return boundary_mesh
+
+    def _compute_edge_lengths_per_cell(self, pv_mesh) -> np.ndarray | None:
+        """Compute average edge length per cell for visualization.
+
+        Returns an array of average edge lengths, one per cell.
+        """
+        points = np.array(pv_mesh.points)
+
+        if pv_mesh.n_cells == 0:
+            return None
+
+        # Handle UnstructuredGrid (tetrahedra)
+        if hasattr(pv_mesh, "cells_dict") and pv.CellType.TETRA in pv_mesh.cells_dict:
+            tets = pv_mesh.cells_dict[pv.CellType.TETRA]
+            v0, v1, v2, v3 = (points[tets[:, i]] for i in range(4))
+
+            # 6 edges per tetrahedron
+            e01 = np.linalg.norm(v1 - v0, axis=1)
+            e02 = np.linalg.norm(v2 - v0, axis=1)
+            e03 = np.linalg.norm(v3 - v0, axis=1)
+            e12 = np.linalg.norm(v2 - v1, axis=1)
+            e13 = np.linalg.norm(v3 - v1, axis=1)
+            e23 = np.linalg.norm(v3 - v2, axis=1)
+
+            return (e01 + e02 + e03 + e12 + e13 + e23) / 6
+
+        # Handle PolyData (triangles)
+        if hasattr(pv_mesh, "is_all_triangles") and pv_mesh.is_all_triangles:
+            faces = pv_mesh.faces.reshape(-1, 4)[:, 1:4]
+            v0, v1, v2 = points[faces[:, 0]], points[faces[:, 1]], points[faces[:, 2]]
+
+            # 3 edges per triangle
+            e01 = np.linalg.norm(v1 - v0, axis=1)
+            e12 = np.linalg.norm(v2 - v1, axis=1)
+            e20 = np.linalg.norm(v0 - v2, axis=1)
+
+            return (e01 + e12 + e20) / 3
+
+        return None
+
+    def _compute_all_edge_lengths(self, pv_mesh) -> np.ndarray | None:
+        """Compute all edge lengths in the mesh for statistics.
+
+        Returns an array of all edge lengths (with duplicates for shared edges).
+        """
+        points = np.array(pv_mesh.points)
+
+        if pv_mesh.n_cells == 0:
+            return None
+
+        # Handle UnstructuredGrid (tetrahedra)
+        if hasattr(pv_mesh, "cells_dict") and pv.CellType.TETRA in pv_mesh.cells_dict:
+            tets = pv_mesh.cells_dict[pv.CellType.TETRA]
+            v0, v1, v2, v3 = (points[tets[:, i]] for i in range(4))
+
+            edges = [
+                np.linalg.norm(v1 - v0, axis=1),
+                np.linalg.norm(v2 - v0, axis=1),
+                np.linalg.norm(v3 - v0, axis=1),
+                np.linalg.norm(v2 - v1, axis=1),
+                np.linalg.norm(v3 - v1, axis=1),
+                np.linalg.norm(v3 - v2, axis=1),
+            ]
+            return np.concatenate(edges)
+
+        # Handle PolyData (triangles)
+        if hasattr(pv_mesh, "is_all_triangles") and pv_mesh.is_all_triangles:
+            faces = pv_mesh.faces.reshape(-1, 4)[:, 1:4]
+            v0, v1, v2 = points[faces[:, 0]], points[faces[:, 1]], points[faces[:, 2]]
+
+            edges = [
+                np.linalg.norm(v1 - v0, axis=1),
+                np.linalg.norm(v2 - v1, axis=1),
+                np.linalg.norm(v0 - v2, axis=1),
+            ]
+            return np.concatenate(edges)
+
+        return None
