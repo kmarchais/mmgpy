@@ -771,3 +771,40 @@ class TestDefaultScalarFieldOptions:
             opt.get("value") for opt in DEFAULT_SCALAR_FIELD_OPTIONS if "value" in opt
         ]
         assert "refs" in values
+
+
+class TestDefaultState:
+    """Tests for DEFAULT_STATE configuration."""
+
+    def test_contains_viewer_settings(self):
+        """Test that viewer settings are present."""
+        from mmgpy.ui.utils import DEFAULT_STATE
+
+        assert "show_edges" in DEFAULT_STATE
+        assert "show_scalar" in DEFAULT_STATE
+        assert "opacity" in DEFAULT_STATE
+        assert "smooth_shading" in DEFAULT_STATE
+
+    def test_contains_original_mesh_settings(self):
+        """Test that original mesh toggle settings are present."""
+        from mmgpy.ui.utils import DEFAULT_STATE
+
+        assert "show_original_mesh" in DEFAULT_STATE
+        assert DEFAULT_STATE["show_original_mesh"] is False
+        assert "has_original_mesh" in DEFAULT_STATE
+        assert DEFAULT_STATE["has_original_mesh"] is False
+
+    def test_contains_slice_settings(self):
+        """Test that slice view settings are present."""
+        from mmgpy.ui.utils import DEFAULT_STATE
+
+        assert "slice_enabled" in DEFAULT_STATE
+        assert "slice_axis" in DEFAULT_STATE
+        assert "slice_threshold" in DEFAULT_STATE
+
+    def test_contains_theme_setting(self):
+        """Test that theme setting is present."""
+        from mmgpy.ui.utils import DEFAULT_STATE
+
+        assert "theme_name" in DEFAULT_STATE
+        assert DEFAULT_STATE["theme_name"] in ("light", "dark")

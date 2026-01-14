@@ -691,6 +691,47 @@ class TestReadMeditNative:
             with pytest.raises(ValueError, match="Cannot determine mesh kind"):
                 read(filepath)
 
+    def test_read_medit_triangles_before_tetrahedra(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test mesh with Triangles before Tetrahedra is detected as tetrahedral.
+
+        This tests the fix for island.mesh-like files where boundary triangles
+        appear before tetrahedra in the file, but the mesh should still be
+        detected as tetrahedral (not triangular_surface).
+        """
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mixed.mesh"
+            # Create boundary triangles from tetrahedra faces
+            boundary_triangles = np.array(
+                [[0, 1, 2], [0, 1, 3], [1, 2, 3], [0, 2, 3]],
+                dtype=np.int32,
+            )
+            with filepath.open("w") as f:
+                f.write("MeshVersionFormatted 2\n")
+                f.write("Dimension 3\n")
+                # Vertices
+                f.write(f"Vertices\n{len(tetra_vertices)}\n")
+                for v in tetra_vertices:
+                    f.write(f"{v[0]} {v[1]} {v[2]} 0\n")
+                # Triangles BEFORE Tetrahedra (like island.mesh)
+                f.write(f"Triangles\n{len(boundary_triangles)}\n")
+                for t in boundary_triangles:
+                    f.write(f"{t[0] + 1} {t[1] + 1} {t[2] + 1} 1\n")
+                # Tetrahedra
+                f.write(f"Tetrahedra\n{len(tetra_cells)}\n")
+                for t in tetra_cells:
+                    f.write(f"{t[0] + 1} {t[1] + 1} {t[2] + 1} {t[3] + 1} 0\n")
+                f.write("End\n")
+
+            mesh = read(filepath)
+
+            # Should be detected as tetrahedral, not triangular_surface
+            assert mesh.kind == MeshKind.TETRAHEDRAL
+            assert len(mesh.get_tetrahedra()) == len(tetra_cells)
+
 
 # Module export test
 
