@@ -599,6 +599,18 @@ class TestComputePresetValues:
         assert values.get("optim") is True
         assert values.get("noinsert") is True
 
+    def test_default_preset(self):
+        """Test default preset clears all size parameters."""
+        values = compute_preset_values("default", 10.0)
+
+        # Default preset should clear all size parameters to None
+        assert values.get("hsiz") is None
+        assert values.get("hmin") is None
+        assert values.get("hmax") is None
+        assert values.get("hausd") is None
+        assert values.get("hgrad") is None
+        assert values.get("ar") is None
+
     def test_unknown_preset(self):
         """Test unknown preset returns empty dict."""
         values = compute_preset_values("unknown", 10.0)
