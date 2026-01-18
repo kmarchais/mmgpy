@@ -57,15 +57,15 @@ wheel.packages = ["src/mmgpy"]
 sdist.include = ["CMakeLists.txt", "src/*", "extern/*", "scripts/*"]
 sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 
-# Scripts entry points for development installs
+# Scripts entry points - wrappers that find and run native MMG executables.
+# Native executables (mmg3d_O3, mmg2d_O3, mmgs_O3) are installed to mmgpy/bin/
+# and symlinked to venv/bin/ by CMake. These wrapper entry points provide
+# shorter command names (mmg3d, mmg2d, mmgs) and the unified 'mmg' command.
 [project.scripts]
 mmg = "mmgpy:_run_mmg"
 mmg2d = "mmgpy:_run_mmg2d"
-mmg2d_O3 = "mmgpy:_run_mmg2d"
 mmg3d = "mmgpy:_run_mmg3d"
-mmg3d_O3 = "mmgpy:_run_mmg3d"
 mmgs = "mmgpy:_run_mmgs"
-mmgs_O3 = "mmgpy:_run_mmgs"
 mmgpy-ui = "mmgpy.ui.__main__:main"
 
 [project.entry-points."mmgpy.ui"]
@@ -84,6 +84,7 @@ ui = [
 
 [dependency-groups]
 dev = [
+    "build>=1.4.0",
     "imageio>=2.37.2",
     "mypy>=1.19.1",
     "pre-commit>=4.0.1",
