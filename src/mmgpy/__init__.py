@@ -38,7 +38,7 @@ from ._mmgpy import (  # type: ignore[attr-defined]
 
 def _run_mmg2d() -> None:  # pragma: no cover
     """Run the mmg2d_O3 executable."""
-    # Find the executable in site-packages for installed package
+    # Find the executable in site-packages/mmgpy/bin for installed package
     site_packages_list = site.getsitepackages()
     # On Windows, prefer the actual site-packages over the venv root
     if sys.platform == "win32" and len(site_packages_list) > 1:
@@ -46,9 +46,9 @@ def _run_mmg2d() -> None:  # pragma: no cover
     else:
         site_packages = Path(site_packages_list[0])
 
-    scripts_dir = "bin"  # Always use bin for the actual MMG executables
     exe_name = "mmg2d_O3.exe" if sys.platform == "win32" else "mmg2d_O3"
-    exe_path = site_packages / scripts_dir / exe_name
+    # Primary location: mmgpy/bin (for wheel installs)
+    exe_path = site_packages / "mmgpy" / "bin" / exe_name
 
     if exe_path.exists():
         subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
@@ -65,9 +65,9 @@ def _run_mmg3d() -> None:  # pragma: no cover
     else:
         site_packages = Path(site_packages_list[0])
 
-    scripts_dir = "bin"
     exe_name = "mmg3d_O3.exe" if sys.platform == "win32" else "mmg3d_O3"
-    exe_path = site_packages / scripts_dir / exe_name
+    # Primary location: mmgpy/bin (for wheel installs)
+    exe_path = site_packages / "mmgpy" / "bin" / exe_name
 
     if exe_path.exists():
         subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
@@ -84,9 +84,9 @@ def _run_mmgs() -> None:  # pragma: no cover
     else:
         site_packages = Path(site_packages_list[0])
 
-    scripts_dir = "bin"
     exe_name = "mmgs_O3.exe" if sys.platform == "win32" else "mmgs_O3"
-    exe_path = site_packages / scripts_dir / exe_name
+    # Primary location: mmgpy/bin (for wheel installs)
+    exe_path = site_packages / "mmgpy" / "bin" / exe_name
 
     if exe_path.exists():
         subprocess.run([str(exe_path), *sys.argv[1:]], check=False)

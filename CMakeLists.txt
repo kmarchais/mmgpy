@@ -178,9 +178,13 @@ endif()
 
 # Handle installation of executables if not skipped
 if(NOT MMGPY_SKIP_EXECUTABLES)
-    # For development installs, install to site-packages/bin and create symlinks
-    # For wheel builds, install to site-packages/bin
-    set(SCRIPTS_DIR "bin")
+    # Install executables to mmgpy/bin/ so they're included in the wheel
+    # This location:
+    # 1. Gets included in the wheel (part of the package directory)
+    # 2. Has simple RPATH (../lib points to mmgpy/lib)
+    # 3. Works for both wheel and dev installs
+    set(SCRIPTS_DIR "mmgpy/bin")
+    message(STATUS "Installing executables to ${SCRIPTS_DIR}")
 
     # Check if executables exist and install them
     # Use file-based installation since target existence varies
@@ -207,7 +211,7 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
         PATTERN "genheader" EXCLUDE
     )
 
-    # Set RPATH for MMG executables (bin/ -> mmgpy/lib/)
+    # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/)
     if(UNIX)
             if(APPLE)
                 set(RPATH_PREFIX "@loader_path")
@@ -218,7 +222,7 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
             install(CODE "
                 set(EXEC_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
                 file(GLOB EXECS \"\${EXEC_DIR}/mmg*\")
-                set(LIB_RPATH \"${RPATH_PREFIX}/../mmgpy/lib\")
+                set(LIB_RPATH \"${RPATH_PREFIX}/../lib\")
 
                 foreach(exec \${EXECS})
                     if(EXISTS \"\${exec}\")
@@ -275,8 +279,8 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
 
-            if(EXISTS \"\${SITE_PACKAGES_DIR}/bin\" AND EXISTS \"\${VENV_BIN_DIR}\")
-                file(GLOB SITE_EXECS \"\${SITE_PACKAGES_DIR}/bin/mmg*\")
+            if(EXISTS \"\${SITE_PACKAGES_DIR}/mmgpy/bin\" AND EXISTS \"\${VENV_BIN_DIR}\")
+                file(GLOB SITE_EXECS \"\${SITE_PACKAGES_DIR}/mmgpy/bin/mmg*\")
                 foreach(exec \${SITE_EXECS})
                     get_filename_component(exec_name \"\${exec}\" NAME)
                     set(symlink_path \"\${VENV_BIN_DIR}/\${exec_name}\")
