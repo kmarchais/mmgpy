@@ -262,8 +262,7 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
             ")
     endif()
 
-    # For development installs, create symlinks in the virtual environment
-    # We always create symlinks for easier access during development
+    # For development installs, create symlinks (Unix) or copies (Windows) in the venv
     install(CODE "
             # Find the Python site-packages directory where executables are installed
             execute_process(
@@ -272,9 +271,9 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
 
-            # Find virtual environment bin directory
+            # Find virtual environment bin directory (bin on Unix, Scripts on Windows)
             execute_process(
-                COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; print(os.path.join(sys.prefix, 'bin'))\"
+                COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; bin_name = 'Scripts' if sys.platform == 'win32' else 'bin'; print(os.path.join(sys.prefix, bin_name))\"
                 OUTPUT_VARIABLE VENV_BIN_DIR
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
@@ -283,23 +282,27 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                 file(GLOB SITE_EXECS \"\${SITE_PACKAGES_DIR}/mmgpy/bin/mmg*\")
                 foreach(exec \${SITE_EXECS})
                     get_filename_component(exec_name \"\${exec}\" NAME)
-                    set(symlink_path \"\${VENV_BIN_DIR}/\${exec_name}\")
+                    set(target_path \"\${VENV_BIN_DIR}/\${exec_name}\")
 
-                    # Remove existing symlink if it exists
-                    if(EXISTS \"\${symlink_path}\")
-                        file(REMOVE \"\${symlink_path}\")
+                    # Remove existing file if it exists
+                    if(EXISTS \"\${target_path}\")
+                        file(REMOVE \"\${target_path}\")
                     endif()
 
-                    # Create symlink
-                    execute_process(
-                        COMMAND ln -sf \"\${exec}\" \"\${symlink_path}\"
-                        RESULT_VARIABLE symlink_result
-                    )
-
-                    if(symlink_result EQUAL 0)
-                        message(STATUS \"Created symlink: \${symlink_path} -> \${exec}\")
+                    # On Windows, copy the file; on Unix, create symlink
+                    if(WIN32)
+                        file(COPY \"\${exec}\" DESTINATION \"\${VENV_BIN_DIR}\")
+                        message(STATUS \"Copied: \${exec} -> \${target_path}\")
                     else()
-                        message(WARNING \"Failed to create symlink: \${symlink_path}\")
+                        execute_process(
+                            COMMAND ln -sf \"\${exec}\" \"\${target_path}\"
+                            RESULT_VARIABLE symlink_result
+                        )
+                        if(symlink_result EQUAL 0)
+                            message(STATUS \"Created symlink: \${target_path} -> \${exec}\")
+                        else()
+                            message(WARNING \"Failed to create symlink: \${target_path}\")
+                        endif()
                     endif()
                 endforeach()
             endif()
