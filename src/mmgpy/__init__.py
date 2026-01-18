@@ -78,6 +78,21 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
         return str(venv_bin)
 
+    # For editable installs, check the scikit-build-core build directory
+    # The build directory is typically at the project root (parent of src/)
+    package_dir = Path(__file__).parent
+    if "src" in str(package_dir):
+        # Editable install - look in build directory
+        project_root = package_dir.parent.parent  # src/mmgpy -> src -> project_root
+        build_dir = project_root / "build"
+        if build_dir.exists():
+            # Search for executable in any build subdirectory
+            for build_subdir in build_dir.iterdir():
+                if build_subdir.is_dir():
+                    exe_path = build_subdir / "mmgpy" / "bin" / exe_name
+                    if exe_path.exists():
+                        return str(exe_path)
+
     return None
 
 
