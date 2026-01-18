@@ -5,6 +5,9 @@ on:
     - cron: "0 0 * * 0" # Weekly on Sunday at midnight UTC
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  issues: write
+
 jobs:
   check-versions:
     runs-on: ubuntu-latest
@@ -45,23 +48,34 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # VTK builds use tags like "VTK-9.5.2-shared", extract version
-          LATEST=$(gh api repos/sanguinariojoe/vtk-builds/releases/latest --jq '.tag_name' | sed 's/VTK-\([0-9.]*\)-.*/\1/')
+          # Get stable VTK versions from official repo (filter out RCs)
+          LATEST=$(gh api repos/Kitware/VTK/tags --jq '.[].name' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | tr -d 'v' | sort -V | tail -n1)
           echo "version=$LATEST" >> $GITHUB_OUTPUT
           echo "Latest VTK version: $LATEST"
 
       - name: Check for updates
         id: check
         run: |
+          # Function to compare semantic versions (returns 0 if $1 < $2)
+          version_lt() {
+            [ "$(printf '%s\n%s' "$1" "$2" | sort -V | head -n1)" = "$1" ] && [ "$1" != "$2" ]
+          }
+
           UPDATES=""
 
-          if [ "${{ steps.current.outputs.mmg }}" != "${{ steps.mmg-latest.outputs.version }}" ]; then
-            UPDATES="${UPDATES}MMG: ${{ steps.current.outputs.mmg }} -> ${{ steps.mmg-latest.outputs.version }}\n"
+          CURRENT_MMG="${{ steps.current.outputs.mmg }}"
+          LATEST_MMG="${{ steps.mmg-latest.outputs.version }}"
+          if version_lt "$CURRENT_MMG" "$LATEST_MMG"; then
+            UPDATES="${UPDATES}MMG: $CURRENT_MMG -> $LATEST_MMG\n"
             echo "mmg_update=true" >> $GITHUB_OUTPUT
           fi
 
-          if [ "${{ steps.current.outputs.vtk }}" != "${{ steps.vtk-latest.outputs.version }}" ]; then
-            UPDATES="${UPDATES}VTK: ${{ steps.current.outputs.vtk }} -> ${{ steps.vtk-latest.outputs.version }}\n"
+          CURRENT_VTK="${{ steps.current.outputs.vtk }}"
+          LATEST_VTK="${{ steps.vtk-latest.outputs.version }}"
+          if version_lt "$CURRENT_VTK" "$LATEST_VTK"; then
+            UPDATES="${UPDATES}VTK: $CURRENT_VTK -> $LATEST_VTK\n"
             echo "vtk_update=true" >> $GITHUB_OUTPUT
           fi
 
@@ -95,7 +109,7 @@ jobs:
             BODY="${BODY}### VTK\n"
             BODY="${BODY}- Current: \`${{ steps.current.outputs.vtk }}\`\n"
             BODY="${BODY}- Latest: \`${{ steps.vtk-latest.outputs.version }}\`\n"
-            BODY="${BODY}- [Release notes](https://github.com/sanguinariojoe/vtk-builds/releases)\n\n"
+            BODY="${BODY}- [Release notes](https://github.com/Kitware/VTK/releases/tag/v${{ steps.vtk-latest.outputs.version }})\n\n"
           fi
 
           BODY="${BODY}---\n"
