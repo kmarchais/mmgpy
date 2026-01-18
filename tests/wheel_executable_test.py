@@ -178,7 +178,9 @@ class TestPythonEntryPoints:
             check=False,
         )
         # Entry point should either show help (returncode 0) or fail gracefully
-        assert result.returncode == 0 or "not found" in result.stderr.lower()
+        # Error message may be in stdout (rich logger) or stderr
+        combined = (result.stdout + result.stderr).lower()
+        assert result.returncode == 0 or "not found" in combined
 
     def test_mmg2d_entry_point(self) -> None:
         """Test that mmg2d entry point works."""
@@ -189,7 +191,9 @@ class TestPythonEntryPoints:
             timeout=10,
             check=False,
         )
-        assert result.returncode == 0 or "not found" in result.stderr.lower()
+        # Error message may be in stdout (rich logger) or stderr
+        combined = (result.stdout + result.stderr).lower()
+        assert result.returncode == 0 or "not found" in combined
 
     def test_mmgs_entry_point(self) -> None:
         """Test that mmgs entry point works."""
@@ -200,7 +204,9 @@ class TestPythonEntryPoints:
             timeout=10,
             check=False,
         )
-        assert result.returncode == 0 or "not found" in result.stderr.lower()
+        # Error message may be in stdout (rich logger) or stderr
+        combined = (result.stdout + result.stderr).lower()
+        assert result.returncode == 0 or "not found" in combined
 
     def test_mmg_unified_entry_point(self) -> None:
         """Test that unified mmg entry point shows help."""
