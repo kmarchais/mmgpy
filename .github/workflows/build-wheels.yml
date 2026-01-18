@@ -261,7 +261,14 @@ jobs:
   #    https://test.pypi.org/manage/account/publishing/
   #    Add: owner=kmarchais, repo=mmgpy, workflow=build-wheels.yml, environment=testpypi
   publish-to-testpypi:
-    needs: [build-wheels-macos, build-sdist]
+    needs:
+      [
+        build-wheels-linux-x86_64,
+        build-wheels-linux-aarch64,
+        build-wheels-windows,
+        build-wheels-macos,
+        build-sdist,
+      ]
     runs-on: ubuntu-latest
     name: Publish to TestPyPI
     if: github.event_name == 'workflow_dispatch' && inputs.publish_to_testpypi
@@ -292,8 +299,11 @@ jobs:
 
   test-uvx-testpypi:
     needs: publish-to-testpypi
-    runs-on: macos-latest
-    name: Test uvx (macos-latest)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: Test uvx (${{ matrix.os }})
 
     steps:
       - uses: actions/checkout@v4
@@ -356,7 +366,7 @@ jobs:
         run: |
           echo "## TestPyPI Verification Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **OS:** macos-latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **OS:** ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
           echo "- **uvx mmgpy --help:** Passed" >> $GITHUB_STEP_SUMMARY
           echo "- **uvx mmgpy --version:** Passed" >> $GITHUB_STEP_SUMMARY
           echo "- **python -m mmgpy:** Passed" >> $GITHUB_STEP_SUMMARY
