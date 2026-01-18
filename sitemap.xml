@@ -2,90 +2,90 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://kmarchais.github.io/mmgpy/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/changelog/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/io/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/lagrangian/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/mesh-classes/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/metrics/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/options/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/results-validation/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/api/sizing/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/examples/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/getting-started/concepts/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/getting-started/installation/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/getting-started/quickstart/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/reference/cli/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/reference/file-formats/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/reference/mmg-parameters/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/tutorials/adaptive-sizing/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/tutorials/basic-remeshing/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/tutorials/levelset-extraction/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/tutorials/pyvista-integration/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/tutorials/surface-remeshing/</loc>
-         <lastmod>2026-01-14</lastmod>
+         <lastmod>2026-01-18</lastmod>
     </url>
 </urlset>
