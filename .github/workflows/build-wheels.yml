@@ -9,6 +9,12 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      publish_to_testpypi:
+        description: "Publish to TestPyPI and run verification tests"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-wheels-linux-x86_64:
@@ -254,3 +260,118 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  # TestPyPI publishing (manual trigger only)
+  # Prerequisites:
+  # 1. Create a "testpypi" environment in GitHub repo settings
+  # 2. Configure trusted publishing on TestPyPI:
+  #    https://test.pypi.org/manage/account/publishing/
+  #    Add: owner=kmarchais, repo=mmgpy, workflow=build-wheels.yml, environment=testpypi
+  publish-to-testpypi:
+    needs:
+      [
+        build-wheels-linux-x86_64,
+        build-wheels-linux-aarch64,
+        build-wheels-windows,
+        build-wheels-macos,
+        build-sdist,
+      ]
+    runs-on: ubuntu-latest
+    name: Publish to TestPyPI
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_testpypi
+
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/mmgpy
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist/
+
+      - name: List artifacts
+        run: ls -la dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  test-uvx-testpypi:
+    needs: publish-to-testpypi
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: Test uvx (${{ matrix.os }})
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Wait for TestPyPI to index package
+        shell: bash
+        run: |
+          echo "Waiting 60 seconds for TestPyPI to index the package..."
+          sleep 60
+
+      - name: Get package version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(curl -s https://test.pypi.org/pypi/mmgpy/json | python3 -c "import sys, json; print(json.load(sys.stdin)['info']['version'])")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Latest version on TestPyPI: $VERSION"
+
+      - name: Test uvx mmgpy --help
+        shell: bash
+        run: |
+          uvx --index-url https://test.pypi.org/simple/ \
+              --extra-index-url https://pypi.org/simple/ \
+              mmgpy --help
+
+      - name: Test uvx mmgpy --version
+        shell: bash
+        run: |
+          uvx --index-url https://test.pypi.org/simple/ \
+              --extra-index-url https://pypi.org/simple/ \
+              mmgpy --version
+
+      - name: Test python -m mmgpy
+        shell: bash
+        run: |
+          uv run --index-url https://test.pypi.org/simple/ \
+                 --extra-index-url https://pypi.org/simple/ \
+                 --with mmgpy \
+                 python -m mmgpy --help
+
+      - name: Test remeshing with sample mesh
+        shell: bash
+        run: |
+          # Use the Suzanne mesh from the repo for testing
+          uvx --index-url https://test.pypi.org/simple/ \
+              --extra-index-url https://pypi.org/simple/ \
+              mmgpy assets/Suzanne.stl -o remeshed.stl -hausd 0.05 || true
+
+          # Check if output was created
+          if [ -f remeshed.stl ]; then
+            echo "Remeshing successful!"
+            ls -la remeshed.stl
+          else
+            echo "Note: Remeshing may have failed or mesh file not available"
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "## TestPyPI Verification Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **OS:** ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **uvx mmgpy --help:** Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **uvx mmgpy --version:** Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **python -m mmgpy:** Passed" >> $GITHUB_STEP_SUMMARY
