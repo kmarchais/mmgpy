@@ -264,13 +264,6 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
 
     # For development installs, create symlinks (Unix) or copies (Windows) in the venv
     install(CODE "
-            # Find the Python site-packages directory where executables are installed
-            execute_process(
-                COMMAND \"\${Python_EXECUTABLE}\" -c \"import site; print(site.getsitepackages()[0])\"
-                OUTPUT_VARIABLE SITE_PACKAGES_DIR
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-
             # Find virtual environment bin directory (bin on Unix, Scripts on Windows)
             execute_process(
                 COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; bin_name = 'Scripts' if sys.platform == 'win32' else 'bin'; print(os.path.join(sys.prefix, bin_name))\"
@@ -278,9 +271,13 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
 
-            if(EXISTS \"\${SITE_PACKAGES_DIR}/mmgpy/bin\" AND EXISTS \"\${VENV_BIN_DIR}\")
-                file(GLOB SITE_EXECS \"\${SITE_PACKAGES_DIR}/mmgpy/bin/mmg*\")
-                foreach(exec \${SITE_EXECS})
+            # For editable installs, executables are in CMAKE_INSTALL_PREFIX/mmgpy/bin
+            # For wheel installs, they go to site-packages/mmgpy/bin
+            set(EXEC_SOURCE_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
+
+            if(EXISTS \"\${EXEC_SOURCE_DIR}\" AND EXISTS \"\${VENV_BIN_DIR}\")
+                file(GLOB SOURCE_EXECS \"\${EXEC_SOURCE_DIR}/mmg*\")
+                foreach(exec \${SOURCE_EXECS})
                     get_filename_component(exec_name \"\${exec}\" NAME)
                     set(target_path \"\${VENV_BIN_DIR}/\${exec_name}\")
 
@@ -305,6 +302,8 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                         endif()
                     endif()
                 endforeach()
+            else()
+                message(STATUS \"Skipping venv bin symlinks: source=\${EXEC_SOURCE_DIR} venv=\${VENV_BIN_DIR}\")
             endif()
         ")
 

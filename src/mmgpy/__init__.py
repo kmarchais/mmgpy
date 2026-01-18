@@ -37,7 +37,7 @@ from ._mmgpy import (  # type: ignore[attr-defined]
 
 
 def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
-    """Find an MMG executable in mmgpy/bin.
+    """Find an MMG executable in mmgpy/bin or venv bin directory.
 
     Note: We do NOT use shutil.which() because it would find the Python
     entry point scripts in venv/bin/, causing infinite recursion.
@@ -67,6 +67,16 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     exe_path = site_packages / "mmgpy" / "bin" / exe_name
     if exe_path.exists():
         return str(exe_path)
+
+    # Check venv bin/Scripts directory (executables copied there by CMake)
+    # This is the fallback for editable installs where CMake copies executables
+    venv_bin_name = "Scripts" if sys.platform == "win32" else "bin"
+    venv_bin = Path(sys.prefix) / venv_bin_name / exe_name
+    # Only use if it's an actual executable (not a Python entry point script)
+    # Native executables are typically larger than 1KB (Python scripts are ~300 bytes)
+    min_native_exe_size = 1024
+    if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
+        return str(venv_bin)
 
     return None
 
