@@ -349,6 +349,8 @@ jobs:
       - name: Test python -m mmgpy
         shell: bash
         run: |
+          # Run from /tmp to avoid uv detecting local pyproject.toml
+          cd /tmp
           uv run --python 3.12 \
                  --index-url https://test.pypi.org/simple/ \
                  --extra-index-url https://pypi.org/simple/ \
