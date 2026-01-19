@@ -92,7 +92,7 @@ mmgpy/
 
 ### Python
 
-- **Formatter**: Ruff (runs automatically via pre-commit)
+- **Formatter**: Ruff (runs automatically via prek)
 - **Linter**: Ruff with nearly all rules enabled
 - **Type hints**: Required for all public functions
 - **Docstrings**: NumPy style
