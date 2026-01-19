@@ -11,7 +11,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mmgpy"
-version = "0.5.0.dev3"
+version = "0.5.0.dev4"
 description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -62,11 +62,11 @@ sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 # and symlinked to venv/bin/ by CMake. These wrapper entry points provide
 # shorter command names (mmg3d, mmg2d, mmgs) and the unified 'mmg' command.
 [project.scripts]
+mmgpy = "mmgpy:_run_mmg"
 mmg = "mmgpy:_run_mmg"
 mmg2d = "mmgpy:_run_mmg2d"
 mmg3d = "mmgpy:_run_mmg3d"
 mmgs = "mmgpy:_run_mmgs"
-mmgpy-ui = "mmgpy.ui.__main__:main"
 
 [project.entry-points."mmgpy.ui"]
 ui = "mmgpy.ui:run_ui"

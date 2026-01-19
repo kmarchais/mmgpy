@@ -5,7 +5,7 @@ import mmgpy
 
 def test_version() -> None:
     """Test that the version is correct."""
-    assert mmgpy.__version__ == "0.5.0.dev3"
+    assert mmgpy.__version__ == "0.5.0.dev4"
 
 
 def test_mmg_version() -> None:
