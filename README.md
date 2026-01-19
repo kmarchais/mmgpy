@@ -18,18 +18,35 @@ mesh.save("output.vtk")
 
 ![Mechanical piece remeshing](assets/mechanical_piece_remeshing.png)
 
+## Try It
+
+No installation needed — run directly with [uvx](https://docs.astral.sh/uv/):
+
+```bash
+# Remesh a mesh file
+uvx mmgpy input.stl -o output.mesh -hmax 0.1
+
+# Launch the interactive UI
+uvx --from "mmgpy[ui]" mmgpy-ui
+```
+
 ## Installation
 
 ```bash
 pip install mmgpy
+
+# With UI support
+pip install "mmgpy[ui]"
 ```
 
 Using [uv](https://docs.astral.sh/uv/)?
 
 ```bash
-uv pip install mmgpy   # install in current environment
-uv add mmgpy           # add to project dependencies
-uv tool install mmgpy  # install mmg, mmg2d, mmg3d, mmgs globally
+uv add mmgpy                 # add to project dependencies
+uv pip install mmgpy         # install in current environment
+uv pip install "mmgpy[ui]"   # install with UI support
+uv tool install mmgpy        # install CLI tools globally
+uv tool install "mmgpy[ui]"  # install CLI tools + UI globally
 ```
 
 ## Features
