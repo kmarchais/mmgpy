@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import platform
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -11,6 +10,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
+import mmgpy
 from mmgpy import mmgs
 
 if TYPE_CHECKING:
@@ -66,10 +66,14 @@ def generated_meshes(
         options=mesh_params,
     )
 
+    # Find the executable in mmgpy/bin/
+    exe_path = mmgpy._find_mmg_executable("mmgs_O3")
+    if exe_path is None:
+        pytest.skip("mmgs_O3 executable not found in mmgpy/bin/")
+
     # Generate reference mesh using executable
-    exe: str = "mmgs_O3.exe" if platform.system() == "Windows" else "mmgs_O3"
     command: list[str] = [
-        exe,
+        exe_path,
         "-hausd",
         str(mesh_params["hausd"]),
         "-in",

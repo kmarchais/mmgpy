@@ -78,3 +78,52 @@ tests/
 ## Ruff Configuration Notes
 
 All rules enabled except INP001. Per-file exceptions exist in pyproject.toml for tests (S101, T201, SLF001) and **init**.py (S603, E402, C901 for subprocess/lazy loading patterns).
+
+## UI Development
+
+The interface is built with **trame** (PyVista + Vuetify 3). Main file: `src/mmgpy/ui/app.py`
+
+### Running the UI
+
+```bash
+# Start UI as desktop app (default)
+uv run python -m mmgpy.ui
+
+# Run in browser instead
+uv run python -m mmgpy.ui --browser
+
+# For development: use fixed port + --server to avoid opening new tabs
+uv run python -m mmgpy.ui --browser --port 8080 --server
+
+# With debug mode
+uv run python -m mmgpy.ui --browser --port 8080 --server --debug
+```
+
+### Development Workflow
+
+**IMPORTANT:** Do NOT run the UI from Claude's background processes - it doesn't work reliably. The user should run it directly from their terminal:
+
+```bash
+uv run python -m mmgpy.ui --browser --port 8080 --server
+```
+
+When debugging the UI:
+
+1. **User runs the server** in their terminal (not Claude)
+2. **Use a fixed port** (`--port 8080`) so the URL stays the same after restarts
+3. **Use `--server`** to prevent opening new browser tabs on each restart
+4. After code changes: user kills and restarts the server, then reloads the browser
+
+### Trame/Vuetify Patterns
+
+- **State binding**: `v_model=("state_var",)` - tuple with state variable name
+- **Unique items for VSelect**: Each dropdown needs unique state name for items: `items=("unique_name", [...])`
+- **Callbacks**: `@self.state.change("var1", "var2")` for reactive updates
+- **Triggers**: `self.server.trigger("name")(func)` + `click="trigger('name')"`
+- **VSelect groups**: Use `{"type": "subheader", "title": "..."}` and `{"type": "divider"}` for separators
+
+### Quality Metrics
+
+- **In-Radius Ratio** (MMG): `quality = area / sum(edge²)` for triangles, `volume / (sum(edge²))^(3/2)` for tetrahedra
+- **Scaled Jacobian** (PyVista/VTK): `pv_mesh.cell_quality(quality_measure="scaled_jacobian")`
+- Both normalize to 1.0 for equilateral elements
