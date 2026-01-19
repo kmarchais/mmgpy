@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import platform
 import subprocess
 from pathlib import Path
 
@@ -10,6 +9,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
+import mmgpy
 from mmgpy import mmg3d
 
 _3D = 3  # Constant for 3D mesh dimensionality
@@ -51,22 +51,14 @@ def generated_meshes(
         options=mesh_params,
     )
 
-    # Add debugging for CI - run RPATH fix before executing
-    if platform.system() == "Darwin":
-        try:
-            import mmgpy
-
-            mmgpy._fix_rpath()
-        except Exception:
-            print(
-                "Failed to fix RPATH for MMG3D executable, "
-                "this may cause issues on macOS CI.",
-            )
+    # Find the executable in mmgpy/bin/
+    exe_path = mmgpy._find_mmg_executable("mmg3d_O3")
+    if exe_path is None:
+        pytest.skip("mmg3d_O3 executable not found in mmgpy/bin/")
 
     # Generate reference mesh using executable
-    exe: str = "mmg3d_O3.exe" if platform.system() == "Windows" else "mmg3d_O3"
     command: list[str] = [
-        exe,
+        exe_path,
         "-in",
         str(input_mesh),
         "-out",

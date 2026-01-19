@@ -36,9 +36,27 @@ from ._mmgpy import (  # type: ignore[attr-defined]
 )
 
 
-def _run_mmg2d() -> None:  # pragma: no cover
-    """Run the mmg2d_O3 executable."""
-    # Find the executable in site-packages/mmgpy/bin for installed package
+def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
+    """Find an MMG executable in mmgpy/bin or venv bin directory.
+
+    Note: We do NOT use shutil.which() because it would find the Python
+    entry point scripts in venv/bin/, causing infinite recursion.
+
+    Args:
+        base_name: Base name of executable (e.g., "mmg3d_O3")
+
+    Returns:
+        Full path to executable, or None if not found
+
+    """
+    exe_name = f"{base_name}.exe" if sys.platform == "win32" else base_name
+
+    # Check mmgpy/bin relative to this package (works for wheel installs)
+    package_bin = Path(__file__).parent / "bin" / exe_name
+    if package_bin.exists():
+        return str(package_bin)
+
+    # Fall back to mmgpy/bin in site-packages (for editable installs)
     site_packages_list = site.getsitepackages()
     # On Windows, prefer the actual site-packages over the venv root
     if sys.platform == "win32" and len(site_packages_list) > 1:
@@ -46,52 +64,65 @@ def _run_mmg2d() -> None:  # pragma: no cover
     else:
         site_packages = Path(site_packages_list[0])
 
-    exe_name = "mmg2d_O3.exe" if sys.platform == "win32" else "mmg2d_O3"
-    # Primary location: mmgpy/bin (for wheel installs)
     exe_path = site_packages / "mmgpy" / "bin" / exe_name
-
     if exe_path.exists():
-        subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
+        return str(exe_path)
+
+    # Check venv bin/Scripts directory (executables copied there by CMake)
+    # This is the fallback for editable installs where CMake copies executables
+    venv_bin_name = "Scripts" if sys.platform == "win32" else "bin"
+    venv_bin = Path(sys.prefix) / venv_bin_name / exe_name
+    # Only use if it's an actual executable (not a Python entry point script)
+    # Native executables are typically larger than 1KB (Python scripts are ~300 bytes)
+    min_native_exe_size = 1024
+    if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
+        return str(venv_bin)
+
+    # For editable installs, check the scikit-build-core build directory
+    # The build directory is typically at the project root (parent of src/)
+    package_dir = Path(__file__).parent
+    if "src" in str(package_dir):
+        # Editable install - look in build directory
+        project_root = package_dir.parent.parent  # src/mmgpy -> src -> project_root
+        build_dir = project_root / "build"
+        if build_dir.exists():
+            # Search for executable in any build subdirectory
+            for build_subdir in build_dir.iterdir():
+                if build_subdir.is_dir():
+                    exe_path = build_subdir / "mmgpy" / "bin" / exe_name
+                    if exe_path.exists():
+                        return str(exe_path)
+
+    return None
+
+
+def _run_mmg2d() -> None:  # pragma: no cover
+    """Run the mmg2d_O3 executable."""
+    exe_path = _find_mmg_executable("mmg2d_O3")
+    if exe_path:
+        subprocess.run([exe_path, *sys.argv[1:]], check=False)
     else:
-        _logger.error("mmg2d_O3 executable not found at %s", exe_path)
+        _logger.error("mmg2d_O3 executable not found in PATH or mmgpy/bin")
         sys.exit(1)
 
 
 def _run_mmg3d() -> None:  # pragma: no cover
     """Run the mmg3d_O3 executable."""
-    site_packages_list = site.getsitepackages()
-    if sys.platform == "win32" and len(site_packages_list) > 1:
-        site_packages = Path(site_packages_list[1])
+    exe_path = _find_mmg_executable("mmg3d_O3")
+    if exe_path:
+        subprocess.run([exe_path, *sys.argv[1:]], check=False)
     else:
-        site_packages = Path(site_packages_list[0])
-
-    exe_name = "mmg3d_O3.exe" if sys.platform == "win32" else "mmg3d_O3"
-    # Primary location: mmgpy/bin (for wheel installs)
-    exe_path = site_packages / "mmgpy" / "bin" / exe_name
-
-    if exe_path.exists():
-        subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
-    else:
-        _logger.error("mmg3d_O3 executable not found at %s", exe_path)
+        _logger.error("mmg3d_O3 executable not found in PATH or mmgpy/bin")
         sys.exit(1)
 
 
 def _run_mmgs() -> None:  # pragma: no cover
     """Run the mmgs_O3 executable."""
-    site_packages_list = site.getsitepackages()
-    if sys.platform == "win32" and len(site_packages_list) > 1:
-        site_packages = Path(site_packages_list[1])
+    exe_path = _find_mmg_executable("mmgs_O3")
+    if exe_path:
+        subprocess.run([exe_path, *sys.argv[1:]], check=False)
     else:
-        site_packages = Path(site_packages_list[0])
-
-    exe_name = "mmgs_O3.exe" if sys.platform == "win32" else "mmgs_O3"
-    # Primary location: mmgpy/bin (for wheel installs)
-    exe_path = site_packages / "mmgpy" / "bin" / exe_name
-
-    if exe_path.exists():
-        subprocess.run([str(exe_path), *sys.argv[1:]], check=False)
-    else:
-        _logger.error("mmgs_O3 executable not found at %s", exe_path)
+        _logger.error("mmgs_O3 executable not found in PATH or mmgpy/bin")
         sys.exit(1)
 
 

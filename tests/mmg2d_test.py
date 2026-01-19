@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import platform
 import subprocess
 from pathlib import Path
 
@@ -10,6 +9,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
+import mmgpy
 from mmgpy import mmg2d
 
 _2D = 2
@@ -55,10 +55,14 @@ def generated_meshes(
         options=mesh_params,
     )
 
+    # Find the executable in mmgpy/bin/
+    exe_path = mmgpy._find_mmg_executable("mmg2d_O3")
+    if exe_path is None:
+        pytest.skip("mmg2d_O3 executable not found in mmgpy/bin/")
+
     # Generate reference mesh using executable
-    exe: str = "mmg2d_O3.exe" if platform.system() == "Windows" else "mmg2d_O3"
     command: list[str] = [
-        exe,
+        exe_path,
         "-ar",
         str(ar),
         "-hmax",
