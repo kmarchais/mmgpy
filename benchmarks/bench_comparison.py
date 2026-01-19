@@ -17,8 +17,19 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+import mmgpy
 from mmgpy import Mesh, mmg3d
 from mmgpy._mmgpy import MmgMesh3D
+
+
+def _get_executable_or_skip(name: str) -> str:
+    """Get the full path to an MMG executable, or skip if not found."""
+    exe_path = mmgpy._find_mmg_executable(name)  # noqa: SLF001
+    if exe_path is None:
+        pytest.skip(f"{name} executable not found in mmgpy/bin/")
+    assert exe_path is not None  # for type checker (skip raises)
+    return exe_path
+
 
 if TYPE_CHECKING:
     import numpy as np
@@ -61,13 +72,14 @@ class TestRemesh3DComparison:
         mesh_file: Path,
     ) -> None:
         """Benchmark mmg3d_O3 executable (wall-clock, includes subprocess overhead)."""
+        exe_path = _get_executable_or_skip("mmg3d_O3")
 
         def run_executable() -> None:
             with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
                 output_path = f.name
             subprocess.run(
                 [
-                    "mmg3d_O3",
+                    exe_path,
                     "-in",
                     str(mesh_file),
                     "-out",
@@ -98,12 +110,13 @@ class TestRemesh3DComparison:
         - MMG's "ELAPSED TIME" is measured internally before output is printed
         - API uses verbose=1 to match conditions (output captured)
         """
+        exe_path = _get_executable_or_skip("mmg3d_O3")
         output_path = tmp_path / "output.mesh"
 
         # Run executable with verbose=1 to get internal timing
         result = subprocess.run(
             [
-                "mmg3d_O3",
+                exe_path,
                 "-in",
                 str(mesh_file),
                 "-out",
@@ -272,13 +285,14 @@ class TestAutoDetectionOverhead:
         mesh_file_3d: Path,
     ) -> None:
         """Benchmark mmg3d_O3 executable directly (no auto-detection)."""
+        exe_path = _get_executable_or_skip("mmg3d_O3")
 
         def run_direct() -> None:
             with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
                 output_path = f.name
             subprocess.run(
                 [
-                    "mmg3d_O3",
+                    exe_path,
                     "-in",
                     str(mesh_file_3d),
                     "-out",
@@ -365,6 +379,7 @@ class TestAutoDetectionOverhead:
         mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
         """Report auto-detection overhead for both exe and API."""
+        exe_path = _get_executable_or_skip("mmg3d_O3")
         vertices, tetrahedra = mesh_3d_medium
 
         # Measure executable times
@@ -378,7 +393,7 @@ class TestAutoDetectionOverhead:
             start = time.perf_counter()
             subprocess.run(
                 [
-                    "mmg3d_O3",
+                    exe_path,
                     "-in",
                     str(mesh_file_3d),
                     "-out",
@@ -479,13 +494,14 @@ class TestRemesh2DComparison:
         mesh_file_2d: Path,
     ) -> None:
         """Benchmark mmg2d_O3 executable directly."""
+        exe_path = _get_executable_or_skip("mmg2d_O3")
 
         def run_executable() -> None:
             with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
                 output_path = f.name
             subprocess.run(
                 [
-                    "mmg2d_O3",
+                    exe_path,
                     "-in",
                     str(mesh_file_2d),
                     "-out",
@@ -577,13 +593,14 @@ class TestRemeshSurfaceComparison:
         mesh_file_surface: Path,
     ) -> None:
         """Benchmark mmgs_O3 executable directly."""
+        exe_path = _get_executable_or_skip("mmgs_O3")
 
         def run_executable() -> None:
             with tempfile.NamedTemporaryFile(suffix=".mesh", delete=False) as f:
                 output_path = f.name
             subprocess.run(
                 [
-                    "mmgs_O3",
+                    exe_path,
                     "-in",
                     str(mesh_file_surface),
                     "-out",
