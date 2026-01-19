@@ -328,6 +328,7 @@ jobs:
         run: |
           uvx --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple/ \
+              --from "mmgpy==${{ steps.version.outputs.version }}" \
               mmgpy --help
 
       - name: Test uvx mmgpy --version
@@ -335,6 +336,7 @@ jobs:
         run: |
           uvx --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple/ \
+              --from "mmgpy==${{ steps.version.outputs.version }}" \
               mmgpy --version
 
       - name: Test python -m mmgpy
@@ -342,7 +344,7 @@ jobs:
         run: |
           uv run --index-url https://test.pypi.org/simple/ \
                  --extra-index-url https://pypi.org/simple/ \
-                 --with mmgpy \
+                 --with "mmgpy==${{ steps.version.outputs.version }}" \
                  python -m mmgpy --help
 
       - name: Test remeshing with sample mesh
@@ -351,6 +353,7 @@ jobs:
           # Use the Suzanne mesh from the repo for testing
           uvx --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple/ \
+              --from "mmgpy==${{ steps.version.outputs.version }}" \
               mmgpy assets/Suzanne.stl -o remeshed.stl -hausd 0.05 || true
 
           # Check if output was created
