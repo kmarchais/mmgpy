@@ -307,6 +307,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: astral-sh/setup-uv@v6
 
       - name: Wait for TestPyPI to index package
@@ -326,7 +329,8 @@ jobs:
       - name: Test uvx mmgpy --help
         shell: bash
         run: |
-          uvx --index-url https://test.pypi.org/simple/ \
+          uvx --python 3.12 \
+              --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple/ \
               --index-strategy unsafe-best-match \
               --from "mmgpy==${{ steps.version.outputs.version }}" \
@@ -335,7 +339,8 @@ jobs:
       - name: Test uvx mmgpy --version
         shell: bash
         run: |
-          uvx --index-url https://test.pypi.org/simple/ \
+          uvx --python 3.12 \
+              --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple/ \
               --index-strategy unsafe-best-match \
               --from "mmgpy==${{ steps.version.outputs.version }}" \
@@ -344,7 +349,8 @@ jobs:
       - name: Test python -m mmgpy
         shell: bash
         run: |
-          uv run --index-url https://test.pypi.org/simple/ \
+          uv run --python 3.12 \
+                 --index-url https://test.pypi.org/simple/ \
                  --extra-index-url https://pypi.org/simple/ \
                  --index-strategy unsafe-best-match \
                  --with "mmgpy==${{ steps.version.outputs.version }}" \
@@ -354,7 +360,8 @@ jobs:
         shell: bash
         run: |
           # Use the Suzanne mesh from the repo for testing
-          uvx --index-url https://test.pypi.org/simple/ \
+          uvx --python 3.12 \
+              --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple/ \
               --index-strategy unsafe-best-match \
               --from "mmgpy==${{ steps.version.outputs.version }}" \
