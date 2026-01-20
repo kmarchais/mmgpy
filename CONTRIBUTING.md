@@ -33,7 +33,7 @@ cd mmgpy
 uv sync
 
 # Build C++ extension (editable install)
-uv pip install -e . --no-build-isolation
+uv pip install -e .
 
 # Verify installation
 uv run pytest tests/ -v
@@ -238,16 +238,16 @@ class TestNewFeature:
        def new_method(self, param: float) -> None: ...
    ```
 
-4. **Rebuild**:
+4. **Rebuild**: C++ changes are automatically rebuilt on import. For faster incremental builds:
    ```bash
-   uv pip install -e . --no-build-isolation
+   cmake --build build  # Fast incremental rebuild
    ```
 
 ### Debugging C++ Code
 
 ```bash
 # Build with debug symbols
-CMAKE_BUILD_TYPE=Debug uv pip install -e . --no-build-isolation
+CMAKE_BUILD_TYPE=Debug uv pip install -e .
 
 # Run with gdb
 gdb --args python -c "import mmgpy; ..."
