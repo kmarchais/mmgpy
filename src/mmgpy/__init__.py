@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import site
 import subprocess
 import sys
@@ -34,6 +35,20 @@ from ._mmgpy import (  # type: ignore[attr-defined]
     mmg3d,  # noqa: F401  # Available for advanced users
     mmgs,  # noqa: F401  # Available for advanced users
 )
+
+
+def _get_cli_logger() -> logging.Logger:  # pragma: no cover
+    """Get a simple stdlib logger for CLI entry points.
+
+    Uses plain StreamHandler to avoid Rich console issues on Windows pipes.
+    """
+    logger = logging.getLogger("mmgpy.cli")
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+    return logger
 
 
 def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
@@ -102,7 +117,7 @@ def _run_mmg2d() -> None:  # pragma: no cover
     if exe_path:
         subprocess.run([exe_path, *sys.argv[1:]], check=False)
     else:
-        _logger.error("mmg2d_O3 executable not found in PATH or mmgpy/bin")
+        _get_cli_logger().error("mmg2d_O3 executable not found")
         sys.exit(1)
 
 
@@ -112,7 +127,7 @@ def _run_mmg3d() -> None:  # pragma: no cover
     if exe_path:
         subprocess.run([exe_path, *sys.argv[1:]], check=False)
     else:
-        _logger.error("mmg3d_O3 executable not found in PATH or mmgpy/bin")
+        _get_cli_logger().error("mmg3d_O3 executable not found")
         sys.exit(1)
 
 
@@ -122,7 +137,7 @@ def _run_mmgs() -> None:  # pragma: no cover
     if exe_path:
         subprocess.run([exe_path, *sys.argv[1:]], check=False)
     else:
-        _logger.error("mmgs_O3 executable not found in PATH or mmgpy/bin")
+        _get_cli_logger().error("mmgs_O3 executable not found")
         sys.exit(1)
 
 
@@ -194,15 +209,15 @@ def _run_mmg() -> None:  # pragma: no cover
             break
 
     if input_mesh is None:
-        _logger.error("No input mesh file found in arguments")
+        _get_cli_logger().error("No input mesh file found in arguments")
         sys.exit(1)
 
     # Detect mesh type
     try:
         meshio_mesh = meshio.read(input_mesh)
         mesh_kind = _detect_mesh_kind(meshio_mesh)
-    except Exception:
-        _logger.exception(
+    except Exception:  # noqa: BLE001
+        _get_cli_logger().exception(
             "Failed to detect mesh type from '%s'. "
             "Try using a specific command instead: mmg3d, mmg2d, or mmgs",
             input_mesh,
