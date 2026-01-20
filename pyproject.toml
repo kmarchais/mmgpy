@@ -52,6 +52,10 @@ ui = [
 mmg_version = "5.8.0"
 vtk_version = "9.5.2"
 
+[tool.uv]
+# Allow editable installs without --no-build-isolation flag
+no-build-isolation-package = ["mmgpy"]
+
 [tool.scikit-build]
 # Build configuration
 build.verbose = true
@@ -60,6 +64,10 @@ cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
 cmake.define = { BUILD_TESTING = "OFF", BUILD_SHARED_LIBS = "ON", MMGPY_SKIP_EXECUTABLES = "OFF" }
 
 build-dir = "build"
+
+# Editable install configuration (auto-rebuild when C++ files change)
+editable.rebuild = true
+editable.verbose = false
 
 # Wheel configuration
 wheel.packages = ["src/mmgpy"]
@@ -87,6 +95,11 @@ mmgpy-ui = "mmgpy.ui.__main__:main"
 
 [dependency-groups]
 dev = [
+    # Build dependencies (needed for editable installs without build isolation)
+    "scikit-build-core>=0.11.5",
+    "pybind11>=3.0.0",
+    "numpy>=2.0.2",
+    # Dev tools
     "build>=1.4.0",
     "imageio>=2.37.2",
     "mypy>=1.19.1",
