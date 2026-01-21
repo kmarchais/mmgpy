@@ -79,7 +79,7 @@ def _ensure_executable(path: Path) -> None:  # pragma: no cover
         pass  # Ignore permission errors (e.g., read-only filesystem)
 
 
-def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
+def _find_mmg_executable(base_name: str) -> str | None:  # noqa: C901  # pragma: no cover
     """Find an MMG executable in mmgpy/bin or venv bin directory.
 
     Note: We do NOT use shutil.which() because it would find the Python
@@ -92,7 +92,13 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
         Full path to executable, or None if not found
 
     """
-    exe_name = f"{base_name}.exe" if sys.platform == "win32" else base_name
+    # On Windows, executables are named mmg3d.exe, not mmg3d_O3.exe
+    if sys.platform == "win32":
+        # Strip _O3 suffix for Windows
+        name_without_suffix = base_name.replace("_O3", "")
+        exe_name = f"{name_without_suffix}.exe"
+    else:
+        exe_name = base_name
 
     # Check mmgpy/bin relative to this package (works for wheel installs)
     package_bin = Path(__file__).parent / "bin" / exe_name

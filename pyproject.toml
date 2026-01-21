@@ -309,8 +309,8 @@ repair-wheel-command = "python3 $PWD/.github/scripts/optimize_wheels.py {wheel} 
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
-# Windows test only checks import and mmg --help (pure Python); native exes may not be bundled
-test-command = 'python -c "import mmgpy; print(mmgpy.__version__)" && mmg --help'
+# Windows executables are mmg3d.exe, not mmg3d_O3.exe; MMG returns exit code 2 for help
+test-command = 'python -c "import mmgpy; print(mmgpy.__version__)" && mmg --help && mmg3d -h & mmg2d -h & mmgs -h & exit 0'
 before-all = [
     "powershell -Command \"$VTK_VERSION = $env:VTK_VERSION; $RELEASE_TAG = 'VTK-' + $VTK_VERSION + '-shared'; $VTK_FILE = 'vtk-Windows-x86_64.tar.gz'; $VTK_URL = 'https://github.com/sanguinariojoe/vtk-builds/releases/download/' + $RELEASE_TAG + '/' + $VTK_FILE; Invoke-WebRequest -Uri $VTK_URL -OutFile vtk.tar.gz; New-Item -Path 'C:/vtk' -ItemType Directory -Force; tar -xzf vtk.tar.gz -C C:/vtk --strip-components=1\"",
     "powershell -Command \"New-Item -Path 'C:/lib' -ItemType Directory -Force; New-Item -Path 'C:/bin' -ItemType Directory -Force; New-Item -Path 'C:/include' -ItemType Directory -Force; Move-Item 'C:/vtk/*.lib' 'C:/lib/' -Force; Move-Item 'C:/vtk/*.dll' 'C:/bin/' -Force; Move-Item 'C:/vtk/*.exe' 'C:/bin/' -Force; Move-Item 'C:/vtk/vtk-9.5' 'C:/include/vtk-9.5' -Force\"",
