@@ -79,7 +79,7 @@ def _ensure_executable(path: Path) -> None:  # pragma: no cover
         pass  # Ignore permission errors (e.g., read-only filesystem)
 
 
-def _find_mmg_executable(base_name: str) -> str | None:  # noqa: C901  # pragma: no cover
+def _find_mmg_executable(base_name: str) -> str | None:  # noqa: C901, PLR0912  # pragma: no cover
     """Find an MMG executable in mmgpy/bin or venv bin directory.
 
     Note: We do NOT use shutil.which() because it would find the Python
@@ -119,16 +119,17 @@ def _find_mmg_executable(base_name: str) -> str | None:  # noqa: C901  # pragma:
         _ensure_executable(exe_path)
         return str(exe_path)
 
-    # Check venv bin/Scripts directory (executables copied there by CMake)
-    # This is the fallback for editable installs where CMake copies executables
-    venv_bin_name = "Scripts" if sys.platform == "win32" else "bin"
-    venv_bin = Path(sys.prefix) / venv_bin_name / exe_name
-    # Only use if it's an actual executable (not a Python entry point script)
-    # Native executables are typically larger than 1KB (Python scripts are ~300 bytes)
-    min_native_exe_size = 1024
-    if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
-        _ensure_executable(venv_bin)
-        return str(venv_bin)
+    # Check venv bin directory for editable installs (Linux/macOS only)
+    # On Windows, Scripts/ contains Python entry point launchers with same names
+    # as our commands, which would cause infinite recursion if we ran them.
+    if sys.platform != "win32":
+        venv_bin = Path(sys.prefix) / "bin" / exe_name
+        # Only use if it's an actual executable (not a Python entry point)
+        # Native executables are typically >1KB (scripts are ~300 bytes)
+        min_native_exe_size = 1024
+        if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
+            _ensure_executable(venv_bin)
+            return str(venv_bin)
 
     # For editable installs, check the scikit-build-core build directory
     # The build directory is typically at the project root (parent of src/)
