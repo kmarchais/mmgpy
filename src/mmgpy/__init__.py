@@ -143,11 +143,30 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     return None
 
 
+def _run_executable(exe_path: str, args: list[str]) -> None:  # pragma: no cover
+    """Run an executable with proper output handling for Windows.
+
+    On Windows, subprocess pipes can deadlock when the parent process also
+    captures output. We capture and forward stdout/stderr to avoid this.
+    """
+    result = subprocess.run(
+        [exe_path, *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.stdout:
+        print(result.stdout, end="")  # noqa: T201
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)  # noqa: T201
+    sys.exit(result.returncode)
+
+
 def _run_mmg2d() -> None:  # pragma: no cover
     """Run the mmg2d_O3 executable."""
     exe_path = _find_mmg_executable("mmg2d_O3")
     if exe_path:
-        subprocess.run([exe_path, *sys.argv[1:]], check=False)
+        _run_executable(exe_path, sys.argv[1:])
     else:
         _get_cli_logger().error("mmg2d_O3 executable not found")
         sys.exit(1)
@@ -157,7 +176,7 @@ def _run_mmg3d() -> None:  # pragma: no cover
     """Run the mmg3d_O3 executable."""
     exe_path = _find_mmg_executable("mmg3d_O3")
     if exe_path:
-        subprocess.run([exe_path, *sys.argv[1:]], check=False)
+        _run_executable(exe_path, sys.argv[1:])
     else:
         _get_cli_logger().error("mmg3d_O3 executable not found")
         sys.exit(1)
@@ -167,7 +186,7 @@ def _run_mmgs() -> None:  # pragma: no cover
     """Run the mmgs_O3 executable."""
     exe_path = _find_mmg_executable("mmgs_O3")
     if exe_path:
-        subprocess.run([exe_path, *sys.argv[1:]], check=False)
+        _run_executable(exe_path, sys.argv[1:])
     else:
         _get_cli_logger().error("mmgs_O3 executable not found")
         sys.exit(1)
