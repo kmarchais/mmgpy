@@ -79,7 +79,7 @@ def _ensure_executable(path: Path) -> None:  # pragma: no cover
         pass  # Ignore permission errors (e.g., read-only filesystem)
 
 
-def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
+def _find_mmg_executable(base_name: str) -> str | None:  # noqa: C901, PLR0912  # pragma: no cover
     """Find an MMG executable in mmgpy/bin or venv bin directory.
 
     Note: We do NOT use shutil.which() because it would find the Python
@@ -92,7 +92,13 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
         Full path to executable, or None if not found
 
     """
-    exe_name = f"{base_name}.exe" if sys.platform == "win32" else base_name
+    # On Windows, executables are named mmg3d.exe, not mmg3d_O3.exe
+    if sys.platform == "win32":
+        # Strip _O3 suffix for Windows
+        name_without_suffix = base_name.replace("_O3", "")
+        exe_name = f"{name_without_suffix}.exe"
+    else:
+        exe_name = base_name
 
     # Check mmgpy/bin relative to this package (works for wheel installs)
     package_bin = Path(__file__).parent / "bin" / exe_name
@@ -113,16 +119,17 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
         _ensure_executable(exe_path)
         return str(exe_path)
 
-    # Check venv bin/Scripts directory (executables copied there by CMake)
-    # This is the fallback for editable installs where CMake copies executables
-    venv_bin_name = "Scripts" if sys.platform == "win32" else "bin"
-    venv_bin = Path(sys.prefix) / venv_bin_name / exe_name
-    # Only use if it's an actual executable (not a Python entry point script)
-    # Native executables are typically larger than 1KB (Python scripts are ~300 bytes)
-    min_native_exe_size = 1024
-    if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
-        _ensure_executable(venv_bin)
-        return str(venv_bin)
+    # Check venv bin directory for editable installs (Linux/macOS only)
+    # On Windows, Scripts/ contains Python entry point launchers with same names
+    # as our commands, which would cause infinite recursion if we ran them.
+    if sys.platform != "win32":
+        venv_bin = Path(sys.prefix) / "bin" / exe_name
+        # Only use if it's an actual executable (not a Python entry point)
+        # Native executables are typically >1KB (scripts are ~300 bytes)
+        min_native_exe_size = 1024
+        if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
+            _ensure_executable(venv_bin)
+            return str(venv_bin)
 
     # For editable installs, check the scikit-build-core build directory
     # The build directory is typically at the project root (parent of src/)
@@ -143,11 +150,30 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     return None
 
 
+def _run_executable(exe_path: str, args: list[str]) -> None:  # pragma: no cover
+    """Run an executable with proper output handling for Windows.
+
+    On Windows, subprocess pipes can deadlock when the parent process also
+    captures output. We capture and forward stdout/stderr to avoid this.
+    """
+    result = subprocess.run(
+        [exe_path, *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.stdout:
+        print(result.stdout, end="")  # noqa: T201
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)  # noqa: T201
+    sys.exit(result.returncode)
+
+
 def _run_mmg2d() -> None:  # pragma: no cover
     """Run the mmg2d_O3 executable."""
     exe_path = _find_mmg_executable("mmg2d_O3")
     if exe_path:
-        subprocess.run([exe_path, *sys.argv[1:]], check=False)
+        _run_executable(exe_path, sys.argv[1:])
     else:
         _get_cli_logger().error("mmg2d_O3 executable not found")
         sys.exit(1)
@@ -157,7 +183,7 @@ def _run_mmg3d() -> None:  # pragma: no cover
     """Run the mmg3d_O3 executable."""
     exe_path = _find_mmg_executable("mmg3d_O3")
     if exe_path:
-        subprocess.run([exe_path, *sys.argv[1:]], check=False)
+        _run_executable(exe_path, sys.argv[1:])
     else:
         _get_cli_logger().error("mmg3d_O3 executable not found")
         sys.exit(1)
@@ -167,7 +193,7 @@ def _run_mmgs() -> None:  # pragma: no cover
     """Run the mmgs_O3 executable."""
     exe_path = _find_mmg_executable("mmgs_O3")
     if exe_path:
-        subprocess.run([exe_path, *sys.argv[1:]], check=False)
+        _run_executable(exe_path, sys.argv[1:])
     else:
         _get_cli_logger().error("mmgs_O3 executable not found")
         sys.exit(1)
@@ -179,11 +205,6 @@ def _run_mmg() -> None:  # pragma: no cover
     This unified command automatically detects the mesh type from the input file
     and delegates to the appropriate mmg2d_O3, mmg3d_O3, or mmgs_O3 executable.
     """
-    import meshio  # noqa: PLC0415
-
-    from ._io import _detect_mesh_kind  # noqa: PLC0415
-    from ._mesh import MeshKind  # noqa: PLC0415
-
     args = sys.argv[1:]
     if not args or args[0] in ("-h", "--help"):
         print(  # noqa: T201
@@ -195,13 +216,20 @@ def _run_mmg() -> None:  # pragma: no cover
             "  - mmgs (or mmgs_O3) for 3D surface meshes (triangles in 3D space)\n\n"
             "All standard mmg options are passed through to the executable.\n"
             "Run 'mmg3d -h', 'mmg2d -h', or 'mmgs -h' for specific options.",
+            flush=True,
         )
         sys.exit(0)
 
     if args[0] in ("-v", "--version"):
-        print(f"mmgpy {__version__}")  # noqa: T201
-        print(f"MMG   {MMG_VERSION}")  # noqa: T201
+        print(f"mmgpy {__version__}", flush=True)  # noqa: T201
+        print(f"MMG   {MMG_VERSION}", flush=True)  # noqa: T201
         sys.exit(0)
+
+    # Imports moved here to speed up --help/--version (meshio import is slow)
+    import meshio  # noqa: PLC0415
+
+    from ._io import _detect_mesh_kind  # noqa: PLC0415
+    from ._mesh import MeshKind  # noqa: PLC0415
 
     # MMG flags that take an argument (skip the next arg when detecting input file)
     flags_with_args = {
@@ -242,6 +270,7 @@ def _run_mmg() -> None:  # pragma: no cover
 
     if input_mesh is None:
         _get_cli_logger().error("No input mesh file found in arguments")
+        sys.stderr.flush()  # Ensure error is written before exit on Windows
         sys.exit(1)
 
     # Detect mesh type
@@ -254,6 +283,7 @@ def _run_mmg() -> None:  # pragma: no cover
             "Try using a specific command instead: mmg3d, mmg2d, or mmgs",
             input_mesh,
         )
+        sys.stderr.flush()  # Ensure error is written before exit on Windows
         sys.exit(1)
 
     # Map mesh kind to executable

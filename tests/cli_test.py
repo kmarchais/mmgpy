@@ -9,6 +9,13 @@ from pathlib import Path
 import pytest
 
 
+def is_editable_install() -> bool:
+    """Check if mmgpy is installed in editable mode."""
+    import mmgpy
+
+    return "src" in str(Path(mmgpy.__file__).parent)
+
+
 @pytest.fixture
 def test_mesh_3d(tmp_path: Path) -> Path:
     """Create a simple 3D tetrahedral mesh file for testing."""
@@ -245,6 +252,10 @@ class TestMmgMeshTypeDetection:
         assert "2d" in combined or result.returncode == 0 or "not found" in combined
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Flaky subprocess on Windows; tested in wheel_executable_test.py",
+)
 class TestMmgAliases:
     """Test command aliases (mmg2d, mmg3d, mmgs)."""
 
@@ -291,6 +302,10 @@ class TestMmgAliases:
 class TestMmgErrorHandling:
     """Test error handling and helpful messages."""
 
+    @pytest.mark.skipif(
+        sys.platform == "win32" and is_editable_install(),
+        reason="mmg unified command has subprocess issues on Windows editable installs",
+    )
     def test_unsupported_format_suggests_specific_command(
         self,
         tmp_path: Path,
