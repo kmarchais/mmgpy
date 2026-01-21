@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import site
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -51,6 +52,33 @@ def _get_cli_logger() -> logging.Logger:  # pragma: no cover
     return logger
 
 
+def _ensure_executable(path: Path) -> None:  # pragma: no cover
+    """Ensure a file has execute permissions (Unix only).
+
+    On Unix systems, wheel files may lose their execute bit during extraction.
+    This function adds the execute permission for owner/group/others if readable.
+
+    Args:
+        path: Path to the file to make executable
+
+    """
+    if sys.platform == "win32":
+        return  # Windows doesn't use Unix permissions
+
+    try:
+        current_mode = path.stat().st_mode
+        # Add execute permission where read permission exists
+        new_mode = current_mode | (
+            (current_mode & stat.S_IRUSR and stat.S_IXUSR)
+            | (current_mode & stat.S_IRGRP and stat.S_IXGRP)
+            | (current_mode & stat.S_IROTH and stat.S_IXOTH)
+        )
+        if new_mode != current_mode:
+            path.chmod(new_mode)
+    except OSError:
+        pass  # Ignore permission errors (e.g., read-only filesystem)
+
+
 def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     """Find an MMG executable in mmgpy/bin or venv bin directory.
 
@@ -69,6 +97,7 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     # Check mmgpy/bin relative to this package (works for wheel installs)
     package_bin = Path(__file__).parent / "bin" / exe_name
     if package_bin.exists():
+        _ensure_executable(package_bin)
         return str(package_bin)
 
     # Fall back to mmgpy/bin in site-packages (for editable installs)
@@ -81,6 +110,7 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
 
     exe_path = site_packages / "mmgpy" / "bin" / exe_name
     if exe_path.exists():
+        _ensure_executable(exe_path)
         return str(exe_path)
 
     # Check venv bin/Scripts directory (executables copied there by CMake)
@@ -91,6 +121,7 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     # Native executables are typically larger than 1KB (Python scripts are ~300 bytes)
     min_native_exe_size = 1024
     if venv_bin.exists() and venv_bin.stat().st_size > min_native_exe_size:
+        _ensure_executable(venv_bin)
         return str(venv_bin)
 
     # For editable installs, check the scikit-build-core build directory
@@ -106,6 +137,7 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
                 if build_subdir.is_dir():
                     exe_path = build_subdir / "mmgpy" / "bin" / exe_name
                     if exe_path.exists():
+                        _ensure_executable(exe_path)
                         return str(exe_path)
 
     return None
