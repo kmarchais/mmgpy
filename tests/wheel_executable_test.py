@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import platform
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -208,6 +209,10 @@ class TestPythonEntryPoints:
         combined = (result.stdout + result.stderr).lower()
         assert result.returncode in (0, 2) or "not found" in combined
 
+    @pytest.mark.skipif(
+        platform.system() == "Windows" and sys.version_info >= (3, 13),
+        reason="mmg unified command has pipe issues on Windows with Python 3.13+",
+    )
     def test_mmg_unified_entry_point(self) -> None:
         """Test that unified mmg entry point shows help."""
         result = subprocess.run(

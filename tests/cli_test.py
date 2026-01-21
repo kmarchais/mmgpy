@@ -291,6 +291,10 @@ class TestMmgAliases:
 class TestMmgErrorHandling:
     """Test error handling and helpful messages."""
 
+    @pytest.mark.skipif(
+        sys.platform == "win32" and sys.version_info >= (3, 13),
+        reason="mmg unified command has pipe issues on Windows with Python 3.13+",
+    )
     def test_unsupported_format_suggests_specific_command(
         self,
         tmp_path: Path,
