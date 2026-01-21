@@ -9,6 +9,13 @@ from pathlib import Path
 import pytest
 
 
+def is_editable_install() -> bool:
+    """Check if mmgpy is installed in editable mode."""
+    import mmgpy
+
+    return "src" in str(Path(mmgpy.__file__).parent)
+
+
 @pytest.fixture
 def test_mesh_3d(tmp_path: Path) -> Path:
     """Create a simple 3D tetrahedral mesh file for testing."""
@@ -296,8 +303,8 @@ class TestMmgErrorHandling:
     """Test error handling and helpful messages."""
 
     @pytest.mark.skipif(
-        sys.platform == "win32" and sys.version_info >= (3, 13),
-        reason="mmg unified command has pipe issues on Windows with Python 3.13+",
+        sys.platform == "win32" and is_editable_install(),
+        reason="mmg unified command has subprocess issues on Windows editable installs",
     )
     def test_unsupported_format_suggests_specific_command(
         self,

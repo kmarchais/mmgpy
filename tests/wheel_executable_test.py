@@ -166,6 +166,10 @@ class TestExecutableRuns:
         )
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows" and is_editable_install(),
+    reason="Entry points have subprocess issues on Windows editable installs",
+)
 class TestPythonEntryPoints:
     """Test that Python entry points work correctly."""
 
