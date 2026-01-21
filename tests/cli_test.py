@@ -245,6 +245,10 @@ class TestMmgMeshTypeDetection:
         assert "2d" in combined or result.returncode == 0 or "not found" in combined
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Flaky subprocess on Windows; tested in wheel_executable_test.py",
+)
 class TestMmgAliases:
     """Test command aliases (mmg2d, mmg3d, mmgs)."""
 
