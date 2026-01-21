@@ -198,11 +198,6 @@ def _run_mmg() -> None:  # pragma: no cover
     This unified command automatically detects the mesh type from the input file
     and delegates to the appropriate mmg2d_O3, mmg3d_O3, or mmgs_O3 executable.
     """
-    import meshio  # noqa: PLC0415
-
-    from ._io import _detect_mesh_kind  # noqa: PLC0415
-    from ._mesh import MeshKind  # noqa: PLC0415
-
     args = sys.argv[1:]
     if not args or args[0] in ("-h", "--help"):
         print(  # noqa: T201
@@ -214,13 +209,20 @@ def _run_mmg() -> None:  # pragma: no cover
             "  - mmgs (or mmgs_O3) for 3D surface meshes (triangles in 3D space)\n\n"
             "All standard mmg options are passed through to the executable.\n"
             "Run 'mmg3d -h', 'mmg2d -h', or 'mmgs -h' for specific options.",
+            flush=True,
         )
         sys.exit(0)
 
     if args[0] in ("-v", "--version"):
-        print(f"mmgpy {__version__}")  # noqa: T201
-        print(f"MMG   {MMG_VERSION}")  # noqa: T201
+        print(f"mmgpy {__version__}", flush=True)  # noqa: T201
+        print(f"MMG   {MMG_VERSION}", flush=True)  # noqa: T201
         sys.exit(0)
+
+    # Imports moved here to speed up --help/--version (meshio import is slow)
+    import meshio  # noqa: PLC0415
+
+    from ._io import _detect_mesh_kind  # noqa: PLC0415
+    from ._mesh import MeshKind  # noqa: PLC0415
 
     # MMG flags that take an argument (skip the next arg when detecting input file)
     flags_with_args = {
@@ -261,6 +263,7 @@ def _run_mmg() -> None:  # pragma: no cover
 
     if input_mesh is None:
         _get_cli_logger().error("No input mesh file found in arguments")
+        sys.stderr.flush()  # Ensure error is written before exit on Windows
         sys.exit(1)
 
     # Detect mesh type
@@ -273,6 +276,7 @@ def _run_mmg() -> None:  # pragma: no cover
             "Try using a specific command instead: mmg3d, mmg2d, or mmgs",
             input_mesh,
         )
+        sys.stderr.flush()  # Ensure error is written before exit on Windows
         sys.exit(1)
 
     # Map mesh kind to executable
