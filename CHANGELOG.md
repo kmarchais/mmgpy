@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-01-21
+
+### Fixed
+
+- Fix `PermissionError` when running `uvx mmgpy` commands on Linux/macOS ([#174](https://github.com/kmarchais/mmgpy/pull/174))
+
 ## [0.5.1] - 2026-01-20
 
 ### Added
@@ -142,7 +148,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized wheel sizes (under 100MB) for PyPI upload
 - Linux manylinux wheels with proper platform tags
 
-[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/kmarchais/mmgpy/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/kmarchais/mmgpy/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/kmarchais/mmgpy/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kmarchais/mmgpy/compare/v0.3.0...v0.4.0
