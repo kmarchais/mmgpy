@@ -4,7 +4,7 @@
 schema_version = "1.0.0"
 
 id = "mmgpy"
-version = "0.1.0"
+version = "0.6.0"
 name = "MMGpy - Mesh Remeshing"
 tagline = "Powerful mesh remeshing using MMG library"
 maintainer = "Kevin Marchais <kevinmarchais@gmail.com>"
@@ -35,7 +35,7 @@ wheel-path = "./wheels"
 # Dependencies in PEP 508 format (used by blender-extension-builder)
 # mmgpy pulls in numpy, meshio, pyvista, scipy, etc.
 dependencies = [
-    "mmgpy>=0.5.0",
+    "mmgpy>=0.6.0",
 ]
 
 # Platform support

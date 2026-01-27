@@ -33,6 +33,10 @@ if ! command -v bbext &> /dev/null; then
     pip install blender-extension-builder
 fi
 
+# Sync version from pyproject.toml
+echo -e "${YELLOW}Syncing version from pyproject.toml...${NC}"
+python3 sync_version.py
+
 # Parse arguments
 ALL_PLATFORMS=false
 INSTALL=false
