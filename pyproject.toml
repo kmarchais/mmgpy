@@ -259,12 +259,16 @@ ignore = [
     "PLR0912", # many branches in operators
     # Error handling
     "TRY003",  # exception messages are user-facing
+    "TRY300",  # return in try block is fine for scripts
     "EM102",   # f-string in exceptions for user messages
     # Type annotations
     "ANN",     # type annotations not strictly required for Blender addons
     # Code style (readability over compactness)
     "RET504",  # assignment before return for readability
     "PERF401", # for loops clearer than list comprehension in utils
+    # Scripts (sync_version.py)
+    "T201",    # print statements needed for CLI output
+    "D401",    # imperative mood not required for scripts
 ]
 
 [tool.ty.src]

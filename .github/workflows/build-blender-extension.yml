@@ -1,0 +1,149 @@
+# Build Blender Extension for all platforms
+name: Build Blender Extension
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      upload_to_release:
+        description: "Upload to latest release"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-extension:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+          - os: windows-latest
+            platform: windows-x64
+          - os: macos-latest
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.platform }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install blender-extension-builder
+        run: pip install blender-extension-builder
+
+      - name: Sync version from pyproject.toml
+        working-directory: blender_mmgpy
+        run: python sync_version.py
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+          # Strip .devN suffix for Blender manifest
+          CLEAN_VERSION=$(echo "$VERSION" | sed 's/\.dev.*//')
+          echo "version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "Building Blender extension version: $CLEAN_VERSION"
+
+      - name: Build extension for ${{ matrix.platform }}
+        working-directory: blender_mmgpy
+        shell: bash
+        run: |
+          # Build for this specific platform
+          bbext -m blender_manifest.toml --python 3.11
+
+      - name: Rename package with platform suffix
+        working-directory: blender_mmgpy
+        shell: bash
+        run: |
+          # Find the built zip and rename with platform
+          for zip in *.zip; do
+            if [ -f "$zip" ]; then
+              # Remove .zip, add platform, add .zip back
+              newname="${zip%.zip}-${{ matrix.platform }}.zip"
+              mv "$zip" "$newname"
+              echo "Renamed: $zip -> $newname"
+            fi
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-extension-${{ matrix.platform }}
+          path: blender_mmgpy/*.zip
+          retention-days: 30
+
+      - name: Report package info
+        shell: bash
+        run: |
+          echo "## Blender Extension Build (${{ matrix.platform }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------|" >> $GITHUB_STEP_SUMMARY
+          for zip in blender_mmgpy/*.zip; do
+            if [ -f "$zip" ]; then
+              size=$(du -h "$zip" | cut -f1)
+              name=$(basename "$zip")
+              echo "| $name | $size |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+  # Upload all packages to release
+  upload-to-release:
+    needs: build-extension
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.upload_to_release)
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blender-extension-*
+          merge-multiple: true
+          path: extensions/
+
+      - name: List downloaded files
+        run: ls -la extensions/
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: extensions/*.zip
+
+      - name: Upload to latest release (manual trigger)
+        if: github.event_name == 'workflow_dispatch' && inputs.upload_to_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the latest release tag
+          LATEST_RELEASE=$(gh release list --limit 1 --json tagName -q '.[0].tagName' --repo ${{ github.repository }})
+          echo "Uploading to release: $LATEST_RELEASE"
+
+          # Upload each zip file
+          for zip in extensions/*.zip; do
+            if [ -f "$zip" ]; then
+              echo "Uploading: $zip"
+              gh release upload "$LATEST_RELEASE" "$zip" --clobber --repo ${{ github.repository }}
+            fi
+          done
+
+      - name: Summary
+        run: |
+          echo "## Blender Extension Release" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Uploaded packages:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for zip in extensions/*.zip; do
+            if [ -f "$zip" ]; then
+              echo "- $(basename $zip)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
