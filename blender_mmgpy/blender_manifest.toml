@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2026 Kevin Marchais
+# SPDX-License-Identifier: MIT
+
+schema_version = "1.0.0"
+
+id = "mmgpy"
+version = "0.6.0-dev.0"
+name = "MMGpy - Mesh Remeshing"
+tagline = "Powerful mesh remeshing using MMG library"
+maintainer = "Kevin Marchais <kevinmarchais@gmail.com>"
+type = "add-on"
+
+# Blender version compatibility
+blender_version_min = "4.2.0"
+
+# License
+license = ["SPDX:MIT"]
+
+# Website and documentation
+website = "https://github.com/kmarchais/mmgpy"
+
+# Category for the addon
+tags = ["Mesh", "Import-Export"]
+
+# Permissions - we need file access for temp files during remeshing
+[permissions]
+files = "Import/export mesh files for remeshing"
+
+# Python wheel dependencies
+# These will be bundled with the extension
+# Note: mmgpy requires platform-specific wheels due to C++ bindings
+# Use blender-extension-builder with --split-platforms to build for each platform
+wheel-path = "./wheels"
+
+# Dependencies in PEP 508 format (used by blender-extension-builder)
+# mmgpy pulls in numpy, meshio, pyvista, scipy, etc.
+dependencies = [
+    "mmgpy>=0.6.0.dev0",
+]
+
+# Platform support
+# When building with --split-platforms, this creates separate zips
+# platforms = ["windows-x64", "macos-arm64", "linux-x64"]

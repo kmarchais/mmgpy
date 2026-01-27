@@ -241,13 +241,43 @@ ignore = [
     "SIM102",  # nested ifs clearer in samples.py triangulate check
     "T201",    # print used for debug HTML output
 ]
+"blender_mmgpy/**/*.py" = [
+    # Blender addon conventions (class names like MMGPY_OT_remesh)
+    "N801",    # Blender naming convention: ADDON_OT_operator, ADDON_PT_panel
+    "N802",    # Blender naming convention for methods like poll, execute
+    # Blender addon patterns
+    "PLC0415", # imports inside functions (conditional mmgpy import)
+    "BLE001",  # broad exception catching for user error messages
+    "FBT",     # boolean args common in Blender APIs
+    "RUF012",  # mutable class attributes (bl_options is Blender pattern)
+    "TC002",   # bpy imports at runtime required (not just type checking)
+    "ARG002",  # unused self in methods (Blender operator pattern)
+    "PLR2004", # magic values for UI layout
+    "E501",    # long lines in UI strings
+    # Complexity (operators have many conditionals)
+    "C901",    # complex functions in operators
+    "PLR0912", # many branches in operators
+    # Error handling
+    "TRY003",  # exception messages are user-facing
+    "TRY300",  # return in try block is fine for scripts
+    "EM102",   # f-string in exceptions for user messages
+    # Type annotations
+    "ANN",     # type annotations not strictly required for Blender addons
+    # Code style (readability over compactness)
+    "RET504",  # assignment before return for readability
+    "PERF401", # for loops clearer than list comprehension in utils
+    # Scripts (sync_version.py)
+    "T201",    # print statements needed for CLI output
+    "D401",    # imperative mood not required for scripts
+]
 
 [tool.ty.src]
 # Exclude tests, scripts, examples, and certain modules from type checking
 # Progress module uses union types that cause complex type inference issues
 # Interactive module uses PyVista types that have incomplete stubs
 # UI module uses trame which has no type stubs
-exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
+# Blender extension uses bpy property decorators that ty doesn't understand
+exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**", "blender_mmgpy/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time
