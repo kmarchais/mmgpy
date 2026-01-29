@@ -27,8 +27,11 @@ public:
   StderrCapture(const StderrCapture &) = delete;
   StderrCapture &operator=(const StderrCapture &) = delete;
 
-  // Get all captured output
-  std::string get() const;
+  // Get all captured output (stops capture if still active)
+  std::string get();
+
+  // Check if stderr capture failed (e.g., dup/pipe/dup2 failure)
+  bool capture_failed() const;
 
 private:
   void start_capture();
@@ -38,6 +41,7 @@ private:
   int pipe_read_fd;
   int pipe_write_fd;
   bool capturing;
+  bool capture_failed_;
   std::string captured_output;
 
 #ifdef _WIN32

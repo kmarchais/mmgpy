@@ -25,7 +25,7 @@ typedef SSIZE_T ssize_t;
 // StderrCapture implementation
 StderrCapture::StderrCapture()
     : original_stderr_fd(INVALID_FD), pipe_read_fd(INVALID_FD),
-      pipe_write_fd(INVALID_FD), capturing(false) {
+      pipe_write_fd(INVALID_FD), capturing(false), capture_failed_(false) {
   start_capture();
 }
 
@@ -42,12 +42,14 @@ void StderrCapture::start_capture() {
   // Save the original stderr file descriptor
   original_stderr_fd = dup(fileno(stderr));
   if (original_stderr_fd == INVALID_FD) {
-    return; // Silently fail - don't break remeshing if capture fails
+    capture_failed_ = true;
+    return; // Don't break remeshing if capture fails
   }
 
   // Create a pipe
   int pipe_fds[2];
   if (pipe(pipe_fds) != 0) {
+    capture_failed_ = true;
     close(original_stderr_fd);
     original_stderr_fd = INVALID_FD;
     return;
@@ -59,11 +61,15 @@ void StderrCapture::start_capture() {
 // Set the read end to non-blocking to avoid deadlocks
 #ifndef _WIN32
   int flags = fcntl(pipe_read_fd, F_GETFL, 0);
-  fcntl(pipe_read_fd, F_SETFL, flags | O_NONBLOCK);
+  if (flags == -1 || fcntl(pipe_read_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+    capture_failed_ = true;
+    // Continue anyway - non-blocking is a safety measure, not critical
+  }
 #endif
 
   // Redirect stderr to the write end of the pipe
   if (dup2(pipe_write_fd, fileno(stderr)) == INVALID_FD) {
+    capture_failed_ = true;
     close(original_stderr_fd);
     close(pipe_read_fd);
     close(pipe_write_fd);
@@ -85,7 +91,9 @@ void StderrCapture::stop_capture() {
   fflush(stderr);
 
   // Restore original stderr
-  dup2(original_stderr_fd, fileno(stderr));
+  if (dup2(original_stderr_fd, fileno(stderr)) == INVALID_FD) {
+    capture_failed_ = true;
+  }
   close(original_stderr_fd);
   original_stderr_fd = INVALID_FD;
 
@@ -117,14 +125,14 @@ void StderrCapture::stop_capture() {
   capturing = false;
 }
 
-std::string StderrCapture::get() const {
+std::string StderrCapture::get() {
   if (capturing) {
-    // Still capturing - need to stop first to get complete output
-    // But this is const, so we can't modify. Return what we have.
-    return captured_output;
+    stop_capture();
   }
   return captured_output;
 }
+
+bool StderrCapture::capture_failed() const { return capture_failed_; }
 
 // Parse MMG warnings from captured stderr output
 std::vector<std::string> parse_mmg_warnings(const std::string &output) {

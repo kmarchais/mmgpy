@@ -171,6 +171,7 @@ void MmgMesh2D::set_vertices(const py::array_t<double> &vertices,
     MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
     if (!MMG2D_Set_vertex(mesh, vert_ptr[i * 2], vert_ptr[i * 2 + 1], ref,
                           i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set vertex at index " +
                                std::to_string(i));
     }
@@ -205,6 +206,7 @@ void MmgMesh2D::set_triangles(
     MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
     if (!MMG2D_Set_triangle(mesh, tri_ptr[i * 3] + 1, tri_ptr[i * 3 + 1] + 1,
                             tri_ptr[i * 3 + 2] + 1, ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set triangle at index " +
                                std::to_string(i));
     }
@@ -240,6 +242,7 @@ void MmgMesh2D::set_quadrilaterals(
     if (!MMG2D_Set_quadrilateral(
             mesh, quad_ptr[i * 4] + 1, quad_ptr[i * 4 + 1] + 1,
             quad_ptr[i * 4 + 2] + 1, quad_ptr[i * 4 + 3] + 1, ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set quadrilateral at index " +
                                std::to_string(i));
     }
@@ -273,6 +276,7 @@ void MmgMesh2D::set_edges(const py::array_t<int> &edges,
     MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
     if (!MMG2D_Set_edge(mesh, edge_ptr[i * 2] + 1, edge_ptr[i * 2 + 1] + 1, ref,
                         i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set edge at index " +
                                std::to_string(i));
     }
@@ -918,6 +922,11 @@ void MmgMesh2D::cleanup() {
 }
 
 py::dict MmgMesh2D::remesh(const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_mesh_options_2D(mesh, met, options);
@@ -929,18 +938,21 @@ py::dict MmgMesh2D::remesh(const py::dict &options) {
 
   int ret;
   const char *mode_name;
-  if (mesh->info.lag > -1) {
-    ret = MMG2D_mmg2dmov(mesh, met, disp);
-    mode_name = "MMG2D_mmg2dmov (lagrangian motion)";
-  } else if (mesh->info.iso || mesh->info.isosurf) {
-    ret = MMG2D_mmg2dls(mesh, ls, met);
-    mode_name = "MMG2D_mmg2dls (level-set discretization)";
-  } else if (!mesh->nt) {
-    ret = MMG2D_mmg2dmesh(mesh, met);
-    mode_name = "MMG2D_mmg2dmesh (mesh generation from edges)";
-  } else {
-    ret = MMG2D_mmg2dlib(mesh, met);
-    mode_name = "MMG2D_mmg2dlib (standard remeshing)";
+  {
+    py::gil_scoped_release release;
+    if (mesh->info.lag > -1) {
+      ret = MMG2D_mmg2dmov(mesh, met, disp);
+      mode_name = "MMG2D_mmg2dmov (lagrangian motion)";
+    } else if (mesh->info.iso || mesh->info.isosurf) {
+      ret = MMG2D_mmg2dls(mesh, ls, met);
+      mode_name = "MMG2D_mmg2dls (level-set discretization)";
+    } else if (!mesh->nt) {
+      ret = MMG2D_mmg2dmesh(mesh, met);
+      mode_name = "MMG2D_mmg2dmesh (mesh generation from edges)";
+    } else {
+      ret = MMG2D_mmg2dlib(mesh, met);
+      mode_name = "MMG2D_mmg2dlib (standard remeshing)";
+    }
   }
 
   auto end = std::chrono::high_resolution_clock::now();
@@ -961,6 +973,11 @@ py::dict MmgMesh2D::remesh(const py::dict &options) {
 
 py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
                                       const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_field("displacement", displacement);
@@ -972,8 +989,12 @@ py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
 
+  int ret;
   auto start = std::chrono::high_resolution_clock::now();
-  int ret = MMG2D_mmg2dmov(mesh, met, disp);
+  {
+    py::gil_scoped_release release;
+    ret = MMG2D_mmg2dmov(mesh, met, disp);
+  }
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
@@ -993,6 +1014,11 @@ py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
 
 py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
                                     const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_field("levelset", levelset);
@@ -1002,8 +1028,12 @@ py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
 
+  int ret;
   auto start = std::chrono::high_resolution_clock::now();
-  int ret = MMG2D_mmg2dls(mesh, ls, met);
+  {
+    py::gil_scoped_release release;
+    ret = MMG2D_mmg2dls(mesh, ls, met);
+  }
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 

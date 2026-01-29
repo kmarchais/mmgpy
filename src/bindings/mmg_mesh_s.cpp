@@ -211,6 +211,7 @@ void MmgMeshS::set_vertices(const py::array_t<double> &vertices,
     MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
     if (!MMGS_Set_vertex(mesh, vert_ptr[i * 3], vert_ptr[i * 3 + 1],
                          vert_ptr[i * 3 + 2], ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set vertex at index " +
                                std::to_string(i));
     }
@@ -244,6 +245,7 @@ void MmgMeshS::set_triangles(const py::array_t<int> &triangles,
     MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
     if (!MMGS_Set_triangle(mesh, tri_ptr[i * 3] + 1, tri_ptr[i * 3 + 1] + 1,
                            tri_ptr[i * 3 + 2] + 1, ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set triangle at index " +
                                std::to_string(i));
     }
@@ -277,6 +279,7 @@ void MmgMeshS::set_edges(const py::array_t<int> &edges,
     MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
     if (!MMGS_Set_edge(mesh, edge_ptr[i * 2] + 1, edge_ptr[i * 2 + 1] + 1, ref,
                        i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set edge at index " +
                                std::to_string(i));
     }
@@ -855,6 +858,11 @@ void MmgMeshS::cleanup() {
 }
 
 py::dict MmgMeshS::remesh(const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_surface(mesh);
 
   set_mesh_options_surface(mesh, met, options);
@@ -869,12 +877,15 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
   // MMGS only supports standard remeshing and level-set discretization.
   int ret;
   const char *mode_name;
-  if (mesh->info.iso || mesh->info.isosurf) {
-    ret = MMGS_mmgsls(mesh, ls, met);
-    mode_name = "MMGS_mmgsls (level-set discretization)";
-  } else {
-    ret = MMGS_mmgslib(mesh, met);
-    mode_name = "MMGS_mmgslib (standard remeshing)";
+  {
+    py::gil_scoped_release release;
+    if (mesh->info.iso || mesh->info.isosurf) {
+      ret = MMGS_mmgsls(mesh, ls, met);
+      mode_name = "MMGS_mmgsls (level-set discretization)";
+    } else {
+      ret = MMGS_mmgslib(mesh, met);
+      mode_name = "MMGS_mmgslib (standard remeshing)";
+    }
   }
 
   auto end = std::chrono::high_resolution_clock::now();
@@ -895,6 +906,11 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
 
 py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                                    const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_surface(mesh);
 
   set_field("levelset", levelset);
@@ -904,8 +920,12 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
 
+  int ret;
   auto start = std::chrono::high_resolution_clock::now();
-  int ret = MMGS_mmgsls(mesh, ls, met);
+  {
+    py::gil_scoped_release release;
+    ret = MMGS_mmgsls(mesh, ls, met);
+  }
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
