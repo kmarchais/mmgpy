@@ -107,6 +107,8 @@ private:
   int get_mmg_type(SolutionType type) const;
   static std::string get_file_extension(const std::string &filename);
   void cleanup();
+
+  bool corrupted_ = false;
 };
 
 #endif // MMG_MESH_S_HPP

@@ -137,6 +137,7 @@ void MmgMesh::set_vertices_and_elements(const py::array_t<double> &vertices,
   for (MMG5_int i = 0; i < nvert; i++) {
     if (!MMG3D_Set_vertex(mesh, vert_ptr[i * 3], vert_ptr[i * 3 + 1],
                           vert_ptr[i * 3 + 2], 0, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set vertex");
     }
   }
@@ -145,6 +146,7 @@ void MmgMesh::set_vertices_and_elements(const py::array_t<double> &vertices,
     if (!MMG3D_Set_tetrahedron(mesh, elem_ptr[i * 4] + 1,
                                elem_ptr[i * 4 + 1] + 1, elem_ptr[i * 4 + 2] + 1,
                                elem_ptr[i * 4 + 3] + 1, 0, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set tetrahedron");
     }
   }
@@ -405,6 +407,7 @@ void MmgMesh::set_vertices(const py::array_t<double> &vertices,
     MMG5_int ref = refs_ptr ? refs_ptr[i] : 0;
     if (!MMG3D_Set_vertex(mesh, vert_ptr[i * 3], vert_ptr[i * 3 + 1],
                           vert_ptr[i * 3 + 2], ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set vertex at index " +
                                std::to_string(i));
     }
@@ -441,6 +444,7 @@ void MmgMesh::set_tetrahedra(const py::array_t<int> &tetrahedra,
     if (!MMG3D_Set_tetrahedron(mesh, elem_ptr[i * 4] + 1,
                                elem_ptr[i * 4 + 1] + 1, elem_ptr[i * 4 + 2] + 1,
                                elem_ptr[i * 4 + 3] + 1, ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set tetrahedron at index " +
                                std::to_string(i));
     }
@@ -476,6 +480,7 @@ void MmgMesh::set_triangles(const py::array_t<int> &triangles,
     // Convert from 0-based Python indexing to 1-based MMG indexing
     if (!MMG3D_Set_triangle(mesh, tri_ptr[i * 3] + 1, tri_ptr[i * 3 + 1] + 1,
                             tri_ptr[i * 3 + 2] + 1, ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set triangle at index " +
                                std::to_string(i));
     }
@@ -511,6 +516,7 @@ void MmgMesh::set_edges(const py::array_t<int> &edges,
     // Convert from 0-based Python indexing to 1-based MMG indexing
     if (!MMG3D_Set_edge(mesh, edge_ptr[i * 2] + 1, edge_ptr[i * 2 + 1] + 1, ref,
                         i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set edge at index " +
                                std::to_string(i));
     }
@@ -1051,6 +1057,7 @@ void MmgMesh::set_prisms(const py::array_t<int> &prisms,
                          prism_ptr[i * 6 + 2] + 1, prism_ptr[i * 6 + 3] + 1,
                          prism_ptr[i * 6 + 4] + 1, prism_ptr[i * 6 + 5] + 1,
                          ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set prism at index " +
                                std::to_string(i));
     }
@@ -1086,6 +1093,7 @@ void MmgMesh::set_quadrilaterals(
     if (!MMG3D_Set_quadrilateral(
             mesh, quad_ptr[i * 4] + 1, quad_ptr[i * 4 + 1] + 1,
             quad_ptr[i * 4 + 2] + 1, quad_ptr[i * 4 + 3] + 1, ref, i + 1)) {
+      corrupted_ = true;
       throw std::runtime_error("Failed to set quadrilateral at index " +
                                std::to_string(i));
     }
@@ -1220,6 +1228,11 @@ py::tuple MmgMesh::get_tetrahedra_with_refs() const {
 }
 
 py::dict MmgMesh::remesh(const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
   set_mesh_options_3D(mesh, met, options);
@@ -1231,15 +1244,18 @@ py::dict MmgMesh::remesh(const py::dict &options) {
 
   int ret;
   const char *mode_name;
-  if (mesh->info.lag > -1) {
-    ret = MMG3D_mmg3dmov(mesh, met, disp);
-    mode_name = "MMG3D_mmg3dmov (lagrangian motion)";
-  } else if (mesh->info.iso || mesh->info.isosurf) {
-    ret = MMG3D_mmg3dls(mesh, ls, met);
-    mode_name = "MMG3D_mmg3dls (level-set discretization)";
-  } else {
-    ret = MMG3D_mmg3dlib(mesh, met);
-    mode_name = "MMG3D_mmg3dlib (standard remeshing)";
+  {
+    py::gil_scoped_release release;
+    if (mesh->info.lag > -1) {
+      ret = MMG3D_mmg3dmov(mesh, met, disp);
+      mode_name = "MMG3D_mmg3dmov (lagrangian motion)";
+    } else if (mesh->info.iso || mesh->info.isosurf) {
+      ret = MMG3D_mmg3dls(mesh, ls, met);
+      mode_name = "MMG3D_mmg3dls (level-set discretization)";
+    } else {
+      ret = MMG3D_mmg3dlib(mesh, met);
+      mode_name = "MMG3D_mmg3dlib (standard remeshing)";
+    }
   }
 
   auto end = std::chrono::high_resolution_clock::now();
@@ -1260,6 +1276,11 @@ py::dict MmgMesh::remesh(const py::dict &options) {
 
 py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
                                     const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
   set_field("displacement", displacement);
@@ -1270,8 +1291,12 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
 
+  int ret;
   auto start = std::chrono::high_resolution_clock::now();
-  int ret = MMG3D_mmg3dmov(mesh, met, disp);
+  {
+    py::gil_scoped_release release;
+    ret = MMG3D_mmg3dmov(mesh, met, disp);
+  }
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
@@ -1291,6 +1316,11 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
 
 py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
                                   const py::dict &options) {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot remesh: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
   set_field("levelset", levelset);
@@ -1300,8 +1330,12 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
 
+  int ret;
   auto start = std::chrono::high_resolution_clock::now();
-  int ret = MMG3D_mmg3dls(mesh, ls, met);
+  {
+    py::gil_scoped_release release;
+    ret = MMG3D_mmg3dls(mesh, ls, met);
+  }
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
