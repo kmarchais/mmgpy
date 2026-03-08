@@ -18,10 +18,6 @@ build:
       then: bash build.sh
     - if: win
       then: cmd /c bld.bat
-  # MMG shared libraries are installed to $PREFIX/lib; pin so downstream
-  # conda packages that link against them get a compatible mmgpy at runtime.
-  run_exports:
-    - ${{ pin_subpackage('mmgpy', max_pin='x.x') }}
 
 requirements:
   build:
@@ -37,6 +33,10 @@ requirements:
     - pybind11 >=3.0.0
     - numpy >=2.0.2
     - vtk >=9.5,<9.6
+  # MMG shared libraries are installed to $PREFIX/lib; pin so downstream
+  # conda packages that link against them get a compatible mmgpy at runtime.
+  run_exports:
+    - ${{ pin_subpackage('mmgpy', max_pin='x.x') }}
   run:
     - python
     - numpy >=2.0.2
