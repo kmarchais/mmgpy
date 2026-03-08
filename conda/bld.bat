@@ -1,6 +1,10 @@
 @echo on
 
-set CMAKE_ARGS=%CMAKE_ARGS% -DMMGPY_CONDA_BUILD=ON
+cmake -B build %CMAKE_ARGS% -DMMGPY_CONDA_BUILD=ON -GNinja
+if errorlevel 1 exit 1
 
-%PYTHON% -m pip install . -vv --no-deps --no-build-isolation
+cmake --build build
+if errorlevel 1 exit 1
+
+cmake --install build
 if errorlevel 1 exit 1
