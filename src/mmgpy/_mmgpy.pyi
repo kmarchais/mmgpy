@@ -814,6 +814,10 @@ class MmgMesh3D:
         Equivalent to get_field(key).
         """
 
+    @property
+    def is_corrupted(self) -> bool:
+        """Whether the mesh is in a corrupted state due to a failed bulk setter."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -822,6 +826,11 @@ class MmgMesh3D:
         filename : str | Path
             Output file path. Format determined by extension
             (.mesh, .vtk, .vtu).
+
+        Raises
+        ------
+        RuntimeError
+            If the mesh is corrupted.
 
         """
 
@@ -1448,6 +1457,10 @@ class MmgMesh2D:
     def __getitem__(self, key: str) -> NDArray[np.float64]:
         """Get a solution field using dictionary syntax."""
 
+    @property
+    def is_corrupted(self) -> bool:
+        """Whether the mesh is in a corrupted state due to a failed bulk setter."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -1455,6 +1468,11 @@ class MmgMesh2D:
         ----------
         filename : str | Path
             Output file path. Format determined by extension.
+
+        Raises
+        ------
+        RuntimeError
+            If the mesh is corrupted.
 
         """
 
@@ -2003,6 +2021,10 @@ class MmgMeshS:
     def __getitem__(self, key: str) -> NDArray[np.float64]:
         """Get a solution field using dictionary syntax."""
 
+    @property
+    def is_corrupted(self) -> bool:
+        """Whether the mesh is in a corrupted state due to a failed bulk setter."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -2010,6 +2032,11 @@ class MmgMeshS:
         ----------
         filename : str | Path
             Output file path. Format determined by extension.
+
+        Raises
+        ------
+        RuntimeError
+            If the mesh is corrupted.
 
         """
 

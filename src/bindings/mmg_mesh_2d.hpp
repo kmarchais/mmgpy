@@ -93,6 +93,8 @@ public:
   py::dict remesh_levelset(const py::array_t<double> &levelset,
                            const py::dict &options = py::dict());
 
+  bool is_corrupted() const { return corrupted_; }
+
   // Delete copy constructor and assignment operator
   MmgMesh2D(const MmgMesh2D &) = delete;
   MmgMesh2D &operator=(const MmgMesh2D &) = delete;
@@ -115,6 +117,9 @@ private:
   int get_mmg_type(SolutionType type) const;
   static std::string get_file_extension(const std::string &filename);
   void cleanup();
+  void check_not_corrupted(const char *operation) const;
+
+  bool corrupted_ = false;
 };
 
 #endif // MMG_MESH_2D_HPP

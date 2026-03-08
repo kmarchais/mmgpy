@@ -86,6 +86,8 @@ public:
   [[noreturn]] void remesh_lagrangian(const py::array_t<double> &displacement,
                                       const py::dict &options = py::dict());
 
+  bool is_corrupted() const { return corrupted_; }
+
   // Delete copy constructor and assignment operator
   MmgMeshS(const MmgMeshS &) = delete;
   MmgMeshS &operator=(const MmgMeshS &) = delete;
@@ -107,6 +109,9 @@ private:
   int get_mmg_type(SolutionType type) const;
   static std::string get_file_extension(const std::string &filename);
   void cleanup();
+  void check_not_corrupted(const char *operation) const;
+
+  bool corrupted_ = false;
 };
 
 #endif // MMG_MESH_S_HPP
