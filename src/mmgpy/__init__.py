@@ -13,8 +13,6 @@ from ._logging import (
     set_log_level,
 )
 
-_logger = get_logger()
-
 # Version info
 try:
     from . import _version  # type: ignore[attr-defined]
