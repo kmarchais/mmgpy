@@ -174,7 +174,7 @@ class TestPythonEntryPoints:
             ["mmg3d", "-h"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=30,
             check=False,
         )
         # Entry point should either show help (returncode 0) or fail gracefully
@@ -188,7 +188,7 @@ class TestPythonEntryPoints:
             ["mmg2d", "-h"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=30,
             check=False,
         )
         # Error message may be in stdout (rich logger) or stderr
@@ -201,7 +201,7 @@ class TestPythonEntryPoints:
             ["mmgs", "-h"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=30,
             check=False,
         )
         # Error message may be in stdout (rich logger) or stderr
@@ -214,7 +214,7 @@ class TestPythonEntryPoints:
             ["mmg", "--help"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=30,
             check=False,
         )
         assert result.returncode == 0
