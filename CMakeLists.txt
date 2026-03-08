@@ -342,16 +342,16 @@ if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/mmgpy/"
-    DESTINATION "${Python_SITEARCH}/mmgpy"
-    FILES_MATCHING PATTERN "*.py"
-)
-
-install(
-    TARGETS mmgpy
-    LIBRARY DESTINATION "${Python_SITEARCH}/mmgpy"
-)
+# Conda: install Python source files to site-packages.
+# (src/CMakeLists.txt already installs the extension module and _version.py;
+#  for wheel builds, scikit-build-core auto-discovers .py files from src/.)
+if(MMGPY_CONDA_BUILD)
+    install(
+        DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/mmgpy/"
+        DESTINATION "${Python_SITEARCH}/mmgpy"
+        FILES_MATCHING PATTERN "*.py"
+    )
+endif()
 
 message(STATUS "")
 message(STATUS "MMGpy configuration summary:")
