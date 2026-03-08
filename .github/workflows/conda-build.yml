@@ -32,5 +32,5 @@ jobs:
           recipe-path: conda/recipe.yaml
           artifact-name: conda-package-${{ matrix.os }}-py${{ matrix.python-version }}
           build-args: >-
-            --variant-config conda/variants.yaml
+            --variant-config conda/conda_build_config.yaml
             --variant "python=${{ matrix.python-version }}"
