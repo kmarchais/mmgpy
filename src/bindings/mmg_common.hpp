@@ -27,18 +27,20 @@ public:
   StderrCapture(const StderrCapture &) = delete;
   StderrCapture &operator=(const StderrCapture &) = delete;
 
-  // Get all captured output
-  std::string get() const;
+  // Get all captured output (stops capture if still active)
+  std::string get();
 
 private:
   void start_capture();
   void stop_capture();
 
   int original_stderr_fd;
-  int pipe_read_fd;
-  int pipe_write_fd;
+  int temp_fd;
   bool capturing;
   std::string captured_output;
+#ifdef _WIN32
+  std::string temp_filename;
+#endif
 
 #ifdef _WIN32
   static constexpr int INVALID_FD = -1;

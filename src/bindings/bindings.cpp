@@ -138,6 +138,7 @@ PYBIND11_MODULE(_mmgpy, m) {
                        path.attr("__str__")().cast<std::string>())));
              }
            })
+      .def_property_readonly("is_corrupted", &MmgMesh::is_corrupted)
       .def(
           "remesh",
           [](MmgMesh &self, py::kwargs kwargs) {
@@ -264,6 +265,7 @@ PYBIND11_MODULE(_mmgpy, m) {
                        path.attr("__str__")().cast<std::string>())));
              }
            })
+      .def_property_readonly("is_corrupted", &MmgMesh2D::is_corrupted)
       .def(
           "remesh",
           [](MmgMesh2D &self, py::kwargs kwargs) {
@@ -380,6 +382,7 @@ PYBIND11_MODULE(_mmgpy, m) {
                        path.attr("__str__")().cast<std::string>())));
              }
            })
+      .def_property_readonly("is_corrupted", &MmgMeshS::is_corrupted)
       .def(
           "remesh",
           [](MmgMeshS &self, py::kwargs kwargs) {
