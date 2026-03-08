@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-08
+
+### Added
+
+- Conda-forge package support with `rattler-build` recipe ([#179](https://github.com/kmarchais/mmgpy/pull/179))
+- Lightweight CLI module for faster entry point startup ([#179](https://github.com/kmarchais/mmgpy/pull/179))
+
+### Fixed
+
+- Release GIL during remeshing, detect mesh corruption, fix stderr capture ([#177](https://github.com/kmarchais/mmgpy/pull/177))
+
+## [0.5.2] - 2026-01-21
+
+### Fixed
+
+- Set execute permissions on bundled executables for `uvx` installs ([#174](https://github.com/kmarchais/mmgpy/pull/174))
+
 ## [0.5.1] - 2026-01-20
 
 ### Added
@@ -142,7 +159,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized wheel sizes (under 100MB) for PyPI upload
 - Linux manylinux wheels with proper platform tags
 
-[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kmarchais/mmgpy/compare/v0.5.2...v0.6.0
+[0.5.2]: https://github.com/kmarchais/mmgpy/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/kmarchais/mmgpy/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/kmarchais/mmgpy/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kmarchais/mmgpy/compare/v0.3.0...v0.4.0
