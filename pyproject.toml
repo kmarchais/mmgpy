@@ -82,11 +82,11 @@ sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 # and symlinked to venv/bin/ by CMake. These wrapper entry points provide
 # shorter command names (mmg3d, mmg2d, mmgs) and the unified 'mmg' command.
 [project.scripts]
-mmgpy = "mmgpy:_run_mmg"
-mmg = "mmgpy:_run_mmg"
-mmg2d = "mmgpy:_run_mmg2d"
-mmg3d = "mmgpy:_run_mmg3d"
-mmgs = "mmgpy:_run_mmgs"
+mmgpy = "mmgpy._cli:_run_mmg"
+mmg = "mmgpy._cli:_run_mmg"
+mmg2d = "mmgpy._cli:_run_mmg2d"
+mmg3d = "mmgpy._cli:_run_mmg3d"
+mmgs = "mmgpy._cli:_run_mmgs"
 
 [project.entry-points."mmgpy.ui"]
 ui = "mmgpy.ui:run_ui"
@@ -194,11 +194,15 @@ ignore = [
     "T201",    # print statements used for timing reports
 ]
 "src/mmgpy/__init__.py" = [
-    "S603",   # subprocess calls with absolute paths to system tools are safe
-    "E402",   # imports inside functions are intentional for lazy loading
-    "C901",   # executable finder has many fallback paths
+    "E402",   # imports after re-export of _find_mmg_executable
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
+]
+"src/mmgpy/_cli.py" = [
+    "S603",    # subprocess calls with absolute paths to system tools are safe
+    "C901",    # executable finder has many fallback paths
+    "T201",    # print statements for CLI output
+    "PLR0912", # many branches in executable search fallback paths
 ]
 "src/mmgpy/_logging.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency

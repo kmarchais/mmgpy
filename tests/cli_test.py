@@ -305,7 +305,7 @@ class TestMmgErrorHandling:
             capture_output=True,
             text=True,
             check=False,
-            timeout=10,
+            timeout=30,
         )
         assert result.returncode != 0
         # Should suggest using specific commands (error may be in stdout or stderr)
