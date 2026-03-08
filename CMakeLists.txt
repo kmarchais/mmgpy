@@ -37,6 +37,8 @@ set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})
 
 project(mmgpy VERSION ${MMGPY_NUMERIC_VERSION})
 
+option(MMGPY_CONDA_BUILD "Building for conda-forge (skip wheel-specific bundling/RPATH)" OFF)
+
 # Find Python - let scikit-build-core handle it in wheel builds
 if(DEFINED SKBUILD)
     # scikit-build-core provides Python info automatically
@@ -83,7 +85,15 @@ endif()
 add_subdirectory(src)
 
 # Install the MMG libraries to the correct location for each platform
-if(WIN32)
+if(MMGPY_CONDA_BUILD)
+    # Conda: install to standard lib directory (conda manages RPATH)
+    include(GNUInstallDirs)
+    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    )
+elseif(WIN32)
     # On Windows, install DLLs and LIBs right next to the .pyd module
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
         RUNTIME DESTINATION mmgpy  # This is for DLLs
@@ -97,7 +107,8 @@ else() # UNIX
     )
 endif()
 
-# Install VTK libraries if available
+# Install VTK libraries if available (wheel builds only, conda provides VTK)
+if(NOT MMGPY_CONDA_BUILD)
 if(VTK_DIR OR ENV{VTK_DIR})
     message(STATUS "Installing VTK libraries for wheel...")
 
@@ -143,6 +154,7 @@ if(VTK_DIR OR ENV{VTK_DIR})
         message(WARNING "VTK libraries not found for wheel installation. VTK may not work in the built wheel.")
     endif()
 endif()
+endif() # NOT MMGPY_CONDA_BUILD
 
 # RPATH Configuration
 # ===================
@@ -153,7 +165,8 @@ endif()
 #
 # This is handled entirely by CMake; no Python fallback is needed.
 
-# Fix RPATH for MMG libraries on Linux to find VTK libraries
+# Fix RPATH for MMG libraries on Linux to find VTK libraries (wheel builds only)
+if(NOT MMGPY_CONDA_BUILD)
 if(UNIX AND NOT APPLE)
     install(CODE "
         set(MMG_LIB_DIR \"\${CMAKE_INSTALL_PREFIX}/mmgpy/lib\")
@@ -175,6 +188,7 @@ if(UNIX AND NOT APPLE)
         endforeach()
     ")
 endif()
+endif() # NOT MMGPY_CONDA_BUILD
 
 # Handle installation of executables if not skipped
 if(NOT MMGPY_SKIP_EXECUTABLES)
@@ -183,7 +197,12 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
     # 1. Gets included in the wheel (part of the package directory)
     # 2. Has simple RPATH (../lib points to mmgpy/lib)
     # 3. Works for both wheel and dev installs
-    set(SCRIPTS_DIR "mmgpy/bin")
+    if(MMGPY_CONDA_BUILD)
+        include(GNUInstallDirs)
+        set(SCRIPTS_DIR "${CMAKE_INSTALL_BINDIR}")
+    else()
+        set(SCRIPTS_DIR "mmgpy/bin")
+    endif()
     message(STATUS "Installing executables to ${SCRIPTS_DIR}")
 
     # Check if executables exist and install them
@@ -211,7 +230,8 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
         PATTERN "genheader" EXCLUDE
     )
 
-    # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/)
+    # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/) — wheel builds only
+    if(NOT MMGPY_CONDA_BUILD)
     if(UNIX)
             if(APPLE)
                 set(RPATH_PREFIX "@loader_path")
@@ -313,6 +333,7 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
             RUNTIME DESTINATION "${SCRIPTS_DIR}"
         )
     endif()
+    endif() # NOT MMGPY_CONDA_BUILD
 endif()
 
 option(BUILD_TESTING "Build tests" ON)

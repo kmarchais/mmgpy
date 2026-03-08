@@ -80,10 +80,7 @@ def _ensure_executable(path: Path) -> None:  # pragma: no cover
 
 
 def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
-    """Find an MMG executable in mmgpy/bin or venv bin directory.
-
-    Note: We do NOT use shutil.which() because it would find the Python
-    entry point scripts in venv/bin/, causing infinite recursion.
+    """Find an MMG executable in mmgpy/bin, venv bin, or system PATH.
 
     Args:
         base_name: Base name of executable (e.g., "mmg3d_O3")
@@ -139,6 +136,15 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
                     if exe_path.exists():
                         _ensure_executable(exe_path)
                         return str(exe_path)
+
+    # Last resort: check system PATH via shutil.which()
+    # Safe because base_name is e.g. "mmg3d_O3", distinct from the Python
+    # entry point scripts ("mmg3d"), so no recursion risk.
+    import shutil  # noqa: PLC0415
+
+    result = shutil.which(base_name)
+    if result:
+        return result
 
     return None
 

@@ -196,6 +196,7 @@ ignore = [
 "src/mmgpy/__init__.py" = [
     "S603",   # subprocess calls with absolute paths to system tools are safe
     "E402",   # imports inside functions are intentional for lazy loading
+    "C901",   # executable finder has many fallback paths
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
 ]

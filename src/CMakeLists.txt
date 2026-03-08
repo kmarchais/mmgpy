@@ -48,7 +48,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 # For Unix, set the RPATH so the module can find its .so dependencies in a 'lib' subdir
-if(UNIX)
+# Skip for conda builds — conda manages RPATH automatically
+if(UNIX AND NOT MMGPY_CONDA_BUILD)
     if(APPLE)
         set(RPATH_PREFIX "@loader_path")
     else() # Linux
