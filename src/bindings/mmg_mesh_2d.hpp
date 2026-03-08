@@ -117,6 +117,7 @@ private:
   int get_mmg_type(SolutionType type) const;
   static std::string get_file_extension(const std::string &filename);
   void cleanup();
+  void check_not_corrupted(const char *operation) const;
 
   bool corrupted_ = false;
 };

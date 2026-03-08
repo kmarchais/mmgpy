@@ -785,13 +785,17 @@ void MmgMeshS::setitem(const std::string &key,
   set_field(key, value);
 }
 
+void MmgMeshS::check_not_corrupted(const char *operation) const {
+  if (corrupted_) {
+    throw std::runtime_error(std::string("Cannot ") + operation +
+                             ": mesh is in a corrupted state due to a previous "
+                             "bulk setter failure. Create a new mesh object.");
+  }
+}
+
 void MmgMeshS::save(
     const std::variant<std::string, std::filesystem::path> &filename) const {
-  if (corrupted_) {
-    throw std::runtime_error(
-        "Cannot save: mesh is in a corrupted state due to a previous "
-        "bulk setter failure. Create a new mesh object.");
-  }
+  check_not_corrupted("save");
   std::string fname = std::visit(
       [](auto &&arg) -> std::string {
         using T = std::decay_t<decltype(arg)>;
@@ -863,11 +867,7 @@ void MmgMeshS::cleanup() {
 }
 
 py::dict MmgMeshS::remesh(const py::dict &options) {
-  if (corrupted_) {
-    throw std::runtime_error(
-        "Cannot remesh: mesh is in a corrupted state due to a previous "
-        "bulk setter failure. Create a new mesh object.");
-  }
+  check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_surface(mesh);
 
   set_mesh_options_surface(mesh, met, options);
@@ -911,11 +911,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
 
 py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                                    const py::dict &options) {
-  if (corrupted_) {
-    throw std::runtime_error(
-        "Cannot remesh: mesh is in a corrupted state due to a previous "
-        "bulk setter failure. Create a new mesh object.");
-  }
+  check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_surface(mesh);
 
   set_field("levelset", levelset);

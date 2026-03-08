@@ -848,11 +848,7 @@ void MmgMesh2D::setitem(const std::string &key,
 
 void MmgMesh2D::save(
     const std::variant<std::string, std::filesystem::path> &filename) const {
-  if (corrupted_) {
-    throw std::runtime_error(
-        "Cannot save: mesh is in a corrupted state due to a previous "
-        "bulk setter failure. Create a new mesh object.");
-  }
+  check_not_corrupted("save");
   std::string fname = std::visit(
       [](auto &&arg) -> std::string {
         using T = std::decay_t<decltype(arg)>;
@@ -926,12 +922,16 @@ void MmgMesh2D::cleanup() {
   }
 }
 
-py::dict MmgMesh2D::remesh(const py::dict &options) {
+void MmgMesh2D::check_not_corrupted(const char *operation) const {
   if (corrupted_) {
-    throw std::runtime_error(
-        "Cannot remesh: mesh is in a corrupted state due to a previous "
-        "bulk setter failure. Create a new mesh object.");
+    throw std::runtime_error(std::string("Cannot ") + operation +
+                             ": mesh is in a corrupted state due to a previous "
+                             "bulk setter failure. Create a new mesh object.");
   }
+}
+
+py::dict MmgMesh2D::remesh(const py::dict &options) {
+  check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_mesh_options_2D(mesh, met, options);
@@ -978,11 +978,7 @@ py::dict MmgMesh2D::remesh(const py::dict &options) {
 
 py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
                                       const py::dict &options) {
-  if (corrupted_) {
-    throw std::runtime_error(
-        "Cannot remesh: mesh is in a corrupted state due to a previous "
-        "bulk setter failure. Create a new mesh object.");
-  }
+  check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_field("displacement", displacement);
@@ -1019,11 +1015,7 @@ py::dict MmgMesh2D::remesh_lagrangian(const py::array_t<double> &displacement,
 
 py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
                                     const py::dict &options) {
-  if (corrupted_) {
-    throw std::runtime_error(
-        "Cannot remesh: mesh is in a corrupted state due to a previous "
-        "bulk setter failure. Create a new mesh object.");
-  }
+  check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
   set_field("levelset", levelset);

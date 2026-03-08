@@ -8,21 +8,23 @@ import numpy as np
 from mmgpy._mmgpy import MmgMesh3D
 
 
-def test_gil_released_during_remesh(cube_mesh: tuple[np.ndarray, np.ndarray]) -> None:
+def test_gil_released_during_remesh(
+    dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+) -> None:
     """Verify the GIL is released during remeshing.
 
     Runs a remesh in a background thread while the main thread does Python work.
     If the GIL were held during remeshing, the main thread would be blocked
     and unable to increment the counter.
     """
-    vertices, elements = cube_mesh
+    vertices, elements = dense_3d_mesh
     mesh = MmgMesh3D(vertices, elements)
 
     counter = 0
     remesh_done = threading.Event()
 
     def remesh_worker() -> None:
-        mesh.remesh(verbose=False, hmax=0.5)
+        mesh.remesh(verbose=False, hmax=0.05)
         remesh_done.set()
 
     thread = threading.Thread(target=remesh_worker)
