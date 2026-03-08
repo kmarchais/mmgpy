@@ -13,7 +13,7 @@ source:
   - path: ..
   - url: https://github.com/MmgTools/mmg/archive/refs/tags/v${{ mmg_version }}.tar.gz
     sha256: 686eaab84de79c072f3aedf26cd11ced44c84b435d51ce34e016ad203172922f
-    folder: mmg-src
+    target_directory: mmg-src
 
 build:
   number: 0
