@@ -10,22 +10,24 @@
 #include <fcntl.h>
 #include <io.h>
 typedef SSIZE_T ssize_t;
-#define pipe(fds) _pipe(fds, 65536, _O_BINARY)
 #define read _read
 #define write _write
 #define close _close
 #define dup _dup
 #define dup2 _dup2
 #define fileno _fileno
+#define lseek _lseek
 #else
-#include <fcntl.h>
+#include <cstdlib>
 #include <unistd.h>
 #endif
 
-// StderrCapture implementation
+// StderrCapture implementation using temporary files.
+// Unlike pipes, temp files have no buffer limit, so MMG can write
+// any amount of stderr output without blocking (avoiding deadlock
+// when GIL is released and nobody is reading the pipe).
 StderrCapture::StderrCapture()
-    : original_stderr_fd(INVALID_FD), pipe_read_fd(INVALID_FD),
-      pipe_write_fd(INVALID_FD), capturing(false), capture_failed_(false) {
+    : original_stderr_fd(INVALID_FD), temp_fd(INVALID_FD), capturing(false) {
   start_capture();
 }
 
@@ -42,40 +44,52 @@ void StderrCapture::start_capture() {
   // Save the original stderr file descriptor
   original_stderr_fd = dup(fileno(stderr));
   if (original_stderr_fd == INVALID_FD) {
-    capture_failed_ = true;
     return; // Don't break remeshing if capture fails
   }
 
-  // Create a pipe
-  int pipe_fds[2];
-  if (pipe(pipe_fds) != 0) {
-    capture_failed_ = true;
+  // Create a temporary file for capturing stderr
+#ifdef _WIN32
+  // On Windows, use _tempnam + _open for temp file
+  char *tmp = _tempnam(nullptr, "mmg");
+  if (!tmp) {
     close(original_stderr_fd);
     original_stderr_fd = INVALID_FD;
     return;
   }
-
-  pipe_read_fd = pipe_fds[0];
-  pipe_write_fd = pipe_fds[1];
-
-// Set the read end to non-blocking to avoid deadlocks
-#ifndef _WIN32
-  int flags = fcntl(pipe_read_fd, F_GETFL, 0);
-  if (flags == -1 || fcntl(pipe_read_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-    capture_failed_ = true;
-    // Continue anyway - non-blocking is a safety measure, not critical
+  temp_filename = tmp;
+  free(tmp);
+  temp_fd = _open(temp_filename.c_str(), _O_CREAT | _O_RDWR | _O_BINARY,
+                  _S_IREAD | _S_IWRITE);
+  if (temp_fd == INVALID_FD) {
+    temp_filename.clear();
+    close(original_stderr_fd);
+    original_stderr_fd = INVALID_FD;
+    return;
   }
+#else
+  // On POSIX, use mkstemp + immediate unlink (file stays open, no name on fs)
+  char tmpl[] = "/tmp/mmg_stderr_XXXXXX";
+  temp_fd = mkstemp(tmpl);
+  if (temp_fd == INVALID_FD) {
+    close(original_stderr_fd);
+    original_stderr_fd = INVALID_FD;
+    return;
+  }
+  unlink(tmpl);
 #endif
 
-  // Redirect stderr to the write end of the pipe
-  if (dup2(pipe_write_fd, fileno(stderr)) == INVALID_FD) {
-    capture_failed_ = true;
+  // Redirect stderr to the temp file
+  if (dup2(temp_fd, fileno(stderr)) == INVALID_FD) {
     close(original_stderr_fd);
-    close(pipe_read_fd);
-    close(pipe_write_fd);
+    close(temp_fd);
     original_stderr_fd = INVALID_FD;
-    pipe_read_fd = INVALID_FD;
-    pipe_write_fd = INVALID_FD;
+    temp_fd = INVALID_FD;
+#ifdef _WIN32
+    if (!temp_filename.empty()) {
+      _unlink(temp_filename.c_str());
+      temp_filename.clear();
+    }
+#endif
     return;
   }
 
@@ -87,40 +101,32 @@ void StderrCapture::stop_capture() {
     return;
   }
 
-  // Flush stderr to ensure all output is in the pipe
+  // Flush stderr to ensure all output is in the temp file
   fflush(stderr);
 
   // Restore original stderr
-  if (dup2(original_stderr_fd, fileno(stderr)) == INVALID_FD) {
-    capture_failed_ = true;
-  }
+  dup2(original_stderr_fd, fileno(stderr));
   close(original_stderr_fd);
   original_stderr_fd = INVALID_FD;
 
-  // Close the write end so read knows when to stop
-  close(pipe_write_fd);
-  pipe_write_fd = INVALID_FD;
-
-  // Read all available data from the pipe
+  // Read all captured data from the temp file
+  lseek(temp_fd, 0, SEEK_SET);
   char buffer[4096];
   ssize_t bytes_read;
+  while ((bytes_read = read(temp_fd, buffer, sizeof(buffer) - 1)) > 0) {
+    buffer[bytes_read] = '\0';
+    captured_output += buffer;
+  }
+
+  close(temp_fd);
+  temp_fd = INVALID_FD;
 
 #ifdef _WIN32
-  // On Windows, read in a loop until no more data
-  while ((bytes_read = read(pipe_read_fd, buffer, sizeof(buffer) - 1)) > 0) {
-    buffer[bytes_read] = '\0';
-    captured_output += buffer;
-  }
-#else
-  // On POSIX with non-blocking, read until EAGAIN or EOF
-  while ((bytes_read = read(pipe_read_fd, buffer, sizeof(buffer) - 1)) > 0) {
-    buffer[bytes_read] = '\0';
-    captured_output += buffer;
+  if (!temp_filename.empty()) {
+    _unlink(temp_filename.c_str());
+    temp_filename.clear();
   }
 #endif
-
-  close(pipe_read_fd);
-  pipe_read_fd = INVALID_FD;
 
   capturing = false;
 }
@@ -131,8 +137,6 @@ std::string StderrCapture::get() {
   }
   return captured_output;
 }
-
-bool StderrCapture::capture_failed() const { return capture_failed_; }
 
 // Parse MMG warnings from captured stderr output
 std::vector<std::string> parse_mmg_warnings(const std::string &output) {

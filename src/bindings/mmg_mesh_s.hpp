@@ -86,6 +86,8 @@ public:
   [[noreturn]] void remesh_lagrangian(const py::array_t<double> &displacement,
                                       const py::dict &options = py::dict());
 
+  bool is_corrupted() const { return corrupted_; }
+
   // Delete copy constructor and assignment operator
   MmgMeshS(const MmgMeshS &) = delete;
   MmgMeshS &operator=(const MmgMeshS &) = delete;

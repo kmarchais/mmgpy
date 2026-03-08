@@ -848,6 +848,11 @@ void MmgMesh2D::setitem(const std::string &key,
 
 void MmgMesh2D::save(
     const std::variant<std::string, std::filesystem::path> &filename) const {
+  if (corrupted_) {
+    throw std::runtime_error(
+        "Cannot save: mesh is in a corrupted state due to a previous "
+        "bulk setter failure. Create a new mesh object.");
+  }
   std::string fname = std::visit(
       [](auto &&arg) -> std::string {
         using T = std::decay_t<decltype(arg)>;

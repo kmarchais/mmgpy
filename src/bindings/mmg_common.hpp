@@ -30,19 +30,17 @@ public:
   // Get all captured output (stops capture if still active)
   std::string get();
 
-  // Check if stderr capture failed (e.g., dup/pipe/dup2 failure)
-  bool capture_failed() const;
-
 private:
   void start_capture();
   void stop_capture();
 
   int original_stderr_fd;
-  int pipe_read_fd;
-  int pipe_write_fd;
+  int temp_fd;
   bool capturing;
-  bool capture_failed_;
   std::string captured_output;
+#ifdef _WIN32
+  std::string temp_filename;
+#endif
 
 #ifdef _WIN32
   static constexpr int INVALID_FD = -1;

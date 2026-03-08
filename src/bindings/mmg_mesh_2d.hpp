@@ -93,6 +93,8 @@ public:
   py::dict remesh_levelset(const py::array_t<double> &levelset,
                            const py::dict &options = py::dict());
 
+  bool is_corrupted() const { return corrupted_; }
+
   // Delete copy constructor and assignment operator
   MmgMesh2D(const MmgMesh2D &) = delete;
   MmgMesh2D &operator=(const MmgMesh2D &) = delete;
