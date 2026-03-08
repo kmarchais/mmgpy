@@ -37,6 +37,10 @@ set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})
 
 project(mmgpy VERSION ${MMGPY_NUMERIC_VERSION})
 
+option(MMGPY_CONDA_BUILD "Building for conda-forge (skip wheel-specific bundling/RPATH)" OFF)
+
+include(GNUInstallDirs)
+
 # Find Python - let scikit-build-core handle it in wheel builds
 if(DEFINED SKBUILD)
     # scikit-build-core provides Python info automatically
@@ -83,7 +87,14 @@ endif()
 add_subdirectory(src)
 
 # Install the MMG libraries to the correct location for each platform
-if(WIN32)
+if(MMGPY_CONDA_BUILD)
+    # Conda: install to standard paths; shared with the entire conda environment
+    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    )
+elseif(WIN32)
     # On Windows, install DLLs and LIBs right next to the .pyd module
     install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
         RUNTIME DESTINATION mmgpy  # This is for DLLs
@@ -97,50 +108,52 @@ else() # UNIX
     )
 endif()
 
-# Install VTK libraries if available
-if(VTK_DIR OR ENV{VTK_DIR})
-    message(STATUS "Installing VTK libraries for wheel...")
+# Install VTK libraries if available (wheel builds only, conda provides VTK)
+if(NOT MMGPY_CONDA_BUILD)
+    if(VTK_DIR OR ENV{VTK_DIR})
+        message(STATUS "Installing VTK libraries for wheel...")
 
-    # Find VTK library directory
-    # Try common VTK library locations for both macOS and Linux
-    set(VTK_LIB_SEARCH_PATHS
-        "${VTK_DIR}/../../../lib"
-        "${VTK_DIR}/../../../lib64"
-        "${VTK_DIR}/../../lib"
-        "${VTK_DIR}/../../lib64"
-        "${VTK_DIR}/../lib"
-        "${VTK_DIR}/../lib64"
-        "/tmp/vtk/lib"
-        "/tmp/vtk/lib64"
-        "/tmp/lib"
-        "/tmp/lib64"
-    )
+        # Find VTK library directory
+        # Try common VTK library locations for both macOS and Linux
+        set(VTK_LIB_SEARCH_PATHS
+            "${VTK_DIR}/../../../lib"
+            "${VTK_DIR}/../../../lib64"
+            "${VTK_DIR}/../../lib"
+            "${VTK_DIR}/../../lib64"
+            "${VTK_DIR}/../lib"
+            "${VTK_DIR}/../lib64"
+            "/tmp/vtk/lib"
+            "/tmp/vtk/lib64"
+            "/tmp/lib"
+            "/tmp/lib64"
+        )
 
-    foreach(search_path ${VTK_LIB_SEARCH_PATHS})
-        if(EXISTS "${search_path}" AND IS_DIRECTORY "${search_path}")
-            # Search for both .so and .dylib files
-            file(GLOB VTK_LIBS_SO "${search_path}/libvtk*.so*")
-            file(GLOB VTK_LIBS_DYLIB "${search_path}/libvtk*.dylib*")
-            set(VTK_LIBS ${VTK_LIBS_SO} ${VTK_LIBS_DYLIB})
-            if(VTK_LIBS)
-                set(VTK_LIB_DIR "${search_path}")
-                break()
+        foreach(search_path ${VTK_LIB_SEARCH_PATHS})
+            if(EXISTS "${search_path}" AND IS_DIRECTORY "${search_path}")
+                # Search for both .so and .dylib files
+                file(GLOB VTK_LIBS_SO "${search_path}/libvtk*.so*")
+                file(GLOB VTK_LIBS_DYLIB "${search_path}/libvtk*.dylib*")
+                set(VTK_LIBS ${VTK_LIBS_SO} ${VTK_LIBS_DYLIB})
+                if(VTK_LIBS)
+                    set(VTK_LIB_DIR "${search_path}")
+                    break()
+                endif()
             endif()
-        endif()
-    endforeach()
+        endforeach()
 
-    if(VTK_LIB_DIR AND VTK_LIBS)
-        message(STATUS "Found VTK libraries in: ${VTK_LIB_DIR}")
-        list(LENGTH VTK_LIBS VTK_LIBS_COUNT)
-        message(STATUS "Installing ${VTK_LIBS_COUNT} VTK libraries to wheel...")
+        if(VTK_LIB_DIR AND VTK_LIBS)
+            message(STATUS "Found VTK libraries in: ${VTK_LIB_DIR}")
+            list(LENGTH VTK_LIBS VTK_LIBS_COUNT)
+            message(STATUS "Installing ${VTK_LIBS_COUNT} VTK libraries to wheel...")
 
-        if(WIN32)
-            install(FILES ${VTK_LIBS} DESTINATION mmgpy)
+            if(WIN32)
+                install(FILES ${VTK_LIBS} DESTINATION mmgpy)
+            else()
+                install(FILES ${VTK_LIBS} DESTINATION mmgpy/lib)
+            endif()
         else()
-            install(FILES ${VTK_LIBS} DESTINATION mmgpy/lib)
+            message(WARNING "VTK libraries not found for wheel installation. VTK may not work in the built wheel.")
         endif()
-    else()
-        message(WARNING "VTK libraries not found for wheel installation. VTK may not work in the built wheel.")
     endif()
 endif()
 
@@ -153,27 +166,29 @@ endif()
 #
 # This is handled entirely by CMake; no Python fallback is needed.
 
-# Fix RPATH for MMG libraries on Linux to find VTK libraries
-if(UNIX AND NOT APPLE)
-    install(CODE "
-        set(MMG_LIB_DIR \"\${CMAKE_INSTALL_PREFIX}/mmgpy/lib\")
-        file(GLOB MMG_LIBS \"\${MMG_LIB_DIR}/libmmg*.so*\")
-        foreach(mmg_lib \${MMG_LIBS})
-            if(EXISTS \"\${mmg_lib}\")
-                get_filename_component(lib_name \"\${mmg_lib}\" NAME)
-                execute_process(
-                    COMMAND patchelf --set-rpath \"\\\$ORIGIN\" \"\${mmg_lib}\"
-                    ERROR_VARIABLE PATCHELF_ERROR
-                    RESULT_VARIABLE PATCHELF_RESULT
-                )
-                if(PATCHELF_RESULT)
-                    message(WARNING \"Failed to set RPATH for \${lib_name}: \${PATCHELF_ERROR}\")
-                else()
-                    message(STATUS \"Set RPATH for \${lib_name}\")
+# Fix RPATH for MMG libraries on Linux to find VTK libraries (wheel builds only)
+if(NOT MMGPY_CONDA_BUILD)
+    if(UNIX AND NOT APPLE)
+        install(CODE "
+            set(MMG_LIB_DIR \"\${CMAKE_INSTALL_PREFIX}/mmgpy/lib\")
+            file(GLOB MMG_LIBS \"\${MMG_LIB_DIR}/libmmg*.so*\")
+            foreach(mmg_lib \${MMG_LIBS})
+                if(EXISTS \"\${mmg_lib}\")
+                    get_filename_component(lib_name \"\${mmg_lib}\" NAME)
+                    execute_process(
+                        COMMAND patchelf --set-rpath \"\\\$ORIGIN\" \"\${mmg_lib}\"
+                        ERROR_VARIABLE PATCHELF_ERROR
+                        RESULT_VARIABLE PATCHELF_RESULT
+                    )
+                    if(PATCHELF_RESULT)
+                        message(WARNING \"Failed to set RPATH for \${lib_name}: \${PATCHELF_ERROR}\")
+                    else()
+                        message(STATUS \"Set RPATH for \${lib_name}\")
+                    endif()
                 endif()
-            endif()
-        endforeach()
-    ")
+            endforeach()
+        ")
+    endif()
 endif()
 
 # Handle installation of executables if not skipped
@@ -183,7 +198,11 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
     # 1. Gets included in the wheel (part of the package directory)
     # 2. Has simple RPATH (../lib points to mmgpy/lib)
     # 3. Works for both wheel and dev installs
-    set(SCRIPTS_DIR "mmgpy/bin")
+    if(MMGPY_CONDA_BUILD)
+        set(SCRIPTS_DIR "${CMAKE_INSTALL_BINDIR}")
+    else()
+        set(SCRIPTS_DIR "mmgpy/bin")
+    endif()
     message(STATUS "Installing executables to ${SCRIPTS_DIR}")
 
     # Check if executables exist and install them
@@ -211,8 +230,9 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
         PATTERN "genheader" EXCLUDE
     )
 
-    # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/)
-    if(UNIX)
+    # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/) — wheel builds only
+    if(NOT MMGPY_CONDA_BUILD)
+        if(UNIX)
             if(APPLE)
                 set(RPATH_PREFIX "@loader_path")
             else()
@@ -260,10 +280,10 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
                     endif()
                 endforeach()
             ")
-    endif()
+        endif()
 
-    # For development installs, create symlinks (Unix) or copies (Windows) in the venv
-    install(CODE "
+        # For development installs, create symlinks (Unix) or copies (Windows) in the venv
+        install(CODE "
             # Find virtual environment bin directory (bin on Unix, Scripts on Windows)
             execute_process(
                 COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; bin_name = 'Scripts' if sys.platform == 'win32' else 'bin'; print(os.path.join(sys.prefix, bin_name))\"
@@ -307,11 +327,12 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
             endif()
         ")
 
-    # On Windows, also copy the DLLs to the scripts dir for the executables
-    if(WIN32)
-        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-            RUNTIME DESTINATION "${SCRIPTS_DIR}"
-        )
+        # On Windows, also copy the DLLs to the scripts dir for the executables
+        if(WIN32)
+            install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+                RUNTIME DESTINATION "${SCRIPTS_DIR}"
+            )
+        endif()
     endif()
 endif()
 
@@ -321,18 +342,16 @@ if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-include(GNUInstallDirs)
-
-install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/mmgpy/"
-    DESTINATION "${Python_SITEARCH}/mmgpy"
-    FILES_MATCHING PATTERN "*.py"
-)
-
-install(
-    TARGETS mmgpy
-    LIBRARY DESTINATION "${Python_SITEARCH}/mmgpy"
-)
+# Conda: install Python source files to site-packages.
+# (src/CMakeLists.txt already installs the extension module and _version.py;
+#  for wheel builds, scikit-build-core auto-discovers .py files from src/.)
+if(MMGPY_CONDA_BUILD)
+    install(
+        DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/mmgpy/"
+        DESTINATION "${Python_SITEARCH}/mmgpy"
+        FILES_MATCHING PATTERN "*.py"
+    )
+endif()
 
 message(STATUS "")
 message(STATUS "MMGpy configuration summary:")

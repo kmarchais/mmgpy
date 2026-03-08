@@ -48,7 +48,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 # For Unix, set the RPATH so the module can find its .so dependencies in a 'lib' subdir
-if(UNIX)
+# Skip for conda builds — conda manages RPATH automatically
+if(UNIX AND NOT MMGPY_CONDA_BUILD)
     if(APPLE)
         set(RPATH_PREFIX "@loader_path")
     else() # Linux
@@ -60,5 +61,12 @@ if(UNIX)
 endif()
 
 # Install the Python module and its version file
-install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_NAME})
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/_version.py" DESTINATION ${PROJECT_NAME})
+if(MMGPY_CONDA_BUILD)
+    # Conda: install directly to site-packages (no wheel staging)
+    install(TARGETS ${PROJECT_NAME} DESTINATION "${Python_SITEARCH}/${PROJECT_NAME}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/_version.py" DESTINATION "${Python_SITEARCH}/${PROJECT_NAME}")
+else()
+    # Wheel: install to relative path (scikit-build-core staging area)
+    install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_NAME})
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/_version.py" DESTINATION ${PROJECT_NAME})
+endif()
