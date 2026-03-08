@@ -30,7 +30,7 @@ What actually happened.
 
 - OS: [e.g., Ubuntu 22.04, macOS 14, Windows 11]
 - Python version: [e.g., 3.11]
-- mmgpy version: [e.g., 0.5.0]
+- mmgpy version: [e.g., 0.6.0]
 
 ## Additional Context
 
