@@ -3,13 +3,17 @@ schema_version: 1
 context:
   # Keep in sync with pyproject.toml [project] version
   version: "0.7.0.dev0"
+  mmg_version: "5.8.0"
 
 package:
   name: mmgpy
   version: ${{ version }}
 
 source:
-  path: ..
+  - path: ..
+  - url: https://github.com/MmgTools/mmg/archive/refs/tags/v${{ mmg_version }}.tar.gz
+    sha256: 686eaab84de79c072f3aedf26cd11ced44c84b435d51ce34e016ad203172922f
+    folder: mmg-src
 
 build:
   number: 0
@@ -21,20 +25,15 @@ build:
 
 requirements:
   build:
-    - if: unix
-      then:
-        - ${{ compiler('c') }}
-        - ${{ compiler('cxx') }}
-    - if: win
-      then:
-        - vs2022_win-64
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
     - cmake >=3.15
     - ninja
-    - git
   host:
     - python
     - pybind11 >=3.0.0
-    - numpy >=2.0.2
+    - numpy
     - vtk >=9.5,<9.6
   # MMG shared libraries are installed to $PREFIX/lib; pin so downstream
   # conda packages that link against them get a compatible mmgpy at runtime.
@@ -56,7 +55,6 @@ tests:
       imports:
         - mmgpy
         - mmgpy._mmgpy
-      pip_check: false
   - script:
       - if: unix
         then:

@@ -76,6 +76,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Set MMG version from pyproject.toml for extern/CMakeLists.txt
 set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
 
+# For conda builds, use pre-extracted MMG source instead of fetching from git
+if(MMGPY_CONDA_BUILD AND DEFINED MMG_SOURCE_DIR)
+    set(FETCHCONTENT_SOURCE_DIR_MMG "${MMG_SOURCE_DIR}" CACHE PATH
+        "Pre-extracted MMG source for conda builds")
+    message(STATUS "Using pre-extracted MMG source: ${MMG_SOURCE_DIR}")
+endif()
+
 # Build external dependencies (MMG)
 # Don't use EXCLUDE_FROM_ALL if we want executables to be built
 if(MMGPY_SKIP_EXECUTABLES)
