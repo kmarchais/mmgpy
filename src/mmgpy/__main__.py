@@ -7,7 +7,7 @@ This enables usage like:
 
 from __future__ import annotations
 
-from . import _run_mmg
+from ._cli import _run_mmg
 
 if __name__ == "__main__":
     _run_mmg()
