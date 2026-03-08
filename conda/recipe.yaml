@@ -78,4 +78,4 @@ about:
     and surface mesh remeshing through both a Python API and CLI tools.
     MMG libraries and executables are installed to standard conda paths,
     making them available to other packages in the environment.
-  dev_url: https://github.com/kmarchais/mmgpy
+  repository: https://github.com/kmarchais/mmgpy
