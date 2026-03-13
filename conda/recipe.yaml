@@ -30,7 +30,7 @@ requirements:
     - python
     - pybind11 >=3.0.0
     - numpy
-    - mmgsuite *=vtk*
+    - mmgsuite * vtk*
     - vtk >=9.5,<9.6
   run:
     - python
@@ -39,7 +39,7 @@ requirements:
     - pyvista >=0.46.4
     - rich >=13.0.0
     - scipy >=1.11.0,<1.17
-    - mmgsuite *=vtk*
+    - mmgsuite * vtk*
     - vtk >=9.5,<9.6
     - if: python < '3.11'
       then: typing-extensions >=4.0.0
