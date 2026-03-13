@@ -35,7 +35,7 @@ jobs:
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             echo 'args=--variant "c_stdlib=macosx_deployment_target" --variant "c_stdlib_version=11.0"' >> "$GITHUB_OUTPUT"
           elif [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo 'args=--variant "c_stdlib=vs"' >> "$GITHUB_OUTPUT"
+            echo 'args=--variant "c_stdlib=vs" --variant "c_compiler=vs2022" --variant "cxx_compiler=vs2022"' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build conda package
