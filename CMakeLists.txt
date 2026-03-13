@@ -38,6 +38,7 @@ set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})
 project(mmgpy VERSION ${MMGPY_NUMERIC_VERSION})
 
 option(MMGPY_CONDA_BUILD "Building for conda-forge (skip wheel-specific bundling/RPATH)" OFF)
+option(MMGPY_USE_SYSTEM_MMG "Use system-installed MMG instead of building from source" OFF)
 
 include(GNUInstallDirs)
 
@@ -73,39 +74,57 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Set MMG version from pyproject.toml for extern/CMakeLists.txt
-set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
-
-# Build external dependencies (MMG)
-# Don't use EXCLUDE_FROM_ALL if we want executables to be built
-if(MMGPY_SKIP_EXECUTABLES)
-    add_subdirectory(extern EXCLUDE_FROM_ALL)
+if(MMGPY_USE_SYSTEM_MMG)
+    # Use pre-installed MMG (e.g. from conda-forge mmgsuite package)
+    find_package(mmg REQUIRED)
+    set(MMG_LIBRARIES Mmg::libmmg2d_so Mmg::libmmg3d_so Mmg::libmmgs_so CACHE INTERNAL "")
+    set(MMG_INCLUDE_DIRS "" CACHE INTERNAL "")
+    message(STATUS "Using system MMG")
 else()
-    add_subdirectory(extern)
+    # Build MMG from source via FetchContent
+    set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
+
+    # For conda builds, use pre-extracted MMG source instead of fetching from git
+    if(MMGPY_CONDA_BUILD AND DEFINED MMG_SOURCE_DIR)
+        set(FETCHCONTENT_SOURCE_DIR_MMG "${MMG_SOURCE_DIR}" CACHE PATH
+            "Pre-extracted MMG source for conda builds")
+        message(STATUS "Using pre-extracted MMG source: ${MMG_SOURCE_DIR}")
+    endif()
+
+    # Build external dependencies (MMG)
+    # Don't use EXCLUDE_FROM_ALL if we want executables to be built
+    if(MMGPY_SKIP_EXECUTABLES)
+        add_subdirectory(extern EXCLUDE_FROM_ALL)
+    else()
+        add_subdirectory(extern)
+    endif()
 endif()
 
 add_subdirectory(src)
 
 # Install the MMG libraries to the correct location for each platform
-if(MMGPY_CONDA_BUILD)
-    # Conda: install to standard paths; shared with the entire conda environment
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    )
-elseif(WIN32)
-    # On Windows, install DLLs and LIBs right next to the .pyd module
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-        RUNTIME DESTINATION mmgpy  # This is for DLLs
-        LIBRARY DESTINATION mmgpy  # This is for module libraries
-        ARCHIVE DESTINATION mmgpy  # This is for .lib import libraries
-    )
-else() # UNIX
-    # On Unix, install .so files to a 'lib' subdirectory inside the package
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-        LIBRARY DESTINATION mmgpy/lib
-    )
+# (skip when using system MMG — libraries are already installed)
+if(NOT MMGPY_USE_SYSTEM_MMG)
+    if(MMGPY_CONDA_BUILD)
+        # Conda: install to standard paths; shared with the entire conda environment
+        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        )
+    elseif(WIN32)
+        # On Windows, install DLLs and LIBs right next to the .pyd module
+        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            RUNTIME DESTINATION mmgpy  # This is for DLLs
+            LIBRARY DESTINATION mmgpy  # This is for module libraries
+            ARCHIVE DESTINATION mmgpy  # This is for .lib import libraries
+        )
+    else() # UNIX
+        # On Unix, install .so files to a 'lib' subdirectory inside the package
+        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            LIBRARY DESTINATION mmgpy/lib
+        )
+    endif()
 endif()
 
 # Install VTK libraries if available (wheel builds only, conda provides VTK)
@@ -192,7 +211,8 @@ if(NOT MMGPY_CONDA_BUILD)
 endif()
 
 # Handle installation of executables if not skipped
-if(NOT MMGPY_SKIP_EXECUTABLES)
+# (skip when using system MMG — executables are already installed)
+if(NOT MMGPY_SKIP_EXECUTABLES AND NOT MMGPY_USE_SYSTEM_MMG)
     # Install executables to mmgpy/bin/ so they're included in the wheel
     # This location:
     # 1. Gets included in the wheel (part of the package directory)

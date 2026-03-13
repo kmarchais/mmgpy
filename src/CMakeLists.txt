@@ -20,12 +20,16 @@ pybind11_add_module(${PROJECT_NAME}
 )
 
 # Set include directories
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        ${MMG_INCLUDE_DIRS}
-        ${mmg_BINARY_DIR}/include
-        ${mmg_SOURCE_DIR}/include
-)
+if(MMGPY_USE_SYSTEM_MMG)
+    # Imported targets carry their own include directories
+else()
+    target_include_directories(${PROJECT_NAME}
+        PRIVATE
+            ${MMG_INCLUDE_DIRS}
+            ${mmg_BINARY_DIR}/include
+            ${mmg_SOURCE_DIR}/include
+    )
+endif()
 
 # Link against MMG libraries
 target_link_libraries(${PROJECT_NAME}

@@ -1,6 +1,6 @@
 @echo on
 
-cmake -B build %CMAKE_ARGS% -DMMGPY_CONDA_BUILD=ON -GNinja
+cmake -B build %CMAKE_ARGS% -DMMGPY_CONDA_BUILD=ON -DMMGPY_USE_SYSTEM_MMG=ON -GNinja
 if errorlevel 1 exit 1
 
 cmake --build build
