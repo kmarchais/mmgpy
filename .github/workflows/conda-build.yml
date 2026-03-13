@@ -26,6 +26,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set stdlib variant
+        id: stdlib
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            echo 'args=--variant "c_stdlib=sysroot" --variant "c_stdlib_version=2.17"' >> "$GITHUB_OUTPUT"
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo 'args=--variant "c_stdlib=macosx_deployment_target" --variant "c_stdlib_version=11.0"' >> "$GITHUB_OUTPUT"
+          else
+            echo 'args=' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build conda package
         uses: prefix-dev/rattler-build-action@v0.2.36
         with:
@@ -33,3 +45,4 @@ jobs:
           artifact-name: conda-package-${{ matrix.os }}-py${{ matrix.python-version }}
           build-args: >-
             --variant "python=${{ matrix.python-version }}"
+            ${{ steps.stdlib.outputs.args }}
