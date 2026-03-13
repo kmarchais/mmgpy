@@ -14,7 +14,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - macos-13
         python-version:
           - "3.10"
           - "3.13"
@@ -34,8 +34,8 @@ jobs:
             echo 'args=--variant "c_stdlib=sysroot" --variant "c_stdlib_version=2.17"' >> "$GITHUB_OUTPUT"
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             echo 'args=--variant "c_stdlib=macosx_deployment_target" --variant "c_stdlib_version=11.0"' >> "$GITHUB_OUTPUT"
-          else
-            echo 'args=' >> "$GITHUB_OUTPUT"
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo 'args=--variant "c_stdlib=vs"' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build conda package
