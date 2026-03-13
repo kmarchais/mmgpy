@@ -21,7 +21,10 @@ pybind11_add_module(${PROJECT_NAME}
 
 # Set include directories
 if(MMGPY_USE_SYSTEM_MMG)
-    # Imported targets carry their own include directories
+    target_include_directories(${PROJECT_NAME}
+        PRIVATE
+            ${MMG_INCLUDE_DIRS}
+    )
 else()
     target_include_directories(${PROJECT_NAME}
         PRIVATE

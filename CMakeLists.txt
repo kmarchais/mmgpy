@@ -75,11 +75,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MMGPY_USE_SYSTEM_MMG)
-    # Use pre-installed MMG (e.g. from conda-forge mmgsuite package)
-    find_package(mmg REQUIRED)
-    set(MMG_LIBRARIES Mmg::libmmg2d_so Mmg::libmmg3d_so Mmg::libmmgs_so CACHE INTERNAL "")
-    set(MMG_INCLUDE_DIRS "" CACHE INTERNAL "")
-    message(STATUS "Using system MMG")
+    # Find MMG libraries directly instead of using find_package(mmg), which
+    # would pull in VTK and all its transitive dependencies via mmgConfig.cmake.
+    # We only need the MMG shared libraries and headers for the pybind11 bindings.
+    find_library(MMG2D_LIBRARY NAMES mmg2d REQUIRED)
+    find_library(MMG3D_LIBRARY NAMES mmg3d REQUIRED)
+    find_library(MMGS_LIBRARY NAMES mmgs REQUIRED)
+    find_path(MMG_INCLUDE_DIR mmg/mmg3d/libmmg3d.h REQUIRED)
+
+    set(MMG_LIBRARIES ${MMG2D_LIBRARY} ${MMG3D_LIBRARY} ${MMGS_LIBRARY} CACHE INTERNAL "")
+    set(MMG_INCLUDE_DIRS ${MMG_INCLUDE_DIR} CACHE INTERNAL "")
+    message(STATUS "Using system MMG: ${MMG_LIBRARIES}")
 else()
     # Build MMG from source via FetchContent
     set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
