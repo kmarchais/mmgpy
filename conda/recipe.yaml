@@ -36,7 +36,7 @@ requirements:
     - python
     - numpy >=2.0.2
     - meshio >=5.3.5
-    - pyvista >=0.46.4
+    - pyvista >=0.47.0
     - rich >=13.0.0
     - scipy >=1.11.0,<1.17
     - mmgsuite * vtk*
