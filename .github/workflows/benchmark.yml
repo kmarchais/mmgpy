@@ -78,9 +78,6 @@ jobs:
             echo "has_thresholds=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Clean working tree for benchmark action
-        run: git checkout -- .
-
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         if: github.event_name != 'pull_request'
@@ -92,10 +89,6 @@ jobs:
           alert-threshold: "200%"
           comment-on-alert: true
           fail-on-alert: false
-
-      - name: Clean working tree for benchmark action (PR)
-        if: github.event_name == 'pull_request'
-        run: git checkout -- .
 
       - name: Compare benchmarks (PR only)
         uses: benchmark-action/github-action-benchmark@v1
