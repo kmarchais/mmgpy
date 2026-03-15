@@ -20,12 +20,14 @@ pybind11_add_module(${PROJECT_NAME}
 )
 
 # Set include directories
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        ${MMG_INCLUDE_DIRS}
-        ${mmg_BINARY_DIR}/include
-        ${mmg_SOURCE_DIR}/include
-)
+target_include_directories(${PROJECT_NAME} PRIVATE ${MMG_INCLUDE_DIRS})
+if(NOT MMGPY_CONDA_BUILD)
+    target_include_directories(${PROJECT_NAME}
+        PRIVATE
+            ${mmg_BINARY_DIR}/include
+            ${mmg_SOURCE_DIR}/include
+    )
+endif()
 
 # Link against MMG libraries
 target_link_libraries(${PROJECT_NAME}
@@ -61,12 +63,12 @@ if(UNIX AND NOT MMGPY_CONDA_BUILD)
 endif()
 
 # Install the Python module and its version file
+# Conda: install directly to site-packages; Wheel: relative path for scikit-build-core
 if(MMGPY_CONDA_BUILD)
-    # Conda: install directly to site-packages (no wheel staging)
-    install(TARGETS ${PROJECT_NAME} DESTINATION "${Python_SITEARCH}/${PROJECT_NAME}")
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/_version.py" DESTINATION "${Python_SITEARCH}/${PROJECT_NAME}")
+    set(MMGPY_INSTALL_DIR "${Python_SITEARCH}/${PROJECT_NAME}")
 else()
-    # Wheel: install to relative path (scikit-build-core staging area)
-    install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_NAME})
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/_version.py" DESTINATION ${PROJECT_NAME})
+    set(MMGPY_INSTALL_DIR "${PROJECT_NAME}")
 endif()
+
+install(TARGETS ${PROJECT_NAME} DESTINATION "${MMGPY_INSTALL_DIR}")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/_version.py" DESTINATION "${MMGPY_INSTALL_DIR}")

@@ -1,6 +1,6 @@
 @echo on
 
-cmake -B build %CMAKE_ARGS% -DMMGPY_CONDA_BUILD=ON -GNinja
+cmake -B build %CMAKE_ARGS% -DMMGPY_CONDA_BUILD=ON -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH="%PREFIX%;%LIBRARY_PREFIX%" -GNinja
 if errorlevel 1 exit 1
 
 cmake --build build
