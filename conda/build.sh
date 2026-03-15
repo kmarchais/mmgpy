@@ -4,6 +4,7 @@ set -exuo pipefail
 cmake -B build \
     ${CMAKE_ARGS} \
     -DMMGPY_CONDA_BUILD=ON \
+    -DBUILD_TESTING=OFF \
     -GNinja
 
 cmake --build build

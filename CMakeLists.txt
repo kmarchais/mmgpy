@@ -37,7 +37,7 @@ set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})
 
 project(mmgpy VERSION ${MMGPY_NUMERIC_VERSION})
 
-option(MMGPY_CONDA_BUILD "Building for conda-forge (skip wheel-specific bundling/RPATH)" OFF)
+option(MMGPY_CONDA_BUILD "Building for conda-forge (use system MMG, skip wheel-specific bundling/RPATH)" OFF)
 
 include(GNUInstallDirs)
 
@@ -73,39 +73,45 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Set MMG version from pyproject.toml for extern/CMakeLists.txt
-set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
+if(MMGPY_CONDA_BUILD)
+    # Find MMG libraries directly instead of using find_package(mmg), which
+    # would pull in VTK and all its transitive dependencies via mmgConfig.cmake.
+    # We only need the MMG shared libraries and headers for the pybind11 bindings.
+    find_library(MMG2D_LIBRARY NAMES mmg2d REQUIRED)
+    find_library(MMG3D_LIBRARY NAMES mmg3d REQUIRED)
+    find_library(MMGS_LIBRARY NAMES mmgs REQUIRED)
+    find_path(MMG_INCLUDE_DIR mmg/mmg3d/libmmg3d.h REQUIRED)
 
-# Build external dependencies (MMG)
-# Don't use EXCLUDE_FROM_ALL if we want executables to be built
-if(MMGPY_SKIP_EXECUTABLES)
-    add_subdirectory(extern EXCLUDE_FROM_ALL)
+    set(MMG_LIBRARIES ${MMG2D_LIBRARY} ${MMG3D_LIBRARY} ${MMGS_LIBRARY} CACHE INTERNAL "")
+    set(MMG_INCLUDE_DIRS ${MMG_INCLUDE_DIR} CACHE INTERNAL "")
+    message(STATUS "Using system MMG: ${MMG_LIBRARIES}")
 else()
-    add_subdirectory(extern)
+    # Build MMG from source via FetchContent
+    set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
+
+    if(MMGPY_SKIP_EXECUTABLES)
+        add_subdirectory(extern EXCLUDE_FROM_ALL)
+    else()
+        add_subdirectory(extern)
+    endif()
 endif()
 
 add_subdirectory(src)
 
-# Install the MMG libraries to the correct location for each platform
-if(MMGPY_CONDA_BUILD)
-    # Conda: install to standard paths; shared with the entire conda environment
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    )
-elseif(WIN32)
-    # On Windows, install DLLs and LIBs right next to the .pyd module
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-        RUNTIME DESTINATION mmgpy  # This is for DLLs
-        LIBRARY DESTINATION mmgpy  # This is for module libraries
-        ARCHIVE DESTINATION mmgpy  # This is for .lib import libraries
-    )
-else() # UNIX
-    # On Unix, install .so files to a 'lib' subdirectory inside the package
-    install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-        LIBRARY DESTINATION mmgpy/lib
-    )
+# Install the MMG libraries to the correct location (wheel builds only)
+# Conda builds use system MMG — libraries are already installed.
+if(NOT MMGPY_CONDA_BUILD)
+    if(WIN32)
+        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            RUNTIME DESTINATION mmgpy
+            LIBRARY DESTINATION mmgpy
+            ARCHIVE DESTINATION mmgpy
+        )
+    else() # UNIX
+        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            LIBRARY DESTINATION mmgpy/lib
+        )
+    endif()
 endif()
 
 # Install VTK libraries if available (wheel builds only, conda provides VTK)
@@ -191,33 +197,11 @@ if(NOT MMGPY_CONDA_BUILD)
     endif()
 endif()
 
-# Handle installation of executables if not skipped
-if(NOT MMGPY_SKIP_EXECUTABLES)
-    # Install executables to mmgpy/bin/ so they're included in the wheel
-    # This location:
-    # 1. Gets included in the wheel (part of the package directory)
-    # 2. Has simple RPATH (../lib points to mmgpy/lib)
-    # 3. Works for both wheel and dev installs
-    if(MMGPY_CONDA_BUILD)
-        set(SCRIPTS_DIR "${CMAKE_INSTALL_BINDIR}")
-    else()
-        set(SCRIPTS_DIR "mmgpy/bin")
-    endif()
+# Handle installation of executables (wheel builds only)
+# Conda builds use system MMG — executables are already installed.
+if(NOT MMGPY_SKIP_EXECUTABLES AND NOT MMGPY_CONDA_BUILD)
+    set(SCRIPTS_DIR "mmgpy/bin")
     message(STATUS "Installing executables to ${SCRIPTS_DIR}")
-
-    # Check if executables exist and install them
-    # Use file-based installation since target existence varies
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(MMG_EXE_SUFFIX "_O3")
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(MMG_EXE_SUFFIX "_debug")
-    elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-        set(MMG_EXE_SUFFIX "_O3d")
-    elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-        set(MMG_EXE_SUFFIX "_Os")
-    else()
-        set(MMG_EXE_SUFFIX "")
-    endif()
 
     # Install executables from MMG build directory
     # Note: We don't use if(EXISTS) here because the directory is created during build,
@@ -230,109 +214,107 @@ if(NOT MMGPY_SKIP_EXECUTABLES)
         PATTERN "genheader" EXCLUDE
     )
 
-    # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/) — wheel builds only
-    if(NOT MMGPY_CONDA_BUILD)
-        if(UNIX)
-            if(APPLE)
-                set(RPATH_PREFIX "@loader_path")
-            else()
-                set(RPATH_PREFIX "$ORIGIN")
-            endif()
-
-            install(CODE "
-                set(EXEC_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
-                file(GLOB EXECS \"\${EXEC_DIR}/mmg*\")
-                set(LIB_RPATH \"${RPATH_PREFIX}/../lib\")
-
-                foreach(exec \${EXECS})
-                    if(EXISTS \"\${exec}\")
-                        get_filename_component(exec_name \"\${exec}\" NAME)
-
-                        if(APPLE)
-                            # Remove old @rpath (ignore failure if none exists)
-                            execute_process(
-                                COMMAND install_name_tool -delete_rpath \"@rpath\" \"\${exec}\"
-                                ERROR_QUIET
-                            )
-                            # Add correct RPATH
-                            execute_process(
-                                COMMAND install_name_tool -add_rpath \"\${LIB_RPATH}\" \"\${exec}\"
-                                ERROR_VARIABLE ADD_ERROR
-                                RESULT_VARIABLE ADD_RESULT
-                            )
-                            if(ADD_RESULT)
-                                message(WARNING \"Failed to set RPATH for \${exec_name}: \${ADD_ERROR}\")
-                            else()
-                                message(STATUS \"Set RPATH for \${exec_name}\")
-                            endif()
-                        else()
-                            execute_process(
-                                COMMAND patchelf --set-rpath \"\${LIB_RPATH}\" \"\${exec}\"
-                                ERROR_VARIABLE PATCHELF_ERROR
-                                RESULT_VARIABLE PATCHELF_RESULT
-                            )
-                            if(PATCHELF_RESULT)
-                                message(WARNING \"Failed to set RPATH for \${exec_name}: \${PATCHELF_ERROR}\")
-                            else()
-                                message(STATUS \"Set RPATH for \${exec_name}\")
-                            endif()
-                        endif()
-                    endif()
-                endforeach()
-            ")
+    # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/)
+    if(UNIX)
+        if(APPLE)
+            set(RPATH_PREFIX "@loader_path")
+        else()
+            set(RPATH_PREFIX "$ORIGIN")
         endif()
 
-        # For development installs, create symlinks (Unix) or copies (Windows) in the venv
         install(CODE "
-            # Find virtual environment bin directory (bin on Unix, Scripts on Windows)
-            execute_process(
-                COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; bin_name = 'Scripts' if sys.platform == 'win32' else 'bin'; print(os.path.join(sys.prefix, bin_name))\"
-                OUTPUT_VARIABLE VENV_BIN_DIR
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
+            set(EXEC_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
+            file(GLOB EXECS \"\${EXEC_DIR}/mmg*\")
+            set(LIB_RPATH \"${RPATH_PREFIX}/../lib\")
 
-            # For editable installs, executables are in CMAKE_INSTALL_PREFIX/mmgpy/bin
-            # For wheel installs, they go to site-packages/mmgpy/bin
-            set(EXEC_SOURCE_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
-
-            if(EXISTS \"\${EXEC_SOURCE_DIR}\" AND EXISTS \"\${VENV_BIN_DIR}\")
-                file(GLOB SOURCE_EXECS \"\${EXEC_SOURCE_DIR}/mmg*\")
-                foreach(exec \${SOURCE_EXECS})
+            foreach(exec \${EXECS})
+                if(EXISTS \"\${exec}\")
                     get_filename_component(exec_name \"\${exec}\" NAME)
-                    set(target_path \"\${VENV_BIN_DIR}/\${exec_name}\")
 
-                    # Remove existing file if it exists
-                    if(EXISTS \"\${target_path}\")
-                        file(REMOVE \"\${target_path}\")
-                    endif()
-
-                    # On Windows, copy the file; on Unix, create symlink
-                    if(WIN32)
-                        file(COPY \"\${exec}\" DESTINATION \"\${VENV_BIN_DIR}\")
-                        message(STATUS \"Copied: \${exec} -> \${target_path}\")
+                    if(APPLE)
+                        # Remove old @rpath (ignore failure if none exists)
+                        execute_process(
+                            COMMAND install_name_tool -delete_rpath \"@rpath\" \"\${exec}\"
+                            ERROR_QUIET
+                        )
+                        # Add correct RPATH
+                        execute_process(
+                            COMMAND install_name_tool -add_rpath \"\${LIB_RPATH}\" \"\${exec}\"
+                            ERROR_VARIABLE ADD_ERROR
+                            RESULT_VARIABLE ADD_RESULT
+                        )
+                        if(ADD_RESULT)
+                            message(WARNING \"Failed to set RPATH for \${exec_name}: \${ADD_ERROR}\")
+                        else()
+                            message(STATUS \"Set RPATH for \${exec_name}\")
+                        endif()
                     else()
                         execute_process(
-                            COMMAND ln -sf \"\${exec}\" \"\${target_path}\"
-                            RESULT_VARIABLE symlink_result
+                            COMMAND patchelf --set-rpath \"\${LIB_RPATH}\" \"\${exec}\"
+                            ERROR_VARIABLE PATCHELF_ERROR
+                            RESULT_VARIABLE PATCHELF_RESULT
                         )
-                        if(symlink_result EQUAL 0)
-                            message(STATUS \"Created symlink: \${target_path} -> \${exec}\")
+                        if(PATCHELF_RESULT)
+                            message(WARNING \"Failed to set RPATH for \${exec_name}: \${PATCHELF_ERROR}\")
                         else()
-                            message(WARNING \"Failed to create symlink: \${target_path}\")
+                            message(STATUS \"Set RPATH for \${exec_name}\")
                         endif()
                     endif()
-                endforeach()
-            else()
-                message(STATUS \"Skipping venv bin symlinks: source=\${EXEC_SOURCE_DIR} venv=\${VENV_BIN_DIR}\")
-            endif()
+                endif()
+            endforeach()
         ")
+    endif()
 
-        # On Windows, also copy the DLLs to the scripts dir for the executables
-        if(WIN32)
-            install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
-                RUNTIME DESTINATION "${SCRIPTS_DIR}"
-            )
+    # For development installs, create symlinks (Unix) or copies (Windows) in the venv
+    install(CODE "
+        # Find virtual environment bin directory (bin on Unix, Scripts on Windows)
+        execute_process(
+            COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; bin_name = 'Scripts' if sys.platform == 'win32' else 'bin'; print(os.path.join(sys.prefix, bin_name))\"
+            OUTPUT_VARIABLE VENV_BIN_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+
+        # For editable installs, executables are in CMAKE_INSTALL_PREFIX/mmgpy/bin
+        # For wheel installs, they go to site-packages/mmgpy/bin
+        set(EXEC_SOURCE_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
+
+        if(EXISTS \"\${EXEC_SOURCE_DIR}\" AND EXISTS \"\${VENV_BIN_DIR}\")
+            file(GLOB SOURCE_EXECS \"\${EXEC_SOURCE_DIR}/mmg*\")
+            foreach(exec \${SOURCE_EXECS})
+                get_filename_component(exec_name \"\${exec}\" NAME)
+                set(target_path \"\${VENV_BIN_DIR}/\${exec_name}\")
+
+                # Remove existing file if it exists
+                if(EXISTS \"\${target_path}\")
+                    file(REMOVE \"\${target_path}\")
+                endif()
+
+                # On Windows, copy the file; on Unix, create symlink
+                if(WIN32)
+                    file(COPY \"\${exec}\" DESTINATION \"\${VENV_BIN_DIR}\")
+                    message(STATUS \"Copied: \${exec} -> \${target_path}\")
+                else()
+                    execute_process(
+                        COMMAND ln -sf \"\${exec}\" \"\${target_path}\"
+                        RESULT_VARIABLE symlink_result
+                    )
+                    if(symlink_result EQUAL 0)
+                        message(STATUS \"Created symlink: \${target_path} -> \${exec}\")
+                    else()
+                        message(WARNING \"Failed to create symlink: \${target_path}\")
+                    endif()
+                endif()
+            endforeach()
+        else()
+            message(STATUS \"Skipping venv bin symlinks: source=\${EXEC_SOURCE_DIR} venv=\${VENV_BIN_DIR}\")
         endif()
+    ")
+
+    # On Windows, also copy the DLLs to the scripts dir for the executables
+    if(WIN32)
+        install(TARGETS libmmg2d_so libmmg3d_so libmmgs_so
+            RUNTIME DESTINATION "${SCRIPTS_DIR}"
+        )
     endif()
 endif()
 
