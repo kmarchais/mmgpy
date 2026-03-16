@@ -27,7 +27,6 @@ stretched elements when the ellipsoid is elongated.
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -35,13 +34,13 @@ import numpy as np
 from matplotlib.patches import Ellipse
 from matplotlib.tri import Triangulation
 
-from mmgpy import MmgMesh2D, metrics, mmg2d
+from mmgpy import Mesh, metrics
 
 
-def create_unit_square_mesh(n: int = 8) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Create a simple triangulated unit square with boundary edges.
+def create_unit_square_mesh(n: int = 8) -> tuple[np.ndarray, np.ndarray]:
+    """Create a simple triangulated unit square.
 
-    Returns (vertices, triangles, edges) for a regular grid triangulation.
+    Returns (vertices, triangles) for a regular grid triangulation.
     """
     # Create grid of points
     x = np.linspace(0, 1, n)
@@ -60,99 +59,22 @@ def create_unit_square_mesh(n: int = 8) -> tuple[np.ndarray, np.ndarray, np.ndar
             triangles.append([bl, br, tr])
             triangles.append([bl, tr, tl])
 
-    # Create boundary edges (required for MMG to preserve domain boundary)
-    edges = []
-    # Bottom edge
-    for j in range(n - 1):
-        edges.append([j, j + 1])
-    # Right edge
-    for i in range(n - 1):
-        edges.append([i * n + (n - 1), (i + 1) * n + (n - 1)])
-    # Top edge
-    for j in range(n - 1, 0, -1):
-        edges.append([(n - 1) * n + j, (n - 1) * n + j - 1])
-    # Left edge
-    for i in range(n - 1, 0, -1):
-        edges.append([i * n, (i - 1) * n])
-
     return (
         vertices,
         np.array(triangles, dtype=np.int32),
-        np.array(edges, dtype=np.int32),
     )
 
 
 def remesh_with_metric(
     vertices: np.ndarray,
     triangles: np.ndarray,
-    edges: np.ndarray,
     metric_tensor: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Remesh a 2D domain with given anisotropic metric tensor field."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        input_path = Path(tmpdir) / "input.mesh"
-        output_path = Path(tmpdir) / "output.mesh"
-        sol_path = Path(tmpdir) / "input.sol"
-
-        # Create mesh with boundary edges
-        mesh = MmgMesh2D()
-        mesh.set_mesh_size(
-            vertices=len(vertices),
-            triangles=len(triangles),
-            edges=len(edges),
-        )
-        mesh.set_vertices(vertices)
-        mesh.set_triangles(triangles)
-        # Mark boundary edges with ref=1 to preserve them
-        mesh.set_edges(edges, refs=np.ones(len(edges), dtype=np.int64))
-        mesh.save(str(input_path))
-
-        # Write metric solution file
-        write_sol_file(sol_path, metric_tensor, dim=2)
-
-        # Remesh with the metric
-        mmg2d.remesh(
-            input_mesh=str(input_path),
-            input_sol=str(sol_path),
-            output_mesh=str(output_path),
-            options={
-                "verbose": -1,
-                "hgrad": 2.0,  # Allow gradation for smooth transitions
-            },
-        )
-
-        # Load result
-        result = MmgMesh2D(str(output_path))
-        return result.get_vertices(), result.get_triangles()
-
-
-def write_sol_file(path: Path, metric: np.ndarray, dim: int = 2) -> None:
-    """Write a metric tensor field to MMG .sol file format."""
-    n_vertices = len(metric)
-    n_components = metric.shape[1] if metric.ndim > 1 else 1
-
-    # Determine solution type: 1=scalar, 2=vector, 3=tensor
-    if n_components == 1:
-        sol_type = 1
-    elif n_components == dim:
-        sol_type = 2
-    else:
-        sol_type = 3  # Tensor
-
-    with open(path, "w") as f:
-        f.write("MeshVersionFormatted 2\n\n")
-        f.write(f"Dimension {dim}\n\n")
-        f.write("SolAtVertices\n")
-        f.write(f"{n_vertices}\n")
-        f.write(f"1 {sol_type}\n\n")
-
-        for i in range(n_vertices):
-            if metric.ndim == 1:
-                f.write(f"{metric[i]}\n")
-            else:
-                f.write(" ".join(f"{v}" for v in metric[i]) + "\n")
-
-        f.write("\nEnd\n")
+    mesh = Mesh(vertices, triangles)
+    mesh.set_field("tensor", metric_tensor)
+    mesh.remesh(hgrad=2.0, verbose=-1, progress=False)
+    return mesh.get_vertices(), mesh.get_triangles()
 
 
 def plot_mesh(
@@ -215,7 +137,7 @@ def main() -> None:
 
     # Create initial mesh
     print("Creating initial mesh...")
-    vertices, triangles, edges = create_unit_square_mesh(n=6)
+    vertices, triangles = create_unit_square_mesh(n=6)
     n_vertices = len(vertices)
     print(f"  Initial mesh: {n_vertices} vertices, {len(triangles)} triangles")
     print()
@@ -229,7 +151,7 @@ def main() -> None:
 
     h_uniform = 0.05
     metric_iso = metrics.create_isotropic_metric(h_uniform, n_vertices, dim=2)
-    verts_iso, tris_iso = remesh_with_metric(vertices, triangles, edges, metric_iso)
+    verts_iso, tris_iso = remesh_with_metric(vertices, triangles, metric_iso)
     print(f"   Result: {len(verts_iso)} vertices, {len(tris_iso)} triangles")
     print()
 
@@ -247,7 +169,6 @@ def main() -> None:
     verts_aniso, tris_aniso = remesh_with_metric(
         vertices,
         triangles,
-        edges,
         metric_aniso,
     )
     print(f"   Result: {len(verts_aniso)} vertices, {len(tris_aniso)} triangles")
@@ -267,7 +188,7 @@ def main() -> None:
     sizes_rotated = np.array([0.15, 0.025])  # 6:1 aspect ratio
     single_tensor_rot = metrics.create_anisotropic_metric(sizes_rotated, rotation)
     metric_rotated = np.tile(single_tensor_rot, (n_vertices, 1))
-    verts_rot, tris_rot = remesh_with_metric(vertices, triangles, edges, metric_rotated)
+    verts_rot, tris_rot = remesh_with_metric(vertices, triangles, metric_rotated)
     print(f"   Result: {len(verts_rot)} vertices, {len(tris_rot)} triangles")
     print()
 
@@ -302,7 +223,6 @@ def main() -> None:
     verts_radial, tris_radial = remesh_with_metric(
         vertices,
         triangles,
-        edges,
         metric_radial,
     )
     print(f"   Result: {len(verts_radial)} vertices, {len(tris_radial)} triangles")
@@ -346,7 +266,6 @@ def main() -> None:
     verts_adapt, tris_adapt = remesh_with_metric(
         vertices,
         triangles,
-        edges,
         metric_adaptive,
     )
     print(f"   Result: {len(verts_adapt)} vertices, {len(tris_adapt)} triangles")

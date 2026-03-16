@@ -33,7 +33,7 @@ import numpy as np
 import pyvista as pv
 from scipy.spatial import Delaunay
 
-from mmgpy import MmgMesh2D
+from mmgpy import Mesh
 
 
 def create_square_mesh(
@@ -78,7 +78,7 @@ def to_pyvista_mesh(
     return mesh
 
 
-def extract_interface(mesh: MmgMesh2D) -> pv.PolyData:
+def extract_interface(mesh: Mesh) -> pv.PolyData:
     """Extract the interface edges (boundary between ref=2 and ref=3 regions).
 
     After level-set discretization, edges on the interface separate elements
@@ -128,7 +128,7 @@ def main() -> None:
     print(f"Initial mesh: {len(vertices)} vertices, {len(triangles)} triangles")
 
     # Create mesh and apply level-set discretization
-    mesh = MmgMesh2D(vertices.copy(), triangles.copy())
+    mesh = Mesh(vertices.copy(), triangles.copy())
     print("\nApplying level-set discretization...")
     mesh.remesh_levelset(levelset, hmax=0.08, verbose=False)
 

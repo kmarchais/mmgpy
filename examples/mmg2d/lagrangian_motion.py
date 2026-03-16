@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 
-from mmgpy import MmgMesh2D, move_mesh
+from mmgpy import Mesh, move_mesh
 
 
 def create_unit_square_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -46,7 +46,7 @@ def main() -> None:
     vertices, triangles = create_unit_square_mesh()
     print(f"Initial mesh: {len(vertices)} vertices, {len(triangles)} triangles")
 
-    mesh = MmgMesh2D(vertices, triangles)
+    mesh = Mesh(vertices, triangles)
 
     # Create radial expansion displacement field
     n_vertices = vertices.shape[0]
