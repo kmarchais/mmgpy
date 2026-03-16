@@ -76,21 +76,15 @@ import pyvista as pv
 # Create PyVista geometry
 sphere = pv.Sphere(radius=1.0)
 
-# Convert to surface mesh
-mesh = mmgpy.from_pyvista(sphere, mesh_type="surface")
+# Convert to mmgpy mesh (auto-detects mesh type)
+mesh = mmgpy.Mesh(sphere)
 
-# Or for volumetric meshes (requires tetrahedral cells)
+# Works for volumetric meshes too (requires tetrahedral cells)
 cube = pv.Box().triangulate().delaunay_3d()
-mesh_3d = mmgpy.from_pyvista(cube, mesh_type="3d")
+mesh_3d = mmgpy.Mesh(cube)
 ```
 
-Mesh type options:
-
-| `mesh_type` | Description                 |
-| ----------- | --------------------------- |
-| `"surface"` | Surface triangular mesh     |
-| `"3d"`      | Volumetric tetrahedral mesh |
-| `"2d"`      | 2D triangular mesh          |
+The `Mesh` constructor auto-detects the mesh type from the PyVista object's cell types and vertex dimensions.
 
 ## Visualization Examples
 
@@ -214,7 +208,7 @@ sphere = pv.Sphere()
 sphere["elevation"] = sphere.points[:, 2]
 
 # Convert to mmgpy
-mesh = mmgpy.from_pyvista(sphere, mesh_type="surface")
+mesh = mmgpy.Mesh(sphere)
 
 # Access the field
 elevation = mesh["elevation"]
@@ -234,7 +228,7 @@ from pyvista import examples
 bunny = examples.download_bunny()
 
 # Convert to mmgpy surface mesh
-mesh = mmgpy.from_pyvista(bunny, mesh_type="surface")
+mesh = mmgpy.Mesh(bunny)
 
 def remesh_callback(value):
     mesh.remesh(hmax=value, verbose=-1)
@@ -285,7 +279,7 @@ import numpy as np
 torus = pv.ParametricTorus(ringradius=1.0, crosssectionradius=0.3)
 
 # Convert to mmgpy surface mesh
-mesh = mmgpy.from_pyvista(torus, mesh_type="surface")
+mesh = mmgpy.Mesh(torus)
 
 print(f"Original: {len(mesh.get_triangles())} triangles")
 

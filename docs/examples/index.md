@@ -82,7 +82,7 @@ mesh = mmgpy.Mesh("background.mesh")
 vertices = mesh.get_vertices()
 
 # Sphere level-set
-levelset = np.linalg.norm(vertices - [0.5, 0.5, 0.5], axis=1) - 0.3
+levelset = (np.linalg.norm(vertices - [0.5, 0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
 
 result = mesh.remesh_levelset(levelset)
 ```
@@ -134,7 +134,7 @@ solution = np.sin(vertices[:, 0] * 4 * np.pi) * np.cos(vertices[:, 1] * 4 * np.p
 # (simplified - full implementation computes Hessian)
 sizes = 0.01 + 0.1 * np.abs(solution)
 metric = metrics.create_isotropic_metric(sizes)
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 
 result = mesh.remesh()
 ```
@@ -182,7 +182,7 @@ mesh = mmgpy.Mesh("background.mesh")
 vertices = mesh.get_vertices()
 
 # Circle level-set
-levelset = np.linalg.norm(vertices[:, :2] - [0.5, 0.5], axis=1) - 0.3
+levelset = (np.linalg.norm(vertices[:, :2] - [0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
 
 result = mesh.remesh_levelset(levelset)
 ```
@@ -255,7 +255,7 @@ vertices = mesh.get_vertices()
 R, r = 0.5, 0.15
 x, y, z = vertices[:, 0] - 0.5, vertices[:, 1] - 0.5, vertices[:, 2] - 0.5
 q = np.sqrt(x**2 + y**2) - R
-levelset = np.sqrt(q**2 + z**2) - r
+levelset = (np.sqrt(q**2 + z**2) - r).reshape(-1, 1)
 
 result = mesh.remesh_levelset(levelset)
 ```

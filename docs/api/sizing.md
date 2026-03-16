@@ -228,7 +228,7 @@ sizes = compute_sizes_from_constraints(vertices, constraints)
 metric = sizes_to_metric(sizes)
 
 # Apply to mesh
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 ```
 
 ## Tips

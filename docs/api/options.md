@@ -101,10 +101,10 @@ result = mesh.remesh(opts)
 from mmgpy import Mmg3DOptions
 
 # Fine mesh (small elements)
-fine_opts = Mmg3DOptions.fine()
+fine_opts = Mmg3DOptions.fine(hmax=0.01)
 
 # Coarse mesh (large elements)
-coarse_opts = Mmg3DOptions.coarse()
+coarse_opts = Mmg3DOptions.coarse(hmax=1.0)
 
 # Optimization only (no topology changes)
 opt_opts = Mmg3DOptions.optimize_only()
@@ -126,13 +126,8 @@ result = mesh.remesh(**opts.to_dict())
 ### Customizing Presets
 
 ```python
-from dataclasses import replace
-
-# Start with a preset
-base = Mmg3DOptions.fine()
-
-# Customize using replace
-custom = replace(base, hmax=0.05, verbose=1)
+# Start with fine preset values, then customize
+custom = Mmg3DOptions(hmax=0.05, hausd=0.01, hgrad=1.2, verbose=1)
 ```
 
 ### Combining with Keyword Arguments

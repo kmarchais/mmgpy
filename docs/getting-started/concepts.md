@@ -128,7 +128,7 @@ import numpy as np
 
 # Define a level-set function (distance to sphere)
 def levelset_func(coords):
-    return np.linalg.norm(coords - [0.5, 0.5, 0.5], axis=1) - 0.3
+    return (np.linalg.norm(coords - [0.5, 0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
 
 mesh = mmgpy.Mesh("background.mesh")
 levelset = levelset_func(mesh.get_vertices())
@@ -194,7 +194,7 @@ import mmgpy.metrics as metrics
 # Create isotropic metric from sizes
 sizes = np.ones(n_vertices) * 0.1
 metric = metrics.create_isotropic_metric(sizes)
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 
 result = mesh.remesh()
 ```

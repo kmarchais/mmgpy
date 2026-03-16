@@ -65,8 +65,8 @@ n_vertices = len(mesh.get_vertices())
 sizes = np.ones(n_vertices) * 0.1
 metric = metrics.create_isotropic_metric(sizes)
 
-# Apply to mesh
-mesh["metric"] = metric
+# Apply to mesh (tensor field, not scalar)
+mesh.set_field("tensor", metric)
 
 # Remesh using the metric
 result = mesh.remesh()
@@ -86,7 +86,7 @@ distances = np.linalg.norm(vertices, axis=1)
 sizes = 0.01 + 0.1 * distances
 
 metric = metrics.create_isotropic_metric(sizes)
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 ```
 
 ### Anisotropic Metric
@@ -126,7 +126,7 @@ metric = metrics.create_metric_from_hessian(
     target_error=0.01,  # Target interpolation error
 )
 
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 ```
 
 ### Metric Intersection
@@ -140,7 +140,7 @@ metric2 = metrics.create_isotropic_metric(sizes2)
 
 # Intersect: take minimum size in all directions
 combined = metrics.intersect_metrics(metric1, metric2)
-mesh["metric"] = combined
+mesh.set_field("tensor", combined)
 ```
 
 ### Extracting Metric Information
@@ -149,14 +149,12 @@ mesh["metric"] = combined
 # Get current metric
 metric = mesh["metric"]
 
-# Extract eigenvalues and eigenvectors
-eigenvalues, eigenvectors = metrics.compute_metric_eigenpairs(metric)
+# Extract principal sizes and directions
+sizes, directions = metrics.compute_metric_eigenpairs(metric)
 
-# eigenvalues shape: (n_vertices, 3) - 1/size^2 along each direction
-# eigenvectors shape: (n_vertices, 3, 3) - principal directions
+# sizes shape: (n_vertices, 3) - element sizes along each principal direction
+# directions shape: (n_vertices, 3, 3) - principal directions as columns
 
-# Convert to sizes
-sizes = 1.0 / np.sqrt(eigenvalues)
 print(f"Size range: {sizes.min():.4f} to {sizes.max():.4f}")
 ```
 
