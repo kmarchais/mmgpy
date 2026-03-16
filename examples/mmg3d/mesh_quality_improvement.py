@@ -20,8 +20,8 @@ INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "cube.mesh"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
 mmg3d.remesh(
-    input_mesh=str(INPUT_FILE),
-    output_mesh=str(OUTPUT_FILE),
+    input_mesh=INPUT_FILE,
+    output_mesh=OUTPUT_FILE,
     options={
         "optim": 1,
         "verbose": -1,

@@ -31,7 +31,7 @@ mpl.use("Agg")  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 
-from mmgpy import MmgMesh2D
+from mmgpy import Mesh
 from mmgpy.sizing import (
     PointSize,
     SphereSize,
@@ -59,7 +59,7 @@ vertices = np.array(points, dtype=np.float64)
 triangles_arr = np.array(triangles, dtype=np.int32)
 
 # Create MMG mesh
-mesh = MmgMesh2D(vertices, triangles_arr)
+mesh = Mesh(vertices, triangles_arr)
 
 # Define sizing constraints
 constraints = []
