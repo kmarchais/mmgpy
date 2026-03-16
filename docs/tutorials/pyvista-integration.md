@@ -287,7 +287,7 @@ torus = pv.ParametricTorus(ringradius=1.0, crosssectionradius=0.3)
 # Convert to mmgpy surface mesh
 mesh = mmgpy.from_pyvista(torus, mesh_type="surface")
 
-print(f"Original: {mesh.get_mesh_size()['triangles']} triangles")
+print(f"Original: {len(mesh.get_triangles())} triangles")
 
 # Remesh with adaptive sizing
 mesh.set_size_sphere(center=[1.0, 0, 0], radius=0.3, size=0.02)

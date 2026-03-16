@@ -72,7 +72,7 @@ import numpy as np
 mesh = mmgpy.Mesh("input.mesh")
 
 # Define displacement field (3D vector at each vertex)
-n_vertices = mesh.get_mesh_size()["vertices"]
+n_vertices = len(mesh.get_vertices())
 displacement = np.zeros((n_vertices, 3))
 displacement[:, 0] = 0.1  # Move all vertices 0.1 in x
 

@@ -126,7 +126,7 @@ import numpy as np
 mesh = mmgpy.read("input.mesh")
 
 # Add scalar field
-temperature = np.random.rand(mesh.get_mesh_size()["vertices"])
+temperature = np.random.rand(len(mesh.get_vertices()))
 mesh["temperature"] = temperature
 
 # Save mesh and solution

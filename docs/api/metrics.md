@@ -59,7 +59,7 @@ import mmgpy.metrics as metrics
 import numpy as np
 
 mesh = mmgpy.read("input.mesh")
-n_vertices = mesh.get_mesh_size()["vertices"]
+n_vertices = len(mesh.get_vertices())
 
 # Uniform size everywhere
 sizes = np.ones(n_vertices) * 0.1
@@ -96,18 +96,16 @@ Different sizes in different directions:
 ```python
 import numpy as np
 
-n_vertices = mesh.get_mesh_size()["vertices"]
+n_vertices = len(mesh.get_vertices())
 
-# Define principal directions and sizes at each vertex
-# directions: (n_vertices, 3, 3) - orthonormal basis at each vertex
-# sizes: (n_vertices, 3) - sizes along each principal direction
+# Create anisotropic metric for a single vertex, then tile
+# sizes: desired element sizes along each principal direction
+sizes = np.array([0.1, 0.1, 0.05])  # Smaller in z
 
-# Example: stretch along z-axis
-directions = np.tile(np.eye(3), (n_vertices, 1, 1))  # Identity basis
-sizes = np.tile([0.1, 0.1, 0.05], (n_vertices, 1))   # Smaller in z
+single_tensor = metrics.create_anisotropic_metric(sizes)
+metric = np.tile(single_tensor, (n_vertices, 1))
 
-metric = metrics.create_anisotropic_metric(directions, sizes)
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 ```
 
 ### Metric from Hessian
@@ -125,7 +123,7 @@ hessian = compute_hessian(solution, mesh)  # Implementation needed
 # Create metric from Hessian
 metric = metrics.create_metric_from_hessian(
     hessian,
-    epsilon=0.01,  # Target interpolation error
+    target_error=0.01,  # Target interpolation error
 )
 
 mesh["metric"] = metric
