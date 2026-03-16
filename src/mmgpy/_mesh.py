@@ -503,7 +503,7 @@ class Mesh:
         return mesh
 
     @property
-    def impl(self) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
+    def _impl_unwrap(self) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
         """Get the underlying C++ mesh implementation.
 
         This is intended for internal use by other mmgpy modules
