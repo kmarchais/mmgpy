@@ -103,10 +103,11 @@ jobs:
           MPLBACKEND: Agg
           PYVISTA_OFF_SCREEN: "true"
         run: |
+          shopt -s globstar
           for f in examples/**/*.py; do
             case "$f" in
-              examples/ui/*) continue ;;
-              *implicit_2d_domain_meshing*) continue ;;
+              examples/ui/*) continue ;;  # UI examples need a display server
+              *implicit_2d_domain_meshing*) continue ;;  # requires manual GMSH setup
             esac
             echo "::group::Running $f"
             uv run python "$f"
