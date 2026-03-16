@@ -147,11 +147,11 @@ Options classes provide factory methods for common scenarios:
 from mmgpy import Mmg3DOptions
 
 # Fine mesh preset
-fine_opts = Mmg3DOptions.fine()
+fine_opts = Mmg3DOptions.fine(hmax=0.01)
 result = mesh.remesh(fine_opts)
 
 # Coarse mesh preset
-coarse_opts = Mmg3DOptions.coarse()
+coarse_opts = Mmg3DOptions.coarse(hmax=1.0)
 result = mesh.remesh(coarse_opts)
 
 # Optimization-only preset

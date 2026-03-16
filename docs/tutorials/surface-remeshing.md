@@ -121,7 +121,7 @@ import pyvista as pv
 sphere = pv.Sphere(radius=1.0, theta_resolution=20, phi_resolution=20)
 
 # Convert to mmgpy surface mesh
-mesh = mmgpy.from_pyvista(sphere, mesh_type="surface")
+mesh = mmgpy.Mesh(sphere)
 
 # Remesh
 mesh.remesh(hmax=0.1)

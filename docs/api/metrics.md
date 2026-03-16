@@ -59,14 +59,14 @@ import mmgpy.metrics as metrics
 import numpy as np
 
 mesh = mmgpy.read("input.mesh")
-n_vertices = mesh.get_mesh_size()["vertices"]
+n_vertices = len(mesh.get_vertices())
 
 # Uniform size everywhere
 sizes = np.ones(n_vertices) * 0.1
 metric = metrics.create_isotropic_metric(sizes)
 
-# Apply to mesh
-mesh["metric"] = metric
+# Apply to mesh (tensor field, not scalar)
+mesh.set_field("tensor", metric)
 
 # Remesh using the metric
 result = mesh.remesh()
@@ -86,7 +86,7 @@ distances = np.linalg.norm(vertices, axis=1)
 sizes = 0.01 + 0.1 * distances
 
 metric = metrics.create_isotropic_metric(sizes)
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 ```
 
 ### Anisotropic Metric
@@ -96,18 +96,16 @@ Different sizes in different directions:
 ```python
 import numpy as np
 
-n_vertices = mesh.get_mesh_size()["vertices"]
+n_vertices = len(mesh.get_vertices())
 
-# Define principal directions and sizes at each vertex
-# directions: (n_vertices, 3, 3) - orthonormal basis at each vertex
-# sizes: (n_vertices, 3) - sizes along each principal direction
+# Create anisotropic metric for a single vertex, then tile
+# sizes: desired element sizes along each principal direction
+sizes = np.array([0.1, 0.1, 0.05])  # Smaller in z
 
-# Example: stretch along z-axis
-directions = np.tile(np.eye(3), (n_vertices, 1, 1))  # Identity basis
-sizes = np.tile([0.1, 0.1, 0.05], (n_vertices, 1))   # Smaller in z
+single_tensor = metrics.create_anisotropic_metric(sizes)
+metric = np.tile(single_tensor, (n_vertices, 1))
 
-metric = metrics.create_anisotropic_metric(directions, sizes)
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 ```
 
 ### Metric from Hessian
@@ -125,10 +123,10 @@ hessian = compute_hessian(solution, mesh)  # Implementation needed
 # Create metric from Hessian
 metric = metrics.create_metric_from_hessian(
     hessian,
-    epsilon=0.01,  # Target interpolation error
+    target_error=0.01,  # Target interpolation error
 )
 
-mesh["metric"] = metric
+mesh.set_field("tensor", metric)
 ```
 
 ### Metric Intersection
@@ -142,7 +140,7 @@ metric2 = metrics.create_isotropic_metric(sizes2)
 
 # Intersect: take minimum size in all directions
 combined = metrics.intersect_metrics(metric1, metric2)
-mesh["metric"] = combined
+mesh.set_field("tensor", combined)
 ```
 
 ### Extracting Metric Information
@@ -151,14 +149,12 @@ mesh["metric"] = combined
 # Get current metric
 metric = mesh["metric"]
 
-# Extract eigenvalues and eigenvectors
-eigenvalues, eigenvectors = metrics.compute_metric_eigenpairs(metric)
+# Extract principal sizes and directions
+sizes, directions = metrics.compute_metric_eigenpairs(metric)
 
-# eigenvalues shape: (n_vertices, 3) - 1/size^2 along each direction
-# eigenvectors shape: (n_vertices, 3, 3) - principal directions
+# sizes shape: (n_vertices, 3) - element sizes along each principal direction
+# directions shape: (n_vertices, 3, 3) - principal directions as columns
 
-# Convert to sizes
-sizes = 1.0 / np.sqrt(eigenvalues)
 print(f"Size range: {sizes.min():.4f} to {sizes.max():.4f}")
 ```
 

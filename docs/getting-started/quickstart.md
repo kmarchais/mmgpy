@@ -85,10 +85,10 @@ Options classes provide convenient factory methods for common use cases:
 from mmgpy import Mmg3DOptions
 
 # Fine mesh (small elements)
-fine_opts = Mmg3DOptions.fine()
+fine_opts = Mmg3DOptions.fine(hmax=0.01)
 
 # Coarse mesh (large elements)
-coarse_opts = Mmg3DOptions.coarse()
+coarse_opts = Mmg3DOptions.coarse(hmax=1.0)
 
 # Optimization only (no topology changes)
 opt_opts = Mmg3DOptions.optimize_only()
@@ -158,7 +158,7 @@ import pyvista as pv
 sphere = pv.Sphere(radius=1.0)
 
 # Convert to mmgpy mesh
-mesh = mmgpy.from_pyvista(sphere, mesh_type="surface")
+mesh = mmgpy.Mesh(sphere)
 
 # Remesh and visualize
 mesh.remesh(hmax=0.1)

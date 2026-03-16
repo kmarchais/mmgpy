@@ -61,6 +61,11 @@ show_root_heading: true
 options:
 show_root_heading: true
 
+!!! warning "ELAS Library Required"
+`remesh_lagrangian()` requires MMG to be built with ELAS support. The ELAS library solves
+elasticity PDEs to propagate boundary displacements to interior vertices. If MMG was built
+without ELAS, calls to `remesh_lagrangian()` will fail.
+
 ## Mesh Method
 
 Meshes have a `remesh_lagrangian()` method for direct use:
@@ -72,11 +77,11 @@ import numpy as np
 mesh = mmgpy.Mesh("input.mesh")
 
 # Define displacement field (3D vector at each vertex)
-n_vertices = mesh.get_mesh_size()["vertices"]
+n_vertices = len(mesh.get_vertices())
 displacement = np.zeros((n_vertices, 3))
 displacement[:, 0] = 0.1  # Move all vertices 0.1 in x
 
-# Remesh with displacement
+# Remesh with displacement (requires ELAS library)
 result = mesh.remesh_lagrangian(displacement)
 ```
 
@@ -101,7 +106,7 @@ directions = directions / (distances + 1e-10)
 # 10% radial expansion
 displacement = directions * 0.1 * distances
 
-# Apply and remesh
+# Apply and remesh (requires ELAS library)
 result = mesh.remesh_lagrangian(displacement)
 
 print(f"Quality: {result.quality_mean_after:.3f}")
@@ -231,7 +236,7 @@ scale = np.array([0.7, 0.7, 1.5])  # Compress x,y, stretch z
 new_positions = center + relative * scale
 displacement = new_positions - vertices
 
-# Apply with Lagrangian remeshing
+# Apply with Lagrangian remeshing (requires ELAS library)
 result = mesh.remesh_lagrangian(
     displacement,
     hmax=0.1,
