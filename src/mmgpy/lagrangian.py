@@ -305,8 +305,11 @@ def move_mesh(
     """
     from ._mesh import Mesh as _Mesh  # noqa: PLC0415
 
+    # Unwrap Mesh to its underlying C++ impl; move_mesh mutates the impl
+    # in-place, which the Mesh wrapper references, so changes are visible
+    # to the caller.
     if isinstance(mesh, _Mesh):
-        mesh = mesh._impl  # noqa: SLF001
+        mesh = mesh.impl
 
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)
@@ -371,7 +374,7 @@ def detect_boundary_vertices(
     from ._mesh import Mesh as _Mesh  # noqa: PLC0415
 
     if isinstance(mesh, _Mesh):
-        mesh = mesh._impl  # noqa: SLF001
+        mesh = mesh.impl
 
     n_vertices = len(mesh.get_vertices())
     boundary_mask = np.zeros(n_vertices, dtype=bool)

@@ -163,7 +163,7 @@ def main() -> None:
         hmax=0.08,
         hausd=0.002,
         hgrad=1.3,
-        verbose=True,
+        verbose=False,
     )
 
     print("\nRemeshing result:")
