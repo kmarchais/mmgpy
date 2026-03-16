@@ -25,8 +25,8 @@ pl = pv.Plotter(shape=(1, 2), window_size=(800, 400))
 for open_boundary in [False, True]:
     pl.subplot(0, int(open_boundary))
     mmg3d.remesh(
-        input_mesh=str(INPUT_FILE),
-        output_mesh=str(OUTPUT_FILE),
+        input_mesh=INPUT_FILE,
+        output_mesh=OUTPUT_FILE,
         options={
             "opnbdy": open_boundary,
             "verbose": -1,

@@ -23,8 +23,8 @@ OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 SCREENSHOT = False
 
 mmgs.remesh(
-    input_mesh=str(INPUT_FILE),
-    output_mesh=str(OUTPUT_FILE),
+    input_mesh=INPUT_FILE,
+    output_mesh=OUTPUT_FILE,
     options={
         "hausd": 0.001,
         "angle": 0,
