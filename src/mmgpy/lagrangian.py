@@ -368,6 +368,11 @@ def detect_boundary_vertices(
         Boolean array of length n_vertices, True for boundary vertices.
 
     """
+    from ._mesh import Mesh as _Mesh  # noqa: PLC0415
+
+    if isinstance(mesh, _Mesh):
+        mesh = mesh._impl  # noqa: SLF001
+
     n_vertices = len(mesh.get_vertices())
     boundary_mask = np.zeros(n_vertices, dtype=bool)
 

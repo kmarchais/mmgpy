@@ -4,7 +4,6 @@
 #     "mmgpy",
 #     "numpy",
 #     "pyvista",
-#     "tqdm",
 # ]
 #
 # [tool.uv.sources]
@@ -48,7 +47,7 @@ def create_volumetric_cube_mesh(resolution: int = 10) -> tuple[np.ndarray, np.nd
     points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
 
     cloud = pv.PolyData(points)
-    tetra = cloud.delaunay_3d(progress_bar=True)
+    tetra = cloud.delaunay_3d()
     vertices = np.array(tetra.points, dtype=np.float64)
     elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
     return vertices, elements
