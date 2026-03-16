@@ -27,9 +27,9 @@ pl = pv.Plotter(shape=(2, len(hausorff_parameters)))
 for i, hausd in enumerate(hausorff_parameters):
     pl.subplot(0, i)
 
-    out_file = f"{OUTPUT_DIR!r}/hausd_{hausd}.vtk"
+    out_file = OUTPUT_DIR / f"hausd_{hausd}.vtk"
     mmgs.remesh(
-        input_mesh=str(INPUT_FILE),
+        input_mesh=INPUT_FILE,
         output_mesh=out_file,
         options={"hausd": hausd},
     )
@@ -40,9 +40,9 @@ for i, hausd in enumerate(hausorff_parameters):
 for i, hmax in enumerate(hmax_parameters):
     pl.subplot(1, i)
 
-    out_file = f"{OUTPUT_DIR!r}/hmax_{hmax}.vtk"
+    out_file = OUTPUT_DIR / f"hmax_{hmax}.vtk"
     mmgs.remesh(
-        input_mesh=str(INPUT_FILE),
+        input_mesh=INPUT_FILE,
         output_mesh=out_file,
         options={"hmax": hmax},
     )

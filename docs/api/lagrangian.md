@@ -19,16 +19,16 @@ This is useful for:
 
 ## Supported Mesh Types
 
-| Mesh Type                     | `remesh_lagrangian()` | Alternative       |
-| ----------------------------- | --------------------- | ----------------- |
-| **MmgMesh3D** (tetrahedral)   | ✅ Supported          | -                 |
-| **MmgMesh2D** (2D triangular) | ✅ Supported          | -                 |
-| **MmgMeshS** (surface)        | ❌ Not supported      | Use `move_mesh()` |
+| Mesh Type              | `remesh_lagrangian()` | Alternative       |
+| ---------------------- | --------------------- | ----------------- |
+| **Tetrahedral** (3D)   | ✅ Supported          | -                 |
+| **Triangular 2D**      | ✅ Supported          | -                 |
+| **Triangular Surface** | ❌ Not supported      | Use `move_mesh()` |
 
 ### Why Surface Meshes Don't Support Lagrangian Motion
 
 Lagrangian motion in MMG requires the ELAS library to solve elasticity PDEs that propagate
-boundary displacements to interior vertices. Surface meshes (MmgMeshS) have no volumetric
+boundary displacements to interior vertices. Surface meshes have no volumetric
 interior—all vertices are on the surface. The ELAS library only supports 2D/3D volumetric
 elasticity, not shell/membrane elasticity needed for surfaces.
 
@@ -39,7 +39,7 @@ remeshes to maintain quality:
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.MmgMeshS(vertices, triangles)
+mesh = mmgpy.Mesh(vertices, triangles)  # Auto-detects surface mesh
 displacement = np.zeros((len(vertices), 3))
 displacement[:, 0] = 0.1  # Move in x direction
 

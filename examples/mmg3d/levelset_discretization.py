@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 import pyvista as pv
 
-from mmgpy import MmgMesh3D
+from mmgpy import Mesh
 
 
 def create_volumetric_cube_mesh(resolution: int = 10) -> tuple[np.ndarray, np.ndarray]:
@@ -47,7 +47,7 @@ def create_volumetric_cube_mesh(resolution: int = 10) -> tuple[np.ndarray, np.nd
     points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
 
     cloud = pv.PolyData(points)
-    tetra = cloud.delaunay_3d(progress_bar=True)
+    tetra = cloud.delaunay_3d()
     vertices = np.array(tetra.points, dtype=np.float64)
     elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
     return vertices, elements
@@ -87,7 +87,7 @@ def gyroid_levelset(
     return (np.abs(f) - thickness / 2).reshape(-1, 1)
 
 
-def extract_volume_surface(mesh: MmgMesh3D, element_ref: int = 3) -> pv.PolyData:
+def extract_volume_surface(mesh: Mesh, element_ref: int = 3) -> pv.PolyData:
     """Extract the surface of a volume region (tetrahedra with given ref).
 
     After level-set discretization, MMG assigns:
@@ -122,7 +122,7 @@ def create_thick_gyroid(
 
     Returns the surface of the solid gyroid volume as a PyVista PolyData.
     """
-    mesh = MmgMesh3D(vertices.copy(), elements.copy())
+    mesh = Mesh(vertices.copy(), elements.copy())
     levelset = gyroid_levelset(vertices, thickness=thickness, periods=periods)
     mesh.remesh_levelset(levelset, ls=0.0, hmax=hmax, verbose=True)
     # Extract the solid material (interior, ref=3)
@@ -185,7 +185,7 @@ def main() -> None:
 
     # Save image
     output_path = Path(__file__).parent / "levelset_discretization.png"
-    pl.screenshot(str(output_path))
+    pl.screenshot(output_path)
     print(f"\nImage saved to: {output_path}")
 
 

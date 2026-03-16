@@ -21,6 +21,7 @@ from scipy.sparse.linalg import spsolve
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+    from ._mesh import Mesh
     from ._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 # Type alias for mesh union
@@ -269,7 +270,7 @@ def _validate_displacement(
 
 
 def move_mesh(
-    mesh: MmgMesh2D | MmgMesh3D | MmgMeshS,
+    mesh: MmgMesh2D | MmgMesh3D | MmgMeshS | Mesh,
     displacement: NDArray[np.float64],
     *,
     boundary_mask: NDArray[np.bool_] | None = None,
@@ -284,7 +285,7 @@ def move_mesh(
     multiple steps (n_steps > 1) to avoid mesh inversion.
 
     Args:
-        mesh: MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.
+        mesh: Mesh, MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.
         displacement: Nxdim array of displacement vectors for each vertex.
             If boundary_mask is provided and propagate=True, only boundary
             values need to be correct; interior values will be computed.
@@ -302,6 +303,14 @@ def move_mesh(
         RuntimeError: If remeshing fails.
 
     """
+    from ._mesh import Mesh  # noqa: PLC0415
+
+    # Unwrap Mesh to its underlying C++ impl; move_mesh mutates the impl
+    # in-place, which the Mesh wrapper references, so changes are visible
+    # to the caller.
+    if isinstance(mesh, Mesh):
+        mesh = mesh._impl_unwrap  # noqa: SLF001
+
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)
     n_dims = vertices.shape[1]
@@ -347,7 +356,7 @@ def move_mesh(
 
 
 def detect_boundary_vertices(
-    mesh: MmgMesh2D | MmgMesh3D | MmgMeshS,
+    mesh: MmgMesh2D | MmgMesh3D | MmgMeshS | Mesh,
 ) -> NDArray[np.bool_]:
     """Detect boundary vertices in a mesh.
 
@@ -356,12 +365,17 @@ def detect_boundary_vertices(
     For 2D/surface meshes, these are vertices on boundary edges.
 
     Args:
-        mesh: MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.
+        mesh: Mesh, MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.
 
     Returns:
         Boolean array of length n_vertices, True for boundary vertices.
 
     """
+    from ._mesh import Mesh  # noqa: PLC0415
+
+    if isinstance(mesh, Mesh):
+        mesh = mesh._impl_unwrap  # noqa: SLF001
+
     n_vertices = len(mesh.get_vertices())
     boundary_mask = np.zeros(n_vertices, dtype=bool)
 

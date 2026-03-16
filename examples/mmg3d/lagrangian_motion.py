@@ -23,7 +23,7 @@ This works on all platforms without requiring the ELAS library.
 import numpy as np
 import pyvista as pv
 
-from mmgpy import MmgMesh3D, move_mesh
+from mmgpy import Mesh, move_mesh
 
 
 def create_unit_cube_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -40,7 +40,7 @@ def main() -> None:
     vertices, elements = create_unit_cube_mesh()
     print(f"Initial mesh: {len(vertices)} vertices, {len(elements)} tetrahedra")
 
-    mesh = MmgMesh3D(vertices, elements)
+    mesh = Mesh(vertices, elements)
 
     # Create radial expansion displacement field
     n_vertices = vertices.shape[0]

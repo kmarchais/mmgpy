@@ -30,13 +30,13 @@ Controls:
 import numpy as np
 import pyvista as pv
 
-from mmgpy import MmgMesh2D
+from mmgpy import Mesh
 
 # Cache for the base uniform mesh (created once)
-_BASE_MESH_CACHE: dict[str, MmgMesh2D] = {}
+_BASE_MESH_CACHE: dict[str, Mesh] = {}
 
 
-def create_base_mesh() -> MmgMesh2D:
+def create_base_mesh() -> Mesh:
     """Create a simple circle mesh for initial remeshing."""
     n = 32
     vertices = [[0.0, 0.0]]
@@ -46,10 +46,10 @@ def create_base_mesh() -> MmgMesh2D:
     vertices = np.array(vertices, dtype=np.float64)
 
     triangles = [[0, 1 + i, 1 + (i + 1) % n] for i in range(n)]
-    return MmgMesh2D(vertices, np.array(triangles, dtype=np.int32))
+    return Mesh(vertices, np.array(triangles, dtype=np.int32))
 
 
-def get_uniform_mesh(hmax: float = 0.15) -> MmgMesh2D:
+def get_uniform_mesh(hmax: float = 0.15) -> Mesh:
     """Get a uniformly meshed circle (cached for performance)."""
     cache_key = f"{hmax:.4f}"
     if cache_key not in _BASE_MESH_CACHE:
@@ -58,11 +58,11 @@ def get_uniform_mesh(hmax: float = 0.15) -> MmgMesh2D:
         _BASE_MESH_CACHE[cache_key] = mesh
     # Return a copy so we don't modify the cached mesh
     cached = _BASE_MESH_CACHE[cache_key]
-    return MmgMesh2D(cached.get_vertices().copy(), cached.get_triangles().copy())
+    return Mesh(cached.get_vertices().copy(), cached.get_triangles().copy())
 
 
-def mesh_to_pyvista(mesh: MmgMesh2D) -> pv.PolyData:
-    """Convert MmgMesh2D to PyVista PolyData."""
+def mesh_to_pyvista(mesh: Mesh) -> pv.PolyData:
+    """Convert Mesh to PyVista PolyData."""
     verts = mesh.get_vertices()
     verts_3d = np.column_stack([verts, np.zeros(len(verts))])
     tris = mesh.get_triangles()

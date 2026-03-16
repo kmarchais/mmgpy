@@ -503,6 +503,15 @@ class Mesh:
         return mesh
 
     @property
+    def _impl_unwrap(self) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
+        """Get the underlying C++ mesh implementation.
+
+        This is intended for internal use by other mmgpy modules
+        (e.g., lagrangian) that need the raw binding object.
+        """
+        return self._impl
+
+    @property
     def kind(self) -> MeshKind:
         """Get the mesh kind.
 

@@ -97,6 +97,26 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
+      - name: Run examples
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        env:
+          MPLBACKEND: Agg
+          PYVISTA_OFF_SCREEN: "true"
+        run: |
+          set -euo pipefail
+          shopt -s globstar
+          for f in examples/**/*.py; do
+            case "$f" in
+              examples/ui/*) continue ;;  # UI examples need a display server
+              examples/mmg2d/implicit_2d_domain_meshing.py) continue ;;  # requires specific input assets
+              examples/mmgs/implicit_surface_domain_meshing.py) continue ;;  # requires specific input assets
+            esac
+            echo "::group::Running $f"
+            uv run python "$f"
+            echo "::endgroup::"
+          done
+        shell: bash
+
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         uses: codecov/codecov-action@v5
