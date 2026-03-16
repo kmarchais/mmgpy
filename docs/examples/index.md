@@ -154,15 +154,14 @@ import mmgpy.metrics as metrics
 import numpy as np
 
 mesh = mmgpy.Mesh("domain.mesh")
-n_vertices = mesh.get_mesh_size()["vertices"]
+n_vertices = len(mesh.get_vertices())
 
 # Create anisotropic metric (stretch in x direction)
-directions = np.tile(np.eye(2), (n_vertices, 1, 1))
-sizes = np.tile([0.1, 0.02], (n_vertices, 1))  # Larger in x, smaller in y
+sizes = np.array([0.1, 0.02])  # Larger in x, smaller in y
+single_tensor = metrics.create_anisotropic_metric(sizes)
+metric = np.tile(single_tensor, (n_vertices, 1))
 
-metric = metrics.create_anisotropic_metric(directions, sizes)
-mesh["metric"] = metric
-
+mesh.set_field("tensor", metric)
 result = mesh.remesh()
 ```
 
