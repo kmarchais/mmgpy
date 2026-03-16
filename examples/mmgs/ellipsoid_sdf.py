@@ -180,7 +180,7 @@ def main() -> None:
     pl.camera_position = [(3, 2, 1.5), center, (0, 0, 1)]
 
     output_path = Path(__file__).parent / "ellipsoid_sdf.png"
-    pl.screenshot(str(output_path))
+    pl.screenshot(output_path)
     print(f"Image saved to: {output_path}")
 
     # Print summary table

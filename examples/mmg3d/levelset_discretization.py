@@ -185,7 +185,7 @@ def main() -> None:
 
     # Save image
     output_path = Path(__file__).parent / "levelset_discretization.png"
-    pl.screenshot(str(output_path))
+    pl.screenshot(output_path)
     print(f"\nImage saved to: {output_path}")
 
 

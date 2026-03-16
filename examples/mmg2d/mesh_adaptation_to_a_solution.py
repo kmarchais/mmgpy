@@ -22,9 +22,9 @@ SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "hole.sol"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
 mmg2d.remesh(
-    input_mesh=str(INPUT_FILE),
-    input_sol=str(SOL_FILE),
-    output_mesh=str(OUTPUT_FILE),
+    input_mesh=INPUT_FILE,
+    input_sol=SOL_FILE,
+    output_mesh=OUTPUT_FILE,
     options={"verbose": -1},
 )
 
