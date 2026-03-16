@@ -4,6 +4,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
+from mmgpy import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 from mmgpy.lagrangian import (
     _build_adjacency_from_elements,
@@ -354,6 +355,20 @@ class TestMoveMesh:
         output_vertices = mesh.get_vertices()
         assert len(output_vertices) > 0
 
+    def test_uniform_displacement_2d_mesh_class(self) -> None:
+        """Test moving 2D Mesh with uniform displacement."""
+        vertices, triangles = create_2d_test_mesh()
+        mesh = Mesh(vertices, triangles)
+
+        n = len(vertices)
+        displacement = np.full((n, 2), [0.1, 0.0], dtype=np.float64)
+
+        move_mesh(mesh, displacement, hmax=0.5, verbose=False)
+
+        output_vertices = mesh.get_vertices()
+        assert len(output_vertices) > 0
+        assert len(mesh.get_triangles()) > 0
+
     def test_validation_errors(self) -> None:
         """Test that validation errors are raised."""
         vertices, triangles = create_2d_test_mesh()
@@ -397,6 +412,16 @@ class TestDetectBoundaryVertices:
         assert boundary_mask[1]  # Corner
         assert boundary_mask[2]  # Corner
         assert boundary_mask[3]  # Corner
+
+    def test_detect_2d_boundaries_mesh_class(self) -> None:
+        """Test boundary detection for 2D Mesh wrapper."""
+        vertices, triangles = create_2d_test_mesh()
+        mesh = Mesh(vertices, triangles)
+
+        boundary_mask = detect_boundary_vertices(mesh)
+
+        assert len(boundary_mask) == len(vertices)
+        assert boundary_mask.dtype == bool
 
     def test_detect_3d_boundaries(self) -> None:
         """Test boundary detection for 3D mesh."""
