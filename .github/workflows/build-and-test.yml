@@ -107,7 +107,7 @@ jobs:
           for f in examples/**/*.py; do
             case "$f" in
               examples/ui/*) continue ;;  # UI examples need a display server
-              *implicit_2d_domain_meshing*) continue ;;  # requires manual GMSH setup
+              *implicit*domain_meshing*) continue ;;  # requires specific input assets
             esac
             echo "::group::Running $f"
             uv run python "$f"
