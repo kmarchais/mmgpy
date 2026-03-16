@@ -28,7 +28,7 @@ vertices = mesh.get_vertices()
 # Define level-set: signed distance to a sphere
 center = np.array([0.5, 0.5, 0.5])
 radius = 0.3
-levelset = np.linalg.norm(vertices - center, axis=1) - radius
+levelset = (np.linalg.norm(vertices - center, axis=1) - radius).reshape(-1, 1)
 
 # Remesh with level-set discretization
 result = mesh.remesh_levelset(levelset)
@@ -64,7 +64,7 @@ mesh = mmgpy.Mesh("unit_cube.mesh")
 
 ```python
 def sphere_levelset(coords, center=(0.5, 0.5, 0.5), radius=0.3):
-    return np.linalg.norm(coords - np.array(center), axis=1) - radius
+    return (np.linalg.norm(coords - np.array(center), axis=1) - radius).reshape(-1, 1)
 
 levelset = sphere_levelset(mesh.get_vertices())
 ```
@@ -77,7 +77,7 @@ def torus_levelset(coords, R=0.5, r=0.15):
     # Translate to center at (0.5, 0.5, 0.5)
     x, y, z = x - 0.5, y - 0.5, z - 0.5
     q = np.sqrt(x**2 + y**2) - R
-    return np.sqrt(q**2 + z**2) - r
+    return (np.sqrt(q**2 + z**2) - r).reshape(-1, 1)
 
 levelset = torus_levelset(mesh.get_vertices())
 ```
@@ -89,7 +89,7 @@ def gyroid_levelset(coords, scale=2*np.pi):
     x = coords[:, 0] * scale
     y = coords[:, 1] * scale
     z = coords[:, 2] * scale
-    return np.sin(x)*np.cos(y) + np.sin(y)*np.cos(z) + np.sin(z)*np.cos(x)
+    return (np.sin(x)*np.cos(y) + np.sin(y)*np.cos(z) + np.sin(z)*np.cos(x)).reshape(-1, 1)
 
 levelset = gyroid_levelset(mesh.get_vertices())
 ```
@@ -132,7 +132,7 @@ vertices = mesh.get_vertices()
 # Circle level-set
 center = np.array([0.5, 0.5])
 radius = 0.3
-levelset = np.linalg.norm(vertices[:, :2] - center, axis=1) - radius
+levelset = (np.linalg.norm(vertices[:, :2] - center, axis=1) - radius).reshape(-1, 1)
 
 result = mesh.remesh_levelset(levelset)
 ```
@@ -149,7 +149,7 @@ mesh = mmgpy.Mesh("surface.mesh")
 vertices = mesh.get_vertices()
 
 # Level-set based on z-coordinate (extracts z=0 curve)
-levelset = vertices[:, 2]
+levelset = vertices[:, 2].reshape(-1, 1)
 
 result = mesh.remesh_levelset(levelset)
 ```
@@ -189,7 +189,7 @@ def double_sphere(coords):
 
     return np.minimum(d1, d2)  # Union
 
-levelset = double_sphere(vertices)
+levelset = double_sphere(vertices).reshape(-1, 1)
 
 # Extract the isosurface
 result = mesh.remesh_levelset(

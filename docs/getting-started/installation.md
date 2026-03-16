@@ -80,7 +80,7 @@ vertices = np.array([
 tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
 mesh = mmgpy.Mesh(vertices, tetrahedra)
-print(f"Created mesh with {mesh.get_mesh_size()['vertices']} vertices")
+print(f"Created mesh with {len(mesh.get_vertices())} vertices")
 ```
 
 ## Optional Dependencies
