@@ -102,7 +102,6 @@ def extract_and_remesh(
         hausd=0.002,
         hgrad=1.1,
         verbose=False,
-        progress=False,
     )
     remesh_time = time.perf_counter() - t0
 

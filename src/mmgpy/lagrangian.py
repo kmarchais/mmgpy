@@ -303,13 +303,13 @@ def move_mesh(
         RuntimeError: If remeshing fails.
 
     """
-    from ._mesh import Mesh as _Mesh  # noqa: PLC0415
+    from ._mesh import Mesh  # noqa: PLC0415
 
     # Unwrap Mesh to its underlying C++ impl; move_mesh mutates the impl
     # in-place, which the Mesh wrapper references, so changes are visible
     # to the caller.
-    if isinstance(mesh, _Mesh):
-        mesh = mesh.impl
+    if isinstance(mesh, Mesh):
+        mesh = mesh._impl_unwrap  # noqa: SLF001
 
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)
@@ -371,10 +371,10 @@ def detect_boundary_vertices(
         Boolean array of length n_vertices, True for boundary vertices.
 
     """
-    from ._mesh import Mesh as _Mesh  # noqa: PLC0415
+    from ._mesh import Mesh  # noqa: PLC0415
 
-    if isinstance(mesh, _Mesh):
-        mesh = mesh.impl
+    if isinstance(mesh, Mesh):
+        mesh = mesh._impl_unwrap  # noqa: SLF001
 
     n_vertices = len(mesh.get_vertices())
     boundary_mask = np.zeros(n_vertices, dtype=bool)

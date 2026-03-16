@@ -73,7 +73,7 @@ def remesh_with_metric(
     """Remesh a 2D domain with given anisotropic metric tensor field."""
     mesh = Mesh(vertices, triangles)
     mesh.set_field("tensor", metric_tensor)
-    mesh.remesh(hgrad=2.0, verbose=-1, progress=False)
+    mesh.remesh(hgrad=2.0, verbose=-1)
     return mesh.get_vertices(), mesh.get_triangles()
 
 

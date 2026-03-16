@@ -54,7 +54,7 @@ def get_uniform_mesh(hmax: float = 0.15) -> Mesh:
     cache_key = f"{hmax:.4f}"
     if cache_key not in _BASE_MESH_CACHE:
         mesh = create_base_mesh()
-        mesh.remesh(hmax=hmax, hausd=0.01, verbose=-1, progress=False)
+        mesh.remesh(hmax=hmax, hausd=0.01, verbose=-1)
         _BASE_MESH_CACHE[cache_key] = mesh
     # Return a copy so we don't modify the cached mesh
     cached = _BASE_MESH_CACHE[cache_key]
@@ -94,7 +94,7 @@ class InteractiveRemeshPreview:
         mesh["metric"] = sizes.reshape(-1, 1)
 
         try:
-            mesh.remesh(hausd=0.01, verbose=-1, progress=False)
+            mesh.remesh(hausd=0.01, verbose=-1)
             n_verts = len(mesh.get_vertices())
             n_tris = len(mesh.get_triangles())
             status = f"{n_verts} verts | {n_tris} tris"
