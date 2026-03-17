@@ -58,12 +58,12 @@ mesh = mmgpy.Mesh(grid)
 
 ### Checking Mesh Type
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import MeshKind
 
-mesh = mmgpy.Mesh(vertices, elements)
+mesh = mmgpy.Mesh(vertices, tetrahedra)
 
 if mesh.kind == MeshKind.TETRAHEDRAL:
     print("3D volume mesh")
@@ -95,7 +95,8 @@ print(f"Vertices: {len(vertices)}")
 import numpy as np
 
 # Set a scalar field (metric for sizing)
-metric = np.ones(len(mesh.get_vertices()), dtype=np.float64) * 0.1
+n = len(mesh.get_vertices())
+metric = np.ones((n, 1), dtype=np.float64) * 0.1
 mesh["metric"] = metric
 
 # Get a field

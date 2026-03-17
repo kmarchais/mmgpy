@@ -179,8 +179,6 @@ result = mesh.remesh_levelset(
 
 ## Complete Example: Implicit Domain Meshing
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import numpy as np
@@ -219,7 +217,7 @@ mesh.save("double_sphere.vtk")
 
 ## Visualization
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 import pyvista as pv

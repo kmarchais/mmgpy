@@ -35,13 +35,14 @@ elasticity, not shell/membrane elasticity needed for surfaces.
 For surface meshes, use `mmgpy.move_mesh()` instead, which directly moves vertices and
 remeshes to maintain quality:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
+import pyvista as pv
 import numpy as np
 
-mesh = mmgpy.Mesh(vertices, triangles)  # Auto-detects surface mesh
+sphere = pv.Sphere(theta_resolution=10, phi_resolution=10)
+mesh = mmgpy.Mesh(sphere)  # Auto-detects surface mesh
+vertices = mesh.get_vertices()
 displacement = np.zeros((len(vertices), 3))
 displacement[:, 0] = 0.1  # Move in x direction
 
@@ -169,9 +170,9 @@ result = mesh.remesh_lagrangian(full_disp)
 
 Apply displacement without topology changes:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
+import mmgpy
+import numpy as np
 from mmgpy import move_mesh
 
 mesh = mmgpy.read("input.mesh")

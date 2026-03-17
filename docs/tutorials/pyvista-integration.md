@@ -32,8 +32,6 @@ mesh.plot(color="lightblue", opacity=0.8, show_edges=False)
 
 For more complex visualizations, use the `vtk` property to access the PyVista mesh:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import pyvista as pv
@@ -44,7 +42,6 @@ mesh.remesh(hmax=0.1)
 # Use mesh.vtk with any PyVista plotter
 plotter = pv.Plotter()
 plotter.add_mesh(mesh.vtk, show_edges=True, color="lightblue")
-plotter.add_mesh(other_mesh.vtk, color="red", opacity=0.5)
 plotter.show()
 ```
 
@@ -179,8 +176,6 @@ pl.close()
 
 ### Transferring Scalar Fields
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import pyvista as pv
@@ -191,18 +186,17 @@ mesh = mmgpy.read("input.mesh")
 # Add a scalar field to the mesh
 vertices = mesh.get_vertices()
 scalar_field = np.sin(vertices[:, 0] * 2 * np.pi)
-mesh["temperature"] = scalar_field
+mesh.set_user_field("temperature", scalar_field)
 
-# Convert to PyVista - fields are preserved
+# Convert to PyVista and add user fields manually
 pv_mesh = mesh.to_pyvista()
+pv_mesh["temperature"] = mesh.get_user_field("temperature")
 
 # Plot with scalar field
 pv_mesh.plot(scalars="temperature", show_edges=True, cmap="coolwarm")
 ```
 
 ### From PyVista with Data
-
-<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -213,11 +207,12 @@ import numpy as np
 sphere = pv.Sphere()
 sphere["elevation"] = sphere.points[:, 2]
 
-# Convert to mmgpy
+# Convert to mmgpy and store the field as a user field
 mesh = mmgpy.Mesh(sphere)
+mesh.set_user_field("elevation", sphere["elevation"])
 
 # Access the field
-elevation = mesh["elevation"]
+elevation = mesh.get_user_field("elevation")
 print(f"Elevation range: {elevation.min():.2f} to {elevation.max():.2f}")
 ```
 

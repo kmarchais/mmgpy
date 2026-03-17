@@ -76,7 +76,7 @@ _VERTS_SURF, _CELLS_SURF = _make_surface_mesh()
 
 _SURFACE_EXTENSIONS = {".stl", ".obj", ".ply", ".off", ".vtp"}
 _SURFACE_KEYWORDS = {"surface", "mechanical", "part", "torus", "sphere", "bunny"}
-_2D_KEYWORDS = {"2d", "planar", "domain"}
+_2D_KEYWORDS = {"2d", "planar"}
 
 
 def _classify_filename(name: str) -> str:
@@ -171,3 +171,23 @@ def _make_surface_mesh_faces() -> np.ndarray:
 
 
 pv.read = _fake_pv_read  # type: ignore[assignment]
+
+# Patch pv.PolyData.save and pv.UnstructuredGrid.save to redirect to tmp_dir
+_real_pv_polydata_save = pv.PolyData.save
+_real_pv_unstructured_save = pv.UnstructuredGrid.save
+
+
+def _patched_pv_save(
+    self: pv.PolyData | pv.UnstructuredGrid,
+    filename: str,
+    **kwargs: object,
+) -> None:
+    dest = str(Path(_tmp_dir) / Path(filename).name)
+    if isinstance(self, pv.PolyData):
+        _real_pv_polydata_save(self, dest, **kwargs)
+    else:
+        _real_pv_unstructured_save(self, dest, **kwargs)
+
+
+pv.PolyData.save = _patched_pv_save  # type: ignore[assignment]
+pv.UnstructuredGrid.save = _patched_pv_save  # type: ignore[assignment]

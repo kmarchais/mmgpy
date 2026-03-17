@@ -139,10 +139,13 @@ mesh.set_field("tensor", metric)
 
 Combine multiple metrics (minimum size wins):
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
-# Two different metrics
+# Two different metrics with different sizes
+n_vertices = len(mesh.get_vertices())
+sizes1 = np.ones(n_vertices) * 0.05
+sizes2 = np.ones(n_vertices) * 0.08
 metric1 = metrics.create_isotropic_metric(sizes1)
 metric2 = metrics.create_isotropic_metric(sizes2)
 
@@ -153,7 +156,7 @@ mesh.set_field("tensor", combined)
 
 ### Extracting Metric Information
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Get current metric
@@ -172,7 +175,7 @@ print(f"Size range: {sizes.min():.4f} to {sizes.max():.4f}")
 
 MMG uses symmetric tensors in Voigt notation:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # 3D: 6 components per vertex
@@ -194,7 +197,7 @@ tensor_back = metrics.matrix_to_tensor(matrix)
 
 Check metric tensor validity:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 metric = mesh["metric"]

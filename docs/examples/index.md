@@ -103,7 +103,7 @@ Apply regional mesh refinement.
 """Per-region mesh density control."""
 import mmgpy
 
-mesh = mmgpy.Mesh("domain.mesh")
+mesh = mmgpy.Mesh("domain_2d.mesh")
 
 # Fine mesh in center
 mesh.set_size_sphere(center=[0.5, 0.5], radius=0.2, size=0.01)
@@ -120,15 +120,13 @@ result = mesh.remesh(hmax=0.1)
 
 Adapt mesh to solution field.
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 """Mesh adaptation to solution gradients."""
 import mmgpy
 import mmgpy.metrics as metrics
 import numpy as np
 
-mesh = mmgpy.Mesh("domain.mesh")
+mesh = mmgpy.Mesh("domain_2d.mesh")
 vertices = mesh.get_vertices()
 
 # Solution field
@@ -137,7 +135,7 @@ solution = np.sin(vertices[:, 0] * 4 * np.pi) * np.cos(vertices[:, 1] * 4 * np.p
 # Create metric from solution gradients
 # (simplified - full implementation computes Hessian)
 sizes = 0.01 + 0.1 * np.abs(solution)
-metric = metrics.create_isotropic_metric(sizes)
+metric = metrics.create_isotropic_metric(sizes, dim=2)
 mesh.set_field("tensor", metric)
 
 result = mesh.remesh()
@@ -157,7 +155,7 @@ import mmgpy
 import mmgpy.metrics as metrics
 import numpy as np
 
-mesh = mmgpy.Mesh("domain.mesh")
+mesh = mmgpy.Mesh("domain_2d.mesh")
 n_vertices = len(mesh.get_vertices())
 
 # Create anisotropic metric (stretch in x direction)
@@ -182,11 +180,12 @@ Generate mesh from implicit function.
 import mmgpy
 import numpy as np
 
-mesh = mmgpy.Mesh("background.mesh")
+mesh = mmgpy.Mesh("background_2d.mesh")
 vertices = mesh.get_vertices()
 
 # Circle level-set
-levelset = (np.linalg.norm(vertices[:, :2] - [0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
+center = np.array([0.5, 0.5])
+levelset = (np.linalg.norm(vertices[:, :2] - center, axis=1) - 0.3).reshape(-1, 1)
 
 result = mesh.remesh_levelset(levelset)
 ```

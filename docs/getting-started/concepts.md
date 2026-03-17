@@ -103,17 +103,19 @@ This may:
 
 To improve quality without changing topology:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
+import mmgpy
+
+mesh = mmgpy.Mesh("input.mesh")
 result = mesh.remesh_optimize()
 ```
 
 Or equivalently:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
+import mmgpy
+
+mesh = mmgpy.Mesh("input.mesh")
 result = mesh.remesh(optim=1, noinsert=1)
 ```
 
@@ -121,9 +123,10 @@ result = mesh.remesh(optim=1, noinsert=1)
 
 To remesh with a single target size everywhere:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
+import mmgpy
+
+mesh = mmgpy.Mesh("input.mesh")
 result = mesh.remesh_uniform(size=0.05)
 ```
 
@@ -131,9 +134,8 @@ result = mesh.remesh_uniform(size=0.05)
 
 Extract and remesh an isosurface:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
+import mmgpy
 import numpy as np
 
 # Define a level-set function (distance to sphere)
@@ -202,10 +204,13 @@ mesh.set_size_from_point(
 
 For anisotropic remeshing, define a metric tensor at each vertex:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
+import mmgpy
 import mmgpy.metrics as metrics
+import numpy as np
+
+mesh = mmgpy.Mesh("input.mesh")
+n_vertices = len(mesh.get_vertices())
 
 # Create isotropic metric from sizes
 sizes = np.ones(n_vertices) * 0.1

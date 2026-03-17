@@ -186,8 +186,6 @@ result = mesh.remesh()
 
 Create refined mesh near a surface for CFD simulations:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import numpy as np
@@ -224,9 +222,8 @@ mesh.save("refined_domain.vtk")
 
 For programmatic use, you can use the sizing constraint classes directly:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
+import mmgpy
 from mmgpy import SphereSize, BoxSize, CylinderSize, PointSize
 from mmgpy.sizing import apply_sizing_constraints
 import numpy as np
