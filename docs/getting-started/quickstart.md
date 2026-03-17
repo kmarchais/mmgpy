@@ -140,6 +140,8 @@ mesh.plot(color="lightblue", opacity=0.8)
 
 For custom plotters, use the `vtk` property:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 import pyvista as pv
 

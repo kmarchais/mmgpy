@@ -89,14 +89,12 @@ else:
 
 ### Detailed Validation
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 report = mesh.validate(detailed=True)
 
 print(f"Valid: {report.is_valid}")
-print(f"Vertices: {report.n_vertices}")
-print(f"Elements: {report.n_elements}")
-print(f"Triangles: {report.n_triangles}")
-
 # Quality statistics
 print(f"Quality min: {report.quality.min:.3f}")
 print(f"Quality max: {report.quality.max:.3f}")
@@ -109,6 +107,8 @@ for issue in report.issues:
 ```
 
 ### Strict Validation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import ValidationError
@@ -123,6 +123,8 @@ except ValidationError as e:
 ```
 
 ### Selective Validation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Only check geometry
@@ -174,5 +176,4 @@ except ValidationError as e:
 # Final report
 final = mesh.validate(detailed=True)
 print(f"\nQuality improved: {initial.quality.mean:.3f} -> {final.quality.mean:.3f}")
-print(f"Elements: {initial.n_elements} -> {final.n_elements}")
 ```

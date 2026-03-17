@@ -97,6 +97,13 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
+      - name: Test documentation code blocks
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: uv run pytest --codeblocks docs/ -v
+
       - name: Run examples
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         env:

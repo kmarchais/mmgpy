@@ -42,7 +42,15 @@ show_root_heading: true
 
 All mesh classes have convenience methods for adding sizing constraints:
 
+```python
+import mmgpy
+
+mesh = mmgpy.read("input.mesh")
+```
+
 ### set_size_sphere
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 mesh.set_size_sphere(
@@ -54,6 +62,8 @@ mesh.set_size_sphere(
 
 ### set_size_box
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 mesh.set_size_box(
     bounds=[[0, 0, 0], [0.3, 0.3, 0.3]],  # [[min], [max]]
@@ -62,6 +72,8 @@ mesh.set_size_box(
 ```
 
 ### set_size_cylinder
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # 3D meshes only
@@ -75,6 +87,8 @@ mesh.set_size_cylinder(
 
 ### set_size_from_point
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 mesh.set_size_from_point(
     point=[0.5, 0.5, 0.5],
@@ -86,6 +100,8 @@ mesh.set_size_from_point(
 
 ### clear_local_sizing
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Remove all sizing constraints
 mesh.clear_local_sizing()
@@ -93,12 +109,16 @@ mesh.clear_local_sizing()
 
 ### get_local_sizing_count
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Check number of active constraints
 n = mesh.get_local_sizing_count()
 ```
 
 ### apply_local_sizing
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Manually apply constraints to metric field
@@ -137,6 +157,8 @@ result = mesh.remesh(hmax=0.1)
 
 ### Multiple Regions
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Fine region
 mesh.set_size_sphere(center=[0.3, 0.5, 0.5], radius=0.1, size=0.005)
@@ -158,6 +180,7 @@ result = mesh.remesh(hmax=0.1)
 ### Direct Class Usage
 
 ```python
+import mmgpy
 from mmgpy import SphereSize, BoxSize
 from mmgpy.sizing import apply_sizing_constraints
 import numpy as np
@@ -214,18 +237,26 @@ mesh.clear_local_sizing()
 5. **Remeshing**: MMG uses the metric field to guide remeshing
 
 ```python
-from mmgpy.sizing import compute_sizes_from_constraints, sizes_to_metric
+import mmgpy
+from mmgpy import SphereSize, BoxSize
+from mmgpy.sizing import compute_sizes_from_constraints
+import mmgpy.metrics as metrics
 import numpy as np
+
+mesh = mmgpy.read("input.mesh")
 
 # Get vertex coordinates
 vertices = mesh.get_vertices()
 
 # Compute sizes from constraints
-constraints = [SphereSize(...), BoxSize(...)]
+constraints = [
+    SphereSize(center=np.array([0.5, 0.5, 0.5]), radius=0.2, size=0.01),
+    BoxSize(bounds=np.array([[0, 0, 0], [0.3, 0.3, 0.3]]), size=0.02),
+]
 sizes = compute_sizes_from_constraints(vertices, constraints)
 
-# Convert to metric field
-metric = sizes_to_metric(sizes)
+# Convert to metric tensor field
+metric = metrics.create_isotropic_metric(sizes)
 
 # Apply to mesh
 mesh.set_field("tensor", metric)
