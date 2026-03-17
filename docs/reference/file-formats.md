@@ -104,11 +104,12 @@ mesh.save("output.vtu")   # XML (preferred)
 
 Use STL:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Surface meshes only
-mesh.save("output.stl")
+surface_mesh = mmgpy.read("model.stl")
+surface_mesh.save("output.stl")
 ```
 
 ### For Other Software

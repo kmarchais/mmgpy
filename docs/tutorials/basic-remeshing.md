@@ -82,14 +82,17 @@ result = mesh.remesh(
 
 For a uniform mesh with a single target size:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
-# Using hsiz parameter
+# Using hsiz parameter (needs a fresh mesh — hsiz conflicts with prior metric)
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(hsiz=0.05)
 
 # Or using the convenience method
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_uniform(size=0.05)
+mesh = mmgpy.read("input.mesh")  # Reset for subsequent examples
 ```
 
 ## Geometric Approximation
@@ -141,14 +144,17 @@ result = mesh.remesh(**opts.to_dict())
 
 To improve quality without inserting/removing vertices:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
-# Using the convenience method
+# Using the convenience method (needs fresh mesh — optim conflicts with prior metric)
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_optimize()
 
 # Equivalent to
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(optim=1, noinsert=1)
+mesh = mmgpy.read("input.mesh")  # Reset for subsequent examples
 ```
 
 This only moves existing vertices to improve element quality.
@@ -157,22 +163,26 @@ This only moves existing vertices to improve element quality.
 
 Options classes provide factory methods for common scenarios:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import Mmg3DOptions
 
 # Fine mesh preset
-fine_opts = Mmg3DOptions.fine(hmax=0.01)
+mesh = mmgpy.read("input.mesh")
+fine_opts = Mmg3DOptions.fine(hmax=0.05)
 result = mesh.remesh(fine_opts)
 
 # Coarse mesh preset
+mesh = mmgpy.read("input.mesh")
 coarse_opts = Mmg3DOptions.coarse(hmax=1.0)
 result = mesh.remesh(coarse_opts)
 
 # Optimization-only preset
+mesh = mmgpy.read("input.mesh")
 opt_opts = Mmg3DOptions.optimize_only()
 result = mesh.remesh(opt_opts)
+mesh = mmgpy.read("input.mesh")  # Reset for subsequent examples
 ```
 
 ## Saving Results
@@ -187,10 +197,6 @@ mesh.save("output.mesh")
 
 # Save to VTK for ParaView
 mesh.save("output.vtk")
-
-# Save to other formats
-mesh.save("output.stl")  # Surface only
-mesh.save("output.ply")
 ```
 
 ## Complete Example

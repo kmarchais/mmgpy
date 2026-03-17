@@ -94,12 +94,16 @@ pv_mesh.plot(show_edges=True)
 
 Meshes are saved using the `save()` method:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
+# Volume meshes: .mesh, .vtk, .vtu
 mesh.save("output.mesh")  # MMG native
 mesh.save("output.vtk")   # VTK format
-mesh.save("output.stl")   # STL (surface only)
+
+# Surface meshes: also support .stl
+surface = mmgpy.read("model.stl")
+surface.save("output.stl")
 ```
 
 Format is inferred from the file extension.

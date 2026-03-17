@@ -70,14 +70,14 @@ result = mesh.remesh(
 
 ## Preserving Boundaries
 
-To keep boundary edges fixed during remeshing:
+To keep vertices fixed during remeshing:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
     hmax=0.1,
-    nosurf=1,  # Preserve surface points
+    nomove=1,  # Don't move existing vertices
 )
 ```
 

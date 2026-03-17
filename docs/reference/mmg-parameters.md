@@ -19,10 +19,12 @@ Minimum edge length.
 | Default  | Auto-computed |
 | Range    | > 0           |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hmin=0.01)
+mesh = mmgpy.read("input.mesh")  # Reset mesh
+result = mesh.remesh(hmax=0.1)
 ```
 
 Edges shorter than `hmin` will be collapsed or lengthened.
@@ -59,10 +61,13 @@ Uniform target edge size.
 | Default  | None    |
 | Range    | > 0     |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
+mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
 result = mesh.remesh(hsiz=0.05)
+mesh = mmgpy.read("input.mesh")  # Reset mesh
+result = mesh.remesh(hmax=0.1)
 ```
 
 When set, overrides `hmin` and `hmax` with uniform sizing.
@@ -147,10 +152,13 @@ Enable optimization mode.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
+mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
 result = mesh.remesh(optim=1)
+mesh = mmgpy.read("input.mesh")  # Reset mesh
+result = mesh.remesh(hmax=0.1)
 ```
 
 When enabled, only moves vertices to improve quality (no topology changes).
@@ -264,17 +272,19 @@ result = mesh.remesh(verbose=5)   # Debug output
 
 ### Quality Optimization Only
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
+mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
 result = mesh.remesh(optim=1, noinsert=1)
 ```
 
 Or use the convenience method:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
+mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
 result = mesh.remesh_optimize()
 ```
 
@@ -282,18 +292,21 @@ result = mesh.remesh_optimize()
 
 ### Uniform Remeshing
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
+mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
 result = mesh.remesh(hsiz=0.05)
 ```
 
 Or use the convenience method:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
+mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
 result = mesh.remesh_uniform(size=0.05)
+mesh = mmgpy.read("input.mesh")  # Reset mesh
 ```
 
 ---
