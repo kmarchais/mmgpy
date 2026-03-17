@@ -49,6 +49,8 @@ result = mesh.remesh(
 
 Remesh while applying mesh displacement.
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 """Lagrangian mesh motion remeshing."""
 import mmgpy
@@ -117,6 +119,8 @@ result = mesh.remesh(hmax=0.1)
 ### Solution-Based Adaptation
 
 Adapt mesh to solution field.
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 """Mesh adaptation to solution gradients."""
@@ -197,6 +201,8 @@ result = mesh.remesh_levelset(levelset)
 
 Industrial part surface remeshing.
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 """Mechanical part surface optimization."""
 import mmgpy
@@ -267,6 +273,8 @@ result = mesh.remesh_levelset(levelset)
 ## Running Examples
 
 Clone the repository and run examples:
+
+<!-- pytest-codeblocks:skip -->
 
 ```bash
 git clone https://github.com/kmarchais/mmgpy.git

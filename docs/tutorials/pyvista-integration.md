@@ -32,6 +32,8 @@ mesh.plot(color="lightblue", opacity=0.8, show_edges=False)
 
 For more complex visualizations, use the `vtk` property to access the PyVista mesh:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import pyvista as pv
@@ -177,6 +179,8 @@ pl.close()
 
 ### Transferring Scalar Fields
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import pyvista as pv
@@ -198,6 +202,8 @@ pv_mesh.plot(scalars="temperature", show_edges=True, cmap="coolwarm")
 
 ### From PyVista with Data
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import pyvista as pv
@@ -218,6 +224,8 @@ print(f"Elevation range: {elevation.min():.2f} to {elevation.max():.2f}")
 ## Interactive Workflows
 
 ### Interactive Refinement
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -247,6 +255,8 @@ pl.show()
 
 ### Picking Points for Refinement
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import pyvista as pv
@@ -269,6 +279,8 @@ pl.show()
 ## Complete Example
 
 Full workflow from PyVista primitive to remeshed output:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

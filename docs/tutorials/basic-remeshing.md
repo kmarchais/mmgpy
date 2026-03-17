@@ -40,6 +40,8 @@ print(f"Elements: {result.elements_before} -> {result.elements_after}")
 
 Every remeshing operation returns a `RemeshResult` object with statistics:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(hmax=0.1)
 
@@ -69,6 +71,8 @@ for warning in result.warnings:
 
 Control the range of edge lengths in the output mesh:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 result = mesh.remesh(
     hmin=0.01,  # Minimum edge length (prevents over-refinement)
@@ -77,6 +81,8 @@ result = mesh.remesh(
 ```
 
 For a uniform mesh with a single target size:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Using hsiz parameter
@@ -90,6 +96,8 @@ result = mesh.remesh_uniform(size=0.05)
 
 The `hausd` parameter controls how closely the output mesh approximates the input geometry:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 result = mesh.remesh(
     hmax=0.1,
@@ -102,6 +110,8 @@ result = mesh.remesh(
 ## Using Options Objects
 
 For complex configurations, use typed options objects:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -121,6 +131,8 @@ result = mesh.remesh(opts)
 
 Options can be unpacked directly into `remesh()`:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 result = mesh.remesh(**opts.to_dict())
 ```
@@ -128,6 +140,8 @@ result = mesh.remesh(**opts.to_dict())
 ## Optimization Without Topology Changes
 
 To improve quality without inserting/removing vertices:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Using the convenience method
@@ -142,6 +156,8 @@ This only moves existing vertices to improve element quality.
 ## Factory Presets
 
 Options classes provide factory methods for common scenarios:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -162,6 +178,8 @@ result = mesh.remesh(opt_opts)
 ## Saving Results
 
 Save the remeshed output to any supported format:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Save to MMG native format

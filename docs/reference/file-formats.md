@@ -73,6 +73,8 @@ End
 
 Use `.mesh` format:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 mesh.save("output.mesh")
 ```
@@ -85,6 +87,8 @@ mesh.save("output.mesh")
 
 Use VTK formats:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 mesh.save("output.vtk")   # Legacy
 mesh.save("output.vtu")   # XML (preferred)
@@ -93,6 +97,8 @@ mesh.save("output.vtu")   # XML (preferred)
 ### For CAD/3D Printing
 
 Use STL:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Surface meshes only
@@ -120,6 +126,8 @@ MMG supports solution files (`.sol`) containing:
 
 ### Creating Solution Files
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import numpy as np
 
@@ -134,6 +142,8 @@ mesh.save("output.mesh")  # Also saves output.sol if fields exist
 ```
 
 ### Loading Solution Files
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Solution file is loaded automatically if present
@@ -153,6 +163,8 @@ if "temperature" in mesh:
 | Human readable | Yes                 | No              |
 | Precision      | Text representation | Full precision  |
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 # ASCII
 mesh.save("output.mesh")
@@ -164,6 +176,8 @@ mesh.save("output.meshb")
 ## Format Detection
 
 mmgpy automatically detects format from extension:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Auto-detected from extension
@@ -198,6 +212,8 @@ Some formats don't support all features:
 ### Large Files
 
 For large meshes:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Use binary format

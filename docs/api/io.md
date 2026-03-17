@@ -54,6 +54,8 @@ show_root_heading: true
 
 ### From PyVista
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import pyvista as pv
@@ -75,6 +77,8 @@ mesh_2d = mmgpy.from_pyvista(plane, mesh_type="2d")
 
 ### To PyVista
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 
@@ -93,6 +97,8 @@ pv_mesh.plot(show_edges=True)
 ## Saving Meshes
 
 Meshes are saved using the `save()` method:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 mesh.save("output.mesh")  # MMG native
@@ -120,6 +126,8 @@ mesh_s = mmgpy.Mesh("surface.stl")
 ```
 
 ## Complete Example
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

@@ -35,6 +35,8 @@ elasticity, not shell/membrane elasticity needed for surfaces.
 For surface meshes, use `mmgpy.move_mesh()` instead, which directly moves vertices and
 remeshes to maintain quality:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import numpy as np
@@ -70,6 +72,8 @@ without ELAS, calls to `remesh_lagrangian()` will fail.
 
 Meshes have a `remesh_lagrangian()` method for direct use:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import numpy as np
@@ -88,6 +92,8 @@ result = mesh.remesh_lagrangian(displacement)
 ## Usage Examples
 
 ### Basic Lagrangian Remeshing
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -116,6 +122,8 @@ print(f"Quality: {result.quality_mean_after:.3f}")
 
 Move only boundary vertices:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 from mmgpy import detect_boundary_vertices
 
@@ -136,6 +144,8 @@ result = mesh.remesh_lagrangian(displacement)
 ### Propagate Displacement to Interior
 
 Start with boundary displacement and propagate to interior:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import detect_boundary_vertices, propagate_displacement
@@ -159,6 +169,8 @@ result = mesh.remesh_lagrangian(full_disp)
 
 Apply displacement without topology changes:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 from mmgpy import move_mesh
 
@@ -179,6 +191,8 @@ new_vertices = mesh.get_vertices()
 ### Iterative Motion
 
 For large deformations, use multiple small steps:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -203,6 +217,8 @@ mesh.save("final.mesh")
 
 Combine with remeshing parameters:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 result = mesh.remesh_lagrangian(
     displacement,
@@ -216,6 +232,8 @@ result = mesh.remesh_lagrangian(
 ## Complete Example
 
 Deform a sphere into an ellipsoid:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

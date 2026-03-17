@@ -109,6 +109,7 @@ dev = [
     "pytest-benchmark>=5.0.0",
     "pytest-cov>=4.1.0",
     "ruff>=0.14.10",
+    "pytest-codeblocks>=0.17.0",
 ]
 docs = [
     "mkdocs-material>=9.5.0",
@@ -138,6 +139,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]
+"docs/conftest.py" = [
+    "INP001",  # conftest.py is not a package
+]
 "tests/**/*.py" = [
     "S101",    # asserts allowed in tests
     "T201",    # print statements allowed in tests for debugging
@@ -253,7 +257,7 @@ ignore = [
 # Progress module uses union types that cause complex type inference issues
 # Interactive module uses PyVista types that have incomplete stubs
 # UI module uses trame which has no type stubs
-exclude = ["tests/**", "scripts/**", "examples/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
+exclude = ["tests/**", "scripts/**", "examples/**", "docs/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time

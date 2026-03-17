@@ -75,6 +75,8 @@ show_root_heading: true
 
 ### Quick Validation
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 
@@ -88,6 +90,8 @@ else:
 ```
 
 ### Detailed Validation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 report = mesh.validate(detailed=True)
@@ -110,6 +114,8 @@ for issue in report.issues:
 
 ### Strict Validation
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 from mmgpy import ValidationError
 
@@ -123,6 +129,8 @@ except ValidationError as e:
 ```
 
 ### Selective Validation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Only check geometry
@@ -144,6 +152,8 @@ report = mesh.validate(
 ```
 
 ## Complete Example
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

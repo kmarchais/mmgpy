@@ -44,6 +44,8 @@ All mesh classes have convenience methods for adding sizing constraints:
 
 ### set_size_sphere
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 mesh.set_size_sphere(
     center=[0.5, 0.5, 0.5],  # Center of sphere
@@ -54,6 +56,8 @@ mesh.set_size_sphere(
 
 ### set_size_box
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 mesh.set_size_box(
     bounds=[[0, 0, 0], [0.3, 0.3, 0.3]],  # [[min], [max]]
@@ -62,6 +66,8 @@ mesh.set_size_box(
 ```
 
 ### set_size_cylinder
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # 3D meshes only
@@ -75,6 +81,8 @@ mesh.set_size_cylinder(
 
 ### set_size_from_point
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 mesh.set_size_from_point(
     point=[0.5, 0.5, 0.5],
@@ -86,6 +94,8 @@ mesh.set_size_from_point(
 
 ### clear_local_sizing
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 # Remove all sizing constraints
 mesh.clear_local_sizing()
@@ -93,12 +103,16 @@ mesh.clear_local_sizing()
 
 ### get_local_sizing_count
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 # Check number of active constraints
 n = mesh.get_local_sizing_count()
 ```
 
 ### apply_local_sizing
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Manually apply constraints to metric field
@@ -137,6 +151,8 @@ result = mesh.remesh(hmax=0.1)
 
 ### Multiple Regions
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Fine region
 mesh.set_size_sphere(center=[0.3, 0.5, 0.5], radius=0.1, size=0.005)
@@ -156,6 +172,8 @@ result = mesh.remesh(hmax=0.1)
 ```
 
 ### Direct Class Usage
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import SphereSize, BoxSize
@@ -212,6 +230,8 @@ mesh.clear_local_sizing()
 3. **Minimum Selection**: Where constraints overlap, minimum size wins
 4. **Metric Conversion**: Sizes are converted to isotropic metric tensors
 5. **Remeshing**: MMG uses the metric field to guide remeshing
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy.sizing import compute_sizes_from_constraints, sizes_to_metric

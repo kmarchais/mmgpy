@@ -33,6 +33,8 @@ result = mesh.remesh(hmax=0.1, verbose=-1)
 
 Multiple spheres can be combined:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Fine region near origin
 mesh.set_size_sphere(center=[0, 0, 0], radius=0.1, size=0.005)
@@ -62,6 +64,8 @@ result = mesh.remesh(hmax=0.1)
 ```
 
 For 2D meshes:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 mesh.set_size_box(
@@ -143,6 +147,8 @@ result = mesh.remesh(hmax=0.1)
 
 Check and clear sizing constraints:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Check number of active constraints
 n_constraints = mesh.get_local_sizing_count()
@@ -158,6 +164,8 @@ assert mesh.get_local_sizing_count() == 0
 ## Manual Application
 
 Sizing constraints are automatically applied before remeshing. You can also apply them manually to inspect the resulting metric field:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Add constraints
@@ -177,6 +185,8 @@ result = mesh.remesh()
 ## Complete Example: CFD Boundary Layer
 
 Create refined mesh near a surface for CFD simulations:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -213,6 +223,8 @@ mesh.save("refined_domain.vtk")
 ## Using Sizing Constraint Classes Directly
 
 For programmatic use, you can use the sizing constraint classes directly:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import SphereSize, BoxSize, CylinderSize, PointSize

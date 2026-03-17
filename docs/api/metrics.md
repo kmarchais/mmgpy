@@ -76,6 +76,8 @@ result = mesh.remesh()
 
 Size varying with position:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 import numpy as np
 
@@ -92,6 +94,8 @@ mesh.set_field("tensor", metric)
 ### Anisotropic Metric
 
 Different sizes in different directions:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 import numpy as np
@@ -111,6 +115,8 @@ mesh.set_field("tensor", metric)
 ### Metric from Hessian
 
 Adapt mesh to solution curvature:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Solution field (e.g., temperature)
@@ -133,6 +139,8 @@ mesh.set_field("tensor", metric)
 
 Combine multiple metrics (minimum size wins):
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 # Two different metrics
 metric1 = metrics.create_isotropic_metric(sizes1)
@@ -144,6 +152,8 @@ mesh.set_field("tensor", combined)
 ```
 
 ### Extracting Metric Information
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Get current metric
@@ -161,6 +171,8 @@ print(f"Size range: {sizes.min():.4f} to {sizes.max():.4f}")
 ### Tensor Format Conversion
 
 MMG uses symmetric tensors in Voigt notation:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # 3D: 6 components per vertex
@@ -181,6 +193,8 @@ tensor_back = metrics.matrix_to_tensor(matrix)
 ### Validation
 
 Check metric tensor validity:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 metric = mesh["metric"]

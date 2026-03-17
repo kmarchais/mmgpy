@@ -20,6 +20,8 @@ show_root_heading: true
 
 ### Creating Meshes
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import numpy as np
@@ -58,6 +60,8 @@ mesh = mmgpy.Mesh(grid)
 
 ### Checking Mesh Type
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 from mmgpy import MeshKind
 
@@ -73,6 +77,8 @@ elif mesh.kind == MeshKind.TRIANGULAR_SURFACE:
 
 ### Accessing Mesh Data
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 # Get vertices and elements
 vertices = mesh.get_vertices()      # Shape: (n_vertices, 2 or 3)
@@ -84,6 +90,8 @@ print(f"Vertices: {len(vertices)}")
 ```
 
 ### Working with Fields
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import numpy as np
@@ -97,6 +105,8 @@ m = mesh["metric"]
 ```
 
 ### Remeshing
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -119,6 +129,8 @@ print(f"Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:
 
 ### Local Sizing
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 # Set local refinement regions
 mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
@@ -132,6 +144,8 @@ mesh.clear_local_sizing()
 ```
 
 ### Validation
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Simple validation
@@ -148,6 +162,8 @@ mesh.validate(strict=True)
 ```
 
 ### PyVista Integration
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import pyvista as pv

@@ -62,6 +62,8 @@ mesh = mmgpy.Mesh("unit_cube.mesh")
 
 ### Sphere
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 def sphere_levelset(coords, center=(0.5, 0.5, 0.5), radius=0.3):
     return (np.linalg.norm(coords - np.array(center), axis=1) - radius).reshape(-1, 1)
@@ -70,6 +72,8 @@ levelset = sphere_levelset(mesh.get_vertices())
 ```
 
 ### Torus
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 def torus_levelset(coords, R=0.5, r=0.15):
@@ -83,6 +87,8 @@ levelset = torus_levelset(mesh.get_vertices())
 ```
 
 ### Gyroid
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 def gyroid_levelset(coords, scale=2*np.pi):
@@ -98,6 +104,8 @@ levelset = gyroid_levelset(mesh.get_vertices())
 
 Combine shapes using min/max operations:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Union: min of level-sets
 def union(ls1, ls2):
@@ -112,10 +120,9 @@ def subtract(ls1, ls2):
     return np.maximum(ls1, -ls2)
 
 # Example: sphere with cylindrical hole
-sphere = sphere_levelset(vertices, center=(0.5, 0.5, 0.5), radius=0.4)
-cylinder = cylinder_levelset(vertices)  # Define appropriately
-
-result_ls = subtract(sphere, cylinder)
+# sphere = sphere_levelset(vertices, center=(0.5, 0.5, 0.5), radius=0.4)
+# cylinder = cylinder_levelset(vertices)  # Define appropriately
+# result_ls = subtract(sphere, cylinder)
 ```
 
 ## 2D Level-Set Remeshing
@@ -141,6 +148,8 @@ result = mesh.remesh_levelset(levelset)
 
 For surface meshes, level-set can extract curves:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import numpy as np
@@ -158,6 +167,8 @@ result = mesh.remesh_levelset(levelset)
 
 Combine level-set extraction with size parameters:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh_levelset(
     levelset,
@@ -169,6 +180,8 @@ result = mesh.remesh_levelset(
 ```
 
 ## Complete Example: Implicit Domain Meshing
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -208,6 +221,8 @@ mesh.save("double_sphere.vtk")
 
 ## Visualization
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import pyvista as pv
 
@@ -225,6 +240,8 @@ pv_mesh.plot(show_edges=True)
 3. **Narrow band**: If your level-set is only valid near the surface, ensure the background mesh is refined in that region
 
 4. **Validation**: After extraction, validate the mesh to ensure quality:
+
+   <!-- pytest-codeblocks:skip -->
 
    ```python
    assert mesh.validate(), "Extracted mesh has quality issues"
