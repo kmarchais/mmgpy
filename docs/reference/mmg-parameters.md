@@ -23,8 +23,6 @@ Minimum edge length.
 
 ```python
 result = mesh.remesh(hmin=0.01)
-mesh = mmgpy.read("input.mesh")  # Reset mesh
-result = mesh.remesh(hmax=0.1)
 ```
 
 Edges shorter than `hmin` will be collapsed or lengthened.
@@ -64,10 +62,10 @@ Uniform target edge size.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
+# hsiz conflicts with prior metric, so reload the mesh
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(hsiz=0.05)
-mesh = mmgpy.read("input.mesh")  # Reset mesh
-result = mesh.remesh(hmax=0.1)
+mesh = mmgpy.read("input.mesh")
 ```
 
 When set, overrides `hmin` and `hmax` with uniform sizing.
@@ -155,10 +153,10 @@ Enable optimization mode.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
+# optim conflicts with prior metric, so reload the mesh
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(optim=1)
-mesh = mmgpy.read("input.mesh")  # Reset mesh
-result = mesh.remesh(hmax=0.1)
+mesh = mmgpy.read("input.mesh")
 ```
 
 When enabled, only moves vertices to improve quality (no topology changes).
@@ -275,7 +273,7 @@ result = mesh.remesh(verbose=5)   # Debug output
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(optim=1, noinsert=1)
 ```
 
@@ -284,7 +282,7 @@ Or use the convenience method:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_optimize()
 ```
 
@@ -295,7 +293,7 @@ result = mesh.remesh_optimize()
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(hsiz=0.05)
 ```
 
@@ -304,9 +302,9 @@ Or use the convenience method:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")  # Fresh mesh needed
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_uniform(size=0.05)
-mesh = mmgpy.read("input.mesh")  # Reset mesh
+mesh = mmgpy.read("input.mesh")
 ```
 
 ---
@@ -332,7 +330,7 @@ result = mesh.remesh(
 ```python
 result = mesh.remesh(
     hmax=0.1,
-    angle=20,  # Detect more ridges
+    ar=20,     # Detect more ridges
     hausd=0.001,
 )
 ```

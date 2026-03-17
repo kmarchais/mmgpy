@@ -140,7 +140,7 @@ ignore = [
 
 [tool.ruff.lint.extend-per-file-ignores]
 "docs/conftest.py" = [
-    "INP001",  # conftest.py is not a package
+    "INP001",  # docs/ is not a package, conftest.py doesn't need __init__.py
 ]
 "tests/**/*.py" = [
     "S101",    # asserts allowed in tests

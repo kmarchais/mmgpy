@@ -70,7 +70,7 @@ result = mesh.remesh(
 
 ## Preserving Boundaries
 
-To keep vertices fixed during remeshing:
+To keep boundary edges fixed during remeshing:
 
 <!-- pytest-codeblocks:cont -->
 

@@ -236,7 +236,7 @@ mesh = mmgpy.Mesh(bunny)
 def remesh_callback(value):
     mesh.remesh(hmax=value, verbose=-1)
     actor.mapper.SetInputData(mesh.to_pyvista())
-    pl.update()
+    pl.render()
 
 pl = pv.Plotter()
 actor = pl.add_mesh(mesh.to_pyvista(), show_edges=True)
@@ -245,6 +245,7 @@ pl.add_slider_widget(
     rng=[0.01, 0.1],
     value=0.05,
     title="hmax",
+    interaction_event="always",
 )
 pl.show()
 ```
@@ -264,7 +265,7 @@ def add_refinement(point):
     mesh.set_size_sphere(center=point, radius=0.1, size=0.01)
     mesh.remesh(hmax=0.1, verbose=-1)
     actor.mapper.SetInputData(mesh.to_pyvista())
-    pl.update()
+    pl.render()
 
 pl = pv.Plotter()
 actor = pl.add_mesh(pv_mesh, show_edges=True, pickable=True)

@@ -11,7 +11,9 @@ pytest_runtest_setup/teardown hooks for per-test tmp_path management.
 
 from __future__ import annotations
 
+import atexit
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -80,7 +82,12 @@ _2D_KEYWORDS = {"2d", "planar"}
 
 
 def _classify_filename(name: str) -> str:
-    """Return '2d', 'surface', or '3d' based on filename heuristics."""
+    """Return '2d', 'surface', or '3d' based on filename heuristics.
+
+    NOTE: Routing is based on filename keywords/extensions. This works because
+    doc filenames are controlled, but e.g. "sphere_domain.mesh" would route to
+    surface even if used in a 3D context.
+    """
     lower = name.lower()
     ext = Path(name).suffix.lower()
     if ext in _SURFACE_EXTENSIONS:
@@ -105,6 +112,7 @@ _real_save = Mesh.save
 
 # Temp dir for save redirects (cleaned up at process exit)
 _tmp_dir = tempfile.mkdtemp(prefix="mmgpy_docs_")
+atexit.register(shutil.rmtree, _tmp_dir, ignore_errors=True)
 
 
 def _fake_read(
@@ -136,7 +144,10 @@ Mesh.save = _patched_save
 _real_pv_read = pv.read
 
 
-def _fake_pv_read(filename: str | Path, **_kwargs: object) -> pv.UnstructuredGrid:
+def _fake_pv_read(
+    filename: str | Path,
+    **_kwargs: object,
+) -> pv.UnstructuredGrid | pv.PolyData:
     kind = _classify_filename(str(filename))
     if kind == "2d":
         # Return a flat 2D-like UnstructuredGrid
@@ -191,3 +202,19 @@ def _patched_pv_save(
 
 pv.PolyData.save = _patched_pv_save  # type: ignore[assignment]
 pv.UnstructuredGrid.save = _patched_pv_save  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
+# Restore originals on pytest teardown (avoids polluting other test suites
+# when running `pytest tests/ docs/` in a single invocation)
+# ---------------------------------------------------------------------------
+
+
+def pytest_unconfigure() -> None:
+    """Restore all monkeypatched functions."""
+    _io_mod.read = _real_read
+    mmgpy.read = _real_read
+    Mesh.save = _real_save
+    pv.read = _real_pv_read  # type: ignore[assignment]
+    pv.PolyData.save = _real_pv_polydata_save  # type: ignore[assignment]
+    pv.UnstructuredGrid.save = _real_pv_unstructured_save  # type: ignore[assignment]

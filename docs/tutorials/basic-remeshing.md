@@ -85,14 +85,14 @@ For a uniform mesh with a single target size:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Using hsiz parameter (needs a fresh mesh — hsiz conflicts with prior metric)
+# Using hsiz parameter (reload: hsiz conflicts with prior metric)
 mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(hsiz=0.05)
 
 # Or using the convenience method
 mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_uniform(size=0.05)
-mesh = mmgpy.read("input.mesh")  # Reset for subsequent examples
+mesh = mmgpy.read("input.mesh")
 ```
 
 ## Geometric Approximation
@@ -147,14 +147,14 @@ To improve quality without inserting/removing vertices:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Using the convenience method (needs fresh mesh — optim conflicts with prior metric)
+# Reload: optim conflicts with prior metric
 mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_optimize()
 
 # Equivalent to
 mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(optim=1, noinsert=1)
-mesh = mmgpy.read("input.mesh")  # Reset for subsequent examples
+mesh = mmgpy.read("input.mesh")
 ```
 
 This only moves existing vertices to improve element quality.
@@ -182,7 +182,7 @@ result = mesh.remesh(coarse_opts)
 mesh = mmgpy.read("input.mesh")
 opt_opts = Mmg3DOptions.optimize_only()
 result = mesh.remesh(opt_opts)
-mesh = mmgpy.read("input.mesh")  # Reset for subsequent examples
+mesh = mmgpy.read("input.mesh")
 ```
 
 ## Saving Results

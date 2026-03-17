@@ -211,7 +211,7 @@ mesh = mmgpy.Mesh("part.stl")
 result = mesh.remesh(
     hmax=0.05,
     hausd=0.001,
-    angle=30,  # Preserve sharp edges
+    ar=30,     # Preserve sharp edges
 )
 ```
 
