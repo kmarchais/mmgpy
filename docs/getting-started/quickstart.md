@@ -124,8 +124,6 @@ result = mesh.remesh(hmax=0.1, verbose=-1)
 
 Visualize meshes with the built-in `plot()` method:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 
@@ -142,7 +140,7 @@ mesh.plot(color="lightblue", opacity=0.8)
 
 For custom plotters, use the `vtk` property:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 import pyvista as pv
@@ -153,8 +151,6 @@ plotter.show()
 ```
 
 Load from PyVista:
-
-<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

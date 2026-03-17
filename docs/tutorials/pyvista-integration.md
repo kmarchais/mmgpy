@@ -240,6 +240,7 @@ mesh = mmgpy.Mesh(bunny)
 
 def remesh_callback(value):
     mesh.remesh(hmax=value, verbose=-1)
+    actor.mapper.SetInputData(mesh.to_pyvista())
     pl.update()
 
 pl = pv.Plotter()
@@ -279,8 +280,6 @@ pl.show()
 ## Complete Example
 
 Full workflow from PyVista primitive to remeshed output:
-
-<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

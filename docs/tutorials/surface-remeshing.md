@@ -72,7 +72,7 @@ result = mesh.remesh(
 
 To keep boundary edges fixed during remeshing:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
@@ -143,8 +143,6 @@ mesh.to_pyvista().plot(show_edges=True)
 ## Visualization
 
 Visualize before and after:
-
-<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

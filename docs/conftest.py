@@ -131,3 +131,43 @@ def _patched_save(self: MeshType, filename: str | Path) -> None:
 _io_mod.read = _fake_read
 mmgpy.read = _fake_read
 Mesh.save = _patched_save
+
+# Also patch pv.read so docs like `pv.read("mesh.vtk")` work
+_real_pv_read = pv.read
+
+
+def _fake_pv_read(filename: str | Path, **_kwargs: object) -> pv.UnstructuredGrid:
+    kind = _classify_filename(str(filename))
+    if kind == "2d":
+        # Return a flat 2D-like UnstructuredGrid
+        cells = np.column_stack(
+            [np.full(len(_CELLS_2D), 3), _CELLS_2D],
+        ).ravel()
+        points_3d = np.column_stack(
+            [_VERTS_2D, np.zeros(len(_VERTS_2D))],
+        )
+        return pv.UnstructuredGrid(
+            cells,
+            np.full(len(_CELLS_2D), pv.CellType.TRIANGLE),
+            points_3d.copy(),
+        )
+    if kind == "surface":
+        return pv.PolyData(_VERTS_SURF.copy(), faces=_make_surface_mesh_faces())
+    # 3D tetrahedral
+    cells = np.column_stack(
+        [np.full(len(_CELLS_3D), 4), _CELLS_3D],
+    ).ravel()
+    return pv.UnstructuredGrid(
+        cells,
+        np.full(len(_CELLS_3D), pv.CellType.TETRA),
+        _VERTS_3D.copy(),
+    )
+
+
+def _make_surface_mesh_faces() -> np.ndarray:
+    """Return PyVista-style face array from surface mesh triangles."""
+    n = len(_CELLS_SURF)
+    return np.column_stack([np.full(n, 3), _CELLS_SURF]).ravel()
+
+
+pv.read = _fake_pv_read  # type: ignore[assignment]

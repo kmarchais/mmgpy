@@ -20,8 +20,6 @@ show_root_heading: true
 
 ### Creating Meshes
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import numpy as np
@@ -77,7 +75,7 @@ elif mesh.kind == MeshKind.TRIANGULAR_SURFACE:
 
 ### Accessing Mesh Data
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Get vertices and elements
@@ -91,7 +89,7 @@ print(f"Vertices: {len(vertices)}")
 
 ### Working with Fields
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 import numpy as np
@@ -145,7 +143,7 @@ mesh.clear_local_sizing()
 
 ### Validation
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Simple validation

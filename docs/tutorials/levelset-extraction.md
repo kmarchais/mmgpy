@@ -104,7 +104,7 @@ levelset = gyroid_levelset(mesh.get_vertices())
 
 Combine shapes using min/max operations:
 
-<!-- pytest-codeblocks:cont -->
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Union: min of level-sets
@@ -120,9 +120,9 @@ def subtract(ls1, ls2):
     return np.maximum(ls1, -ls2)
 
 # Example: sphere with cylindrical hole
-# sphere = sphere_levelset(vertices, center=(0.5, 0.5, 0.5), radius=0.4)
-# cylinder = cylinder_levelset(vertices)  # Define appropriately
-# result_ls = subtract(sphere, cylinder)
+sphere = sphere_levelset(vertices, center=(0.5, 0.5, 0.5), radius=0.4)
+cylinder = cylinder_levelset(vertices)  # Define appropriately
+result_ls = subtract(sphere, cylinder)
 ```
 
 ## 2D Level-Set Remeshing

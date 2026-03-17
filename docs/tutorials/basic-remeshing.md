@@ -71,7 +71,7 @@ for warning in result.warnings:
 
 Control the range of edge lengths in the output mesh:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
@@ -96,7 +96,7 @@ result = mesh.remesh_uniform(size=0.05)
 
 The `hausd` parameter controls how closely the output mesh approximates the input geometry:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
@@ -179,7 +179,7 @@ result = mesh.remesh(opt_opts)
 
 Save the remeshed output to any supported format:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Save to MMG native format
