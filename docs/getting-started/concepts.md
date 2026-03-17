@@ -83,6 +83,8 @@ mesh_2d = mmgpy.Mesh(vertices_2d, triangles)
 
 The default `remesh()` operation modifies the mesh topology to achieve target element sizes:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(
     hmin=0.01,   # Minimum edge length
@@ -102,12 +104,18 @@ This may:
 To improve quality without changing topology:
 
 ```python
+import mmgpy
+
+mesh = mmgpy.Mesh("input.mesh")
 result = mesh.remesh_optimize()
 ```
 
 Or equivalently:
 
 ```python
+import mmgpy
+
+mesh = mmgpy.Mesh("input.mesh")
 result = mesh.remesh(optim=1, noinsert=1)
 ```
 
@@ -116,6 +124,9 @@ result = mesh.remesh(optim=1, noinsert=1)
 To remesh with a single target size everywhere:
 
 ```python
+import mmgpy
+
+mesh = mmgpy.Mesh("input.mesh")
 result = mesh.remesh_uniform(size=0.05)
 ```
 
@@ -124,6 +135,7 @@ result = mesh.remesh_uniform(size=0.05)
 Extract and remesh an isosurface:
 
 ```python
+import mmgpy
 import numpy as np
 
 # Define a level-set function (distance to sphere)
@@ -139,6 +151,10 @@ result = mesh.remesh_levelset(levelset)
 ### Lagrangian Remeshing
 
 Remesh while preserving a displacement field (useful for moving meshes):
+
+!!! warning "Requires ELAS library"
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Displacement field at each vertex
@@ -165,6 +181,8 @@ Control edge lengths globally:
 
 Refine specific regions with sizing constraints:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Spherical refinement region
 mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
@@ -189,7 +207,12 @@ mesh.set_size_from_point(
 For anisotropic remeshing, define a metric tensor at each vertex:
 
 ```python
+import mmgpy
 import mmgpy.metrics as metrics
+import numpy as np
+
+mesh = mmgpy.Mesh("input.mesh")
+n_vertices = len(mesh.get_vertices())
 
 # Create isotropic metric from sizes
 sizes = np.ones(n_vertices) * 0.1
@@ -207,6 +230,8 @@ mmgpy uses normalized quality measures:
 - **Quality = 0.0** - Degenerate element (collapsed)
 
 The `RemeshResult` class provides quality statistics:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hmax=0.1)
@@ -230,6 +255,8 @@ mmgpy supports 40+ file formats via meshio:
 
 Load any format with `mmgpy.Mesh()` or `mmgpy.read()`:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 mesh = mmgpy.Mesh("model.stl")
 mesh.save("output.vtk")
@@ -245,6 +272,8 @@ Control output verbosity:
 | `0`   | Errors only        |
 | `1`   | Standard info      |
 | `2+`  | Debug output       |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hmax=0.1, verbose=-1)  # Silent

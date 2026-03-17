@@ -62,15 +62,15 @@ import pyvista as pv
 sphere = pv.Sphere(radius=1.0)
 
 # Convert to surface mesh
-mesh = mmgpy.from_pyvista(sphere, mesh_type="surface")
+mesh = mmgpy.Mesh(sphere)
 
 # For volumetric meshes (needs tetrahedral cells)
 volume = pv.Box().triangulate().delaunay_3d()
-mesh_3d = mmgpy.from_pyvista(volume, mesh_type="3d")
+mesh_3d = mmgpy.Mesh(volume)
 
 # For 2D meshes
 plane = pv.Plane()
-mesh_2d = mmgpy.from_pyvista(plane, mesh_type="2d")
+mesh_2d = mmgpy.Mesh(plane)
 ```
 
 ### To PyVista
@@ -83,8 +83,8 @@ mesh = mmgpy.read("input.mesh")
 # Convert to PyVista
 pv_mesh = mesh.to_pyvista()
 
-# Or using function
-pv_mesh = mmgpy.to_pyvista(mesh)
+# Or using method
+pv_mesh = mesh.to_pyvista()
 
 # Visualize
 pv_mesh.plot(show_edges=True)
@@ -94,10 +94,16 @@ pv_mesh.plot(show_edges=True)
 
 Meshes are saved using the `save()` method:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
+# Volume meshes: .mesh, .vtk, .vtu
 mesh.save("output.mesh")  # MMG native
 mesh.save("output.vtk")   # VTK format
-mesh.save("output.stl")   # STL (surface only)
+
+# Surface meshes: also support .stl
+surface = mmgpy.read("model.stl")
+surface.save("output.stl")
 ```
 
 Format is inferred from the file extension.
@@ -143,7 +149,7 @@ pv_mesh.save("output_pv.vtk")
 
 # Or create from PyVista
 torus = pv.ParametricTorus()
-torus_mesh = mmgpy.from_pyvista(torus, mesh_type="surface")
+torus_mesh = mmgpy.Mesh(torus)
 torus_mesh.remesh(hmax=0.1)
 torus_mesh.save("torus.mesh")
 ```

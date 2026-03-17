@@ -37,9 +37,12 @@ remeshes to maintain quality:
 
 ```python
 import mmgpy
+import pyvista as pv
 import numpy as np
 
-mesh = mmgpy.Mesh(vertices, triangles)  # Auto-detects surface mesh
+sphere = pv.Sphere(theta_resolution=10, phi_resolution=10)
+mesh = mmgpy.Mesh(sphere)  # Auto-detects surface mesh
+vertices = mesh.get_vertices()
 displacement = np.zeros((len(vertices), 3))
 displacement[:, 0] = 0.1  # Move in x direction
 
@@ -70,6 +73,8 @@ without ELAS, calls to `remesh_lagrangian()` will fail.
 
 Meshes have a `remesh_lagrangian()` method for direct use:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy
 import numpy as np
@@ -88,6 +93,8 @@ result = mesh.remesh_lagrangian(displacement)
 ## Usage Examples
 
 ### Basic Lagrangian Remeshing
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -116,6 +123,8 @@ print(f"Quality: {result.quality_mean_after:.3f}")
 
 Move only boundary vertices:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 from mmgpy import detect_boundary_vertices
 
@@ -136,6 +145,8 @@ result = mesh.remesh_lagrangian(displacement)
 ### Propagate Displacement to Interior
 
 Start with boundary displacement and propagate to interior:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import detect_boundary_vertices, propagate_displacement
@@ -160,6 +171,8 @@ result = mesh.remesh_lagrangian(full_disp)
 Apply displacement without topology changes:
 
 ```python
+import mmgpy
+import numpy as np
 from mmgpy import move_mesh
 
 mesh = mmgpy.read("input.mesh")
@@ -179,6 +192,8 @@ new_vertices = mesh.get_vertices()
 ### Iterative Motion
 
 For large deformations, use multiple small steps:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -203,6 +218,8 @@ mesh.save("final.mesh")
 
 Combine with remeshing parameters:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 result = mesh.remesh_lagrangian(
     displacement,
@@ -216,6 +233,8 @@ result = mesh.remesh_lagrangian(
 ## Complete Example
 
 Deform a sphere into an ellipsoid:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy

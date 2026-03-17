@@ -41,6 +41,8 @@ print(f"Triangles: {result.triangles_before} -> {result.triangles_after}")
 
 The `hausd` parameter is crucial for surface meshes - it controls how closely the remeshed surface approximates the original:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Tight approximation (more triangles, better geometry)
 result = mesh.remesh(hmax=0.1, hausd=0.0001)
@@ -56,28 +58,34 @@ Setting `hausd` too large can cause loss of geometric features. Start with small
 
 MMG can detect and preserve sharp edges based on the angle between adjacent faces:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(
     hmax=0.1,
     hausd=0.001,
-    angle=45.0,  # Edges sharper than 45° are preserved as ridges
+    ar=45,  # Edges sharper than 45° are preserved as ridges
 )
 ```
 
 ## Preserving Boundaries
 
-To keep boundary edges fixed during remeshing:
+To prevent vertex movement during remeshing (vertices stay in place, but edges may still be swapped or split):
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
     hmax=0.1,
-    nosurf=1,  # Preserve surface points
+    nomove=1,  # Don't move existing vertices
 )
 ```
 
 ## Smooth Surface Remeshing
 
 For smooth surfaces without sharp features:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import MmgSOptions
@@ -86,7 +94,7 @@ opts = MmgSOptions(
     hmax=0.1,
     hausd=0.0001,  # Tight approximation
     hgrad=1.1,     # Gentle size gradation
-    angle=180.0,   # No ridge detection
+    ar=180,      # No ridge detection
 )
 
 result = mesh.remesh(opts)
@@ -96,6 +104,8 @@ result = mesh.remesh(opts)
 
 For industrial/CAD parts with sharp edges:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 from mmgpy import MmgSOptions
 
@@ -103,7 +113,7 @@ opts = MmgSOptions(
     hmax=0.1,
     hausd=0.001,
     hgrad=1.3,
-    angle=30.0,    # Detect sharp edges
+    ar=30,       # Detect sharp edges
 )
 
 result = mesh.remesh(opts)
@@ -172,7 +182,7 @@ mesh = mmgpy.read("mechanical_part.stl")
 
 # Check initial state
 report = mesh.validate(detailed=True)
-print(f"Initial: {report.n_triangles} triangles, quality={report.quality.mean:.3f}")
+print(f"Initial quality: {report.quality.mean:.3f}")
 
 # Configure remeshing
 opts = MmgSOptions(
@@ -180,7 +190,7 @@ opts = MmgSOptions(
     hmax=0.05,
     hausd=0.0005,
     hgrad=1.2,
-    angle=30.0,
+    ar=30,
     verbose=1,
 )
 

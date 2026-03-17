@@ -112,6 +112,8 @@ opt_opts = Mmg3DOptions.optimize_only()
 
 ### Converting to Dictionary
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 opts = Mmg3DOptions(hmax=0.1, hausd=0.001)
 
@@ -125,6 +127,8 @@ result = mesh.remesh(**opts.to_dict())
 
 ### Customizing Presets
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Start with fine preset values, then customize
 custom = Mmg3DOptions(hmax=0.05, hausd=0.01, hgrad=1.2, verbose=1)
@@ -133,6 +137,8 @@ custom = Mmg3DOptions(hmax=0.05, hausd=0.01, hgrad=1.2, verbose=1)
 ### Combining with Keyword Arguments
 
 Options objects and keyword arguments cannot be mixed:
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 # Correct: use options object
@@ -149,6 +155,8 @@ result = mesh.remesh(opts, verbose=1)  # TypeError!
 
 ### For Quality Optimization
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 opts = Mmg3DOptions(
     optim=1,       # Enable optimization mode
@@ -158,6 +166,8 @@ opts = Mmg3DOptions(
 ```
 
 ### For Surface Preservation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 opts = Mmg3DOptions(
@@ -169,17 +179,21 @@ opts = Mmg3DOptions(
 
 ### For CFD Meshes
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 opts = Mmg3DOptions(
     hmin=0.001,
     hmax=0.1,
     hgrad=1.2,     # Smooth size transition
     hausd=0.001,
-    angle=20.0,    # Detect more ridges
+    ar=20,       # Detect more ridges
 )
 ```
 
 ### For FEM Meshes
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 opts = Mmg3DOptions(

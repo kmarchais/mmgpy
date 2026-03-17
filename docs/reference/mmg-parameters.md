@@ -1,5 +1,10 @@
 # MMG Parameters Reference
 
+```python
+import mmgpy
+mesh = mmgpy.read("input.mesh")
+```
+
 Complete reference for all MMG remeshing parameters.
 
 ## Size Parameters
@@ -13,6 +18,8 @@ Minimum edge length.
 | Type     | `float`       |
 | Default  | Auto-computed |
 | Range    | > 0           |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hmin=0.01)
@@ -32,6 +39,8 @@ Maximum edge length.
 | Default  | Auto-computed |
 | Range    | > hmin        |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(hmax=0.1)
 ```
@@ -50,8 +59,13 @@ Uniform target edge size.
 | Default  | None    |
 | Range    | > 0     |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
+# hsiz conflicts with prior metric, so reload the mesh
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(hsiz=0.05)
+mesh = mmgpy.read("input.mesh")
 ```
 
 When set, overrides `hmin` and `hmax` with uniform sizing.
@@ -67,6 +81,8 @@ Gradation parameter controlling size transition.
 | Type     | `float` |
 | Default  | 1.3     |
 | Range    | >= 1.0  |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hgrad=1.2)
@@ -90,6 +106,8 @@ Hausdorff distance - maximum distance between input and output geometry.
 | Default  | 0.01 \* bounding box diagonal |
 | Range    | > 0                           |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(hausd=0.001)
 ```
@@ -108,11 +126,13 @@ Ridge detection angle in degrees.
 | Default  | 45.0    |
 | Range    | 0 - 180 |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
-result = mesh.remesh(angle=30.0)
+result = mesh.remesh(ar=30)
 ```
 
-- Edges with dihedral angle > `angle` are treated as ridges
+- Edges with dihedral angle > `ar` are treated as ridges
 - Ridges are preserved during remeshing
 - `angle=180`: No ridge detection
 
@@ -130,8 +150,13 @@ Enable optimization mode.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
+# optim conflicts with prior metric, so reload the mesh
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(optim=1)
+mesh = mmgpy.read("input.mesh")
 ```
 
 When enabled, only moves vertices to improve quality (no topology changes).
@@ -147,6 +172,8 @@ Disable vertex insertion.
 | Type     | `int`           |
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(noinsert=1)
@@ -166,6 +193,8 @@ Disable edge/face swapping.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(noswap=1)
 ```
@@ -184,6 +213,8 @@ Disable vertex movement.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(nomove=1)
 ```
@@ -201,6 +232,8 @@ Preserve surface vertices.
 | Type     | `int`           |
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(nosurf=1)
@@ -222,6 +255,8 @@ Verbosity level.
 | Default  | 1        |
 | Range    | -1 to 10 |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(verbose=-1)  # Silent
 result = mesh.remesh(verbose=0)   # Errors only
@@ -235,13 +270,19 @@ result = mesh.remesh(verbose=5)   # Debug output
 
 ### Quality Optimization Only
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(optim=1, noinsert=1)
 ```
 
 Or use the convenience method:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_optimize()
 ```
 
@@ -249,19 +290,28 @@ result = mesh.remesh_optimize()
 
 ### Uniform Remeshing
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh(hsiz=0.05)
 ```
 
 Or use the convenience method:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
+mesh = mmgpy.read("input.mesh")
 result = mesh.remesh_uniform(size=0.05)
+mesh = mmgpy.read("input.mesh")
 ```
 
 ---
 
 ### High-Quality Surface Approximation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
@@ -275,10 +325,12 @@ result = mesh.remesh(
 
 ### Preserve Sharp Features
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 result = mesh.remesh(
     hmax=0.1,
-    angle=20.0,  # Detect more ridges
+    ar=20,     # Detect more ridges
     hausd=0.001,
 )
 ```
@@ -286,6 +338,8 @@ result = mesh.remesh(
 ---
 
 ### Fast Coarse Remeshing
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
@@ -298,6 +352,8 @@ result = mesh.remesh(
 ---
 
 ### Volume Interior Only
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(

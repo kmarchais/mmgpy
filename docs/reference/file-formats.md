@@ -69,9 +69,17 @@ End
 
 ## Format Selection Guide
 
+```python
+import mmgpy
+
+mesh = mmgpy.read("input.mesh")
+```
+
 ### For MMG Processing
 
 Use `.mesh` format:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 mesh.save("output.mesh")
@@ -85,6 +93,8 @@ mesh.save("output.mesh")
 
 Use VTK formats:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 mesh.save("output.vtk")   # Legacy
 mesh.save("output.vtu")   # XML (preferred)
@@ -94,9 +104,12 @@ mesh.save("output.vtu")   # XML (preferred)
 
 Use STL:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Surface meshes only
-mesh.save("output.stl")
+surface_mesh = mmgpy.read("model.stl")
+surface_mesh.save("output.stl")
 ```
 
 ### For Other Software
@@ -120,10 +133,10 @@ MMG supports solution files (`.sol`) containing:
 
 ### Creating Solution Files
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 import numpy as np
-
-mesh = mmgpy.read("input.mesh")
 
 # Add scalar field
 temperature = np.random.rand(len(mesh.get_vertices()))
@@ -135,13 +148,13 @@ mesh.save("output.mesh")  # Also saves output.sol if fields exist
 
 ### Loading Solution Files
 
-```python
-# Solution file is loaded automatically if present
-mesh = mmgpy.read("input.mesh")
+<!-- pytest-codeblocks:cont -->
 
-# Access fields
-if "temperature" in mesh:
-    temp = mesh["temperature"]
+```python
+# Access user fields
+user_fields = mesh.get_user_fields()
+if "temperature" in user_fields:
+    temp = mesh.get_user_field("temperature")
 ```
 
 ## Binary vs ASCII
@@ -152,6 +165,8 @@ if "temperature" in mesh:
 | Read speed     | Slower              | Faster          |
 | Human readable | Yes                 | No              |
 | Precision      | Text representation | Full precision  |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # ASCII
@@ -164,6 +179,8 @@ mesh.save("output.meshb")
 ## Format Detection
 
 mmgpy automatically detects format from extension:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Auto-detected from extension
@@ -198,6 +215,8 @@ Some formats don't support all features:
 ### Large Files
 
 For large meshes:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Use binary format

@@ -58,10 +58,12 @@ mesh = mmgpy.Mesh(grid)
 
 ### Checking Mesh Type
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 from mmgpy import MeshKind
 
-mesh = mmgpy.Mesh(vertices, elements)
+mesh = mmgpy.Mesh(vertices, tetrahedra)
 
 if mesh.kind == MeshKind.TETRAHEDRAL:
     print("3D volume mesh")
@@ -72,6 +74,8 @@ elif mesh.kind == MeshKind.TRIANGULAR_SURFACE:
 ```
 
 ### Accessing Mesh Data
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Get vertices and elements
@@ -85,11 +89,14 @@ print(f"Vertices: {len(vertices)}")
 
 ### Working with Fields
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 import numpy as np
 
 # Set a scalar field (metric for sizing)
-metric = np.ones(len(mesh.get_vertices()), dtype=np.float64) * 0.1
+n = len(mesh.get_vertices())
+metric = np.ones((n, 1), dtype=np.float64) * 0.1
 mesh["metric"] = metric
 
 # Get a field
@@ -97,6 +104,8 @@ m = mesh["metric"]
 ```
 
 ### Remeshing
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -119,6 +128,8 @@ print(f"Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:
 
 ### Local Sizing
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # Set local refinement regions
 mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
@@ -132,6 +143,8 @@ mesh.clear_local_sizing()
 ```
 
 ### Validation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Simple validation
@@ -148,6 +161,8 @@ mesh.validate(strict=True)
 ```
 
 ### PyVista Integration
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 import pyvista as pv
