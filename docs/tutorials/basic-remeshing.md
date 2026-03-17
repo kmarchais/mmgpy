@@ -111,7 +111,7 @@ result = mesh.remesh(
 
 For complex configurations, use typed options objects:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -122,7 +122,7 @@ opts = Mmg3DOptions(
     hmax=0.1,
     hausd=0.001,
     hgrad=1.3,      # Gradation: max ratio between adjacent edges
-    angle=45.0,     # Ridge detection angle (degrees)
+    ar=45,          # Ridge detection angle (degrees)
     verbose=1,
 )
 
@@ -131,7 +131,7 @@ result = mesh.remesh(opts)
 
 Options can be unpacked directly into `remesh()`:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(**opts.to_dict())

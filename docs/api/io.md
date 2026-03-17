@@ -54,8 +54,6 @@ show_root_heading: true
 
 ### From PyVista
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import pyvista as pv
@@ -64,20 +62,18 @@ import pyvista as pv
 sphere = pv.Sphere(radius=1.0)
 
 # Convert to surface mesh
-mesh = mmgpy.from_pyvista(sphere, mesh_type="surface")
+mesh = mmgpy.Mesh(sphere)
 
 # For volumetric meshes (needs tetrahedral cells)
 volume = pv.Box().triangulate().delaunay_3d()
-mesh_3d = mmgpy.from_pyvista(volume, mesh_type="3d")
+mesh_3d = mmgpy.Mesh(volume)
 
 # For 2D meshes
 plane = pv.Plane()
-mesh_2d = mmgpy.from_pyvista(plane, mesh_type="2d")
+mesh_2d = mmgpy.Mesh(plane)
 ```
 
 ### To PyVista
-
-<!-- pytest-codeblocks:skip -->
 
 ```python
 import mmgpy
@@ -87,8 +83,8 @@ mesh = mmgpy.read("input.mesh")
 # Convert to PyVista
 pv_mesh = mesh.to_pyvista()
 
-# Or using function
-pv_mesh = mmgpy.to_pyvista(mesh)
+# Or using method
+pv_mesh = mesh.to_pyvista()
 
 # Visualize
 pv_mesh.plot(show_edges=True)
@@ -127,8 +123,6 @@ mesh_s = mmgpy.Mesh("surface.stl")
 
 ## Complete Example
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import pyvista as pv
@@ -151,7 +145,7 @@ pv_mesh.save("output_pv.vtk")
 
 # Or create from PyVista
 torus = pv.ParametricTorus()
-torus_mesh = mmgpy.from_pyvista(torus, mesh_type="surface")
+torus_mesh = mmgpy.Mesh(torus)
 torus_mesh.remesh(hmax=0.1)
 torus_mesh.save("torus.mesh")
 ```

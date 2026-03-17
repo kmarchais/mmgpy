@@ -187,7 +187,7 @@ opts = Mmg3DOptions(
     hmax=0.1,
     hgrad=1.2,     # Smooth size transition
     hausd=0.001,
-    angle=20.0,    # Detect more ridges
+    ar=20,       # Detect more ridges
 )
 ```
 

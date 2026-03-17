@@ -58,13 +58,13 @@ Setting `hausd` too large can cause loss of geometric features. Start with small
 
 MMG can detect and preserve sharp edges based on the angle between adjacent faces:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
     hmax=0.1,
     hausd=0.001,
-    angle=45.0,  # Edges sharper than 45° are preserved as ridges
+    angle=45,  # Edges sharper than 45° are preserved as ridges
 )
 ```
 
@@ -72,7 +72,7 @@ result = mesh.remesh(
 
 To keep boundary edges fixed during remeshing:
 
-<!-- pytest-codeblocks:cont -->
+<!-- pytest-codeblocks:skip -->
 
 ```python
 result = mesh.remesh(
@@ -85,7 +85,7 @@ result = mesh.remesh(
 
 For smooth surfaces without sharp features:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import MmgSOptions
@@ -94,7 +94,7 @@ opts = MmgSOptions(
     hmax=0.1,
     hausd=0.0001,  # Tight approximation
     hgrad=1.1,     # Gentle size gradation
-    angle=180.0,   # No ridge detection
+    ar=180,      # No ridge detection
 )
 
 result = mesh.remesh(opts)
@@ -104,7 +104,7 @@ result = mesh.remesh(opts)
 
 For industrial/CAD parts with sharp edges:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import MmgSOptions
@@ -113,7 +113,7 @@ opts = MmgSOptions(
     hmax=0.1,
     hausd=0.001,
     hgrad=1.3,
-    angle=30.0,    # Detect sharp edges
+    ar=30,       # Detect sharp edges
 )
 
 result = mesh.remesh(opts)
@@ -173,8 +173,6 @@ pl.show()
 
 ## Complete Example
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 from mmgpy import MmgSOptions
@@ -184,7 +182,7 @@ mesh = mmgpy.read("mechanical_part.stl")
 
 # Check initial state
 report = mesh.validate(detailed=True)
-print(f"Initial: {report.n_triangles} triangles, quality={report.quality.mean:.3f}")
+print(f"Initial quality: {report.quality.mean:.3f}")
 
 # Configure remeshing
 opts = MmgSOptions(
@@ -192,7 +190,7 @@ opts = MmgSOptions(
     hmax=0.05,
     hausd=0.0005,
     hgrad=1.2,
-    angle=30.0,
+    ar=30,
     verbose=1,
 )
 

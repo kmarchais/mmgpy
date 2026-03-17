@@ -201,8 +201,6 @@ result = mesh.remesh_levelset(levelset)
 
 Industrial part surface remeshing.
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 """Mechanical part surface optimization."""
 import mmgpy
@@ -212,7 +210,7 @@ mesh = mmgpy.Mesh("part.stl")
 result = mesh.remesh(
     hmax=0.05,
     hausd=0.001,
-    angle=30.0,  # Preserve sharp edges
+    angle=30,  # Preserve sharp edges
 )
 ```
 

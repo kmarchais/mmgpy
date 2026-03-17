@@ -123,10 +123,10 @@ Ridge detection angle in degrees.
 | Default  | 45.0    |
 | Range    | 0 - 180 |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(angle=30.0)
+result = mesh.remesh(angle=30)
 ```
 
 - Edges with dihedral angle > `angle` are treated as ridges
@@ -314,12 +314,12 @@ result = mesh.remesh(
 
 ### Preserve Sharp Features
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
     hmax=0.1,
-    angle=20.0,  # Detect more ridges
+    angle=20,  # Detect more ridges
     hausd=0.001,
 )
 ```
