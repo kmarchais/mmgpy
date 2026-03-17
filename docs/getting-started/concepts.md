@@ -177,7 +177,7 @@ Control edge lengths globally:
 
 Refine specific regions with sizing constraints:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Spherical refinement region
@@ -224,7 +224,7 @@ mmgpy uses normalized quality measures:
 
 The `RemeshResult` class provides quality statistics:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hmax=0.1)
@@ -248,7 +248,7 @@ mmgpy supports 40+ file formats via meshio:
 
 Load any format with `mmgpy.Mesh()` or `mmgpy.read()`:
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 mesh = mmgpy.Mesh("model.stl")
@@ -266,7 +266,7 @@ Control output verbosity:
 | `1`   | Standard info      |
 | `2+`  | Debug output       |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hmax=0.1, verbose=-1)  # Silent

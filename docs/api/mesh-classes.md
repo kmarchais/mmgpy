@@ -127,7 +127,7 @@ print(f"Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:
 
 ### Local Sizing
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Set local refinement regions
@@ -161,7 +161,7 @@ mesh.validate(strict=True)
 
 ### PyVista Integration
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 import pyvista as pv

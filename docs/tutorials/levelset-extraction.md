@@ -148,8 +148,6 @@ result = mesh.remesh_levelset(levelset)
 
 For surface meshes, level-set can extract curves:
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 import numpy as np
@@ -167,7 +165,7 @@ result = mesh.remesh_levelset(levelset)
 
 Combine level-set extraction with size parameters:
 
-<!-- pytest-codeblocks:cont -->
+<!-- pytest-codeblocks:skip -->
 
 ```python
 result = mesh.remesh_levelset(

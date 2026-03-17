@@ -1,7 +1,5 @@
 # MMG Parameters Reference
 
-<!-- pytest-codeblocks:skip -->
-
 ```python
 import mmgpy
 mesh = mmgpy.read("input.mesh")
@@ -41,7 +39,7 @@ Maximum edge length.
 | Default  | Auto-computed |
 | Range    | > hmin        |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hmax=0.1)
@@ -81,7 +79,7 @@ Gradation parameter controlling size transition.
 | Default  | 1.3     |
 | Range    | >= 1.0  |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hgrad=1.2)
@@ -105,7 +103,7 @@ Hausdorff distance - maximum distance between input and output geometry.
 | Default  | 0.01 \* bounding box diagonal |
 | Range    | > 0                           |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(hausd=0.001)
@@ -169,7 +167,7 @@ Disable vertex insertion.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(noinsert=1)
@@ -189,7 +187,7 @@ Disable edge/face swapping.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(noswap=1)
@@ -209,7 +207,7 @@ Disable vertex movement.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(nomove=1)
@@ -229,7 +227,7 @@ Preserve surface vertices.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(nosurf=1)
@@ -251,7 +249,7 @@ Verbosity level.
 | Default  | 1        |
 | Range    | -1 to 10 |
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(verbose=-1)  # Silent
@@ -302,7 +300,7 @@ result = mesh.remesh_uniform(size=0.05)
 
 ### High-Quality Surface Approximation
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
@@ -330,7 +328,7 @@ result = mesh.remesh(
 
 ### Fast Coarse Remeshing
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
@@ -344,7 +342,7 @@ result = mesh.remesh(
 
 ### Volume Interior Only
 
-<!-- pytest-codeblocks:skip -->
+<!-- pytest-codeblocks:cont -->
 
 ```python
 result = mesh.remesh(
