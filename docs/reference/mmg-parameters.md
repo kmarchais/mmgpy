@@ -129,10 +129,10 @@ Ridge detection angle in degrees.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(angle=30)
+result = mesh.remesh(ar=30)
 ```
 
-- Edges with dihedral angle > `angle` are treated as ridges
+- Edges with dihedral angle > `ar` are treated as ridges
 - Ridges are preserved during remeshing
 - `angle=180`: No ridge detection
 

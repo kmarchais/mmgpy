@@ -64,13 +64,13 @@ MMG can detect and preserve sharp edges based on the angle between adjacent face
 result = mesh.remesh(
     hmax=0.1,
     hausd=0.001,
-    angle=45,  # Edges sharper than 45° are preserved as ridges
+    ar=45,  # Edges sharper than 45° are preserved as ridges
 )
 ```
 
 ## Preserving Boundaries
 
-To keep boundary edges fixed during remeshing:
+To prevent vertex movement during remeshing (vertices stay in place, but edges may still be swapped or split):
 
 <!-- pytest-codeblocks:cont -->
 
