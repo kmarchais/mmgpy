@@ -152,6 +152,8 @@ result = mesh.remesh_levelset(levelset)
 
 Remesh while preserving a displacement field (useful for moving meshes):
 
+!!! warning "Requires ELAS library"
+
 <!-- pytest-codeblocks:skip -->
 
 ```python

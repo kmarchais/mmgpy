@@ -49,6 +49,8 @@ result = mesh.remesh(
 
 Remesh while applying mesh displacement.
 
+!!! warning "Requires ELAS library"
+
 <!-- pytest-codeblocks:skip -->
 
 ```python
