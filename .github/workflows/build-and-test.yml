@@ -29,6 +29,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
       - name: Get VTK version from pyproject.toml
         id: vtk
@@ -40,12 +41,13 @@ jobs:
           echo "patch=${VTK_VERSION##*.}" >> $GITHUB_OUTPUT
         shell: bash
 
-      # Install VTK for Linux using apt
-      - name: Install VTK (Linux)
+      # Install VTK for Linux using apt (with caching)
+      - name: Cache apt packages
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          version: 1.0
       # Download and install VTK for Windows and macOS
       - name: Set VTK filename
         id: vtk-file
