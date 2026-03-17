@@ -38,10 +38,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install VTK
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          version: 1.0
 
       - name: Set CMake path
         run: echo "CMAKE_PREFIX_PATH=/usr/lib/cmake/vtk" >> $GITHUB_ENV
@@ -49,6 +50,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.12"
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync -v
@@ -205,10 +207,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install VTK
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          version: 1.0
 
       - name: Set CMake path
         run: echo "CMAKE_PREFIX_PATH=/usr/lib/cmake/vtk" >> $GITHUB_ENV
@@ -216,6 +219,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.12"
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync -v
