@@ -17,6 +17,8 @@ RELEASE_TAG="VTK-${VTK_VERSION}-shared"
 
 case "${PLATFORM}" in
     linux)
+        # vtk-builds publishes manylinux2014 archives; these remain forward-compatible
+        # with the manylinux_2_28 wheel image used in build-wheels.yml.
         VTK_FILE="vtk-manylinux2014_${ARCH}.tar.gz"
         LIB_EXT="so"
         LIB_DIR="lib64"

@@ -1535,18 +1535,18 @@ ui = [
 
 [package.metadata]
 requires-dist = [
-    { name = "meshio", specifier = ">=5.3.5" },
-    { name = "numpy", specifier = ">=2.0.2" },
-    { name = "patchelf", marker = "sys_platform == 'linux'", specifier = ">=0.17.2.4" },
-    { name = "pyvista", specifier = ">=0.46.4" },
-    { name = "pywebview", marker = "extra == 'ui'", specifier = ">=6.1" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "scipy", specifier = ">=1.11.0" },
-    { name = "trame", marker = "extra == 'ui'", specifier = ">=3.12.0" },
-    { name = "trame-vtk", marker = "extra == 'ui'", specifier = ">=2.10.2" },
-    { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.16.0" },
-    { name = "trame-vuetify", marker = "extra == 'ui'", specifier = ">=3.2.0" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0" },
+    { name = "meshio", specifier = ">=5.3.5,<6" },
+    { name = "numpy", specifier = ">=2.0.2,<3" },
+    { name = "patchelf", marker = "sys_platform == 'linux'", specifier = ">=0.17.2.4,<1" },
+    { name = "pyvista", specifier = ">=0.46.4,<1" },
+    { name = "pywebview", marker = "extra == 'ui'", specifier = ">=6.1,<7" },
+    { name = "rich", specifier = ">=13.0.0,<15" },
+    { name = "scipy", specifier = ">=1.11.0,<2" },
+    { name = "trame", marker = "extra == 'ui'", specifier = ">=3.12.0,<4" },
+    { name = "trame-vtk", marker = "extra == 'ui'", specifier = ">=2.10.2,<3" },
+    { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.16.0,<1" },
+    { name = "trame-vuetify", marker = "extra == 'ui'", specifier = ">=3.2.0,<4" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0,<5" },
     { name = "vtk", specifier = ">=9.5,<9.6" },
 ]
 provides-extras = ["ui"]
