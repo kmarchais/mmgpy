@@ -259,7 +259,7 @@ sizes = compute_sizes_from_constraints(vertices, constraints)
 metric = metrics.create_isotropic_metric(sizes)
 
 # Apply to mesh
-mesh.set_field("tensor", metric)
+mesh["metric"] = metric
 ```
 
 ## Tips

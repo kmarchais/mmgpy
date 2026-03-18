@@ -138,7 +138,7 @@ solution = np.sin(vertices[:, 0] * 4 * np.pi) * np.cos(vertices[:, 1] * 4 * np.p
 # (simplified - full implementation computes Hessian)
 sizes = 0.01 + 0.1 * np.abs(solution)
 metric = metrics.create_isotropic_metric(sizes, dim=2)
-mesh.set_field("tensor", metric)
+mesh["metric"] = metric
 
 result = mesh.remesh()
 ```
@@ -165,7 +165,7 @@ sizes = np.array([0.1, 0.02])  # Larger in x, smaller in y
 single_tensor = metrics.create_anisotropic_metric(sizes)
 metric = np.tile(single_tensor, (n_vertices, 1))
 
-mesh.set_field("tensor", metric)
+mesh["metric"] = metric
 result = mesh.remesh()
 ```
 

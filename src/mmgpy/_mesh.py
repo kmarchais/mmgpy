@@ -37,6 +37,7 @@ Example:
 
 from __future__ import annotations
 
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -430,7 +431,13 @@ class Mesh:
 
     """
 
-    __slots__ = ("_impl", "_kind", "_sizing_constraints", "_user_fields")
+    __slots__ = (
+        "_impl",
+        "_kind",
+        "_metric_is_tensor",
+        "_sizing_constraints",
+        "_user_fields",
+    )
 
     _impl: MmgMesh3D | MmgMesh2D | MmgMeshS
     _kind: MeshKind
@@ -448,6 +455,7 @@ class Mesh:
 
         self._sizing_constraints = []
         self._user_fields = {}
+        self._metric_is_tensor = False
 
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
@@ -500,6 +508,7 @@ class Mesh:
         mesh._kind = kind  # noqa: SLF001
         mesh._sizing_constraints = []  # noqa: SLF001
         mesh._user_fields = {}  # noqa: SLF001
+        mesh._metric_is_tensor = False  # noqa: SLF001
         return mesh
 
     @property
@@ -759,6 +768,9 @@ class Mesh:
     def set_field(self, key: str, value: NDArray[np.float64]) -> None:
         """Set a solution field.
 
+        .. deprecated:: 0.6.0
+            Use dictionary syntax instead: ``mesh[key] = value``.
+
         Parameters
         ----------
         key : str
@@ -767,10 +779,18 @@ class Mesh:
             Field values (one per vertex).
 
         """
+        warnings.warn(
+            "set_field() is deprecated, use mesh[key] = value instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self._impl.set_field(key, value)
 
     def get_field(self, key: str) -> NDArray[np.float64]:
         """Get a solution field.
+
+        .. deprecated:: 0.6.0
+            Use dictionary syntax instead: ``value = mesh[key]``.
 
         Parameters
         ----------
@@ -783,6 +803,11 @@ class Mesh:
             Field values.
 
         """
+        warnings.warn(
+            "get_field() is deprecated, use mesh[key] instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._impl.get_field(key)
 
     def _try_get_field(self, key: str) -> NDArray[np.float64] | None:
@@ -803,13 +828,126 @@ class Mesh:
             return None
         return data
 
+    # Known MMG solution field names handled by the C++ bindings
+    _MMG_FIELDS = frozenset({"metric", "displacement", "levelset", "tensor"})
+
+    # Valid tensor component counts:
+    # 3 for 2D (xx, xy, yy), 6 for 3D (xx, xy, xz, yy, yz, zz)
+    _VALID_TENSOR_COMPONENTS = frozenset({3, 6})
+
     def __setitem__(self, key: str, value: NDArray[np.float64]) -> None:
-        """Set a solution field using dictionary syntax."""
-        self._impl[key] = value
+        """Set a field using dictionary syntax.
+
+        Smart routing based on key and value shape:
+
+        - ``mesh["metric"] = scalar``  → scalar metric (Nx1)
+        - ``mesh["metric"] = tensor``  → anisotropic metric (Nx3 for 2D, Nx6 for 3D)
+        - ``mesh["displacement"] = v`` → MMG displacement field
+        - ``mesh["temperature"] = v``  → user-defined field (for transfer)
+
+        Parameters
+        ----------
+        key : str
+            Field name. Known MMG fields ("metric", "displacement",
+            "levelset", "tensor") are routed to the C++ bindings.
+            All other names are stored as user fields.
+        value : ndarray
+            Field values (one per vertex).
+
+        Examples
+        --------
+        >>> mesh["metric"] = np.ones((n, 1)) * 0.1    # scalar metric
+        >>> mesh["metric"] = anisotropic_tensor        # Nx6 tensor metric
+        >>> mesh["temperature"] = temp_array           # user field
+
+        """
+        value = np.asarray(value, dtype=np.float64)
+
+        if key == "metric":
+            if value.ndim == _DIMS_2D and value.shape[1] > 1:
+                # Multi-component metric → route to tensor field
+                n_cols = value.shape[1]
+                if n_cols not in self._VALID_TENSOR_COMPONENTS:
+                    msg = (
+                        f"Tensor metric must have 3 (2D) or 6 (3D) components, "
+                        f"got {n_cols}"
+                    )
+                    raise ValueError(msg)
+                self._impl.set_field("tensor", value)
+                self._metric_is_tensor = True
+            else:
+                self._impl[key] = value
+                self._metric_is_tensor = False
+        elif key in self._MMG_FIELDS:
+            self._impl[key] = value
+        else:
+            self.set_user_field(key, value)
 
     def __getitem__(self, key: str) -> NDArray[np.float64]:
-        """Get a solution field using dictionary syntax."""
-        return self._impl[key]
+        """Get a field using dictionary syntax.
+
+        Parameters
+        ----------
+        key : str
+            Field name. Known MMG fields are retrieved from C++ bindings.
+            All other names are retrieved from user fields.
+
+        Returns
+        -------
+        ndarray
+            Field values.
+
+        Raises
+        ------
+        KeyError
+            If the field does not exist or has not been set.
+
+        Examples
+        --------
+        >>> metric = mesh["metric"]
+        >>> temperature = mesh["temperature"]
+
+        """
+        if key in self._MMG_FIELDS:
+            try:
+                if key == "metric" and self._metric_is_tensor:
+                    data = self._try_get_field("tensor")
+                else:
+                    data = self._try_get_field(key)
+            except RuntimeError as exc:
+                raise KeyError(key) from exc
+            if data is None:
+                raise KeyError(key)
+            return data
+        return self.get_user_field(key)
+
+    def __contains__(self, key: str) -> bool:
+        """Check if a field exists.
+
+        Parameters
+        ----------
+        key : str
+            Field name.
+
+        Returns
+        -------
+        bool
+            True if the field exists (either as an MMG field or user field).
+
+        Examples
+        --------
+        >>> "temperature" in mesh  # True if user field was set
+        >>> "metric" in mesh       # True if metric field is set
+
+        """
+        if key in self._MMG_FIELDS:
+            try:
+                self[key]
+            except KeyError:
+                return False
+            else:
+                return True
+        return self.has_user_field(key)
 
     # =========================================================================
     # User field operations (arbitrary fields for transfer)

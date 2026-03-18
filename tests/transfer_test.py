@@ -49,9 +49,9 @@ class TestUserFields:
         mesh = Mesh(vertices, elements)
 
         field = np.random.default_rng(42).random(len(vertices))
-        mesh.set_user_field("temperature", field)
+        mesh["temperature"] = field
 
-        result = mesh.get_user_field("temperature")
+        result = mesh["temperature"]
         np.testing.assert_array_equal(result, field)
 
     def test_set_get_vector_field(
@@ -63,9 +63,9 @@ class TestUserFields:
         mesh = Mesh(vertices, elements)
 
         field = np.random.default_rng(42).random((len(vertices), 3))
-        mesh.set_user_field("velocity", field)
+        mesh["velocity"] = field
 
-        result = mesh.get_user_field("velocity")
+        result = mesh["velocity"]
         np.testing.assert_array_equal(result, field)
 
     def test_get_all_user_fields(
@@ -79,8 +79,8 @@ class TestUserFields:
         temp = np.random.default_rng(42).random(len(vertices))
         velocity = np.random.default_rng(43).random((len(vertices), 3))
 
-        mesh.set_user_field("temperature", temp)
-        mesh.set_user_field("velocity", velocity)
+        mesh["temperature"] = temp
+        mesh["velocity"] = velocity
 
         fields = mesh.get_user_fields()
         assert "temperature" in fields
@@ -97,7 +97,7 @@ class TestUserFields:
         mesh = Mesh(vertices, elements)
 
         assert not mesh.has_user_field("temperature")
-        mesh.set_user_field("temperature", np.ones(len(vertices)))
+        mesh["temperature"] = np.ones(len(vertices))
         assert mesh.has_user_field("temperature")
 
     def test_clear_user_fields(
@@ -108,8 +108,8 @@ class TestUserFields:
         vertices, elements = dense_cube_mesh
         mesh = Mesh(vertices, elements)
 
-        mesh.set_user_field("temperature", np.ones(len(vertices)))
-        mesh.set_user_field("velocity", np.ones((len(vertices), 3)))
+        mesh["temperature"] = np.ones(len(vertices))
+        mesh["velocity"] = np.ones((len(vertices), 3))
         mesh.clear_user_fields()
 
         assert not mesh.has_user_field("temperature")
@@ -125,7 +125,7 @@ class TestUserFields:
         mesh = Mesh(vertices, elements)
 
         with pytest.raises(KeyError, match="not found"):
-            mesh.get_user_field("nonexistent")
+            mesh["nonexistent"]
 
     def test_set_wrong_size_field_raises(
         self,
@@ -136,7 +136,7 @@ class TestUserFields:
         mesh = Mesh(vertices, elements)
 
         with pytest.raises(ValueError, match="values but mesh has"):
-            mesh.set_user_field("bad", np.ones(10))
+            mesh["bad"] = np.ones(10)
 
 
 class TestFieldTransfer:
@@ -151,13 +151,13 @@ class TestFieldTransfer:
         mesh = Mesh(vertices, elements)
 
         linear_field = vertices[:, 0] + 2 * vertices[:, 1] + 3 * vertices[:, 2]
-        mesh.set_user_field("linear", linear_field)
+        mesh["linear"] = linear_field
 
         mesh.remesh(hmax=0.3, transfer_fields=True, progress=False)
 
         new_vertices = mesh.get_vertices()
         expected = new_vertices[:, 0] + 2 * new_vertices[:, 1] + 3 * new_vertices[:, 2]
-        actual = mesh.get_user_field("linear")
+        actual = mesh["linear"]
 
         np.testing.assert_allclose(actual, expected, rtol=1e-5, atol=1e-14)
 
@@ -170,13 +170,13 @@ class TestFieldTransfer:
         mesh = Mesh(vertices, triangles)
 
         linear_field = vertices[:, 0] + 2 * vertices[:, 1]
-        mesh.set_user_field("linear", linear_field)
+        mesh["linear"] = linear_field
 
         mesh.remesh(hmax=0.2, transfer_fields=True, progress=False)
 
         new_vertices = mesh.get_vertices()
         expected = new_vertices[:, 0] + 2 * new_vertices[:, 1]
-        actual = mesh.get_user_field("linear")
+        actual = mesh["linear"]
 
         np.testing.assert_allclose(actual, expected, rtol=1e-5, atol=1e-14)
 
@@ -191,7 +191,7 @@ class TestFieldTransfer:
         velocity = np.column_stack(
             [vertices[:, 0], vertices[:, 1] * 2, vertices[:, 2] * 3],
         )
-        mesh.set_user_field("velocity", velocity)
+        mesh["velocity"] = velocity
 
         mesh.remesh(hmax=0.3, transfer_fields=True, progress=False)
 
@@ -199,7 +199,7 @@ class TestFieldTransfer:
         expected = np.column_stack(
             [new_vertices[:, 0], new_vertices[:, 1] * 2, new_vertices[:, 2] * 3],
         )
-        actual = mesh.get_user_field("velocity")
+        actual = mesh["velocity"]
 
         np.testing.assert_allclose(actual, expected, rtol=1e-5, atol=1e-14)
 
@@ -213,20 +213,20 @@ class TestFieldTransfer:
 
         temp = vertices[:, 0] + vertices[:, 1]
         pressure = vertices[:, 2] * 2
-        mesh.set_user_field("temperature", temp)
-        mesh.set_user_field("pressure", pressure)
+        mesh["temperature"] = temp
+        mesh["pressure"] = pressure
 
         mesh.remesh(hmax=0.3, transfer_fields=True, progress=False)
 
         new_vertices = mesh.get_vertices()
         np.testing.assert_allclose(
-            mesh.get_user_field("temperature"),
+            mesh["temperature"],
             new_vertices[:, 0] + new_vertices[:, 1],
             rtol=1e-5,
             atol=1e-14,
         )
         np.testing.assert_allclose(
-            mesh.get_user_field("pressure"),
+            mesh["pressure"],
             new_vertices[:, 2] * 2,
             rtol=1e-5,
             atol=1e-14,
@@ -242,8 +242,8 @@ class TestFieldTransfer:
 
         temp = vertices[:, 0]
         pressure = vertices[:, 1]
-        mesh.set_user_field("temperature", temp)
-        mesh.set_user_field("pressure", pressure)
+        mesh["temperature"] = temp
+        mesh["pressure"] = pressure
 
         mesh.remesh(hmax=0.3, transfer_fields=["temperature"], progress=False)
 
@@ -280,7 +280,7 @@ class TestFieldTransfer:
         vertices, elements = dense_cube_mesh
         mesh = Mesh(vertices, elements)
 
-        mesh.set_user_field("temperature", np.ones(len(vertices)))
+        mesh["temperature"] = np.ones(len(vertices))
 
         mesh.remesh(hmax=0.3, progress=False)
 
@@ -297,7 +297,7 @@ class TestFieldTransfer:
         mesh = Mesh(vertices, elements)
 
         field = np.arange(len(vertices), dtype=np.float64)
-        mesh.set_user_field("index", field)
+        mesh["index"] = field
 
         mesh.remesh(
             hmax=0.3,
@@ -306,7 +306,7 @@ class TestFieldTransfer:
             progress=False,
         )
 
-        result = mesh.get_user_field("index")
+        result = mesh["index"]
         assert len(result) == len(mesh.get_vertices())
 
 
@@ -428,12 +428,12 @@ class TestFieldTransferSurface:
         mesh = Mesh(vertices, triangles)
 
         field = vertices[:, 0] + vertices[:, 1]
-        mesh.set_user_field("test", field)
+        mesh["test"] = field
 
         mesh.remesh(hmax=0.3, transfer_fields=True, progress=False)
 
         new_vertices = mesh.get_vertices()
         expected = new_vertices[:, 0] + new_vertices[:, 1]
-        actual = mesh.get_user_field("test")
+        actual = mesh["test"]
 
         np.testing.assert_allclose(actual, expected, rtol=0.2, atol=1e-14)

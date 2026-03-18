@@ -169,7 +169,7 @@ class RemeshingMixin:
                     metric = source_solution_metric
                     if metric.ndim == 1:
                         metric = metric.reshape(-1, 1)
-                    self._mesh.set_field("metric", metric.astype(np.float64))
+                    self._mesh["metric"] = metric.astype(np.float64)
 
             options = self._build_remesh_options()
             result = self._execute_remesh(source_solution_metric, options)

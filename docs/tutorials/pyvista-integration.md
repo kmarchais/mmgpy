@@ -186,11 +186,11 @@ mesh = mmgpy.read("input.mesh")
 # Add a scalar field to the mesh
 vertices = mesh.get_vertices()
 scalar_field = np.sin(vertices[:, 0] * 2 * np.pi)
-mesh.set_user_field("temperature", scalar_field)
+mesh["temperature"] = scalar_field
 
 # Convert to PyVista and add user fields manually
 pv_mesh = mesh.to_pyvista()
-pv_mesh["temperature"] = mesh.get_user_field("temperature")
+pv_mesh["temperature"] = mesh["temperature"]
 
 # Plot with scalar field
 pv_mesh.plot(scalars="temperature", show_edges=True, cmap="coolwarm")
@@ -209,10 +209,10 @@ sphere["elevation"] = sphere.points[:, 2]
 
 # Convert to mmgpy and store the field as a user field
 mesh = mmgpy.Mesh(sphere)
-mesh.set_user_field("elevation", sphere["elevation"])
+mesh["elevation"] = sphere["elevation"]
 
 # Access the field
-elevation = mesh.get_user_field("elevation")
+elevation = mesh["elevation"]
 print(f"Elevation range: {elevation.min():.2f} to {elevation.max():.2f}")
 ```
 
