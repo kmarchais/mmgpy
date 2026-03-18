@@ -28,6 +28,7 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
@@ -37,13 +38,15 @@ jobs:
       - name: Download and prepare VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: ./.github/scripts/download_vtk.sh linux x86_64 ./vtk-cache
-      - name: Build manylinux2014 x86_64 wheels
+      - name: Build manylinux_2_28 x86_64 wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           CIBW_ARCHS_LINUX: x86_64
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          # vtk-builds currently publishes manylinux2014 x86_64 archives only,
+          # but those older glibc binaries remain compatible in a manylinux_2_28 wheel.
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3.0
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -78,6 +81,7 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
@@ -89,11 +93,11 @@ jobs:
         run: ./.github/scripts/download_vtk.sh linux aarch64 ./vtk-cache
       - name: Build manylinux_2_28 aarch64 wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           CIBW_ARCHS_LINUX: aarch64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3.0
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -129,11 +133,12 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Build wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3.0
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -168,6 +173,7 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
@@ -179,9 +185,9 @@ jobs:
         run: ./.github/scripts/download_vtk.sh macos arm64 ./vtk-cache
       - name: Build wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3.0
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:

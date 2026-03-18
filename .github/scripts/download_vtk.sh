@@ -8,7 +8,7 @@ set -e
 PLATFORM="${1:-linux}"
 ARCH="${2:-x86_64}"
 OUTPUT_DIR="${3:-./vtk-cache}"
-VTK_VERSION="${VTK_VERSION:-9.5.2}"
+VTK_VERSION="${VTK_VERSION:-9.6.0}"
 VTK_MAJOR_MINOR="${VTK_VERSION%.*}"
 
 echo "=== Downloading VTK ${VTK_VERSION} for ${PLATFORM}-${ARCH} ==="
@@ -17,6 +17,8 @@ RELEASE_TAG="VTK-${VTK_VERSION}-shared"
 
 case "${PLATFORM}" in
     linux)
+        # vtk-builds publishes manylinux2014 archives; these remain forward-compatible
+        # with the manylinux_2_28 wheel image used in build-wheels.yml.
         VTK_FILE="vtk-manylinux2014_${ARCH}.tar.gz"
         LIB_EXT="so"
         LIB_DIR="lib64"
@@ -68,28 +70,31 @@ elif [ "${PLATFORM}" = "macos" ] || [ "${PLATFORM}" = "darwin" ]; then
     mv lib*.dylib "${LIB_DIR}/" 2>/dev/null || true
 fi
 
-# Fix versioned symlinks (9.5.9.5 -> 9.5.2 -> 9.5)
+# Fix versioned symlinks (e.g. 9.6.9.6 -> 9.6.0 -> 9.6)
+# vtk-builds names libraries as lib*-MAJOR.MINOR.MAJOR.MINOR.{so,dylib},
+# but CMake and linkers look for lib*-MAJOR.MINOR.{so,dylib}.
 echo "Fixing VTK library symlinks..."
 cd "${LIB_DIR}"
 
+FULL_SUFFIX="${VTK_MAJOR_MINOR}.${VTK_MAJOR_MINOR}"
 if [ "${PLATFORM}" = "linux" ]; then
     for lib in *.so; do
         [ -e "$lib" ] || continue  # Skip if no match
-        if [[ "$lib" == *"-9.5.9.5.so" ]]; then
-            base=$(echo "$lib" | sed "s/-9.5.9.5.so//g")
-            rm -f "${base}-9.5.2.so" "${base}-9.5.so" 2>/dev/null || true
-            ln -sf "${base}-9.5.9.5.so" "${base}-9.5.2.so"
-            ln -sf "${base}-9.5.9.5.so" "${base}-9.5.so"
+        if [[ "$lib" == *"-${FULL_SUFFIX}.so" ]]; then
+            base=$(echo "$lib" | sed "s/-${FULL_SUFFIX}.so//g")
+            rm -f "${base}-${VTK_VERSION}.so" "${base}-${VTK_MAJOR_MINOR}.so" 2>/dev/null || true
+            ln -sf "${base}-${FULL_SUFFIX}.so" "${base}-${VTK_VERSION}.so"
+            ln -sf "${base}-${FULL_SUFFIX}.so" "${base}-${VTK_MAJOR_MINOR}.so"
         fi
     done
 elif [ "${PLATFORM}" = "macos" ] || [ "${PLATFORM}" = "darwin" ]; then
     for lib in *.dylib; do
         [ -e "$lib" ] || continue  # Skip if no match
-        if [[ "$lib" == *"-9.5.9.5.dylib" ]]; then
-            base=$(echo "$lib" | sed "s/-9.5.9.5.dylib//g")
-            rm -f "${base}-9.5.2.dylib" "${base}-9.5.dylib" 2>/dev/null || true
-            ln -sf "${base}-9.5.9.5.dylib" "${base}-9.5.2.dylib"
-            ln -sf "${base}-9.5.9.5.dylib" "${base}-9.5.dylib"
+        if [[ "$lib" == *"-${FULL_SUFFIX}.dylib" ]]; then
+            base=$(echo "$lib" | sed "s/-${FULL_SUFFIX}.dylib//g")
+            rm -f "${base}-${VTK_VERSION}.dylib" "${base}-${VTK_MAJOR_MINOR}.dylib" 2>/dev/null || true
+            ln -sf "${base}-${FULL_SUFFIX}.dylib" "${base}-${VTK_VERSION}.dylib"
+            ln -sf "${base}-${FULL_SUFFIX}.dylib" "${base}-${VTK_MAJOR_MINOR}.dylib"
         fi
     done
 fi
@@ -111,7 +116,7 @@ fi
 
 # Create bin directory with stub executables (needed by CMake)
 mkdir -p bin
-for exe in vtkWrapHierarchy vtkWrapPython vtkWrapPythonInit vtkParseJava vtkWrapJava vtkWrapSerDes vtkProbeOpenGLVersion; do
+for exe in vtkWrapHierarchy vtkWrapPython vtkWrapPythonInit vtkParseJava vtkWrapJava vtkWrapJavaScript vtkWrapSerDes vtkProbeOpenGLVersion; do
     touch "bin/${exe}-${VTK_MAJOR_MINOR}"
     chmod +x "bin/${exe}-${VTK_MAJOR_MINOR}"
 done
