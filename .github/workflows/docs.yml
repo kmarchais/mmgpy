@@ -11,9 +11,17 @@ on:
 permissions:
   contents: write
 
+# Prevent concurrent deploys from corrupting gh-pages
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: https://kmarchais.github.io/mmgpy
     steps:
       - uses: actions/checkout@v6
         with:
@@ -36,7 +44,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --group docs
 
+      # Only validate on PRs; mike builds internally on deploy
       - name: Build documentation
+        if: github.event_name == 'pull_request'
         run: uv run mkdocs build --strict
 
       - name: Configure Git for mike
@@ -45,14 +55,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      # One-time migration: wipe legacy gh-pages from mkdocs gh-deploy
+      # so mike starts with a clean branch (safe no-op once versions.json exists)
+      - name: Clean up legacy gh-pages
+        if: github.event_name == 'push' || github.event_name == 'release'
+        run: |
+          git fetch origin gh-pages:refs/remotes/origin/gh-pages 2>/dev/null || true
+          if git show origin/gh-pages:versions.json &>/dev/null 2>&1; then
+            echo "mike already initialized, skipping cleanup"
+          else
+            echo "First mike deploy — wiping legacy gh-pages for clean start"
+            git push origin --delete gh-pages 2>/dev/null || true
+          fi
+
+      # "dev" always reflects the current main branch
       - name: Deploy dev docs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: uv run mike deploy dev --push
 
+      # Skip pre-releases to avoid publishing unstable docs as "latest"
       - name: Deploy versioned docs
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' && !github.event.release.prerelease
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
           MINOR_VERSION=$(echo "$VERSION" | cut -d. -f1-2)
           uv run mike deploy "$MINOR_VERSION" latest --update-aliases --push
+          # Idempotent: ensures root URL always redirects to latest
           uv run mike set-default latest --push

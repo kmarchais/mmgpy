@@ -1,8 +1,11 @@
 site_name: mmgpy
 site_description: Python bindings for the MMG remeshing library
+# mike overrides site_url per version during deploy; this is the base for local builds
 site_url: https://kmarchais.github.io/mmgpy
 repo_url: https://github.com/kmarchais/mmgpy
 repo_name: kmarchais/mmgpy
+# NOTE: always points to main branch — "Edit" links on older versioned docs
+# may reference files that have since changed or moved
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2024-2026 Kevin Marchais
 
