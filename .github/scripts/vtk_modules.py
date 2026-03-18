@@ -10,15 +10,15 @@ import re
 def get_vtk_major_minor() -> str:
     """Get VTK major.minor version from environment or auto-detect.
 
-    Uses VTK_VERSION environment variable (e.g., "9.4.1" -> "9.4").
-    Falls back to "9.4" if not set.
+    Uses VTK_VERSION environment variable (e.g., "9.6.0" -> "9.6").
+    Falls back to "9.6" if not set.
     """
     vtk_version = os.environ.get("VTK_VERSION", "")
     if vtk_version:
         match = re.match(r"(\d+\.\d+)", vtk_version)
         if match:
             return match.group(1)
-    return "9.4"
+    return "9.6"
 
 
 VTK_MAJOR_MINOR: str = get_vtk_major_minor()

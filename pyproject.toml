@@ -19,7 +19,7 @@ dependencies = [
     "meshio>=5.3.5,<6",
     "numpy>=2.0.2,<3",
     "patchelf>=0.17.2.4,<1; sys_platform == 'linux'",
-    "pyvista>=0.46.4,<1",
+    "pyvista>=0.47,<1",
     "rich>=13.0.0,<15",
     "scipy>=1.11.0,<2",
     "typing-extensions>=4.0.0,<5; python_version < '3.11'",
@@ -268,9 +268,10 @@ unresolved-import = "ignore"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
-# Skip 32-bit builds and musllinux (VTK doesn't provide musllinux wheels)
-skip = "*-win32 *-manylinux_i686 *-musllinux*"
+build = "cp310-* cp311-* cp312-* cp313-* cp314-* cp314t-*"
+# Skip 32-bit builds, musllinux (VTK doesn't provide musllinux wheels),
+# and free-threaded on macOS/Windows (VTK only has cp314t wheels for Linux).
+skip = "*-win32 *-manylinux_i686 *-musllinux* cp314t-macosx* cp314t-win*"
 test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
 
