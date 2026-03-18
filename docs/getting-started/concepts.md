@@ -217,7 +217,7 @@ n_vertices = len(mesh.get_vertices())
 # Create isotropic metric from sizes
 sizes = np.ones(n_vertices) * 0.1
 metric = metrics.create_isotropic_metric(sizes)
-mesh.set_field("tensor", metric)
+mesh["metric"] = metric
 
 result = mesh.remesh()
 ```

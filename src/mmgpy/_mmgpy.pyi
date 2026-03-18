@@ -4,7 +4,7 @@ This module provides type information for the pybind11 C++ bindings.
 All element indices in this API are 0-based (Python convention), though
 MMG internally uses 1-based indexing. The bindings handle this conversion.
 
-Supported solution fields for set_field/get_field:
+Supported solution fields (accessible via dictionary syntax, e.g. ``mesh["metric"]``):
     - "metric": Isotropic sizing field (Nx1 array)
     - "displacement": Lagrangian motion field (Nx2 or Nx3 array)
     - "levelset": Implicit surface definition (Nx1 array)

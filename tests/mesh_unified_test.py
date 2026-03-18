@@ -243,13 +243,13 @@ class TestMeshMethods:
         tetra_vertices: np.ndarray,
         tetra_cells: np.ndarray,
     ) -> None:
-        """Test set_field and get_field with metric field."""
+        """Test dictionary-style field set/get with metric field."""
         mesh = Mesh(tetra_vertices, tetra_cells)
         # Use "metric" field which is recognized by MMG
         field = np.array([[0.1], [0.1], [0.1], [0.1]])
 
-        mesh.set_field("metric", field)
-        result = mesh.get_field("metric")
+        mesh["metric"] = field
+        result = mesh["metric"]
 
         np.testing.assert_allclose(result, field)
 
@@ -267,6 +267,143 @@ class TestMeshMethods:
         result = mesh["metric"]
 
         np.testing.assert_allclose(result, field)
+
+    def test_dict_access_tensor_metric_3d(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test mesh['metric'] = tensor_field round-trips for 3D mesh."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+        n = len(tetra_vertices)
+        # Nx6 tensor (symmetric 3x3: xx, xy, xz, yy, yz, zz)
+        tensor = np.tile([1.0, 0.0, 0.0, 1.0, 0.0, 1.0], (n, 1))
+
+        mesh["metric"] = tensor
+        result = mesh["metric"]
+
+        np.testing.assert_allclose(result, tensor)
+
+    def test_dict_access_tensor_metric_2d(
+        self,
+        triangle_2d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test mesh['metric'] = tensor_field round-trips for 2D mesh."""
+        mesh = Mesh(triangle_2d_vertices, triangle_cells)
+        n = len(triangle_2d_vertices)
+        # Nx3 tensor (symmetric 2x2: xx, xy, yy)
+        tensor = np.tile([1.0, 0.0, 1.0], (n, 1))
+
+        mesh["metric"] = tensor
+        result = mesh["metric"]
+
+        np.testing.assert_allclose(result, tensor)
+
+    def test_dict_access_user_field_scalar(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test mesh['temperature'] = values stores as user field."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+        n = len(tetra_vertices)
+        temperature = np.arange(n, dtype=np.float64)
+
+        mesh["temperature"] = temperature
+        result = mesh["temperature"]
+
+        np.testing.assert_allclose(result, temperature)
+        assert mesh.has_user_field("temperature")
+
+    def test_dict_access_user_field_vector(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test mesh['velocity'] = vector_values stores as user field."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+        n = len(tetra_vertices)
+        velocity = np.random.default_rng(42).random((n, 3))
+
+        mesh["velocity"] = velocity
+        result = mesh["velocity"]
+
+        np.testing.assert_allclose(result, velocity)
+        assert mesh.has_user_field("velocity")
+
+    def test_dict_access_user_field_getitem_missing(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test mesh['nonexistent'] raises KeyError."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+
+        with pytest.raises(KeyError, match="not found"):
+            _ = mesh["nonexistent"]
+
+    def test_dict_access_known_fields_passthrough(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that known MMG fields like 'tensor' still work directly."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+        n = len(tetra_vertices)
+        tensor = np.tile([1.0, 0.0, 0.0, 1.0, 0.0, 1.0], (n, 1))
+
+        mesh["tensor"] = tensor
+        result = mesh["tensor"]
+
+        np.testing.assert_allclose(result, tensor)
+
+    def test_dict_access_tensor_metric_invalid_components(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test mesh['metric'] = Nx4 raises ValueError for invalid component count."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+        n = len(tetra_vertices)
+        bad_tensor = np.ones((n, 4))
+
+        with pytest.raises(ValueError, match=r"3 \(2D\) or 6 \(3D\) components"):
+            mesh["metric"] = bad_tensor
+
+    def test_contains_user_field(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test 'field_name' in mesh works for user fields."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+
+        assert "temperature" not in mesh
+        mesh["temperature"] = np.ones(len(tetra_vertices))
+        assert "temperature" in mesh
+
+    def test_contains_mmg_field(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test 'field_name' in mesh works for MMG fields."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+
+        mesh["metric"] = np.ones((len(tetra_vertices), 1)) * 0.1
+        assert "metric" in mesh
+
+    def test_getitem_unset_mmg_field_raises_keyerror(self) -> None:
+        """Test that accessing unset MMG field raises KeyError, not RuntimeError."""
+        # Use a fresh mesh from file to avoid C++ memory reuse from prior tests
+        import pyvista as pv
+
+        tetra = pv.Tetrahedron()
+        mesh = Mesh(tetra)
+
+        with pytest.raises(KeyError):
+            _ = mesh["levelset"]
 
     def test_save(
         self,
