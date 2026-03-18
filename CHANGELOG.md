@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Build Linux x86_64 wheels with `manylinux_2_28` and remove the `scipy<1.17` cap so Python 3.11+ can install newer SciPy releases.
+
 ## [0.6.0] - 2026-03-08
 
 ### Added

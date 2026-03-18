@@ -1541,7 +1541,7 @@ requires-dist = [
     { name = "pyvista", specifier = ">=0.46.4" },
     { name = "pywebview", marker = "extra == 'ui'", specifier = ">=6.1" },
     { name = "rich", specifier = ">=13.0.0" },
-    { name = "scipy", specifier = ">=1.11.0,<1.17" },
+    { name = "scipy", specifier = ">=1.11.0" },
     { name = "trame", marker = "extra == 'ui'", specifier = ">=3.12.0" },
     { name = "trame-vtk", marker = "extra == 'ui'", specifier = ">=2.10.2" },
     { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.16.0" },
