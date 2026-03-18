@@ -55,3 +55,4 @@ jobs:
           VERSION="${GITHUB_REF#refs/tags/v}"
           MINOR_VERSION=$(echo "$VERSION" | cut -d. -f1-2)
           uv run mike deploy "$MINOR_VERSION" latest --update-aliases --push
+          uv run mike set-default latest --push
