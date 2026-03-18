@@ -23,7 +23,8 @@ dependencies = [
     "rich>=13.0.0,<15",
     "scipy>=1.11.0,<2",
     "typing-extensions>=4.0.0,<5; python_version < '3.11'",
-    "vtk>=9.5,<9.7",
+    "vtk>=9.5,<9.7; python_version < '3.14'",
+    "vtk>=9.6,<9.7; python_version >= '3.14'",
 ]
 authors = [{ name = "Kevin Marchais", email = "kevinmarchais@gmail.com" }]
 license = { text = "MIT" }
