@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-18
+
 ### Added
 
 - Python 3.14 support.
@@ -186,7 +188,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized wheel sizes (under 100MB) for PyPI upload
 - Linux manylinux wheels with proper platform tags
 
-[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/kmarchais/mmgpy/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/kmarchais/mmgpy/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kmarchais/mmgpy/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/kmarchais/mmgpy/compare/v0.5.2...v0.6.0
