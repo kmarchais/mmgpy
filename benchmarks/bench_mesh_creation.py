@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import operator
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -222,7 +223,7 @@ class TestFieldOperations:
         mesh = MmgMesh3D(vertices, tetrahedra)
         field = np.full((len(vertices), 1), 0.1, dtype=np.float64)
 
-        benchmark(mesh.__setitem__, "metric", field)
+        benchmark(operator.setitem, mesh, "metric", field)
 
     @pytest.mark.benchmark(group="mesh-fields")
     def test_get_metric_field(
@@ -236,7 +237,7 @@ class TestFieldOperations:
         field = np.full((len(vertices), 1), 0.1, dtype=np.float64)
         mesh["metric"] = field
 
-        result = benchmark(mesh.__getitem__, "metric")
+        result = benchmark(operator.getitem, mesh, "metric")
         assert len(result) == len(vertices)
 
 

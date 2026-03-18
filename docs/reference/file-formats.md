@@ -152,8 +152,7 @@ mesh.save("output.mesh")  # Also saves output.sol if fields exist
 
 ```python
 # Access user fields
-user_fields = mesh.get_user_fields()
-if "temperature" in user_fields:
+if "temperature" in mesh:
     temp = mesh["temperature"]
 ```
 

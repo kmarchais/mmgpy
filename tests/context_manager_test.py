@@ -440,8 +440,8 @@ class TestCheckpointFieldPreservation:
         original_tensor = np.tile([0.1, 0.0, 0.0, 0.1, 0.0, 0.1], (n_verts, 1))
         mesh["metric"] = original_tensor  # Routes to tensor due to Nx6 shape
 
-        # Verify tensor is set
-        npt.assert_array_almost_equal(mesh["tensor"], original_tensor)
+        # Verify tensor is set (round-trips through mesh["metric"])
+        npt.assert_array_almost_equal(mesh["metric"], original_tensor)
 
         with mesh.checkpoint():
             mesh.remesh(hmax=0.5, verbose=-1)
