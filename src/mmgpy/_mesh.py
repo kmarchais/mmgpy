@@ -803,13 +803,76 @@ class Mesh:
             return None
         return data
 
+    # Known MMG solution field names handled by the C++ bindings
+    _MMG_FIELDS = frozenset({"metric", "displacement", "levelset", "tensor"})
+
     def __setitem__(self, key: str, value: NDArray[np.float64]) -> None:
-        """Set a solution field using dictionary syntax."""
-        self._impl[key] = value
+        """Set a field using dictionary syntax.
+
+        Smart routing based on key and value shape:
+
+        - ``mesh["metric"] = scalar``  → scalar metric (Nx1)
+        - ``mesh["metric"] = tensor``  → anisotropic metric (Nx3 for 2D, Nx6 for 3D)
+        - ``mesh["displacement"] = v`` → MMG displacement field
+        - ``mesh["temperature"] = v``  → user-defined field (for transfer)
+
+        Parameters
+        ----------
+        key : str
+            Field name. Known MMG fields ("metric", "displacement",
+            "levelset", "tensor") are routed to the C++ bindings.
+            All other names are stored as user fields.
+        value : ndarray
+            Field values (one per vertex).
+
+        Examples
+        --------
+        >>> mesh["metric"] = np.ones((n, 1)) * 0.1    # scalar metric
+        >>> mesh["metric"] = anisotropic_tensor        # Nx6 tensor metric
+        >>> mesh["temperature"] = temp_array           # user field
+
+        """
+        value = np.asarray(value, dtype=np.float64)
+
+        if key == "metric":
+            if value.ndim == _DIMS_2D and value.shape[1] > 1:
+                # Multi-component metric → route to tensor field
+                self._impl.set_field("tensor", value)
+            else:
+                self._impl[key] = value
+        elif key in self._MMG_FIELDS:
+            self._impl[key] = value
+        else:
+            self.set_user_field(key, value)
 
     def __getitem__(self, key: str) -> NDArray[np.float64]:
-        """Get a solution field using dictionary syntax."""
-        return self._impl[key]
+        """Get a field using dictionary syntax.
+
+        Parameters
+        ----------
+        key : str
+            Field name. Known MMG fields are retrieved from C++ bindings.
+            All other names are retrieved from user fields.
+
+        Returns
+        -------
+        ndarray
+            Field values.
+
+        Raises
+        ------
+        KeyError
+            If a user field does not exist.
+
+        Examples
+        --------
+        >>> metric = mesh["metric"]
+        >>> temperature = mesh["temperature"]
+
+        """
+        if key in self._MMG_FIELDS:
+            return self._impl[key]
+        return self.get_user_field(key)
 
     # =========================================================================
     # User field operations (arbitrary fields for transfer)
