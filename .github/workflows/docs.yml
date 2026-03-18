@@ -19,9 +19,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: https://kmarchais.github.io/mmgpy
     steps:
       - uses: actions/checkout@v6
         with:
