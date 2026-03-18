@@ -38,7 +38,7 @@ requirements:
     - meshio >=5.3.5
     - pyvista >=0.47.0
     - rich >=13.0.0
-    - scipy >=1.11.0,<1.17
+    - scipy >=1.11.0,<2
     - mmgsuite * vtk*
     - vtk >=9.6,<9.7
     - if: python < '3.11'
