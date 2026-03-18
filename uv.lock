@@ -1517,7 +1517,7 @@ wheels = [
 
 [[package]]
 name = "mmgpy"
-version = "0.8.0"
+version = "0.9.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "meshio" },
