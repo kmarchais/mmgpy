@@ -243,13 +243,13 @@ class TestMeshMethods:
         tetra_vertices: np.ndarray,
         tetra_cells: np.ndarray,
     ) -> None:
-        """Test set_field and get_field with metric field."""
+        """Test dictionary-style field set/get with metric field."""
         mesh = Mesh(tetra_vertices, tetra_cells)
         # Use "metric" field which is recognized by MMG
         field = np.array([[0.1], [0.1], [0.1], [0.1]])
 
-        mesh.set_field("metric", field)
-        result = mesh.get_field("metric")
+        mesh["metric"] = field
+        result = mesh["metric"]
 
         np.testing.assert_allclose(result, field)
 

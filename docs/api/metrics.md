@@ -65,8 +65,8 @@ n_vertices = len(mesh.get_vertices())
 sizes = np.ones(n_vertices) * 0.1
 metric = metrics.create_isotropic_metric(sizes)
 
-# Apply to mesh (tensor field, not scalar)
-mesh.set_field("tensor", metric)
+# Apply to mesh (auto-detects tensor from shape)
+mesh["metric"] = metric
 
 # Remesh using the metric
 result = mesh.remesh()
@@ -88,7 +88,7 @@ distances = np.linalg.norm(vertices, axis=1)
 sizes = 0.01 + 0.1 * distances
 
 metric = metrics.create_isotropic_metric(sizes)
-mesh.set_field("tensor", metric)
+mesh["metric"] = metric
 ```
 
 ### Anisotropic Metric
@@ -109,7 +109,7 @@ sizes = np.array([0.1, 0.1, 0.05])  # Smaller in z
 single_tensor = metrics.create_anisotropic_metric(sizes)
 metric = np.tile(single_tensor, (n_vertices, 1))
 
-mesh.set_field("tensor", metric)
+mesh["metric"] = metric
 ```
 
 ### Metric from Hessian
@@ -132,7 +132,7 @@ metric = metrics.create_metric_from_hessian(
     target_error=0.01,  # Target interpolation error
 )
 
-mesh.set_field("tensor", metric)
+mesh["metric"] = metric
 ```
 
 ### Metric Intersection
@@ -151,7 +151,7 @@ metric2 = metrics.create_isotropic_metric(sizes2)
 
 # Intersect: take minimum size in all directions
 combined = metrics.intersect_metrics(metric1, metric2)
-mesh.set_field("tensor", combined)
+mesh["metric"] = combined
 ```
 
 ### Extracting Metric Information

@@ -222,7 +222,7 @@ class TestFieldOperations:
         mesh = MmgMesh3D(vertices, tetrahedra)
         field = np.full((len(vertices), 1), 0.1, dtype=np.float64)
 
-        benchmark(mesh.set_field, "metric", field)
+        benchmark(mesh.__setitem__, "metric", field)
 
     @pytest.mark.benchmark(group="mesh-fields")
     def test_get_metric_field(
@@ -234,9 +234,9 @@ class TestFieldOperations:
         vertices, tetrahedra = mesh_3d_medium
         mesh = MmgMesh3D(vertices, tetrahedra)
         field = np.full((len(vertices), 1), 0.1, dtype=np.float64)
-        mesh.set_field("metric", field)
+        mesh["metric"] = field
 
-        result = benchmark(mesh.get_field, "metric")
+        result = benchmark(mesh.__getitem__, "metric")
         assert len(result) == len(vertices)
 
 
