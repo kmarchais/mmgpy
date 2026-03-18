@@ -116,7 +116,7 @@ fi
 
 # Create bin directory with stub executables (needed by CMake)
 mkdir -p bin
-for exe in vtkWrapHierarchy vtkWrapPython vtkWrapPythonInit vtkParseJava vtkWrapJava vtkWrapSerDes vtkProbeOpenGLVersion; do
+for exe in vtkWrapHierarchy vtkWrapPython vtkWrapPythonInit vtkParseJava vtkWrapJava vtkWrapJavaScript vtkWrapSerDes vtkProbeOpenGLVersion; do
     touch "bin/${exe}-${VTK_MAJOR_MINOR}"
     chmod +x "bin/${exe}-${VTK_MAJOR_MINOR}"
 done
