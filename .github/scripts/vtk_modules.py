@@ -74,6 +74,7 @@ ESSENTIAL_VTK_MODULES: set[str] = {
     "metaio",
     "png",
     "pugixml",
+    "scn",
     "sys",
     "tiff",
     "token",
