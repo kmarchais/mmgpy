@@ -28,6 +28,7 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
@@ -80,6 +81,7 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4
@@ -131,6 +133,7 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
@@ -170,6 +173,7 @@ jobs:
           VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
           echo "version=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
+          echo "VTK_MAJOR_MINOR=${VTK_VERSION%.*}" >> $GITHUB_ENV
       - name: Cache VTK
         id: cache-vtk
         uses: actions/cache@v4

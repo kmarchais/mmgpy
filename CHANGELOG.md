@@ -10,12 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Python 3.14 support.
+- Free-threaded Python 3.14 (`cp314t`) wheel builds for Linux.
 
 ### Changed
 
+- Upgrade build-time VTK from 9.5.2 to 9.6.0.
 - Build Linux x86_64 wheels with `manylinux_2_28` and remove the `scipy<1.17` cap so newer SciPy releases can be installed.
 - Widen VTK constraint from `>=9.5,<9.6` to `>=9.5,<9.7` to allow VTK 9.6 (required for Python 3.14 wheels).
+- Bump `pyvista` lower bound from `>=0.46.4` to `>=0.47` (first version compatible with VTK 9.6).
 - Add upper bounds to all runtime and optional dependencies.
+- Parameterize VTK version in cibuildwheel config to avoid hardcoded paths.
+- Bump cibuildwheel from v3.0 to v3.4.
+
+## [0.7.1] - 2026-03-16
+
+### Fixed
+
+- Update examples to use `Mesh` class instead of deprecated `MmgMesh2D`/`MmgMesh3D`/`MmgMeshS` ([#186](https://github.com/kmarchais/mmgpy/pull/186))
+
+## [0.7.0] - 2026-03-15
+
+### Added
+
+- Support for system-installed MMG via `mmgsuite` for conda builds ([#183](https://github.com/kmarchais/mmgpy/pull/183))
 
 ## [0.6.0] - 2026-03-08
 
@@ -169,7 +186,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized wheel sizes (under 100MB) for PyPI upload
 - Linux manylinux wheels with proper platform tags
 
-[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/kmarchais/mmgpy/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/kmarchais/mmgpy/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/kmarchais/mmgpy/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/kmarchais/mmgpy/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/kmarchais/mmgpy/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/kmarchais/mmgpy/compare/v0.5.0...v0.5.1
