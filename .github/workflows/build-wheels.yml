@@ -45,7 +45,7 @@ jobs:
           # but those older glibc binaries remain compatible in a manylinux_2_28 wheel.
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -95,7 +95,7 @@ jobs:
           CIBW_ARCHS_LINUX: aarch64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -135,7 +135,7 @@ jobs:
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -183,7 +183,7 @@ jobs:
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
-        uses: pypa/cibuildwheel@v3
+        uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
