@@ -43,6 +43,9 @@ theme:
 
 plugins:
   - search
+  - mike:
+      alias_type: symlink
+      canonical_version: latest
   - mkdocstrings:
       handlers:
         python:
@@ -111,6 +114,9 @@ nav:
   - Changelog: changelog.md
 
 extra:
+  version:
+    provider: mike
+    default: latest
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/kmarchais/mmgpy
