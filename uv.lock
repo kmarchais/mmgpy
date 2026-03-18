@@ -1547,7 +1547,7 @@ requires-dist = [
     { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.16.0,<1" },
     { name = "trame-vuetify", marker = "extra == 'ui'", specifier = ">=3.2.0,<4" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0,<5" },
-    { name = "vtk", specifier = ">=9.5,<9.6" },
+    { name = "vtk", specifier = ">=9.5,<9.7" },
 ]
 provides-extras = ["ui"]
 

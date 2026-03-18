@@ -19,7 +19,7 @@ jobs:
           - macos-latest
         python-version:
           - "3.10"
-          - "3.13"
+          - "3.14"
 
     runs-on: ${{ matrix.os }}
 
@@ -100,14 +100,14 @@ jobs:
         run: uv run pytest --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Test documentation code blocks
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
         run: uv run pytest --codeblocks docs/ -v
 
       - name: Run examples
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
         env:
           MPLBACKEND: Agg
           PYVISTA_OFF_SCREEN: "true"
@@ -127,7 +127,7 @@ jobs:
         shell: bash
 
       - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

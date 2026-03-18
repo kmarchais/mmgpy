@@ -23,7 +23,7 @@ dependencies = [
     "rich>=13.0.0,<15",
     "scipy>=1.11.0,<2",
     "typing-extensions>=4.0.0,<5; python_version < '3.11'",
-    "vtk>=9.5,<9.6",
+    "vtk>=9.5,<9.7",
 ]
 authors = [{ name = "Kevin Marchais", email = "kevinmarchais@gmail.com" }]
 license = { text = "MIT" }
@@ -36,6 +36,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 # Optional dependencies for pip/uvx users (e.g., pip install mmgpy[ui])
@@ -266,7 +267,7 @@ unresolved-import = "ignore"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-build = "cp310-* cp311-* cp312-* cp313-*"
+build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
 # Skip 32-bit builds and musllinux (VTK doesn't provide musllinux wheels)
 skip = "*-win32 *-manylinux_i686 *-musllinux*"
 test-command = 'python -c "import mmgpy"'

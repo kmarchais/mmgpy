@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Python 3.14 support.
+
 ### Changed
 
-- Build Linux x86_64 wheels with `manylinux_2_28` and remove the `scipy<1.17` cap so Python 3.11+ can install newer SciPy releases.
+- Build Linux x86_64 wheels with `manylinux_2_28` and remove the `scipy<1.17` cap so newer SciPy releases can be installed.
+- Widen VTK constraint from `>=9.5,<9.6` to `>=9.5,<9.7` to allow VTK 9.6 (required for Python 3.14 wheels).
+- Add upper bounds to all runtime and optional dependencies.
 
 ## [0.6.0] - 2026-03-08
 

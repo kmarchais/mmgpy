@@ -39,7 +39,7 @@ jobs:
         run: ./.github/scripts/download_vtk.sh linux x86_64 ./vtk-cache
       - name: Build manylinux_2_28 x86_64 wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           CIBW_ARCHS_LINUX: x86_64
           # vtk-builds currently publishes manylinux2014 x86_64 archives only,
           # but those older glibc binaries remain compatible in a manylinux_2_28 wheel.
@@ -91,7 +91,7 @@ jobs:
         run: ./.github/scripts/download_vtk.sh linux aarch64 ./vtk-cache
       - name: Build manylinux_2_28 aarch64 wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           CIBW_ARCHS_LINUX: aarch64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
@@ -133,7 +133,7 @@ jobs:
           echo "VTK_VERSION=$VTK_VERSION" >> $GITHUB_ENV
       - name: Build wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
@@ -181,7 +181,7 @@ jobs:
         run: ./.github/scripts/download_vtk.sh macos arm64 ./vtk-cache
       - name: Build wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp313-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
           VTK_VERSION: ${{ steps.vtk.outputs.version }}
         uses: pypa/cibuildwheel@v3.0
       - name: Upload wheels as artifacts
