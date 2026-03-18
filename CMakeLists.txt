@@ -39,6 +39,11 @@ project(mmgpy VERSION ${MMGPY_NUMERIC_VERSION})
 
 option(MMGPY_CONDA_BUILD "Building for conda-forge (use system MMG, skip wheel-specific bundling/RPATH)" OFF)
 
+# Prevent Windows.h from defining min/max macros (conflicts with VTK 9.6 headers)
+if(MSVC)
+    add_definitions(-DNOMINMAX)
+endif()
+
 include(GNUInstallDirs)
 
 # Find Python - let scikit-build-core handle it in wheel builds
