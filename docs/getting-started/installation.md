@@ -7,18 +7,18 @@
 
 ## Installing from PyPI
 
-The easiest way to install mmgpy is from PyPI:
+The fastest way to install mmgpy:
+
+=== "uv (recommended)"
+
+    ```bash
+    uv pip install mmgpy
+    ```
 
 === "pip"
 
     ```bash
     pip install mmgpy
-    ```
-
-=== "uv"
-
-    ```bash
-    uv pip install mmgpy
     ```
 
 === "pipx (CLI only)"
@@ -34,6 +34,33 @@ Pre-built wheels are available for:
 | Windows  | x86_64          |
 | macOS    | arm64, x86_64   |
 | Linux    | x86_64, aarch64 |
+
+PyPI wheels bundle all native libraries (MMG, VTK), so no compiler or system packages are needed.
+
+## Installing from conda-forge
+
+If you use conda or mamba for scientific computing:
+
+```bash
+conda install -c conda-forge mmgpy
+```
+
+or with [pixi](https://pixi.sh/):
+
+```bash
+pixi add mmgpy
+```
+
+### PyPI vs conda-forge
+
+|                   | PyPI (pip/uv)                 | conda-forge                         |
+| ----------------- | ----------------------------- | ----------------------------------- |
+| **Install speed** | Fast (pre-built wheels)       | Slower (solver + download)          |
+| **Dependencies**  | Bundled (self-contained)      | Shared across packages              |
+| **Disk usage**    | Larger (duplicate VTK/libs)   | Smaller in conda environments       |
+| **Best for**      | Quick setup, isolated use, CI | Scientific stacks sharing VTK/NumPy |
+
+Use **PyPI** for the fastest, most portable setup. Use **conda-forge** when you already have a conda environment with VTK, PyVista, or other scientific packages to avoid duplicating shared libraries.
 
 ## Installing from Source
 
