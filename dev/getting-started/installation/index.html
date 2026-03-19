@@ -1801,9 +1801,13 @@
 <p>PyPI wheels bundle all native libraries (MMG, VTK), so no compiler or system packages are needed.</p>
 <h2 id="installing-from-conda-forge">Installing from conda-forge<a class="headerlink" href="#installing-from-conda-forge" title="Permanent link">&para;</a></h2>
 <p>If you use conda or mamba for scientific computing:</p>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>mmgpy
 </span></code></pre></div>
 <p>or with <a href="https://pixi.sh/">pixi</a>:</p>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pixi<span class="w"> </span>add<span class="w"> </span>mmgpy
 </span></code></pre></div>
 <h3 id="pypi-vs-conda-forge">PyPI vs conda-forge<a class="headerlink" href="#pypi-vs-conda-forge" title="Permanent link">&para;</a></h3>
@@ -1812,7 +1816,7 @@
 <tr>
 <th></th>
 <th>PyPI (pip/uv)</th>
-<th>conda-forge</th>
+<th>conda-forge (Linux/macOS)</th>
 </tr>
 </thead>
 <tbody>
@@ -1832,13 +1836,18 @@
 <td>Smaller in conda environments</td>
 </tr>
 <tr>
+<td><strong>Lagrangian motion</strong></td>
+<td>No (ELAS library not bundled)</td>
+<td>Yes (includes iscd-linearelasticity on Linux/macOS)</td>
+</tr>
+<tr>
 <td><strong>Best for</strong></td>
 <td>Quick setup, isolated use, CI</td>
 <td>Scientific stacks sharing VTK/NumPy</td>
 </tr>
 </tbody>
 </table>
-<p>Use <strong>PyPI</strong> for the fastest, most portable setup. Use <strong>conda-forge</strong> when you already have a conda environment with VTK, PyVista, or other scientific packages to avoid duplicating shared libraries.</p>
+<p>Use <strong>PyPI</strong> for the fastest, most portable setup. Use <strong>conda-forge</strong> when you already have a conda environment with VTK, PyVista, or other scientific packages — it also includes the <a href="https://github.com/ISCDtoolbox/LinearElasticity">ELAS</a> library (via iscd-linearelasticity) for Lagrangian motion on Linux and macOS.</p>
 <h2 id="installing-from-source">Installing from Source<a class="headerlink" href="#installing-from-source" title="Permanent link">&para;</a></h2>
 <p>To install the latest development version:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/kmarchais/mmgpy.git
