@@ -1,6 +1,7 @@
 # mmgpy
 
 [![PyPI](https://img.shields.io/pypi/v/mmgpy)](https://pypi.org/project/mmgpy/)
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/mmgpy)](https://anaconda.org/conda-forge/mmgpy)
 [![Python](https://img.shields.io/pypi/pyversions/mmgpy)](https://pypi.org/project/mmgpy/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://kmarchais.github.io/mmgpy)
@@ -32,22 +33,45 @@ uvx --from "mmgpy[ui]" mmgpy-ui
 
 ## Installation
 
-```bash
-pip install mmgpy
+The recommended way to install mmgpy:
 
-# With UI support
-pip install "mmgpy[ui]"
+```bash
+uv pip install mmgpy
 ```
 
-Using [uv](https://docs.astral.sh/uv/)?
+This uses pre-built wheels from PyPI that bundle all native libraries (MMG, VTK) — no compiler needed.
+
+### Other install methods
+
+```bash
+# pip
+pip install mmgpy
+
+# conda-forge
+conda install -c conda-forge mmgpy
+
+# With UI support
+uv pip install "mmgpy[ui]"
+```
+
+### Using uv for project management
 
 ```bash
 uv add mmgpy                 # add to project dependencies
-uv pip install mmgpy         # install in current environment
-uv pip install "mmgpy[ui]"   # install with UI support
 uv tool install mmgpy        # install CLI tools globally
 uv tool install "mmgpy[ui]"  # install CLI tools + UI globally
 ```
+
+### PyPI vs conda-forge
+
+|                   | PyPI (pip/uv)                 | conda-forge                         |
+| ----------------- | ----------------------------- | ----------------------------------- |
+| **Install speed** | Fast (pre-built wheels)       | Slower (solver + download)          |
+| **Dependencies**  | Bundled (self-contained)      | Shared across packages              |
+| **Disk usage**    | Larger (duplicate VTK/libs)   | Smaller in conda environments       |
+| **Best for**      | Quick setup, isolated use, CI | Scientific stacks sharing VTK/NumPy |
+
+Use **PyPI** (`uv pip install`) for the fastest setup. Use **conda-forge** when you already have a conda environment with VTK, PyVista, or other scientific packages to avoid duplicating shared libraries.
 
 ## Features
 
