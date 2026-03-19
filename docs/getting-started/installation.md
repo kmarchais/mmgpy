@@ -57,14 +57,15 @@ pixi add mmgpy
 
 ### PyPI vs conda-forge
 
-|                   | PyPI (pip/uv)                 | conda-forge                         |
-| ----------------- | ----------------------------- | ----------------------------------- |
-| **Install speed** | Fast (pre-built wheels)       | Slower (solver + download)          |
-| **Dependencies**  | Bundled (self-contained)      | Shared across packages              |
-| **Disk usage**    | Larger (duplicate VTK/libs)   | Smaller in conda environments       |
-| **Best for**      | Quick setup, isolated use, CI | Scientific stacks sharing VTK/NumPy |
+|                       | PyPI (pip/uv)                 | conda-forge (Linux/macOS)                           |
+| --------------------- | ----------------------------- | --------------------------------------------------- |
+| **Install speed**     | Fast (pre-built wheels)       | Slower (solver + download)                          |
+| **Dependencies**      | Bundled (self-contained)      | Shared across packages                              |
+| **Disk usage**        | Larger (duplicate VTK/libs)   | Smaller in conda environments                       |
+| **Lagrangian motion** | No (ELAS library not bundled) | Yes (includes iscd-linearelasticity on Linux/macOS) |
+| **Best for**          | Quick setup, isolated use, CI | Scientific stacks sharing VTK/NumPy                 |
 
-Use **PyPI** for the fastest, most portable setup. Use **conda-forge** when you already have a conda environment with VTK, PyVista, or other scientific packages to avoid duplicating shared libraries.
+Use **PyPI** for the fastest, most portable setup. Use **conda-forge** when you already have a conda environment with VTK, PyVista, or other scientific packages — it also includes the [ELAS](https://github.com/ISCDtoolbox/LinearElasticity) library (via iscd-linearelasticity) for Lagrangian motion on Linux and macOS.
 
 ## Installing from Source
 
