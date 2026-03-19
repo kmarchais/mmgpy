@@ -10,6 +10,11 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
+      publish_to_pypi:
+        description: "Publish to PyPI"
+        required: false
+        default: false
+        type: boolean
       publish_to_testpypi:
         description: "Publish to TestPyPI and run verification tests"
         required: false
@@ -245,7 +250,7 @@ jobs:
       ]
     runs-on: ubuntu-latest
     name: Publish to PyPI
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' && inputs.publish_to_pypi)
 
     environment:
       name: pypi
@@ -264,6 +269,8 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
 
   # TestPyPI publishing (manual trigger only)
   # Prerequisites:
