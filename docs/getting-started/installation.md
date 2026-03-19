@@ -41,11 +41,15 @@ PyPI wheels bundle all native libraries (MMG, VTK), so no compiler or system pac
 
 If you use conda or mamba for scientific computing:
 
+<!-- pytest-codeblocks:skip -->
+
 ```bash
 conda install -c conda-forge mmgpy
 ```
 
 or with [pixi](https://pixi.sh/):
+
+<!-- pytest-codeblocks:skip -->
 
 ```bash
 pixi add mmgpy
