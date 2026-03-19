@@ -1,0 +1,65 @@
+name: Daily Docs Test
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 6 AM UTC daily
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  test-released-docs:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.14"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get latest PyPI version
+        id: version
+        run: |
+          VERSION=$(curl -s https://pypi.org/pypi/mmgpy/json | python3 -c "import sys,json; print(json.load(sys.stdin)['info']['version'])")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Latest PyPI version: $VERSION"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ steps.version.outputs.version }}
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install mmgpy from PyPI with test dependencies
+        run: |
+          uv venv
+          uv pip install mmgpy pytest pytest-codeblocks
+
+      - name: Test documentation code blocks
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: |
+          source .venv/bin/activate
+          pytest --codeblocks docs/ -v
+
+      - name: Run examples
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: |
+          set -euo pipefail
+          shopt -s globstar
+          source .venv/bin/activate
+          for f in examples/**/*.py; do
+            case "$f" in
+              examples/ui/*) continue ;;
+              examples/mmg2d/implicit_2d_domain_meshing.py) continue ;;
+              examples/mmgs/implicit_surface_domain_meshing.py) continue ;;
+            esac
+            echo "::group::Running $f"
+            python "$f"
+            echo "::endgroup::"
+          done
