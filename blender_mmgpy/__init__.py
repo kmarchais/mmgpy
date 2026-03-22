@@ -22,7 +22,7 @@ from . import operators, panels, preferences, properties
 bl_info = {
     "name": "MMGpy Remesh",
     "author": "Kevin Marchais",
-    "version": (0, 6, 0),
+    "version": (0, 9, 0),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > MMGpy",
     "description": "Powerful mesh remeshing using MMG library",
@@ -33,10 +33,11 @@ bl_info = {
 
 # All classes to register
 classes = (
-    # Properties (must be registered first)
-    properties.MMGPYSettings,
+    # Properties (must be registered first, dependency order matters)
     properties.MMGPYSizingConstraint,
+    properties.MMGPYSettings,
     # Operators
+    operators.MMGPY_OT_autofit,
     operators.MMGPY_OT_remesh,
     operators.MMGPY_OT_add_sizing_sphere,
     operators.MMGPY_OT_add_sizing_box,

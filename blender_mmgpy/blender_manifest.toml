@@ -4,7 +4,7 @@
 schema_version = "1.0.0"
 
 id = "mmgpy"
-version = "0.6.0-dev.0"
+version = "0.9.0-dev.0"
 name = "MMGpy - Mesh Remeshing"
 tagline = "Powerful mesh remeshing using MMG library"
 maintainer = "Kevin Marchais <kevinmarchais@gmail.com>"
@@ -22,10 +22,6 @@ website = "https://github.com/kmarchais/mmgpy"
 # Category for the addon
 tags = ["Mesh", "Import-Export"]
 
-# Permissions - we need file access for temp files during remeshing
-[permissions]
-files = "Import/export mesh files for remeshing"
-
 # Python wheel dependencies
 # These will be bundled with the extension
 # Note: mmgpy requires platform-specific wheels due to C++ bindings
@@ -35,9 +31,13 @@ wheel-path = "./wheels"
 # Dependencies in PEP 508 format (used by blender-extension-builder)
 # mmgpy pulls in numpy, meshio, pyvista, scipy, etc.
 dependencies = [
-    "mmgpy>=0.6.0.dev0",
+    "mmgpy>=0.8.0",
 ]
 
 # Platform support
 # When building with --split-platforms, this creates separate zips
 # platforms = ["windows-x64", "macos-arm64", "linux-x64"]
+
+# Permissions - we need file access for temp files during remeshing
+[permissions]
+files = "Import/export mesh files for remeshing"

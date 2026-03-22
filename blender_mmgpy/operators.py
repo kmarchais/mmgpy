@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import bpy
+import mathutils
 from bpy.props import FloatProperty, IntProperty
 from bpy.types import Operator
 
@@ -22,11 +24,61 @@ class MMGPY_OT_remesh(Operator):
     bl_description = "Remesh the selected mesh using MMGpy"
     bl_options = {"REGISTER", "UNDO"}
 
+    # Threshold for the confirmation dialog
+    TRIANGLE_WARNING_THRESHOLD = 1_000_000
+
     @classmethod
     def poll(cls, context: Context) -> bool:
         """Check if operator can run."""
         obj = context.active_object
         return obj is not None and obj.type == "MESH"
+
+    def _estimate_triangles(self, context: Context) -> int | None:
+        """Estimate the number of triangles the remesh would produce.
+
+        Returns None if no size parameter is set (can't estimate).
+        """
+        obj = context.active_object
+        settings = context.scene.mmgpy
+
+        # Determine effective target edge size
+        if settings.use_hsiz:
+            h = settings.hsiz
+        elif settings.use_hmax:
+            h = settings.hmax
+        else:
+            return None
+
+        if h <= 0:
+            return None
+
+        # Compute surface area from mesh polygons, scaled to world space
+        scale = obj.matrix_world.to_scale()
+        avg_scale_sq = (scale.x**2 + scale.y**2 + scale.z**2) / 3
+        area = sum(p.area for p in obj.data.polygons) * avg_scale_sq
+
+        # Equilateral triangle with edge h has area = (sqrt(3)/4) * h^2
+        tri_area = (math.sqrt(3) / 4) * h**2
+        raw = area / tri_area
+
+        # Round to 2 significant figures for a clean number
+        if raw >= 100:
+            digits = math.floor(math.log10(raw)) - 1
+            return int(round(raw, -digits))
+        return int(raw)
+
+    def invoke(self, context: Context, event: Event) -> set[str]:
+        """Check estimated triangle count and confirm if very high."""
+        estimate = self._estimate_triangles(context)
+        if estimate is not None and estimate > self.TRIANGLE_WARNING_THRESHOLD:
+            return context.window_manager.invoke_confirm(
+                self,
+                event,
+                title="High triangle count",
+                message=f"Estimated ~{estimate:,} triangles. This may take a long time.",
+                confirm_text="Remesh anyway",
+            )
+        return self.execute(context)
 
     def execute(self, context: Context) -> set[str]:
         """Execute the remeshing operation."""
@@ -75,31 +127,14 @@ class MMGPY_OT_remesh(Operator):
         new_vertices = mesh.get_vertices()
         new_triangles = mesh.get_triangles()
 
-        # Create new object
-        new_obj = utils.arrays_to_blender(
-            new_vertices,
-            new_triangles,
-            f"{obj.name}_remeshed",
-        )
-
-        # Link to scene and set transform
-        context.collection.objects.link(new_obj)
-        new_obj.matrix_world = obj.matrix_world
-
-        # Copy materials
-        for mat in obj.data.materials:
-            new_obj.data.materials.append(mat)
-
-        # Select new object
-        obj.select_set(False)
-        new_obj.select_set(True)
-        context.view_layer.objects.active = new_obj
+        # Replace mesh data in-place
+        utils.replace_mesh_data(obj, new_vertices, new_triangles)
 
         # Report results
         self.report(
             {"INFO"},
-            f"Remeshed: {result.vertices_before} -> {result.vertices_after} vertices, "
-            f"{result.elements_before} -> {result.elements_after} elements",
+            f"Remeshed: {result.vertices_before:,} -> {result.vertices_after:,} vertices, "
+            f"{result.elements_before:,} -> {result.elements_after:,} elements",
         )
 
         return {"FINISHED"}
@@ -186,6 +221,66 @@ class MMGPY_OT_remesh(Operator):
                     ],
                     size=size,
                 )
+
+
+class MMGPY_OT_autofit(Operator):
+    """Auto-fit sizing parameters to the active mesh dimensions."""
+
+    bl_idname = "mmgpy.autofit"
+    bl_label = "Auto-fit to Mesh"
+    bl_description = "Set sizing parameters based on the active mesh dimensions"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: Context) -> bool:
+        """Check if operator can run."""
+        obj = context.active_object
+        return obj is not None and obj.type == "MESH"
+
+    def execute(self, context: Context) -> set[str]:
+        """Execute the auto-fit operation."""
+        import math
+
+        obj = context.active_object
+        settings = context.scene.mmgpy
+
+        # Compute bounding box diagonal in world space
+        bbox = [obj.matrix_world @ mathutils.Vector(v) for v in obj.bound_box]
+        min_corner = mathutils.Vector(
+            (
+                min(v.x for v in bbox),
+                min(v.y for v in bbox),
+                min(v.z for v in bbox),
+            ),
+        )
+        max_corner = mathutils.Vector(
+            (
+                max(v.x for v in bbox),
+                max(v.y for v in bbox),
+                max(v.z for v in bbox),
+            ),
+        )
+        diagonal = (max_corner - min_corner).length
+
+        if diagonal == 0:
+            self.report({"WARNING"}, "Mesh has zero size")
+            return {"CANCELLED"}
+
+        # Scale factor: power of 10 matching the mesh size
+        # Defaults are tuned for a ~1.0 unit mesh
+        scale = 10 ** math.floor(math.log10(diagonal))
+
+        # Apply scaled defaults
+        settings.hmin = 0.001 * scale
+        settings.hmax = 0.1 * scale
+        settings.hsiz = 0.05 * scale
+        settings.hausd = 0.01 * scale
+
+        self.report(
+            {"INFO"},
+            f"Auto-fit: bbox diagonal = {diagonal:.4g}, scale = {scale:g}",
+        )
+        return {"FINISHED"}
 
 
 class MMGPY_OT_add_sizing_sphere(Operator):
