@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import bmesh
 import bpy
+import mathutils
 import numpy as np
 
 if TYPE_CHECKING:
@@ -112,6 +113,33 @@ def arrays_to_blender(
     obj = bpy.data.objects.new(name, mesh)
 
     return obj
+
+
+def replace_mesh_data(
+    obj: bpy.types.Object,
+    vertices: NDArray[np.float64],
+    triangles: NDArray[np.int32],
+) -> None:
+    """Replace mesh data of an existing object in-place.
+
+    Parameters
+    ----------
+    obj : bpy.types.Object
+        Blender mesh object to update.
+    vertices : ndarray
+        New vertex coordinates (Nx3), in world space.
+    triangles : ndarray
+        New triangle connectivity (Mx3), 0-indexed.
+
+    """
+    # Transform vertices from world space back to local space
+    matrix_world_inv = obj.matrix_world.inverted()
+    local_verts = [(matrix_world_inv @ mathutils.Vector(v))[:] for v in vertices]
+
+    mesh = obj.data
+    mesh.clear_geometry()
+    mesh.from_pydata(local_verts, [], triangles.tolist())
+    mesh.update()
 
 
 def get_sizing_empties(context: bpy.types.Context) -> list[bpy.types.Object]:

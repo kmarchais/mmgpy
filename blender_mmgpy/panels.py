@@ -42,8 +42,8 @@ class MMGPY_PT_main_panel(Panel):
             box = layout.box()
             col = box.column(align=True)
             col.label(text=f"Object: {obj.name}", icon="MESH_DATA")
-            col.label(text=f"Vertices: {len(obj.data.vertices)}")
-            col.label(text=f"Faces: {len(obj.data.polygons)}")
+            col.label(text=f"Vertices: {len(obj.data.vertices):,}")
+            col.label(text=f"Faces: {len(obj.data.polygons):,}")
 
 
 class MMGPY_PT_size_control(Panel):
@@ -61,6 +61,14 @@ class MMGPY_PT_size_control(Panel):
         """Draw the panel."""
         layout = self.layout
         settings = context.scene.mmgpy
+
+        # Auto-fit button
+        layout.operator(
+            "mmgpy.autofit",
+            text="Auto-fit to Mesh",
+            icon="FULLSCREEN_ENTER",
+        )
+        layout.separator()
 
         # Uniform size option
         col = layout.column(align=True)
