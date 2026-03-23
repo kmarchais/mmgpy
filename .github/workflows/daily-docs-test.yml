@@ -111,24 +111,33 @@ jobs:
           print("ALL PASSED", flush=True)
           PYEOF
 
-      - name: Debug - simple codeblock without conftest
+      - name: Debug - trivial codeblock IN docs/ (loads conftest)
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
         run: |
           source .venv/bin/activate
-          mkdir -p /tmp/test_cb
-          printf '```python\nimport mmgpy\nprint("version:", mmgpy.__version__)\n```\n' > /tmp/test_cb/test.md
-          pytest --codeblocks /tmp/test_cb/test.md -v -s && echo "SIMPLE TEST PASSED" || echo "SIMPLE TEST FAILED"
+          printf '```python\nprint("hello from docs")\n```\n' > docs/_test_trivial.md
+          pytest --codeblocks docs/_test_trivial.md -v -s && echo "TRIVIAL IN DOCS PASSED" || echo "TRIVIAL IN DOCS FAILED (exit $?)"
+          rm -f docs/_test_trivial.md
 
-      - name: Debug - docs codeblocks without faulthandler
+      - name: Debug - collect-only on docs/
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
         run: |
           source .venv/bin/activate
-          git checkout docs/conftest.py
-          pytest --codeblocks docs/api/index.md -v -s -p no:faulthandler -x || echo "FAILED (exit $?)"
+          pytest --codeblocks docs/api/index.md --collect-only && echo "COLLECT PASSED" || echo "COLLECT FAILED (exit $?)"
+
+      - name: Debug - docs codeblock with conftest removed
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: |
+          source .venv/bin/activate
+          mv docs/conftest.py docs/conftest.py.bak
+          pytest --codeblocks docs/api/index.md -v -s -x || echo "WITHOUT CONFTEST FAILED (exit $?)"
+          mv docs/conftest.py.bak docs/conftest.py
 
       - name: Test documentation code blocks
         env:
@@ -136,7 +145,7 @@ jobs:
           MPLBACKEND: Agg
         run: |
           source .venv/bin/activate
-          pytest --codeblocks docs/ -v -s -p no:faulthandler
+          pytest --codeblocks docs/ -v -s
 
       - name: Run examples
         env:
