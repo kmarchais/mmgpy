@@ -34,18 +34,15 @@ os.environ["PYVISTA_OFF_SCREEN"] = "true"
 
 
 def _make_3d_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Dense tetrahedral mesh of a unit cube via PyVista delaunay_3d."""
+    """Dense tetrahedral mesh of a unit cube via scipy Delaunay."""
     resolution = 5
     x = np.linspace(0, 1, resolution)
     y = np.linspace(0, 1, resolution)
     z = np.linspace(0, 1, resolution)
     xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
     points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
-    cloud = pv.PolyData(points)
-    tetra = cloud.delaunay_3d()
-    vertices = np.array(tetra.points, dtype=np.float64)
-    elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
-    return vertices, elements
+    tri = Delaunay(points)
+    return points.astype(np.float64), tri.simplices.astype(np.int32)
 
 
 def _make_2d_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -60,12 +57,56 @@ def _make_2d_mesh() -> tuple[np.ndarray, np.ndarray]:
 
 
 def _make_surface_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Triangulated sphere surface via PyVista."""
-    sphere = pv.Sphere(theta_resolution=10, phi_resolution=10)
-    sphere = sphere.triangulate()
-    vertices = np.array(sphere.points, dtype=np.float64)
-    faces = sphere.faces.reshape(-1, 4)[:, 1:].astype(np.int32)
-    return vertices, faces
+    """Triangulated icosahedron surface (no VTK dependency)."""
+    # Golden ratio
+    phi = (1 + np.sqrt(5)) / 2
+    # 12 vertices of a regular icosahedron
+    verts = np.array(
+        [
+            [-1, phi, 0],
+            [1, phi, 0],
+            [-1, -phi, 0],
+            [1, -phi, 0],
+            [0, -1, phi],
+            [0, 1, phi],
+            [0, -1, -phi],
+            [0, 1, -phi],
+            [phi, 0, -1],
+            [phi, 0, 1],
+            [-phi, 0, -1],
+            [-phi, 0, 1],
+        ],
+        dtype=np.float64,
+    )
+    # Normalize to unit sphere
+    verts /= np.linalg.norm(verts[0])
+    # 20 triangular faces
+    faces = np.array(
+        [
+            [0, 11, 5],
+            [0, 5, 1],
+            [0, 1, 7],
+            [0, 7, 10],
+            [0, 10, 11],
+            [1, 5, 9],
+            [5, 11, 4],
+            [11, 10, 2],
+            [10, 7, 6],
+            [7, 1, 8],
+            [3, 9, 4],
+            [3, 4, 2],
+            [3, 2, 6],
+            [3, 6, 8],
+            [3, 8, 9],
+            [4, 9, 5],
+            [2, 4, 11],
+            [6, 2, 10],
+            [8, 6, 7],
+            [9, 8, 1],
+        ],
+        dtype=np.int32,
+    )
+    return verts, faces
 
 
 _VERTS_3D, _CELLS_3D = _make_3d_mesh()
