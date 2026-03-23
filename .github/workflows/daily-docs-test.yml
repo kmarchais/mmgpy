@@ -56,13 +56,32 @@ jobs:
           python -c "import vtk; print('VTK', vtk.vtkVersion.GetVTKVersion())"
           python -c "import mmgpy; print('mmgpy', mmgpy.__version__)"
 
+      - name: Debug - run first code block directly
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+          PYTHONFAULTHANDLER: "1"
+        run: |
+          source .venv/bin/activate
+          python -c "
+          import faulthandler; faulthandler.enable()
+          import numpy as np, pyvista as pv, mmgpy
+          sphere = pv.Sphere(theta_resolution=10, phi_resolution=10).triangulate()
+          verts = np.array(sphere.points, dtype=np.float64)
+          faces = sphere.faces.reshape(-1, 4)[:, 1:].astype(np.int32)
+          mesh = mmgpy.Mesh(verts, faces)
+          result = mesh.remesh(mmgpy.MmgSOptions(hmax=0.1))
+          print('Remesh OK:', result)
+          "
+
       - name: Test documentation code blocks
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
+          PYTHONFAULTHANDLER: "1"
         run: |
           source .venv/bin/activate
-          pytest --codeblocks docs/ -v
+          pytest --codeblocks docs/ -v -p faulthandler
 
       - name: Run examples
         env:
