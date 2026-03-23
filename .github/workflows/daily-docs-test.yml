@@ -56,39 +56,38 @@ jobs:
           python -c "import vtk; print('VTK', vtk.vtkVersion.GetVTKVersion())"
           python -c "import mmgpy; print('mmgpy', mmgpy.__version__)"
 
-      - name: Debug - simulate pytest-codeblocks exec()
+      - name: Debug - isolate conftest crash
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
         run: |
           source .venv/bin/activate
-          python -c "
-          import faulthandler, sys
+          python -u -c "
+          import faulthandler, sys, os
           faulthandler.enable()
-          # Load conftest like pytest does
-          sys.path.insert(0, 'docs')
-          print('Loading conftest...')
-          import conftest
-          print('Conftest loaded, running exec()...')
-          code = '''
+          sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', buffering=1)
+          print('Step 1: importing numpy', flush=True)
+          import numpy as np
+          print('Step 2: importing pyvista', flush=True)
+          import pyvista as pv
+          print('Step 3: pv.Sphere', flush=True)
+          sphere = pv.Sphere()
+          print('Step 4: pv.PolyData + delaunay_3d', flush=True)
+          pts = np.random.rand(50, 3)
+          cloud = pv.PolyData(pts)
+          tetra = cloud.delaunay_3d()
+          print('Step 5: importing mmgpy', flush=True)
           import mmgpy
-          mesh = mmgpy.read(\"input.mesh\")
-          opts = mmgpy.Mmg3DOptions(hmax=0.1)
-          result = mesh.remesh(opts)
-          print(\"Remesh result:\", result)
-          mesh.save(\"output.vtk\")
-          '''
-          exec(code, {'__MODULE__': '__main__'})
-          print('exec() completed successfully')
+          print('Step 6: Mesh + remesh', flush=True)
+          verts = np.array(tetra.points, dtype=np.float64)
+          cells = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
+          mesh = mmgpy.Mesh(verts, cells)
+          mesh.remesh(mmgpy.Mmg3DOptions(hmax=0.5))
+          print('Step 7: importing scipy Delaunay', flush=True)
+          from scipy.spatial import Delaunay
+          tri = Delaunay(np.random.rand(20, 2))
+          print('All steps passed!', flush=True)
           "
-
-      - name: Debug - pytest collect only
-        env:
-          PYVISTA_OFF_SCREEN: "true"
-          MPLBACKEND: Agg
-        run: |
-          source .venv/bin/activate
-          pytest --codeblocks docs/api/index.md --collect-only
 
       - name: Test documentation code blocks
         env:
