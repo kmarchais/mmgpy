@@ -72,13 +72,13 @@ jobs:
           sed -i '/^_VERTS_SURF/i print("conftest: before _make_surface_mesh", flush=True)' docs/conftest.py
           sed -i '/^import mmgpy/i print("conftest: before mmgpy import", flush=True)' docs/conftest.py
           sed -i '/^_io_mod.read/i print("conftest: before monkeypatch", flush=True)' docs/conftest.py
-          catchsegv python -u -c "
+          python -u -X faulthandler -c "
           import sys, os
           os.environ['PYVISTA_OFF_SCREEN'] = 'true'
           sys.path.insert(0, 'docs')
           import conftest
           print('conftest loaded OK', flush=True)
-          " 2>&1 || true
+          " || true
 
       - name: Test documentation code blocks
         env:
