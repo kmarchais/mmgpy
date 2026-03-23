@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Kevin Marchais
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Property definitions for MMGpy Blender extension."""
 
 from __future__ import annotations

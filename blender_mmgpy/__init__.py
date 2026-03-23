@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Kevin Marchais
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 """MMGpy Blender Extension - Powerful mesh remeshing using the MMG library.
 
 This extension provides a user-friendly interface for remeshing meshes directly

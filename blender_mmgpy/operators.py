@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Kevin Marchais
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Blender operators for MMGpy remeshing."""
 
 from __future__ import annotations

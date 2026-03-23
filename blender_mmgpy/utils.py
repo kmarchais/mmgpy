@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Kevin Marchais
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Utility functions for mesh conversion between Blender and mmgpy."""
 
 from __future__ import annotations
