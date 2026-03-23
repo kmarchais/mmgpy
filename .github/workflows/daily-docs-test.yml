@@ -54,8 +54,9 @@ jobs:
         run: |
           # The released conftest.py creates VTK objects at module level
           # which segfaults under pytest with PyPI VTK wheels.
-          # Copy the fixed conftest from this branch.
-          git show HEAD:docs/conftest.py > docs/conftest.py
+          # Fetch the fixed conftest from the fix branch.
+          git fetch origin fix/daily-docs-test
+          git show origin/fix/daily-docs-test:docs/conftest.py > docs/conftest.py
 
       - name: Test documentation code blocks
         env:
