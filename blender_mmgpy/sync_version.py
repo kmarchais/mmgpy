@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Kevin Marchais
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Sync version from pyproject.toml to blender_manifest.toml.
 
 This script reads the version from the main pyproject.toml and updates

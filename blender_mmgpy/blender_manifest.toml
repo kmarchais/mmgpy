@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Kevin Marchais
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 schema_version = "1.0.0"
 
@@ -14,13 +14,14 @@ type = "add-on"
 blender_version_min = "4.2.0"
 
 # License
-license = ["SPDX:MIT"]
+license = ["SPDX:GPL-3.0-or-later"]
+copyright = ["2026 Kevin Marchais"]
 
 # Website and documentation
 website = "https://github.com/kmarchais/mmgpy"
 
 # Category for the addon
-tags = ["Mesh", "Import-Export"]
+tags = ["Mesh", "Modeling"]
 
 # Python wheel dependencies
 # These will be bundled with the extension
