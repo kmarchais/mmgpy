@@ -56,38 +56,29 @@ jobs:
           python -c "import vtk; print('VTK', vtk.vtkVersion.GetVTKVersion())"
           python -c "import mmgpy; print('mmgpy', mmgpy.__version__)"
 
-      - name: Debug - isolate conftest crash
+      - name: Debug - conftest import with catchsegv
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
         run: |
           source .venv/bin/activate
-          python -u -c "
-          import faulthandler, sys, os
-          faulthandler.enable()
-          sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', buffering=1)
-          print('Step 1: importing numpy', flush=True)
-          import numpy as np
-          print('Step 2: importing pyvista', flush=True)
-          import pyvista as pv
-          print('Step 3: pv.Sphere', flush=True)
-          sphere = pv.Sphere()
-          print('Step 4: pv.PolyData + delaunay_3d', flush=True)
-          pts = np.random.rand(50, 3)
-          cloud = pv.PolyData(pts)
-          tetra = cloud.delaunay_3d()
-          print('Step 5: importing mmgpy', flush=True)
-          import mmgpy
-          print('Step 6: Mesh + remesh', flush=True)
-          verts = np.array(tetra.points, dtype=np.float64)
-          cells = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
-          mesh = mmgpy.Mesh(verts, cells)
-          mesh.remesh(mmgpy.Mmg3DOptions(hmax=0.5))
-          print('Step 7: importing scipy Delaunay', flush=True)
-          from scipy.spatial import Delaunay
-          tri = Delaunay(np.random.rand(20, 2))
-          print('All steps passed!', flush=True)
-          "
+          # Instrument conftest.py with print statements
+          sed -i '1i import sys; print("conftest: line 1", flush=True)' docs/conftest.py
+          sed -i '/^import numpy/i print("conftest: before numpy import", flush=True)' docs/conftest.py
+          sed -i '/^import pyvista/i print("conftest: before pyvista import", flush=True)' docs/conftest.py
+          sed -i '/^from scipy/i print("conftest: before scipy import", flush=True)' docs/conftest.py
+          sed -i '/^_VERTS_3D/i print("conftest: before _make_3d_mesh", flush=True)' docs/conftest.py
+          sed -i '/^_VERTS_2D/i print("conftest: before _make_2d_mesh", flush=True)' docs/conftest.py
+          sed -i '/^_VERTS_SURF/i print("conftest: before _make_surface_mesh", flush=True)' docs/conftest.py
+          sed -i '/^import mmgpy/i print("conftest: before mmgpy import", flush=True)' docs/conftest.py
+          sed -i '/^_io_mod.read/i print("conftest: before monkeypatch", flush=True)' docs/conftest.py
+          catchsegv python -u -c "
+          import sys, os
+          os.environ['PYVISTA_OFF_SCREEN'] = 'true'
+          sys.path.insert(0, 'docs')
+          import conftest
+          print('conftest loaded OK', flush=True)
+          " 2>&1 || true
 
       - name: Test documentation code blocks
         env:
@@ -96,6 +87,8 @@ jobs:
           PYTHONFAULTHANDLER: "1"
         run: |
           source .venv/bin/activate
+          # Re-checkout clean conftest
+          git checkout docs/conftest.py
           pytest --codeblocks docs/ -v -s -p faulthandler
 
       - name: Run examples
