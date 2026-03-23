@@ -29,59 +29,73 @@ if TYPE_CHECKING:
 os.environ["PYVISTA_OFF_SCREEN"] = "true"
 
 # ---------------------------------------------------------------------------
-# Lazy mesh factories — deferred to first use to avoid creating VTK objects
-# at module level, which causes segfaults under pytest with PyPI VTK wheels.
+# Mesh factories — use scipy/numpy only (no VTK objects) to avoid segfaults
+# when pytest-codeblocks runs code via exec() with PyPI VTK wheels.
 # ---------------------------------------------------------------------------
 
-_VERTS_3D: np.ndarray | None = None
-_CELLS_3D: np.ndarray | None = None
-_VERTS_2D: np.ndarray | None = None
-_CELLS_2D: np.ndarray | None = None
-_VERTS_SURF: np.ndarray | None = None
-_CELLS_SURF: np.ndarray | None = None
+
+def _make_3d_mesh() -> tuple[np.ndarray, np.ndarray]:
+    """Dense tetrahedral mesh of a unit cube via scipy Delaunay."""
+    resolution = 5
+    x = np.linspace(0, 1, resolution)
+    y = np.linspace(0, 1, resolution)
+    z = np.linspace(0, 1, resolution)
+    xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
+    points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+    tri = Delaunay(points)
+    return points.astype(np.float64), tri.simplices.astype(np.int32)
 
 
-def _get_3d_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Dense tetrahedral mesh of a unit cube via PyVista delaunay_3d (lazy)."""
-    global _VERTS_3D, _CELLS_3D  # noqa: PLW0603
-    if _VERTS_3D is None:
-        resolution = 5
-        x = np.linspace(0, 1, resolution)
-        y = np.linspace(0, 1, resolution)
-        z = np.linspace(0, 1, resolution)
-        xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
-        points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
-        cloud = pv.PolyData(points)
-        tetra = cloud.delaunay_3d()
-        _VERTS_3D = np.array(tetra.points, dtype=np.float64)
-        _CELLS_3D = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
-    return _VERTS_3D, _CELLS_3D
+def _make_2d_mesh() -> tuple[np.ndarray, np.ndarray]:
+    """Dense triangular mesh of a unit square via scipy Delaunay."""
+    resolution = 10
+    x = np.linspace(0, 1, resolution)
+    y = np.linspace(0, 1, resolution)
+    xx, yy = np.meshgrid(x, y)
+    points = np.column_stack([xx.ravel(), yy.ravel()])
+    tri = Delaunay(points)
+    return points.astype(np.float64), tri.simplices.astype(np.int32)
 
 
-def _get_2d_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Dense triangular mesh of a unit square via scipy Delaunay (lazy)."""
-    global _VERTS_2D, _CELLS_2D  # noqa: PLW0603
-    if _VERTS_2D is None:
-        resolution = 10
-        x = np.linspace(0, 1, resolution)
-        y = np.linspace(0, 1, resolution)
-        xx, yy = np.meshgrid(x, y)
-        points = np.column_stack([xx.ravel(), yy.ravel()])
-        tri = Delaunay(points)
-        _VERTS_2D = points.astype(np.float64)
-        _CELLS_2D = tri.simplices.astype(np.int32)
-    return _VERTS_2D, _CELLS_2D
+def _make_surface_mesh() -> tuple[np.ndarray, np.ndarray]:
+    """Triangulated UV sphere surface using numpy (no VTK dependency).
+
+    Generates a sphere similar to pv.Sphere(theta_resolution=10, phi_resolution=10).
+    """
+    n_theta, n_phi = 10, 10
+    theta = np.linspace(0, np.pi, n_theta + 1)
+    phi = np.linspace(0, 2 * np.pi, n_phi + 1)[:-1]
+
+    # Build vertices: north pole, grid rows, south pole
+    grid = [
+        [np.sin(t) * np.cos(p), np.sin(t) * np.sin(p), np.cos(t)]
+        for t in theta[1:-1]
+        for p in phi
+    ]
+    verts = np.array(
+        [[0.0, 0.0, 1.0], *grid, [0.0, 0.0, -1.0]],
+        dtype=np.float64,
+    )
+
+    # Build faces
+    faces = [[0, 1 + j, 1 + (j + 1) % n_phi] for j in range(n_phi)]
+    for i in range(n_theta - 2):
+        for j in range(n_phi):
+            c = 1 + i * n_phi + j
+            n = 1 + i * n_phi + (j + 1) % n_phi
+            c2 = 1 + (i + 1) * n_phi + j
+            n2 = 1 + (i + 1) * n_phi + (j + 1) % n_phi
+            faces.extend([[c, c2, n], [n, c2, n2]])
+    south = len(verts) - 1
+    base = 1 + (n_theta - 2) * n_phi
+    faces.extend([south, base + (j + 1) % n_phi, base + j] for j in range(n_phi))
+
+    return verts, np.array(faces, dtype=np.int32)
 
 
-def _get_surface_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Triangulated sphere surface via PyVista (lazy)."""
-    global _VERTS_SURF, _CELLS_SURF  # noqa: PLW0603
-    if _VERTS_SURF is None:
-        sphere = pv.Sphere(theta_resolution=10, phi_resolution=10)
-        sphere = sphere.triangulate()
-        _VERTS_SURF = np.array(sphere.points, dtype=np.float64)
-        _CELLS_SURF = sphere.faces.reshape(-1, 4)[:, 1:].astype(np.int32)
-    return _VERTS_SURF, _CELLS_SURF
+_VERTS_3D, _CELLS_3D = _make_3d_mesh()
+_VERTS_2D, _CELLS_2D = _make_2d_mesh()
+_VERTS_SURF, _CELLS_SURF = _make_surface_mesh()
 
 
 # ---------------------------------------------------------------------------
@@ -137,13 +151,10 @@ def _fake_read(
     name = str(source)
     kind = _classify_filename(name)
     if kind == "2d":
-        v, c = _get_2d_mesh()
-        return Mesh(v.copy(), c.copy())
+        return Mesh(_VERTS_2D.copy(), _CELLS_2D.copy())
     if kind == "surface":
-        v, c = _get_surface_mesh()
-        return Mesh(v.copy(), c.copy())
-    v, c = _get_3d_mesh()
-    return Mesh(v.copy(), c.copy())
+        return Mesh(_VERTS_SURF.copy(), _CELLS_SURF.copy())
+    return Mesh(_VERTS_3D.copy(), _CELLS_3D.copy())
 
 
 def _patched_save(self: MeshType, filename: str | Path) -> None:
@@ -165,32 +176,29 @@ def _fake_pv_read(
 ) -> pv.UnstructuredGrid | pv.PolyData:
     kind = _classify_filename(str(filename))
     if kind == "2d":
-        v, c = _get_2d_mesh()
         # Return a flat 2D-like UnstructuredGrid
         cells = np.column_stack(
-            [np.full(len(c), 3), c],
+            [np.full(len(_CELLS_2D), 3), _CELLS_2D],
         ).ravel()
         points_3d = np.column_stack(
-            [v, np.zeros(len(v))],
+            [_VERTS_2D, np.zeros(len(_VERTS_2D))],
         )
         return pv.UnstructuredGrid(
             cells,
-            np.full(len(c), pv.CellType.TRIANGLE),
+            np.full(len(_CELLS_2D), pv.CellType.TRIANGLE),
             points_3d.copy(),
         )
     if kind == "surface":
-        v, c = _get_surface_mesh()
-        faces = np.column_stack([np.full(len(c), 3), c]).ravel()
-        return pv.PolyData(v.copy(), faces=faces)
+        faces = np.column_stack([np.full(len(_CELLS_SURF), 3), _CELLS_SURF]).ravel()
+        return pv.PolyData(_VERTS_SURF.copy(), faces=faces)
     # 3D tetrahedral
-    v, c = _get_3d_mesh()
     cells = np.column_stack(
-        [np.full(len(c), 4), c],
+        [np.full(len(_CELLS_3D), 4), _CELLS_3D],
     ).ravel()
     return pv.UnstructuredGrid(
         cells,
-        np.full(len(c), pv.CellType.TETRA),
-        v.copy(),
+        np.full(len(_CELLS_3D), pv.CellType.TETRA),
+        _VERTS_3D.copy(),
     )
 
 
