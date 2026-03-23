@@ -4,9 +4,6 @@ on:
   schedule:
     - cron: "0 6 * * *" # 6 AM UTC daily
   workflow_dispatch: # Allow manual triggering
-  pull_request: # TODO: remove after verifying fix
-    paths:
-      - .github/workflows/daily-docs-test.yml
 
 jobs:
   test-released-docs:
@@ -54,9 +51,9 @@ jobs:
         run: |
           # The released conftest.py creates VTK objects at module level
           # which segfaults under pytest with PyPI VTK wheels.
-          # Fetch the fixed conftest from the fix branch.
-          git fetch origin fix/daily-docs-test
-          git show origin/fix/daily-docs-test:docs/conftest.py > docs/conftest.py
+          # Use the fixed conftest from main.
+          git fetch origin main
+          git show origin/main:docs/conftest.py > docs/conftest.py
 
       - name: Test documentation code blocks
         env:
