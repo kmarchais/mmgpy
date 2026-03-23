@@ -56,29 +56,60 @@ jobs:
           python -c "import vtk; print('VTK', vtk.vtkVersion.GetVTKVersion())"
           python -c "import mmgpy; print('mmgpy', mmgpy.__version__)"
 
-      - name: Debug - conftest import with catchsegv
+      - name: Debug - reproduce conftest step by step
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
         run: |
           source .venv/bin/activate
-          # Instrument conftest.py with print statements
-          sed -i '1i import sys; print("conftest: line 1", flush=True)' docs/conftest.py
-          sed -i '/^import numpy/i print("conftest: before numpy import", flush=True)' docs/conftest.py
-          sed -i '/^import pyvista/i print("conftest: before pyvista import", flush=True)' docs/conftest.py
-          sed -i '/^from scipy/i print("conftest: before scipy import", flush=True)' docs/conftest.py
-          sed -i '/^_VERTS_3D/i print("conftest: before _make_3d_mesh", flush=True)' docs/conftest.py
-          sed -i '/^_VERTS_2D/i print("conftest: before _make_2d_mesh", flush=True)' docs/conftest.py
-          sed -i '/^_VERTS_SURF/i print("conftest: before _make_surface_mesh", flush=True)' docs/conftest.py
-          sed -i '/^import mmgpy/i print("conftest: before mmgpy import", flush=True)' docs/conftest.py
-          sed -i '/^_io_mod.read/i print("conftest: before monkeypatch", flush=True)' docs/conftest.py
-          python -u -X faulthandler -c "
-          import sys, os
-          os.environ['PYVISTA_OFF_SCREEN'] = 'true'
-          sys.path.insert(0, 'docs')
-          import conftest
-          print('conftest loaded OK', flush=True)
-          " || true
+          python -u -X faulthandler << 'PYEOF'
+          import os, sys
+          os.environ["PYVISTA_OFF_SCREEN"] = "true"
+
+          print("1. numpy", flush=True)
+          import numpy as np
+
+          print("2. pyvista", flush=True)
+          import pyvista as pv
+          from scipy.spatial import Delaunay
+
+          print("3. _make_3d_mesh", flush=True)
+          x = np.linspace(0, 1, 5)
+          xx, yy, zz = np.meshgrid(x, x, x, indexing="ij")
+          pts = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+          tetra = pv.PolyData(pts).delaunay_3d()
+          v3d = np.array(tetra.points, dtype=np.float64)
+          c3d = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
+
+          print("4. _make_2d_mesh", flush=True)
+          x2 = np.linspace(0, 1, 10)
+          xx2, yy2 = np.meshgrid(x2, x2)
+          pts2 = np.column_stack([xx2.ravel(), yy2.ravel()])
+          tri = Delaunay(pts2)
+          v2d, c2d = pts2.astype(np.float64), tri.simplices.astype(np.int32)
+
+          print("5. _make_surface_mesh", flush=True)
+          sphere = pv.Sphere(theta_resolution=10, phi_resolution=10).triangulate()
+          vs = np.array(sphere.points, dtype=np.float64)
+          cs = sphere.faces.reshape(-1, 4)[:, 1:].astype(np.int32)
+
+          print("6. import mmgpy", flush=True)
+          import mmgpy
+          import mmgpy._io as _io_mod
+          from mmgpy import Mesh
+
+          print("7. monkeypatch", flush=True)
+          real_read = _io_mod.read
+          def fake_read(source, mesh_kind=None):
+              return Mesh(v3d.copy(), c3d.copy())
+          _io_mod.read = fake_read
+          mmgpy.read = fake_read
+
+          print("8. exec code block", flush=True)
+          code = "import mmgpy\nmesh = mmgpy.read('input.mesh')\nopts = mmgpy.Mmg3DOptions(hmax=0.1)\nresult = mesh.remesh(opts)\nprint('result:', result, flush=True)"
+          exec(code, {"__MODULE__": "__main__"})
+          print("ALL PASSED", flush=True)
+          PYEOF
 
       - name: Test documentation code blocks
         env:
