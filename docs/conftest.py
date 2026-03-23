@@ -35,15 +35,16 @@ os.environ["PYVISTA_OFF_SCREEN"] = "true"
 
 
 def _make_3d_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Small tetrahedral mesh of a unit cube via scipy Delaunay.
+    """Small tetrahedral mesh via scipy Delaunay.
 
-    Uses low resolution (3) so that doc code blocks with hmax=0.1
-    don't over-refine and stay fast.
+    Uses a 0.3-unit cube centered at (0.5, 0.5, 0.5) so that:
+    - hmax=0.1 produces a manageable mesh (~400 tetrahedra)
+    - Coordinates like [0.5, 0.5, 0.5] used in docs are inside the mesh
     """
-    resolution = 3
-    x = np.linspace(0, 1, resolution)
-    y = np.linspace(0, 1, resolution)
-    z = np.linspace(0, 1, resolution)
+    resolution = 4
+    x = np.linspace(0.35, 0.65, resolution)
+    y = np.linspace(0.35, 0.65, resolution)
+    z = np.linspace(0.35, 0.65, resolution)
     xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
     points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
     # Add small jitter to avoid degenerate (zero-volume) tetrahedra
