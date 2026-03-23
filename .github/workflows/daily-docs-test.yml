@@ -56,23 +56,39 @@ jobs:
           python -c "import vtk; print('VTK', vtk.vtkVersion.GetVTKVersion())"
           python -c "import mmgpy; print('mmgpy', mmgpy.__version__)"
 
-      - name: Debug - run first code block directly
+      - name: Debug - simulate pytest-codeblocks exec()
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
-          PYTHONFAULTHANDLER: "1"
         run: |
           source .venv/bin/activate
           python -c "
-          import faulthandler; faulthandler.enable()
-          import numpy as np, pyvista as pv, mmgpy
-          sphere = pv.Sphere(theta_resolution=10, phi_resolution=10).triangulate()
-          verts = np.array(sphere.points, dtype=np.float64)
-          faces = sphere.faces.reshape(-1, 4)[:, 1:].astype(np.int32)
-          mesh = mmgpy.Mesh(verts, faces)
-          result = mesh.remesh(mmgpy.MmgSOptions(hmax=0.1))
-          print('Remesh OK:', result)
+          import faulthandler, sys
+          faulthandler.enable()
+          # Load conftest like pytest does
+          sys.path.insert(0, 'docs')
+          print('Loading conftest...')
+          import conftest
+          print('Conftest loaded, running exec()...')
+          code = '''
+          import mmgpy
+          mesh = mmgpy.read(\"input.mesh\")
+          opts = mmgpy.Mmg3DOptions(hmax=0.1)
+          result = mesh.remesh(opts)
+          print(\"Remesh result:\", result)
+          mesh.save(\"output.vtk\")
+          '''
+          exec(code, {'__MODULE__': '__main__'})
+          print('exec() completed successfully')
           "
+
+      - name: Debug - pytest collect only
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: |
+          source .venv/bin/activate
+          pytest --codeblocks docs/api/index.md --collect-only
 
       - name: Test documentation code blocks
         env:
@@ -81,7 +97,7 @@ jobs:
           PYTHONFAULTHANDLER: "1"
         run: |
           source .venv/bin/activate
-          pytest --codeblocks docs/ -v -p faulthandler
+          pytest --codeblocks docs/ -v -s -p faulthandler
 
       - name: Run examples
         env:
