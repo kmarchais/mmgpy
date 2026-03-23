@@ -38,12 +38,23 @@ jobs:
       - name: Install system dependencies for VTK
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev libglu1-mesa-dev xvfb
+          sudo apt-get install -y libosmesa6-dev libgl1-mesa-dev xvfb
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
 
       - name: Install mmgpy from PyPI with test dependencies
         run: |
           uv venv
           uv pip install mmgpy pytest pytest-codeblocks
+
+      - name: Verify mmgpy import
+        run: |
+          source .venv/bin/activate
+          python -c "import vtk; print('VTK', vtk.vtkVersion.GetVTKVersion())"
+          python -c "import mmgpy; print('mmgpy', mmgpy.__version__)"
 
       - name: Test documentation code blocks
         env:
@@ -51,7 +62,7 @@ jobs:
           MPLBACKEND: Agg
         run: |
           source .venv/bin/activate
-          xvfb-run pytest --codeblocks docs/ -v
+          pytest --codeblocks docs/ -v
 
       - name: Run examples
         env:
@@ -68,6 +79,6 @@ jobs:
               examples/mmgs/implicit_surface_domain_meshing.py) continue ;;
             esac
             echo "::group::Running $f"
-            xvfb-run python "$f"
+            python "$f"
             echo "::endgroup::"
           done
