@@ -111,16 +111,32 @@ jobs:
           print("ALL PASSED", flush=True)
           PYEOF
 
+      - name: Debug - simple codeblock without conftest
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: |
+          source .venv/bin/activate
+          mkdir -p /tmp/test_cb
+          printf '```python\nimport mmgpy\nprint("version:", mmgpy.__version__)\n```\n' > /tmp/test_cb/test.md
+          pytest --codeblocks /tmp/test_cb/test.md -v -s && echo "SIMPLE TEST PASSED" || echo "SIMPLE TEST FAILED"
+
+      - name: Debug - docs codeblocks without faulthandler
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: |
+          source .venv/bin/activate
+          git checkout docs/conftest.py
+          pytest --codeblocks docs/api/index.md -v -s -p no:faulthandler -x || echo "FAILED (exit $?)"
+
       - name: Test documentation code blocks
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
-          PYTHONFAULTHANDLER: "1"
         run: |
           source .venv/bin/activate
-          # Re-checkout clean conftest
-          git checkout docs/conftest.py
-          pytest --codeblocks docs/ -v -s -p faulthandler
+          pytest --codeblocks docs/ -v -s -p no:faulthandler
 
       - name: Run examples
         env:
