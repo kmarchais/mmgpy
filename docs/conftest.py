@@ -42,6 +42,10 @@ def _make_3d_mesh() -> tuple[np.ndarray, np.ndarray]:
     z = np.linspace(0, 1, resolution)
     xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
     points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+    # Add small jitter to avoid degenerate (zero-volume) tetrahedra
+    # from coplanar grid points
+    rng = np.random.default_rng(42)
+    points += rng.uniform(-1e-6, 1e-6, points.shape)
     tri = Delaunay(points)
     return points.astype(np.float64), tri.simplices.astype(np.int32)
 
