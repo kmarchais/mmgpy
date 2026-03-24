@@ -29,23 +29,30 @@ if TYPE_CHECKING:
 os.environ["PYVISTA_OFF_SCREEN"] = "true"
 
 # ---------------------------------------------------------------------------
-# Module-level mesh factories (created once at import time)
+# Mesh factories — use scipy/numpy only (no VTK objects) to avoid segfaults
+# when pytest-codeblocks runs code via exec() with PyPI VTK wheels.
 # ---------------------------------------------------------------------------
 
 
 def _make_3d_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Dense tetrahedral mesh of a unit cube via PyVista delaunay_3d."""
-    resolution = 5
-    x = np.linspace(0, 1, resolution)
-    y = np.linspace(0, 1, resolution)
-    z = np.linspace(0, 1, resolution)
+    """Small tetrahedral mesh via scipy Delaunay.
+
+    Uses a 0.3-unit cube centered at (0.5, 0.5, 0.5) so that:
+    - hmax=0.1 produces a manageable mesh (~400 tetrahedra)
+    - Coordinates like [0.5, 0.5, 0.5] used in docs are inside the mesh
+    """
+    resolution = 4
+    x = np.linspace(0.35, 0.65, resolution)
+    y = np.linspace(0.35, 0.65, resolution)
+    z = np.linspace(0.35, 0.65, resolution)
     xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
     points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
-    cloud = pv.PolyData(points)
-    tetra = cloud.delaunay_3d()
-    vertices = np.array(tetra.points, dtype=np.float64)
-    elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
-    return vertices, elements
+    # Add small jitter to avoid degenerate (zero-volume) tetrahedra
+    # from coplanar grid points
+    rng = np.random.default_rng(42)
+    points += rng.uniform(-1e-6, 1e-6, points.shape)
+    tri = Delaunay(points)
+    return points.astype(np.float64), tri.simplices.astype(np.int32)
 
 
 def _make_2d_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -60,17 +67,45 @@ def _make_2d_mesh() -> tuple[np.ndarray, np.ndarray]:
 
 
 def _make_surface_mesh() -> tuple[np.ndarray, np.ndarray]:
-    """Triangulated sphere surface via PyVista."""
-    sphere = pv.Sphere(theta_resolution=10, phi_resolution=10)
-    sphere = sphere.triangulate()
-    vertices = np.array(sphere.points, dtype=np.float64)
-    faces = sphere.faces.reshape(-1, 4)[:, 1:].astype(np.int32)
-    return vertices, faces
+    """Triangulated UV sphere surface using numpy (no VTK dependency).
+
+    Generates a sphere similar to pv.Sphere(theta_resolution=10, phi_resolution=10).
+    """
+    n_theta, n_phi = 10, 10
+    theta = np.linspace(0, np.pi, n_theta + 1)
+    phi = np.linspace(0, 2 * np.pi, n_phi + 1)[:-1]
+
+    # Build vertices: north pole, grid rows, south pole
+    grid = [
+        [np.sin(t) * np.cos(p), np.sin(t) * np.sin(p), np.cos(t)]
+        for t in theta[1:-1]
+        for p in phi
+    ]
+    verts = np.array(
+        [[0.0, 0.0, 1.0], *grid, [0.0, 0.0, -1.0]],
+        dtype=np.float64,
+    )
+
+    # Build faces
+    faces = [[0, 1 + j, 1 + (j + 1) % n_phi] for j in range(n_phi)]
+    for i in range(n_theta - 2):
+        for j in range(n_phi):
+            c = 1 + i * n_phi + j
+            n = 1 + i * n_phi + (j + 1) % n_phi
+            c2 = 1 + (i + 1) * n_phi + j
+            n2 = 1 + (i + 1) * n_phi + (j + 1) % n_phi
+            faces.extend([[c, c2, n], [n, c2, n2]])
+    south = len(verts) - 1
+    base = 1 + (n_theta - 2) * n_phi
+    faces.extend([south, base + (j + 1) % n_phi, base + j] for j in range(n_phi))
+
+    return verts, np.array(faces, dtype=np.int32)
 
 
 _VERTS_3D, _CELLS_3D = _make_3d_mesh()
 _VERTS_2D, _CELLS_2D = _make_2d_mesh()
 _VERTS_SURF, _CELLS_SURF = _make_surface_mesh()
+
 
 # ---------------------------------------------------------------------------
 # Routing helpers
@@ -163,7 +198,8 @@ def _fake_pv_read(
             points_3d.copy(),
         )
     if kind == "surface":
-        return pv.PolyData(_VERTS_SURF.copy(), faces=_make_surface_mesh_faces())
+        faces = np.column_stack([np.full(len(_CELLS_SURF), 3), _CELLS_SURF]).ravel()
+        return pv.PolyData(_VERTS_SURF.copy(), faces=faces)
     # 3D tetrahedral
     cells = np.column_stack(
         [np.full(len(_CELLS_3D), 4), _CELLS_3D],
@@ -173,12 +209,6 @@ def _fake_pv_read(
         np.full(len(_CELLS_3D), pv.CellType.TETRA),
         _VERTS_3D.copy(),
     )
-
-
-def _make_surface_mesh_faces() -> np.ndarray:
-    """Return PyVista-style face array from surface mesh triangles."""
-    n = len(_CELLS_SURF)
-    return np.column_stack([np.full(n, 3), _CELLS_SURF]).ravel()
 
 
 pv.read = _fake_pv_read  # type: ignore[assignment]
