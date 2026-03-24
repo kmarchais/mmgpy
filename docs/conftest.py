@@ -102,7 +102,26 @@ def _make_surface_mesh() -> tuple[np.ndarray, np.ndarray]:
     return verts, np.array(faces, dtype=np.int32)
 
 
+def _make_domain_mesh() -> tuple[np.ndarray, np.ndarray]:
+    """Denser unit cube for levelset tests that need volume coverage.
+
+    Resolution 8 gives ~512 points with edges ~0.14, dense enough for MMG's
+    levelset algorithm to capture isosurfaces without excessive refinement.
+    """
+    resolution = 8
+    x = np.linspace(0, 1, resolution)
+    y = np.linspace(0, 1, resolution)
+    z = np.linspace(0, 1, resolution)
+    xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
+    points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+    rng = np.random.default_rng(42)
+    points += rng.uniform(-1e-6, 1e-6, points.shape)
+    tri = Delaunay(points)
+    return points.astype(np.float64), tri.simplices.astype(np.int32)
+
+
 _VERTS_3D, _CELLS_3D = _make_3d_mesh()
+_VERTS_DOMAIN, _CELLS_DOMAIN = _make_domain_mesh()
 _VERTS_2D, _CELLS_2D = _make_2d_mesh()
 _VERTS_SURF, _CELLS_SURF = _make_surface_mesh()
 
@@ -163,6 +182,9 @@ def _fake_read(
         return Mesh(_VERTS_2D.copy(), _CELLS_2D.copy())
     if kind == "surface":
         return Mesh(_VERTS_SURF.copy(), _CELLS_SURF.copy())
+    # Levelset tests use "domain.mesh" and need a denser volume
+    if "domain" in name.lower():
+        return Mesh(_VERTS_DOMAIN.copy(), _CELLS_DOMAIN.copy())
     return Mesh(_VERTS_3D.copy(), _CELLS_3D.copy())
 
 

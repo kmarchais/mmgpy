@@ -179,8 +179,6 @@ result = mesh.remesh_levelset(
 
 ## Complete Example: Implicit Domain Meshing
 
-<!--pytest-codeblocks:skip-->
-
 ```python
 import mmgpy
 import numpy as np
