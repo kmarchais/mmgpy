@@ -32,10 +32,29 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install system dependencies for VTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev xvfb
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
       - name: Install mmgpy from PyPI with test dependencies
         run: |
           uv venv
           uv pip install mmgpy pytest pytest-codeblocks
+
+      - name: Patch conftest to avoid VTK at module level
+        run: |
+          # The released conftest.py creates VTK objects at module level
+          # which segfaults under pytest with PyPI VTK wheels.
+          # Use the fixed conftest from main (can be removed once a release
+          # includes the fixed conftest).
+          git fetch origin main
+          git show origin/main:docs/conftest.py > docs/conftest.py
 
       - name: Test documentation code blocks
         env:
