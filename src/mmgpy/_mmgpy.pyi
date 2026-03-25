@@ -532,6 +532,16 @@ class MmgMesh3D:
 
         """
 
+    def set_required_triangles(self, triangle_indices: NDArray[np.int32]) -> None:
+        """Mark triangles as required (cannot be modified).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of required triangles (0-based).
+
+        """
+
     def set_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
         """Mark edges as ridges (sharp features preserved).
 
@@ -1359,6 +1369,16 @@ class MmgMesh2D:
 
         """
 
+    def set_required_triangles(self, triangle_indices: NDArray[np.int32]) -> None:
+        """Mark triangles as required (cannot be modified).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of required triangles (0-based).
+
+        """
+
     def set_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
         """Mark edges as required (cannot be modified).
 
@@ -1920,6 +1940,16 @@ class MmgMeshS:
         ----------
         vertex_indices : NDArray[np.int32]
             Indices of required vertices (0-based).
+
+        """
+
+    def set_required_triangles(self, triangle_indices: NDArray[np.int32]) -> None:
+        """Mark triangles as required (cannot be modified).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of required triangles (0-based).
 
         """
 

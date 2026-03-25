@@ -193,6 +193,36 @@ class TestElementAttributes3D:
         required_indices = np.array([0, 1, 2, 3], dtype=np.int32)
         mesh.set_required_vertices(required_indices)
 
+    def test_set_required_triangles(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting required triangles for MmgMesh3D."""
+        vertices, elements = cube_mesh
+
+        triangles = np.array(
+            [
+                [0, 1, 3],
+                [1, 2, 3],
+                [4, 5, 7],
+                [5, 6, 7],
+            ],
+            dtype=np.int32,
+        )
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(
+            vertices=len(vertices),
+            tetrahedra=len(elements),
+            triangles=len(triangles),
+        )
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+        mesh.set_triangles(triangles)
+
+        required_indices = np.array([0, 2], dtype=np.int32)
+        mesh.set_required_triangles(required_indices)
+
     def test_set_ridge_edges(self, cube_mesh: tuple[np.ndarray, np.ndarray]) -> None:
         """Test setting ridge edges for MmgMesh3D."""
         vertices, elements = cube_mesh
@@ -278,6 +308,21 @@ class TestElementAttributes2D:
         required_indices = np.array([0, 2], dtype=np.int32)
         mesh.set_required_vertices(required_indices)
 
+    def test_set_required_triangles(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting required triangles for MmgMesh2D."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        required_indices = np.array([0], dtype=np.int32)
+        mesh.set_required_triangles(required_indices)
+
     def test_set_required_edges(
         self,
         square_mesh: tuple[np.ndarray, np.ndarray],
@@ -341,6 +386,21 @@ class TestElementAttributesSurface:
 
         required_indices = np.array([0, 2], dtype=np.int32)
         mesh.set_required_vertices(required_indices)
+
+    def test_set_required_triangles(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting required triangles for MmgMeshS."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        required_indices = np.array([0, 2], dtype=np.int32)
+        mesh.set_required_triangles(required_indices)
 
     def test_set_ridge_edges(
         self,
