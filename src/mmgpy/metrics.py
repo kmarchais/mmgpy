@@ -594,3 +594,93 @@ def create_metric_from_hessian(
         M[i] = eigvecs @ np.diag(metric_eigvals) @ eigvecs.T
 
     return matrix_to_tensor(M if not single else M[0])
+
+
+def compute_hessian(
+    vertices: NDArray[np.float64],
+    elements: NDArray[np.int32],
+    field: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """Compute the Hessian of a scalar field on a mesh via least-squares recovery.
+
+    Uses a patch-based least-squares approach: for each vertex, a quadratic
+    polynomial is fitted to the field values at neighboring vertices, and the
+    second-order coefficients give the Hessian components.
+
+    This is the missing piece for solution-adaptive remeshing: compute a
+    solution field with your FE solver, pass it here to get the Hessian,
+    then use :func:`create_metric_from_hessian` to build an adaptation metric.
+
+    Args:
+        vertices: Nx2 or Nx3 array of vertex coordinates.
+        elements: Mx(nodes_per_element) array of element connectivity.
+        field: N array of scalar field values at vertices.
+
+    Returns:
+        Hessian tensor array. Shape (N, 3) for 2D [H11, H12, H22]
+        or (N, 6) for 3D [H11, H12, H13, H22, H23, H33].
+
+    """
+    n_vertices = len(vertices)
+    n_dims = vertices.shape[1]
+    field = np.asarray(field, dtype=np.float64).ravel()
+
+    if len(field) != n_vertices:
+        msg = f"field length {len(field)} != n_vertices {n_vertices}"
+        raise ValueError(msg)
+
+    # Build adjacency (vertex → set of neighbor vertex indices)
+    adjacency: list[set[int]] = [set() for _ in range(n_vertices)]
+    n_nodes_per_elm = elements.shape[1]
+    for elem in elements:
+        for i in range(n_nodes_per_elm):
+            for j in range(i + 1, n_nodes_per_elm):
+                adjacency[elem[i]].add(elem[j])
+                adjacency[elem[j]].add(elem[i])
+
+    if n_dims == 2:
+        hessian = np.zeros((n_vertices, 3), dtype=np.float64)
+    else:
+        hessian = np.zeros((n_vertices, 6), dtype=np.float64)
+
+    for i in range(n_vertices):
+        # Collect patch: vertex i + its neighbors
+        patch = [i, *adjacency[i]]
+        if len(patch) < (6 if n_dims == 3 else 3):
+            # Extend to 2-ring if patch is too small
+            ring2: set[int] = set()
+            for nb in adjacency[i]:
+                ring2.update(adjacency[nb])
+            patch = list({i, *adjacency[i], *ring2})
+
+        coords = vertices[patch] - vertices[i]  # center at vertex i
+        vals = field[patch] - field[i]
+
+        # Fit quadratic polynomial via least-squares
+        if n_dims == 2:
+            # Monomials: [x, y, x^2, xy, y^2]
+            x, y = coords[:, 0], coords[:, 1]
+            A = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])  # noqa: N806
+            try:
+                coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
+            except np.linalg.LinAlgError:
+                continue
+            # H11 = d2f/dx2, H12 = d2f/dxdy, H22 = d2f/dy2
+            hessian[i] = [coeffs[2], coeffs[3], coeffs[4]]
+        else:
+            # Monomials: [x, y, z, x^2, xy, xz, y^2, yz, z^2]
+            x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
+            A = np.column_stack([  # noqa: N806
+                x, y, z,
+                0.5 * x * x, x * y, x * z,
+                0.5 * y * y, y * z, 0.5 * z * z,
+            ])
+            try:
+                coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
+            except np.linalg.LinAlgError:
+                continue
+            # [H11, H12, H13, H22, H23, H33]
+            hessian[i] = [coeffs[3], coeffs[4], coeffs[5],
+                          coeffs[6], coeffs[7], coeffs[8]]
+
+    return hessian
