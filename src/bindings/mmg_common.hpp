@@ -92,8 +92,6 @@ struct RemeshStats {
   double quality_mean;
 };
 
-std::string get_file_extension(const std::string &filename);
-
 void set_mesh_options_2D(MMG5_pMesh mesh, MMG5_pSol met,
                          const py::dict &options);
 void set_mesh_options_3D(MMG5_pMesh mesh, MMG5_pSol met,

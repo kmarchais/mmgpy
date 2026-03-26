@@ -20,11 +20,6 @@ on:
           - benchmark
           - calibrate
 
-env:
-  VTK_VERSION_MAJOR: 9
-  VTK_VERSION_MINOR: 5
-  VTK_VERSION_PATCH: 2
-
 permissions:
   contents: write
   deployments: write
@@ -41,11 +36,8 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0
-
-      - name: Set CMake path
-        run: echo "CMAKE_PREFIX_PATH=/usr/lib/cmake/vtk" >> $GITHUB_ENV
 
       - uses: astral-sh/setup-uv@v4
         with:
@@ -210,11 +202,8 @@ jobs:
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0
-
-      - name: Set CMake path
-        run: echo "CMAKE_PREFIX_PATH=/usr/lib/cmake/vtk" >> $GITHUB_ENV
 
       - uses: astral-sh/setup-uv@v4
         with:

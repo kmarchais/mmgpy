@@ -115,7 +115,6 @@ private:
 
   SolutionField get_solution_field(const std::string &field_name) const;
   int get_mmg_type(SolutionType type) const;
-  static std::string get_file_extension(const std::string &filename);
   void cleanup();
   void check_not_corrupted(const char *operation) const;
 

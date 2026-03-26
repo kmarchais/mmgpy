@@ -37,8 +37,8 @@ def mesh_paths(tmp_path_factory: TempPathFactory) -> tuple[Path, Path, Path]:
     """
     input_mesh: Path = Path(__file__).parent.parent / "assets" / "rodin.mesh"
     tmp_dir: Path = tmp_path_factory.mktemp("mmgs_test")
-    test_path: Path = tmp_dir / "rodin_remeshed.vtk"
-    ref_path: Path = tmp_dir / "rodin_ref.vtk"
+    test_path: Path = tmp_dir / "rodin_remeshed.mesh"
+    ref_path: Path = tmp_dir / "rodin_ref.mesh"
     return input_mesh, test_path, ref_path
 
 
@@ -86,8 +86,8 @@ def generated_meshes(
     subprocess.run(command, check=True, capture_output=True)
 
     # Load meshes with PyVista
-    test_mesh: pv.PolyData = pv.read(test_path)
-    ref_mesh: pv.PolyData = pv.read(ref_path)
+    test_mesh: pv.PolyData = mmgpy.read(test_path).to_pyvista()
+    ref_mesh: pv.PolyData = mmgpy.read(ref_path).to_pyvista()
 
     return test_mesh, ref_mesh
 

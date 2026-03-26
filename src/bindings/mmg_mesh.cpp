@@ -92,16 +92,7 @@ MmgMesh::MmgMesh(
       },
       filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMG3D_loadVtkMesh(mesh, met, met, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMG3D_loadVtuMesh(mesh, met, met, fname.c_str());
-  } else {
-    ret = MMG3D_loadMesh(mesh, fname.c_str());
-  }
+  int ret = MMG3D_loadMesh(mesh, fname.c_str());
 
   if (!ret) {
     cleanup();
@@ -297,16 +288,7 @@ void MmgMesh::save(
       },
       filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMG3D_saveVtkMesh(mesh, met, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMG3D_saveVtuMesh(mesh, met, fname.c_str());
-  } else {
-    ret = MMG3D_saveMesh(mesh, fname.c_str());
-  }
+  int ret = MMG3D_saveMesh(mesh, fname.c_str());
 
   if (!ret) {
     throw std::runtime_error("Failed to save mesh to file: " + fname);
@@ -338,14 +320,6 @@ int MmgMesh::get_mmg_type(SolutionType type) const {
   default:
     throw std::runtime_error("Unknown solution type");
   }
-}
-
-std::string MmgMesh::get_file_extension(const std::string &filename) {
-  size_t pos = filename.find_last_of('.');
-  if (pos != std::string::npos) {
-    return filename.substr(pos);
-  }
-  return "";
 }
 
 void MmgMesh::cleanup() {

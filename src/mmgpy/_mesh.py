@@ -37,6 +37,7 @@ Example:
 
 from __future__ import annotations
 
+import tempfile
 import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -1342,8 +1343,15 @@ class Mesh:
     # File I/O
     # =========================================================================
 
+    _NATIVE_EXTENSIONS = frozenset({".mesh", ".meshb", ".sol", ".solb"})
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
+
+        Medit formats (.mesh, .meshb) are written directly by the MMG C
+        library.  All other formats (.vtk, .vtu, .vtp, .stl, .obj, ...)
+        are converted through meshio so that no VTK C++ dependency is
+        required at the native level.
 
         Parameters
         ----------
@@ -1351,7 +1359,17 @@ class Mesh:
             Output file path. Format determined by extension.
 
         """
-        self._impl.save(filename)
+        import meshio
+
+        path = Path(filename)
+        if path.suffix.lower() in self._NATIVE_EXTENSIONS:
+            self._impl.save(str(path))
+        else:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                tmp_path = Path(tmp_dir) / (path.stem + ".mesh")
+                self._impl.save(str(tmp_path))
+                meshio_mesh = meshio.read(tmp_path)
+                meshio.write(path, meshio_mesh)
 
     # =========================================================================
     # Remeshing operations
