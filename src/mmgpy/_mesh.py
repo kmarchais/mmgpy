@@ -37,7 +37,6 @@ Example:
 
 from __future__ import annotations
 
-import tempfile
 import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -54,6 +53,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Sequence
     from types import TracebackType
 
+    import meshio
     from numpy.typing import NDArray
 
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
@@ -1345,13 +1345,63 @@ class Mesh:
 
     _NATIVE_EXTENSIONS = frozenset({".mesh", ".meshb", ".sol", ".solb"})
 
+    def _to_meshio(self) -> meshio.Mesh:
+        """Convert to a meshio Mesh object (in-memory, no temp files).
+
+        Returns
+        -------
+        meshio.Mesh
+            Mesh with geometry, reference markers, and user fields.
+
+        """
+        import meshio  # noqa: PLC0415
+
+        vertices = self._impl.get_vertices()
+
+        cells: list[meshio.CellBlock] = []
+        cell_refs: list[np.ndarray] = []
+
+        if self._kind == MeshKind.TETRAHEDRAL:
+            tets, refs = cast("MmgMesh3D", self._impl).get_tetrahedra_with_refs()
+            if len(tets) > 0:
+                cells.append(meshio.CellBlock("tetra", tets))
+                cell_refs.append(refs)
+            tris, refs = self._impl.get_triangles_with_refs()
+            if len(tris) > 0:
+                cells.append(meshio.CellBlock("triangle", tris))
+                cell_refs.append(refs)
+        else:
+            tris, refs = self._impl.get_triangles_with_refs()
+            if len(tris) > 0:
+                cells.append(meshio.CellBlock("triangle", tris))
+                cell_refs.append(refs)
+
+        edges, refs = self._impl.get_edges_with_refs()
+        if len(edges) > 0:
+            cells.append(meshio.CellBlock("line", edges))
+            cell_refs.append(refs)
+
+        # Reference markers as cell data
+        cell_data: dict[str, list[Any]] = {}
+        if cell_refs:
+            cell_data["medit:ref"] = cell_refs
+
+        # User fields as point data
+        point_data: dict[str, Any] = dict(self._user_fields)
+
+        return meshio.Mesh(
+            points=vertices,
+            cells=[(c.type, c.data) for c in cells],
+            point_data=point_data or None,
+            cell_data=cell_data or None,
+        )
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
         Medit formats (.mesh, .meshb) are written directly by the MMG C
         library.  All other formats (.vtk, .vtu, .vtp, .stl, .obj, ...)
-        are converted through meshio so that no VTK C++ dependency is
-        required at the native level.
+        are converted in-memory through meshio.
 
         Parameters
         ----------
@@ -1359,17 +1409,13 @@ class Mesh:
             Output file path. Format determined by extension.
 
         """
-        import meshio  # noqa: PLC0415
-
         path = Path(filename)
         if path.suffix.lower() in self._NATIVE_EXTENSIONS:
             self._impl.save(str(path))
         else:
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                tmp_path = Path(tmp_dir) / (path.stem + ".mesh")
-                self._impl.save(str(tmp_path))
-                meshio_mesh = meshio.read(tmp_path)
-                meshio.write(path, meshio_mesh)
+            import meshio  # noqa: PLC0415
+
+            meshio.write(path, self._to_meshio())
 
     # =========================================================================
     # Remeshing operations
