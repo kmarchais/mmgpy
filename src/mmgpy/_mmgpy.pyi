@@ -859,6 +859,21 @@ class MmgMesh3D:
 
         """
 
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Output path for the .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be saved.
+
+        """
+
     def remesh(
         self,
         *,
@@ -1526,6 +1541,21 @@ class MmgMesh2D:
 
         """
 
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Output path for the .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be saved.
+
+        """
+
     def remesh(
         self,
         *,
@@ -2112,6 +2142,21 @@ class MmgMeshS:
         ------
         RuntimeError
             If the file cannot be loaded.
+
+        """
+
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Output path for the .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be saved.
 
         """
 

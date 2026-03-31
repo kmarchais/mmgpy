@@ -30,9 +30,11 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import meshio
 import numpy as np
 import pyvista as pv
+
+if TYPE_CHECKING:
+    import meshio
 
 from mmgpy._mesh import _DIMS_2D, _DIMS_3D, MeshKind, _is_2d_points
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
@@ -498,18 +500,19 @@ def read(
         # Use native MMG loading for Medit format to preserve MMG-specific
         # keywords (Ridges, RequiredVertices, Tangents, reference markers)
         suffix = path.suffix.lower()
-        if suffix == ".mesh":
+        if suffix in (".mesh", ".meshb"):
             impl = _load_medit_native(path, mesh_kind)
             kind = _impl_to_kind(impl)
             return Mesh._from_impl(impl, kind)  # noqa: SLF001
 
-        # Use meshio for other formats
-        meshio_mesh = meshio.read(path)
-        impl = _convert_meshio(meshio_mesh, mesh_kind)
+        # Use PyVista for other formats
+        pv_mesh: pv.UnstructuredGrid | pv.PolyData = pv.read(path)  # type: ignore[assignment]
+        mesh_class = _mesh_kind_to_class(mesh_kind) if mesh_kind else None
+        impl = from_pyvista(pv_mesh, mesh_class)
         kind = _impl_to_kind(impl)
         point_data = {
-            k: v
-            for k, v in (meshio_mesh.point_data or {}).items()
+            k: np.asarray(pv_mesh.point_data[k])
+            for k in pv_mesh.point_data
             if k not in _mmg_fields
         }
         lazy = _LazyFieldSource(point_data) if point_data else None

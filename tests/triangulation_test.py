@@ -210,7 +210,7 @@ class TestFileTriangulation:
         no_surface_cells_mesh_file: Path,
     ) -> None:
         """Test that mesh with no surface cells raises ValueError."""
-        with pytest.raises(ValueError, match="Cannot determine mesh kind"):
+        with pytest.raises(ValueError, match=r"no faces|Cannot determine"):
             mmgpy.read(no_surface_cells_mesh_file)
 
     def test_meshio_to_pyvista_no_surface_cells(self) -> None:

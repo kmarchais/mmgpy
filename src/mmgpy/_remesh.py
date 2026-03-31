@@ -2,13 +2,12 @@
 
 The C++ remesh functions only support native MMG formats (.mesh, .meshb).
 These wrappers transparently convert non-native formats (e.g. .vtk, .vtu)
-by reading via ``mmgpy.read()`` (meshio), remeshing in-memory, and saving
-via ``Mesh.save()`` (meshio).  No temporary files are created.
+by reading via ``mmgpy.read()``, remeshing in-memory, and saving
+via ``Mesh.save()`` (PyVista).  No temporary files are created.
 """
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -17,8 +16,6 @@ from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
 from mmgpy._mmgpy import mmg3d as _mmg3d_cpp
 from mmgpy._mmgpy import mmgs as _mmgs_cpp
 
-logger = logging.getLogger(__name__)
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -26,18 +23,13 @@ if TYPE_CHECKING:
 
 FieldTransferParam = bool | Sequence[str] | None
 
-_NATIVE_MESH_EXTENSIONS = frozenset({".mesh", ".meshb"})
-
-# Medit .sol type codes
-_SOL_TYPE_SCALAR = 1
-_SOL_TYPE_VECTOR = 2
-_SOL_TYPE_TENSOR = 3
+NATIVE_MESH_EXTENSIONS = frozenset({".mesh", ".meshb"})
 
 
 def _is_native(path: str | Path | None) -> bool:
     if path is None:
         return True
-    return Path(path).suffix.lower() in _NATIVE_MESH_EXTENSIONS
+    return Path(path).suffix.lower() in NATIVE_MESH_EXTENSIONS
 
 
 def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
@@ -50,49 +42,8 @@ def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
 
 
 def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
-    """Write the metric field to a Medit .sol file."""
-    from mmgpy._mesh import MeshKind  # noqa: PLC0415
-
-    try:
-        data = mesh["metric"]
-    except KeyError:
-        logger.warning(
-            "No metric field found; output sol file '%s' not written.",
-            sol_path,
-        )
-        return
-
-    n_vertices = len(mesh.get_vertices())
-    dimension = 2 if mesh.kind == MeshKind.TRIANGULAR_2D else 3
-
-    if data.ndim == 1 or (data.ndim == 2 and data.shape[1] == 1):  # noqa: PLR2004
-        sol_type = _SOL_TYPE_SCALAR
-        rows = data.reshape(-1, 1)
-    elif data.ndim == 2 and data.shape[1] == dimension:  # noqa: PLR2004
-        sol_type = _SOL_TYPE_VECTOR
-        rows = data
-    elif data.ndim == 2 and data.shape[1] in (3, 6):  # noqa: PLR2004
-        sol_type = _SOL_TYPE_TENSOR
-        rows = data
-    else:
-        sol_type = _SOL_TYPE_SCALAR
-        rows = data.reshape(-1, 1)
-
-    lines = [
-        "MeshVersionFormatted 2",
-        "",
-        f"Dimension {dimension}",
-        "",
-        "SolAtVertices",
-        str(n_vertices),
-        f"1 {sol_type}",
-        "",
-    ]
-    lines.extend(" ".join(f"{v:.15g}" for v in row) for row in rows)
-    lines.append("")
-    lines.append("End")
-
-    Path(sol_path).write_text("\n".join(lines))
+    """Save the metric/solution field to a Medit .sol file via the MMG C library."""
+    mesh._impl.save_sol(str(sol_path))  # noqa: SLF001
 
 
 def _wrapped_remesh(
@@ -117,8 +68,8 @@ def _wrapped_remesh(
         )
 
     # Non-native format detected — use the in-memory remesh path.
-    # mmgpy.read() handles any format via meshio, Mesh.remesh() works
-    # in-memory, and Mesh.save() converts back via meshio.
+    # mmgpy.read() handles any format via meshio/PyVista, Mesh.remesh()
+    # works in-memory, and Mesh.save() converts back via PyVista.
     from mmgpy._io import read as _read  # noqa: PLC0415
 
     mesh = _read(input_mesh)
@@ -126,7 +77,11 @@ def _wrapped_remesh(
     if input_sol is not None:
         _load_sol(mesh, input_sol)
 
-    mesh.remesh(progress=False, transfer_fields=transfer_fields, **(options or {}))
+    result = mesh.remesh(
+        progress=False,
+        transfer_fields=transfer_fields,
+        **(options or {}),
+    )
 
     if output_mesh is not None:
         mesh.save(output_mesh)
@@ -134,7 +89,7 @@ def _wrapped_remesh(
     if output_sol is not None:
         _save_sol(mesh, output_sol)
 
-    return True
+    return result.success
 
 
 class mmg3d:

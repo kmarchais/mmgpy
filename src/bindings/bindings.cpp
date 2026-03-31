@@ -135,6 +135,10 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](MmgMesh &self, const py::object &path) {
              self.load_sol(path_to_variant(path));
            })
+      .def("save_sol",
+           [](const MmgMesh &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
+           })
       .def_property_readonly("is_corrupted", &MmgMesh::is_corrupted)
       .def(
           "remesh",
@@ -254,6 +258,10 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](MmgMesh2D &self, const py::object &path) {
              self.load_sol(path_to_variant(path));
            })
+      .def("save_sol",
+           [](const MmgMesh2D &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
+           })
       .def_property_readonly("is_corrupted", &MmgMesh2D::is_corrupted)
       .def(
           "remesh",
@@ -362,6 +370,10 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("load_sol",
            [](MmgMeshS &self, const py::object &path) {
              self.load_sol(path_to_variant(path));
+           })
+      .def("save_sol",
+           [](const MmgMeshS &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
            })
       .def_property_readonly("is_corrupted", &MmgMeshS::is_corrupted)
       .def(

@@ -53,7 +53,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Sequence
     from types import TracebackType
 
-    import meshio
     from numpy.typing import NDArray
 
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
@@ -1431,68 +1430,12 @@ class Mesh:
     # File I/O
     # =========================================================================
 
-    _NATIVE_EXTENSIONS = frozenset({".mesh", ".meshb"})
-
-    def _to_meshio(self) -> meshio.Mesh:
-        """Convert to a meshio Mesh object (in-memory, no temp files).
-
-        Returns
-        -------
-        meshio.Mesh
-            Mesh with geometry, reference markers, and user fields.
-
-        """
-        import meshio  # noqa: PLC0415
-
-        vertices = self._impl.get_vertices()
-
-        cells: list[tuple[str, Any] | meshio.CellBlock] = []
-        cell_refs: list[np.ndarray] = []
-
-        if self._kind == MeshKind.TETRAHEDRAL:
-            tets, refs = cast("MmgMesh3D", self._impl).get_tetrahedra_with_refs()
-            if len(tets) > 0:
-                cells.append(("tetra", tets))
-                cell_refs.append(refs)
-
-        tris, refs = self._impl.get_triangles_with_refs()
-        if len(tris) > 0:
-            cells.append(("triangle", tris))
-            cell_refs.append(refs)
-
-        if self._kind == MeshKind.TRIANGULAR_2D:
-            quads, refs = cast("MmgMesh2D", self._impl).get_quadrilaterals_with_refs()
-            if len(quads) > 0:
-                cells.append(("quad", quads))
-                cell_refs.append(refs)
-
-        edges, refs = self._impl.get_edges_with_refs()
-        if len(edges) > 0:
-            cells.append(("line", edges))
-            cell_refs.append(refs)
-
-        # Reference markers as cell data
-        cell_data: dict[str, list[Any]] = {}
-        if cell_refs:
-            cell_data["medit:ref"] = cell_refs
-
-        # User fields as point data
-        self._materialize_all_lazy_fields()
-        point_data: dict[str, Any] = dict(self._user_fields)
-
-        return meshio.Mesh(
-            points=vertices,
-            cells=cells,
-            point_data=point_data or None,
-            cell_data=cell_data or None,
-        )
-
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
         Medit formats (.mesh, .meshb) are written directly by the MMG C
         library.  All other formats (.vtk, .vtu, .vtp, .stl, .obj, ...)
-        are converted in-memory through meshio.
+        are converted via PyVista.
 
         Parameters
         ----------
@@ -1500,13 +1443,24 @@ class Mesh:
             Output file path. Format determined by extension.
 
         """
+        from mmgpy._remesh import NATIVE_MESH_EXTENSIONS  # noqa: PLC0415
+
         path = Path(filename)
-        if path.suffix.lower() in self._NATIVE_EXTENSIONS:
+        if path.suffix.lower() in NATIVE_MESH_EXTENSIONS:
             self._impl.save(str(path))
         else:
-            import meshio  # noqa: PLC0415
-
-            meshio.write(path, self._to_meshio())
+            pv_mesh = self.to_pyvista()
+            # Attach user fields as point data
+            self._materialize_all_lazy_fields()
+            for name, arr in self._user_fields.items():
+                pv_mesh.point_data[name] = arr
+            # Cast PolyData → UnstructuredGrid for formats that require it
+            if isinstance(pv_mesh, pv.PolyData) and path.suffix.lower() in (
+                ".vtu",
+                ".vtkhdf",
+            ):
+                pv_mesh = pv_mesh.cast_to_unstructured_grid()
+            pv_mesh.save(str(path))
 
     def load_sol(self, filename: str | Path) -> None:
         """Load a Medit solution file (.sol/.solb) and set the field on the mesh.
@@ -1523,6 +1477,22 @@ class Mesh:
         from mmgpy._remesh import _load_sol  # noqa: PLC0415
 
         _load_sol(self, filename)
+
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a Medit .sol file.
+
+        Both text (.sol) and binary (.solb) formats are supported via the
+        MMG C library.
+
+        Parameters
+        ----------
+        filename : str or Path
+            Output path for the .sol or .solb file.
+
+        """
+        from mmgpy._remesh import _save_sol  # noqa: PLC0415
+
+        _save_sol(self, filename)
 
     # =========================================================================
     # Remeshing operations

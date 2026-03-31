@@ -88,6 +88,8 @@ public:
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
   void
   load_sol(const std::variant<std::string, std::filesystem::path> &filename);
+  void save_sol(
+      const std::variant<std::string, std::filesystem::path> &filename) const;
 
   // In-memory remeshing
   py::dict remesh(const py::dict &options = py::dict());

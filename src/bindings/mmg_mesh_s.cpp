@@ -139,16 +139,7 @@ MmgMeshS::MmgMeshS(
     throw std::runtime_error("Failed to initialize MMGS mesh");
   }
 
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
   int ret = MMGS_loadMesh(mesh, fname.c_str());
 
@@ -812,20 +803,9 @@ void MmgMeshS::check_not_corrupted(const char *operation) const {
 void MmgMeshS::save(
     const std::variant<std::string, std::filesystem::path> &filename) const {
   check_not_corrupted("save");
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
-  int ret = MMGS_saveMesh(mesh, fname.c_str());
-
-  if (!ret) {
+  if (!MMGS_saveMesh(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to save mesh to file: " + fname);
   }
 }
@@ -833,19 +813,20 @@ void MmgMeshS::save(
 void MmgMeshS::load_sol(
     const std::variant<std::string, std::filesystem::path> &filename) {
   check_not_corrupted("load_sol");
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
   if (MMGS_loadSol(mesh, met, fname.c_str()) != 1) {
     throw std::runtime_error("Failed to load solution file: " + fname);
+  }
+}
+
+void MmgMeshS::save_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) const {
+  check_not_corrupted("save_sol");
+  std::string fname = variant_to_string(filename);
+
+  if (MMGS_saveSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to save solution file: " + fname);
   }
 }
 

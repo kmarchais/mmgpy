@@ -178,15 +178,13 @@ def _from_pyvista_with_explicit_type(
         return _from_pyvista_to_mmg3d(mesh)
 
     if mesh_type is MmgMesh2D:
-        if not isinstance(mesh, pv.PolyData):
-            msg = "MmgMesh2D requires PolyData input"
-            raise ValueError(msg)
+        if isinstance(mesh, pv.UnstructuredGrid):
+            mesh = mesh.extract_surface(algorithm=None)
         return _from_pyvista_to_mmg2d(mesh)
 
     if mesh_type is MmgMeshS:
-        if not isinstance(mesh, pv.PolyData):
-            msg = "MmgMeshS requires PolyData input"
-            raise ValueError(msg)
+        if isinstance(mesh, pv.UnstructuredGrid):
+            mesh = mesh.extract_surface(algorithm=None)
         return _from_pyvista_to_mmgs(mesh)
 
     msg = f"Unknown mesh type: {mesh_type}"
@@ -200,7 +198,13 @@ def _from_pyvista_auto_detect(
     if isinstance(mesh, pv.UnstructuredGrid):
         if pv.CellType.TETRA in mesh.cells_dict:
             return _from_pyvista_to_mmg3d(mesh)
-        msg = "UnstructuredGrid must contain tetrahedra for auto-detection"
+        # UnstructuredGrid with surface cells (triangles, quads, etc.)
+        polydata = mesh.extract_surface(algorithm=None)
+        if polydata.n_cells > 0:
+            if _is_2d_mesh(polydata.points):
+                return _from_pyvista_to_mmg2d(polydata)
+            return _from_pyvista_to_mmgs(polydata)
+        msg = "UnstructuredGrid must contain tetrahedra or triangles for auto-detection"
         raise ValueError(msg)
 
     if isinstance(mesh, pv.PolyData):
