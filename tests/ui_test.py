@@ -278,6 +278,32 @@ End
         # Single value should still work
         assert fields["solution@vertices"]["data"].shape == (1,)
 
+    def test_parse_dimension_at_eof(self):
+        """Test parsing 'Dimension' keyword at end of file with no value."""
+        content = "Dimension"
+        fields = parse_sol_file(content)
+        assert fields == {}
+
+    def test_parse_multi_solution_tensor_and_scalar(self):
+        """Test parsing multiple solution types (tensor + scalar) in one section."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+2
+2 3 1
+1.0 2.0 3.0 4.0 5.0 6.0 0.5
+7.0 8.0 9.0 10.0 11.0 12.0 0.3
+End
+"""
+        fields = parse_sol_file(content)
+        assert "tensor_0@vertices" in fields
+        assert fields["tensor_0@vertices"]["data"].shape == (2, 6)
+        assert "solution_1@vertices" in fields
+        np.testing.assert_array_almost_equal(
+            fields["solution_1@vertices"]["data"],
+            np.array([0.5, 0.3]),
+        )
+
 
 class TestSafeFormulaEvaluator:
     """Tests for SafeFormulaEvaluator class."""

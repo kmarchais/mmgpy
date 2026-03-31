@@ -709,6 +709,49 @@ class TestLazyFieldLoading:
             back = pv.read(out_path)
             assert "temperature" in back.point_data
 
+    def test_save_surface_mesh_to_vtu(self) -> None:
+        """PolyData meshes are cast to UnstructuredGrid for .vtu save."""
+        input_mesh = Path(__file__).parent.parent / "assets" / "rodin.mesh"
+        mesh = read(input_mesh)
+
+        with TemporaryDirectory() as tmpdir:
+            vtu_path = Path(tmpdir) / "surface.vtu"
+            mesh.save(vtu_path)
+            assert vtu_path.exists()
+            assert vtu_path.stat().st_size > 0
+
+    def test_non_native_remesh_with_output_sol(self) -> None:
+        """Non-native path writes output .sol via C++ save_sol."""
+        from mmgpy import mmg3d
+
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            out_path = Path(tmpdir) / "output.vtu"
+            sol_path = Path(tmpdir) / "cube.sol"
+
+            mmg3d.remesh(
+                input_mesh=vtk_path,
+                output_mesh=out_path,
+                output_sol=sol_path,
+                options={"verbose": -1},
+            )
+
+            assert sol_path.exists()
+            assert sol_path.stat().st_size > 0
+
+    def test_non_native_remesh_no_output_file(self) -> None:
+        """Non-native path works in-memory without writing output files."""
+        from mmgpy import mmg3d
+
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+
+            result = mmg3d.remesh(
+                input_mesh=vtk_path,
+                options={"verbose": -1},
+            )
+            assert result is True
+
 
 # Sizing methods tests
 
