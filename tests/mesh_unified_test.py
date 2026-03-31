@@ -419,13 +419,34 @@ class TestMeshMethods:
 
             assert filepath.exists()
 
-    def test_save_non_native_format(
+    def test_save_non_native_format(self) -> None:
+        """Test save to non-native format via meshio (3D mesh)."""
+        import mmgpy
+
+        # Use a cube mesh that has tets, boundary triangles, and edges
+        mesh = mmgpy.read(Path(__file__).parent.parent / "assets" / "cube.mesh")
+        mesh.set_user_field("temperature", np.ones(len(mesh.get_vertices())))
+
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "output.vtu"
+            mesh.save(filepath)
+
+            assert filepath.exists()
+            assert filepath.stat().st_size > 0
+
+            # Verify round-trip preserves fields
+            import meshio
+
+            back = meshio.read(filepath)
+            assert "temperature" in back.point_data
+
+    def test_save_non_native_surface(
         self,
-        tetra_vertices: np.ndarray,
-        tetra_cells: np.ndarray,
+        triangle_3d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
     ) -> None:
-        """Test save to non-native format via meshio."""
-        mesh = Mesh(tetra_vertices, tetra_cells)
+        """Test save to non-native format via meshio (surface mesh)."""
+        mesh = Mesh(triangle_3d_vertices, triangle_cells)
 
         with TemporaryDirectory() as tmpdir:
             filepath = Path(tmpdir) / "output.vtk"
