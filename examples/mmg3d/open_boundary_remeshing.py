@@ -16,27 +16,19 @@ from pathlib import Path
 import pyvista as pv
 
 import mmgpy
-from mmgpy import mmg3d
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "island.mesh"
-OUTPUT_FILE = Path(__file__).parent / "output.mesh"
-
 
 pl = pv.Plotter(shape=(1, 2), window_size=(800, 400))
 for open_boundary in [False, True]:
     pl.subplot(0, int(open_boundary))
-    mmg3d.remesh(
-        input_mesh=INPUT_FILE,
-        output_mesh=OUTPUT_FILE,
-        options={
-            "opnbdy": open_boundary,
-            "verbose": -1,
-        },
-    )
 
-    mesh = mmgpy.read(OUTPUT_FILE).to_pyvista()
+    mesh = mmgpy.read(INPUT_FILE)
+    mesh.remesh(opnbdy=open_boundary, verbose=-1)
+
+    pv_mesh = mesh.to_pyvista()
     pl.add_mesh(
-        mesh.extract_cells(mesh.cell_centers().points[:, :] < 0),
+        pv_mesh.extract_cells(pv_mesh.cell_centers().points[:, :] < 0),
         show_edges=True,
     )
     pl.add_text(f"Open boundary: {open_boundary}")

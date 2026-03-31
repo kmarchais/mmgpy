@@ -15,27 +15,19 @@ from pathlib import Path
 import pyvista as pv
 
 import mmgpy
-from mmgpy import mmg3d
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "cube.mesh"
-OUTPUT_FILE = Path(__file__).parent / "output.mesh"
 
-mmg3d.remesh(
-    input_mesh=INPUT_FILE,
-    output_mesh=OUTPUT_FILE,
-    options={
-        "optim": 1,
-        "verbose": -1,
-    },
-)
+mesh = mmgpy.read(INPUT_FILE)
+mesh.remesh(optim=1, verbose=-1)
 
-mesh = mmgpy.read(OUTPUT_FILE).to_pyvista()
+pv_mesh = mesh.to_pyvista()
 
 center = (0.5, 0.5, 0.5)
 
 pl = pv.Plotter()
 pl.add_mesh(
-    mesh.extract_cells(mesh.cell_centers().points[:, 0] < center[0]),
+    pv_mesh.extract_cells(pv_mesh.cell_centers().points[:, 0] < center[0]),
     show_edges=True,
 )
 pl.add_mesh(pv.Cube(center), opacity=0.2)
