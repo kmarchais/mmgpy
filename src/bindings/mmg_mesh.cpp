@@ -887,8 +887,7 @@ void MmgMesh::set_required_vertices(const py::array_t<int> &vertex_indices) {
   }
 }
 
-void MmgMesh::set_required_triangles(
-    const py::array_t<int> &triangle_indices) {
+void MmgMesh::set_required_triangles(const py::array_t<int> &triangle_indices) {
   ensure_c_contiguous(triangle_indices, "Triangle indices");
   py::buffer_info buf = triangle_indices.request();
 
