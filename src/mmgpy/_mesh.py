@@ -690,7 +690,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_tetrahedra() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_tetrahedra()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_tetrahedra()
 
     def get_tetrahedra_with_refs(
         self,
@@ -715,7 +715,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_tetrahedra_with_refs() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_tetrahedra_with_refs()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_tetrahedra_with_refs()
 
     def get_elements(self) -> NDArray[np.int32]:
         """Get primary element connectivity (alias for get_tetrahedra).
@@ -736,7 +736,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_elements() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_elements()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_elements()
 
     def get_elements_with_refs(self) -> tuple[NDArray[np.int32], NDArray[np.int64]]:
         """Get primary element connectivity and reference markers.
@@ -759,7 +759,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_elements_with_refs() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_elements_with_refs()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_elements_with_refs()
 
     # =========================================================================
     # Field operations (solution data)
@@ -1525,7 +1525,7 @@ class Mesh:
                     f"got {type(options).__name__}"
                 )
                 raise TypeError(msg)
-            kwargs = options.to_dict()
+            kwargs.update(options.to_dict())
 
         # Apply sizing constraints before remeshing
         if self._sizing_constraints:
@@ -1557,7 +1557,7 @@ class Mesh:
                 raise CancellationError.for_phase("remesh")  # noqa: EM101
 
             # Call raw C++ method and convert result
-            stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
+            stats = self._impl.remesh(**kwargs)
             final_vertices = len(self._impl.get_vertices())
 
             # Transfer fields to new mesh if captured, otherwise clear stale fields
@@ -1799,10 +1799,10 @@ class Mesh:
             Statistics from the remeshing operation.
 
         """
-        opts: dict[str, int | float] = {"optim": 1, "noinsert": 1}
+        opts: dict[str, Any] = {"optim": 1, "noinsert": 1}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(progress=progress, **opts)  # type: ignore[arg-type]
+        return self.remesh(progress=progress, **opts)
 
     def remesh_uniform(
         self,
@@ -1831,10 +1831,10 @@ class Mesh:
             Statistics from the remeshing operation.
 
         """
-        opts: dict[str, int | float] = {"hsiz": size}
+        opts: dict[str, Any] = {"hsiz": size}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(progress=progress, **opts)  # type: ignore[arg-type]
+        return self.remesh(progress=progress, **opts)
 
     # =========================================================================
     # Local sizing constraints
