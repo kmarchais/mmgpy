@@ -1005,6 +1005,80 @@ py::array_t<double> MmgMesh::get_element_qualities() const {
   return result;
 }
 
+// Advanced topology queries
+
+py::tuple MmgMesh::get_tet_from_tria(MMG5_int tri_idx) const {
+  MMG5_int mmg_idx = tri_idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nt) {
+    throw std::runtime_error("Triangle index out of range: " +
+                             std::to_string(tri_idx));
+  }
+
+  MMG5_int ktet = 0;
+  int iface = 0;
+  if (!MMG3D_Get_tetFromTria(mesh, mmg_idx, &ktet, &iface)) {
+    throw std::runtime_error("Failed to get tetrahedron from triangle " +
+                             std::to_string(tri_idx));
+  }
+
+  int tet_py = ktet > 0 ? static_cast<int>(ktet - 1) : -1;
+  return py::make_tuple(tet_py, iface);
+}
+
+py::tuple MmgMesh::get_tets_from_tria(MMG5_int tri_idx) const {
+  MMG5_int mmg_idx = tri_idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->nt) {
+    throw std::runtime_error("Triangle index out of range: " +
+                             std::to_string(tri_idx));
+  }
+
+  MMG5_int ktet[2] = {0, 0};
+  int iface[2] = {0, 0};
+  if (!MMG3D_Get_tetsFromTria(mesh, mmg_idx, ktet, iface)) {
+    throw std::runtime_error("Failed to get tetrahedra from triangle " +
+                             std::to_string(tri_idx));
+  }
+
+  int tet0 = ktet[0] > 0 ? static_cast<int>(ktet[0] - 1) : -1;
+  int tet1 = ktet[1] > 0 ? static_cast<int>(ktet[1] - 1) : -1;
+  return py::make_tuple(py::make_tuple(tet0, iface[0]),
+                        py::make_tuple(tet1, iface[1]));
+}
+
+py::tuple MmgMesh::get_non_boundary_triangles() const {
+  MMG5_int nb_tria = 0;
+  if (!MMG3D_Get_numberOfNonBdyTriangles(mesh, &nb_tria)) {
+    throw std::runtime_error("Failed to get number of non-boundary triangles");
+  }
+
+  py::array_t<int> vertices(
+      {static_cast<py::ssize_t>(nb_tria), py::ssize_t{3}});
+  py::array_t<int> refs(static_cast<py::ssize_t>(nb_tria));
+  auto v_buf = vertices.request();
+  auto r_buf = refs.request();
+  int *v_ptr = static_cast<int *>(v_buf.ptr);
+  int *r_ptr = static_cast<int *>(r_buf.ptr);
+
+  for (MMG5_int i = 0; i < nb_tria; i++) {
+    MMG5_int v0 = 0;
+    MMG5_int v1 = 0;
+    MMG5_int v2 = 0;
+    MMG5_int ref = 0;
+    if (!MMG3D_Get_nonBdyTriangle(mesh, &v0, &v1, &v2, &ref, i + 1)) {
+      throw std::runtime_error("Failed to get non-boundary triangle " +
+                               std::to_string(i));
+    }
+    v_ptr[i * 3] = static_cast<int>(v0 - 1);
+    v_ptr[i * 3 + 1] = static_cast<int>(v1 - 1);
+    v_ptr[i * 3 + 2] = static_cast<int>(v2 - 1);
+    r_ptr[i] = static_cast<int>(ref);
+  }
+
+  return py::make_tuple(vertices, refs);
+}
+
 // Phase 3: Advanced element types (prisms and quadrilaterals)
 
 void MmgMesh::set_prism(int v0, int v1, int v2, int v3, int v4, int v5,

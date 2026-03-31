@@ -123,6 +123,15 @@ PYBIND11_MODULE(_mmgpy, m) {
            "Get quality metric for tetrahedron idx (0-1, higher is better).")
       .def("get_element_qualities", &MmgMesh::get_element_qualities,
            "Get quality metrics for all tetrahedra.")
+      // Advanced topology queries
+      .def("get_tet_from_tria", &MmgMesh::get_tet_from_tria, py::arg("tri_idx"),
+           "Get tetrahedron adjacent to triangle. Returns (tet_idx, face_idx).")
+      .def("get_tets_from_tria", &MmgMesh::get_tets_from_tria,
+           py::arg("tri_idx"),
+           "Get both tetrahedra adjacent to triangle. Returns "
+           "((tet0, face0), (tet1, face1)). -1 if no neighbor.")
+      .def("get_non_boundary_triangles", &MmgMesh::get_non_boundary_triangles,
+           "Get all non-boundary triangles. Returns (Nx3 vertices, N refs).")
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)
@@ -244,6 +253,16 @@ PYBIND11_MODULE(_mmgpy, m) {
            "Get quality metric for triangle idx (0-1, higher is better).")
       .def("get_element_qualities", &MmgMesh2D::get_element_qualities,
            "Get quality metrics for all triangles.")
+      // Advanced topology queries
+      .def("get_tri_from_edge", &MmgMesh2D::get_tri_from_edge,
+           py::arg("edge_idx"),
+           "Get triangle adjacent to edge. Returns (tri_idx, local_edge_idx).")
+      .def("get_tris_from_edge", &MmgMesh2D::get_tris_from_edge,
+           py::arg("edge_idx"),
+           "Get both triangles adjacent to edge. Returns "
+           "((tri0, edge0), (tri1, edge1)). -1 if no neighbor.")
+      .def("get_non_boundary_edges", &MmgMesh2D::get_non_boundary_edges,
+           "Get all non-boundary edges. Returns (Nx2 vertices, N refs).")
       // Solution fields
       .def("set_field", &MmgMesh2D::set_field)
       .def("get_field", &MmgMesh2D::get_field)
@@ -357,6 +376,9 @@ PYBIND11_MODULE(_mmgpy, m) {
            "Get quality metric for triangle idx (0-1, higher is better).")
       .def("get_element_qualities", &MmgMeshS::get_element_qualities,
            "Get quality metrics for all triangles.")
+      // Advanced topology queries
+      .def("get_non_boundary_edges", &MmgMeshS::get_non_boundary_edges,
+           "Get all non-boundary edges. Returns (Nx2 vertices, N refs).")
       // Solution fields
       .def("set_field", &MmgMeshS::set_field)
       .def("get_field", &MmgMeshS::get_field)

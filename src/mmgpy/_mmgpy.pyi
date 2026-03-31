@@ -607,6 +607,51 @@ class MmgMesh3D:
 
         """
 
+    def get_tet_from_tria(self, tri_idx: int) -> tuple[int, int]:
+        """Get tetrahedron adjacent to a boundary triangle.
+
+        Parameters
+        ----------
+        tri_idx : int
+            Triangle index (0-based).
+
+        Returns
+        -------
+        tuple[int, int]
+            (tet_idx, face_idx). tet_idx is -1 if no adjacent tetrahedron.
+
+        """
+
+    def get_tets_from_tria(
+        self,
+        tri_idx: int,
+    ) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Get both tetrahedra adjacent to a boundary triangle.
+
+        Parameters
+        ----------
+        tri_idx : int
+            Triangle index (0-based).
+
+        Returns
+        -------
+        tuple[tuple[int, int], tuple[int, int]]
+            ((tet0, face0), (tet1, face1)). -1 if no neighbor.
+
+        """
+
+    def get_non_boundary_triangles(
+        self,
+    ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
+        """Get all non-boundary (internal) triangles.
+
+        Returns
+        -------
+        tuple[NDArray[np.int32], NDArray[np.int32]]
+            (Nx3 vertex indices, N reference values).
+
+        """
+
     def set_prism(
         self,
         v0: int,
@@ -1474,6 +1519,51 @@ class MmgMesh2D:
 
         """
 
+    def get_tri_from_edge(self, edge_idx: int) -> tuple[int, int]:
+        """Get triangle adjacent to an edge.
+
+        Parameters
+        ----------
+        edge_idx : int
+            Edge index (0-based).
+
+        Returns
+        -------
+        tuple[int, int]
+            (tri_idx, local_edge_idx). tri_idx is -1 if no adjacent triangle.
+
+        """
+
+    def get_tris_from_edge(
+        self,
+        edge_idx: int,
+    ) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Get both triangles adjacent to an edge.
+
+        Parameters
+        ----------
+        edge_idx : int
+            Edge index (0-based).
+
+        Returns
+        -------
+        tuple[tuple[int, int], tuple[int, int]]
+            ((tri0, edge0), (tri1, edge1)). -1 if no neighbor.
+
+        """
+
+    def get_non_boundary_edges(
+        self,
+    ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
+        """Get all non-boundary (internal) edges.
+
+        Returns
+        -------
+        tuple[NDArray[np.int32], NDArray[np.int32]]
+            (Nx2 vertex indices, N reference values).
+
+        """
+
     def set_field(self, key: str, value: NDArray[np.float64]) -> None:
         """Set a solution field on vertices.
 
@@ -2075,6 +2165,18 @@ class MmgMeshS:
         -------
         NDArray[np.float64]
             Quality metrics for all elements.
+
+        """
+
+    def get_non_boundary_edges(
+        self,
+    ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
+        """Get all non-boundary (internal) edges.
+
+        Returns
+        -------
+        tuple[NDArray[np.int32], NDArray[np.int32]]
+            (Nx2 vertex indices, N reference values).
 
         """
 

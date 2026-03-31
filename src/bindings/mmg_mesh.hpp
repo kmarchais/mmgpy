@@ -79,6 +79,11 @@ public:
   double get_element_quality(MMG5_int idx) const;
   py::array_t<double> get_element_qualities() const;
 
+  // Advanced topology queries
+  py::tuple get_tet_from_tria(MMG5_int tri_idx) const;
+  py::tuple get_tets_from_tria(MMG5_int tri_idx) const;
+  py::tuple get_non_boundary_triangles() const;
+
   // Phase 3: Advanced element types (prisms and quadrilaterals)
   void set_prism(int v0, int v1, int v2, int v3, int v4, int v5, MMG5_int ref,
                  MMG5_int idx);
