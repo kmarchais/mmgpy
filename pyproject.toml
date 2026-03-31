@@ -142,6 +142,10 @@ ignore = [
 "docs/conftest.py" = [
     "INP001",  # docs/ is not a package, conftest.py doesn't need __init__.py
 ]
+"src/mmgpy/_remesh.py" = [
+    "N801",    # class names match C++ API (mmg2d, mmg3d, mmgs)
+    "PLR0913", # _wrapped_remesh mirrors C++ function signatures
+]
 "tests/**/*.py" = [
     "S101",    # asserts allowed in tests
     "T201",    # print statements allowed in tests for debugging

@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from mmgpy._mesh import MeshKind
 
 os.environ["PYVISTA_OFF_SCREEN"] = "true"
+pv.OFF_SCREEN = True
 
 # ---------------------------------------------------------------------------
 # Mesh factories — use scipy/numpy only (no VTK objects) to avoid segfaults
@@ -233,40 +234,6 @@ def _patched_pv_save(
 pv.PolyData.save = _patched_pv_save  # type: ignore[assignment]
 pv.UnstructuredGrid.save = _patched_pv_save  # type: ignore[assignment]
 
-# Patch all .plot() and pv.Plotter to no-ops — VTK rendering can segfault in
-# CI environments without proper GL libraries.
-_real_pv_polydata_plot = pv.PolyData.plot
-_real_pv_unstructured_plot = pv.UnstructuredGrid.plot
-_real_mesh_plot = Mesh.plot
-_real_pv_plotter = pv.Plotter
-
-
-def _noop_plot(self: object, *_args: object, **_kwargs: object) -> None:
-    pass
-
-
-class _FakeObj:
-    """Chainable no-op object — any attribute access or call returns itself."""
-
-    def __init__(self, *_args: object, **_kwargs: object) -> None:
-        pass
-
-    def __getattr__(self, _name: str) -> _FakeObj:
-        return self
-
-    def __call__(self, *_args: object, **_kwargs: object) -> _FakeObj:
-        return self
-
-
-class _FakePlotter(_FakeObj):
-    """No-op replacement for pv.Plotter to avoid VTK rendering init."""
-
-
-pv.PolyData.plot = _noop_plot  # type: ignore[assignment]
-pv.UnstructuredGrid.plot = _noop_plot  # type: ignore[assignment]
-Mesh.plot = _noop_plot  # type: ignore[assignment]
-pv.Plotter = _FakePlotter  # type: ignore[assignment,misc]
-
 
 # ---------------------------------------------------------------------------
 # Restore originals on pytest teardown (avoids polluting other test suites
@@ -279,10 +246,6 @@ def pytest_unconfigure() -> None:
     _io_mod.read = _real_read
     mmgpy.read = _real_read
     Mesh.save = _real_save
-    Mesh.plot = _real_mesh_plot
     pv.read = _real_pv_read  # type: ignore[assignment]
     pv.PolyData.save = _real_pv_polydata_save  # type: ignore[assignment]
     pv.UnstructuredGrid.save = _real_pv_unstructured_save  # type: ignore[assignment]
-    pv.PolyData.plot = _real_pv_polydata_plot  # type: ignore[assignment]
-    pv.UnstructuredGrid.plot = _real_pv_unstructured_plot  # type: ignore[assignment]
-    pv.Plotter = _real_pv_plotter  # type: ignore[assignment]
