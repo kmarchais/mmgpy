@@ -524,6 +524,104 @@ class TestMeshRemeshing:
             mesh.remesh_lagrangian(displacement)
 
 
+# Non-native format remesh with sol tests
+
+
+class TestNonNativeRemeshWithSol:
+    """Tests for _remesh.py sol file handling in non-native format paths."""
+
+    def test_remesh_vtk_with_input_sol(self) -> None:
+        """Test remeshing a VTK file with an input .sol file."""
+        from mmgpy import mmg2d
+
+        input_mesh = Path(__file__).parent.parent / "assets" / "hole.mesh"
+        input_sol = Path(__file__).parent.parent / "assets" / "hole.sol"
+
+        with TemporaryDirectory() as tmpdir:
+            # Convert to VTK first via meshio
+            mesh = read(input_mesh)
+            vtk_input = Path(tmpdir) / "input.vtk"
+            mesh.save(vtk_input)
+
+            vtk_output = Path(tmpdir) / "output.vtk"
+            result = mmg2d.remesh(
+                input_mesh=vtk_input,
+                input_sol=input_sol,
+                output_mesh=vtk_output,
+                options={"verbose": -1},
+            )
+
+            assert result is True
+            assert vtk_output.exists()
+            assert vtk_output.stat().st_size > 0
+
+    def test_remesh_vtk_with_output_sol(self) -> None:
+        """Test remeshing a VTK file with output .sol saving."""
+        from mmgpy import mmg3d
+
+        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+
+        with TemporaryDirectory() as tmpdir:
+            mesh = read(input_mesh)
+            vtk_input = Path(tmpdir) / "input.vtk"
+            mesh.save(vtk_input)
+
+            vtk_output = Path(tmpdir) / "output.vtk"
+            output_sol = Path(tmpdir) / "output.sol"
+
+            mmg3d.remesh(
+                input_mesh=vtk_input,
+                output_mesh=vtk_output,
+                output_sol=output_sol,
+                options={"verbose": -1},
+            )
+
+            assert vtk_output.exists()
+            assert output_sol.exists()
+
+            # Verify .sol file is valid Medit format
+            content = output_sol.read_text()
+            assert "MeshVersionFormatted" in content
+            assert "SolAtVertices" in content
+            assert "End" in content
+
+    def test_load_sol_sets_metric(self) -> None:
+        """Test that _load_sol correctly sets the metric field."""
+        from mmgpy._remesh import _load_sol
+
+        input_mesh = Path(__file__).parent.parent / "assets" / "hole.mesh"
+        input_sol = Path(__file__).parent.parent / "assets" / "hole.sol"
+
+        mesh = read(input_mesh)
+        _load_sol(mesh, input_sol)
+
+        metric = mesh["metric"]
+        assert metric is not None
+        assert len(metric) == len(mesh.get_vertices())
+
+    def test_save_sol_roundtrip(self) -> None:
+        """Test that _save_sol produces a file parseable by parse_sol_file."""
+        from mmgpy._remesh import _save_sol
+        from mmgpy.ui.parsers import parse_sol_file
+
+        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+        mesh = read(input_mesh)
+        n_verts = len(mesh.get_vertices())
+        mesh["metric"] = np.ones((n_verts, 1)) * 0.5
+
+        with TemporaryDirectory() as tmpdir:
+            sol_path = Path(tmpdir) / "test.sol"
+            _save_sol(mesh, sol_path)
+
+            content = sol_path.read_text()
+            fields = parse_sol_file(content)
+
+            assert "solution@vertices" in fields
+            data = fields["solution@vertices"]["data"]
+            assert len(data) == n_verts
+            np.testing.assert_allclose(data, 0.5)
+
+
 # Sizing methods tests
 
 

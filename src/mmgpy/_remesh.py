@@ -8,7 +8,6 @@ via ``Mesh.save()`` (meshio).  No temporary files are created.
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -19,13 +18,84 @@ from mmgpy._mmgpy import mmgs as _mmgs_cpp
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from mmgpy._mesh import Mesh
+
 _NATIVE_MESH_EXTENSIONS = frozenset({".mesh", ".meshb"})
+
+# Medit .sol type codes
+_SOL_TYPE_SCALAR = 1
+_SOL_TYPE_VECTOR = 2
+_SOL_TYPE_TENSOR = 3
 
 
 def _is_native(path: str | Path | None) -> bool:
     if path is None:
         return True
     return Path(path).suffix.lower() in _NATIVE_MESH_EXTENSIONS
+
+
+def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
+    """Parse a .sol file and set the appropriate field on *mesh*."""
+    from mmgpy.ui.parsers import parse_sol_file  # noqa: PLC0415
+
+    content = Path(sol_path).read_text()
+    fields = parse_sol_file(content)
+
+    for name, info in fields.items():
+        if info["location"] != "vertices":
+            continue
+        data = info["data"]
+        if "tensor" in name:
+            mesh["metric"] = data
+        elif "vector" in name:
+            mesh["displacement"] = data
+        else:
+            # Scalar solution — typically the metric field.
+            mesh["metric"] = data.reshape(-1, 1)
+        break
+
+
+def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
+    """Write the metric field to a Medit .sol file."""
+    from mmgpy._mesh import MeshKind  # noqa: PLC0415
+
+    try:
+        data = mesh["metric"]
+    except KeyError:
+        return
+
+    n_vertices = len(mesh.get_vertices())
+    _dims_2d = 2
+    dimension = _dims_2d if mesh.kind == MeshKind.TRIANGULAR_2D else 3
+
+    if data.ndim == 1 or (data.ndim == _dims_2d and data.shape[1] == 1):
+        sol_type = _SOL_TYPE_SCALAR
+        rows = data.reshape(-1, 1)
+    elif data.ndim == _dims_2d and data.shape[1] == dimension:
+        sol_type = _SOL_TYPE_VECTOR
+        rows = data
+    elif data.ndim == _dims_2d and data.shape[1] in (3, 6):
+        sol_type = _SOL_TYPE_TENSOR
+        rows = data
+    else:
+        sol_type = _SOL_TYPE_SCALAR
+        rows = data.reshape(-1, 1)
+
+    lines = [
+        "MeshVersionFormatted 2",
+        "",
+        f"Dimension {dimension}",
+        "",
+        "SolAtVertices",
+        str(n_vertices),
+        f"1 {sol_type}",
+        "",
+    ]
+    lines.extend(" ".join(f"{v}" for v in row) for row in rows)
+    lines.append("")
+    lines.append("End")
+
+    Path(sol_path).write_text("\n".join(lines))
 
 
 def _wrapped_remesh(
@@ -51,26 +121,20 @@ def _wrapped_remesh(
     # Non-native format detected — use the in-memory remesh path.
     # mmgpy.read() handles any format via meshio, Mesh.remesh() works
     # in-memory, and Mesh.save() converts back via meshio.
-    if input_sol is not None:
-        warnings.warn(
-            "input_sol is ignored for non-native formats; "
-            "solution data must be embedded in the mesh file or set via Mesh API",
-            stacklevel=3,
-        )
-    if output_sol is not None:
-        warnings.warn(
-            "output_sol is ignored for non-native formats; "
-            "use Mesh.save() to write the result in the desired format",
-            stacklevel=3,
-        )
-
     from mmgpy._io import read as _read  # noqa: PLC0415
 
     mesh = _read(input_mesh)
+
+    if input_sol is not None:
+        _load_sol(mesh, input_sol)
+
     mesh.remesh(progress=False, **(options or {}))
 
     if output_mesh is not None:
         mesh.save(output_mesh)
+
+    if output_sol is not None:
+        _save_sol(mesh, output_sol)
 
     return True
 
