@@ -676,6 +676,128 @@ void MmgMesh2D::set_required_edges(const py::array_t<int> &edge_indices) {
   }
 }
 
+void MmgMesh2D::set_parallel_edges(const py::array_t<int> &edge_indices) {
+  ensure_c_contiguous(edge_indices, "Edge indices");
+  py::buffer_info buf = edge_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Edge indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  py::ssize_t n = buf.shape[0];
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->na) {
+      throw std::runtime_error("Edge index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMG2D_Set_parallelEdge(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to set parallel edge at index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
+void MmgMesh2D::unset_corners(const py::array_t<int> &vertex_indices) {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  py::buffer_info buf = vertex_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  py::ssize_t n = buf.shape[0];
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->np) {
+      throw std::runtime_error("Vertex index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMG2D_Unset_corner(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to unset corner at vertex index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
+void MmgMesh2D::unset_required_vertices(
+    const py::array_t<int> &vertex_indices) {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  py::buffer_info buf = vertex_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  py::ssize_t n = buf.shape[0];
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->np) {
+      throw std::runtime_error("Vertex index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMG2D_Unset_requiredVertex(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to unset required vertex at index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
+void MmgMesh2D::unset_required_triangles(
+    const py::array_t<int> &triangle_indices) {
+  ensure_c_contiguous(triangle_indices, "Triangle indices");
+  py::buffer_info buf = triangle_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Triangle indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  py::ssize_t n = buf.shape[0];
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->nt) {
+      throw std::runtime_error("Triangle index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMG2D_Unset_requiredTriangle(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to unset required triangle at index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
+void MmgMesh2D::unset_required_edges(const py::array_t<int> &edge_indices) {
+  ensure_c_contiguous(edge_indices, "Edge indices");
+  py::buffer_info buf = edge_indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error("Edge indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  py::ssize_t n = buf.shape[0];
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->na) {
+      throw std::runtime_error("Edge index out of range: " +
+                               std::to_string(idx));
+    }
+    if (!MMG2D_Unset_requiredEdge(mesh, idx + 1)) {
+      throw std::runtime_error("Failed to unset required edge at index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
 // Topology queries
 
 py::array_t<int> MmgMesh2D::get_adjacent_elements(MMG5_int idx) const {
