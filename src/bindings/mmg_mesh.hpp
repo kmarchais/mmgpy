@@ -70,6 +70,7 @@ public:
   // Element attributes
   void set_corners(const py::array_t<int> &vertex_indices);
   void set_required_vertices(const py::array_t<int> &vertex_indices);
+  void set_required_triangles(const py::array_t<int> &triangle_indices);
   void set_ridge_edges(const py::array_t<int> &edge_indices);
 
   // Topology queries

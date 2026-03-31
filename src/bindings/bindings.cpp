@@ -107,6 +107,8 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("set_corners", &MmgMesh::set_corners, py::arg("vertex_indices"))
       .def("set_required_vertices", &MmgMesh::set_required_vertices,
            py::arg("vertex_indices"))
+      .def("set_required_triangles", &MmgMesh::set_required_triangles,
+           py::arg("triangle_indices"))
       .def("set_ridge_edges", &MmgMesh::set_ridge_edges,
            py::arg("edge_indices"))
       // Topology queries
@@ -233,6 +235,8 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("set_corners", &MmgMesh2D::set_corners, py::arg("vertex_indices"))
       .def("set_required_vertices", &MmgMesh2D::set_required_vertices,
            py::arg("vertex_indices"))
+      .def("set_required_triangles", &MmgMesh2D::set_required_triangles,
+           py::arg("triangle_indices"))
       .def("set_required_edges", &MmgMesh2D::set_required_edges,
            py::arg("edge_indices"))
       // Topology queries
@@ -350,6 +354,8 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("set_corners", &MmgMeshS::set_corners, py::arg("vertex_indices"))
       .def("set_required_vertices", &MmgMeshS::set_required_vertices,
            py::arg("vertex_indices"))
+      .def("set_required_triangles", &MmgMeshS::set_required_triangles,
+           py::arg("triangle_indices"))
       .def("set_ridge_edges", &MmgMeshS::set_ridge_edges,
            py::arg("edge_indices"))
       // Topology queries

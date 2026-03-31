@@ -335,7 +335,7 @@ def move_mesh(
     step_displacement = full_displacement / n_steps
 
     # Filter out None values from remesh options
-    filtered_options: dict[str, float | int | bool] = {
+    filtered_options: dict[str, Any] = {
         k: v for k, v in remesh_options.items() if v is not None
     }
 
@@ -348,7 +348,7 @@ def move_mesh(
         current_elements = _get_elements(mesh, is_3d=is_3d)
 
         _set_mesh_data(mesh, new_vertices, current_elements, is_3d=is_3d)
-        mesh.remesh(**filtered_options)  # type: ignore[arg-type]
+        mesh.remesh(**filtered_options)
 
         # Break if topology changed (can't continue incremental steps)
         if len(mesh.get_vertices()) != len(current_vertices):
