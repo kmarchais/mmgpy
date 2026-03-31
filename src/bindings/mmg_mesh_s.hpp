@@ -59,6 +59,12 @@ public:
   void set_required_triangles(const py::array_t<int> &triangle_indices);
   void set_ridge_edges(const py::array_t<int> &edge_indices);
 
+  // Normal vectors
+  void set_normal_at_vertices(const py::array_t<int> &vertex_indices,
+                              const py::array_t<double> &normals);
+  py::array_t<double>
+  get_normal_at_vertices(const py::array_t<int> &vertex_indices) const;
+
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
   py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;

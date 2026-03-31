@@ -163,6 +163,196 @@ class TestTopologyQueriesSurface:
         assert 0 not in neighbors
 
 
+class TestNormalVectors3D:
+    """Tests for normal vector operations on MmgMesh3D."""
+
+    def test_set_normal_at_vertices(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting normals at vertices."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        indices = np.array([0, 1, 2], dtype=np.int32)
+        normals = np.array(
+            [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
+            dtype=np.float64,
+        )
+        mesh.set_normal_at_vertices(indices, normals)
+
+    def test_set_and_get_round_trip(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that set then get returns the same normals."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        indices = np.array([0, 3, 5], dtype=np.int32)
+        normals = np.array(
+            [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
+            dtype=np.float64,
+        )
+        mesh.set_normal_at_vertices(indices, normals)
+        result = mesh.get_normal_at_vertices(indices)
+
+        assert result.shape == (3, 3)
+        assert result.dtype == np.float64
+        np.testing.assert_allclose(result, normals)
+
+    def test_shape_validation(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that mismatched shapes raise errors."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        indices = np.array([0, 1], dtype=np.int32)
+        wrong_normals = np.array([[0.0, 0.0, 1.0]], dtype=np.float64)
+
+        with pytest.raises(RuntimeError, match="same length"):
+            mesh.set_normal_at_vertices(indices, wrong_normals)
+
+    def test_normals_must_be_nx3(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that normals must be Nx3."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        indices = np.array([0], dtype=np.int32)
+        wrong_shape = np.array([[0.0, 0.0]], dtype=np.float64)
+
+        with pytest.raises(RuntimeError, match="Nx3"):
+            mesh.set_normal_at_vertices(indices, wrong_shape)
+
+    def test_invalid_index(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test out-of-range vertex index."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        indices = np.array([100], dtype=np.int32)
+        normals = np.array([[0.0, 0.0, 1.0]], dtype=np.float64)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.set_normal_at_vertices(indices, normals)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.get_normal_at_vertices(indices)
+
+    def test_empty_arrays(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that empty arrays work correctly."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        indices = np.array([], dtype=np.int32)
+        normals = np.empty((0, 3), dtype=np.float64)
+        mesh.set_normal_at_vertices(indices, normals)
+        result = mesh.get_normal_at_vertices(indices)
+        assert result.shape == (0, 3)
+
+
+class TestNormalVectorsSurface:
+    """Tests for normal vector operations on MmgMeshS."""
+
+    def test_set_normal_at_vertices(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting normals at vertices for surface mesh."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        indices = np.array([0, 1], dtype=np.int32)
+        normals = np.array(
+            [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
+            dtype=np.float64,
+        )
+        mesh.set_normal_at_vertices(indices, normals)
+
+    def test_set_and_get_round_trip(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that set then get returns the same normals for surface mesh."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        indices = np.array([0, 2], dtype=np.int32)
+        normals = np.array(
+            [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
+            dtype=np.float64,
+        )
+        mesh.set_normal_at_vertices(indices, normals)
+        result = mesh.get_normal_at_vertices(indices)
+
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float64
+        np.testing.assert_allclose(result, normals)
+
+    def test_invalid_index(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test out-of-range vertex index for surface mesh."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        indices = np.array([100], dtype=np.int32)
+        normals = np.array([[0.0, 0.0, 1.0]], dtype=np.float64)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.set_normal_at_vertices(indices, normals)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.get_normal_at_vertices(indices)
+
+
 class TestElementAttributes3D:
     """Tests for 3D element attributes."""
 
