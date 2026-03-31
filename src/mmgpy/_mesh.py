@@ -1506,6 +1506,22 @@ class Mesh:
 
             meshio.write(path, self._to_meshio())
 
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a Medit solution file (.sol) and set the field on the mesh.
+
+        Scalar solutions are set as the metric field, vector solutions as
+        displacement, and tensor solutions as the anisotropic metric.
+
+        Parameters
+        ----------
+        filename : str or Path
+            Path to a .sol or .solb file.
+
+        """
+        from mmgpy._remesh import _load_sol  # noqa: PLC0415
+
+        _load_sol(self, filename)
+
     # =========================================================================
     # Remeshing operations
     # =========================================================================
@@ -1569,10 +1585,11 @@ class Mesh:
             method=interpolation,
         )
 
-    def remesh(  # noqa: C901, PLR0912
+    def remesh(  # noqa: C901, PLR0912, PLR0915
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         *,
+        input_sol: str | Path | NDArray[np.float64] | None = None,
         progress: ProgressParam = True,
         transfer_fields: FieldTransferParam = False,
         interpolation: str = "linear",
@@ -1584,6 +1601,10 @@ class Mesh:
         ----------
         options : Mmg3DOptions | Mmg2DOptions | MmgSOptions, optional
             Options object for remeshing parameters.
+        input_sol : str, Path, or ndarray, optional
+            Solution data for adaptive remeshing.  Can be a path to a
+            Medit .sol file, or a numpy array (scalar metric, Nx3/Nx6
+            anisotropic tensor, or Nx2/Nx3 displacement vector).
         progress : bool | Callable[[ProgressEvent], bool] | None, default=True
             Progress reporting option:
             - True: Show Rich progress bar (default)
@@ -1648,6 +1669,16 @@ class Mesh:
             MmgSOptions,
         )
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+
+        # Load solution data if provided
+        if input_sol is not None:
+            if isinstance(input_sol, str | Path):
+                self.load_sol(input_sol)
+            else:
+                arr = np.asarray(input_sol, dtype=np.float64)
+                if arr.ndim == 1:
+                    arr = arr.reshape(-1, 1)
+                self["metric"] = arr
 
         # Validate interpolation method
         valid_methods = ("linear", "nearest")
