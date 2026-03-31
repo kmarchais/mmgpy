@@ -38,6 +38,7 @@ requirements:
     - pyvista >=0.47.0
     - rich >=13.0.0
     - scipy >=1.11.0,<2
+    - mmgsuite
     - if: python < '3.11'
       then: typing-extensions >=4.0.0
 

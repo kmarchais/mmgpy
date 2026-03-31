@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import pyvista as pv
 
 from mmgpy.ui.parsers import (
     SafeFormulaEvaluator,
@@ -660,7 +661,7 @@ class TestSampleMeshes:
         assert mesh.n_cells > 0
         assert mesh.n_points > 0
         # Check it's a 3D mesh with tetrahedra (cell type 10)
-        assert 10 in mesh.celltypes
+        assert pv.CellType.TETRA in mesh.distinct_cell_types
 
     def test_create_tetra_sphere(self):
         """Test tetrahedral sphere creation."""
@@ -669,7 +670,7 @@ class TestSampleMeshes:
         assert mesh is not None
         assert mesh.n_cells > 0
         assert mesh.n_points > 0
-        assert 10 in mesh.celltypes
+        assert pv.CellType.TETRA in mesh.distinct_cell_types
 
     def test_create_2d_disc(self):
         """Test 2D disc creation."""
@@ -699,7 +700,7 @@ class TestSampleMeshes:
         mesh = get_sample_mesh("tetra_cube")
 
         assert mesh is not None
-        assert 10 in mesh.celltypes
+        assert pv.CellType.TETRA in mesh.distinct_cell_types
 
     def test_get_sample_mesh_unknown(self):
         """Test getting unknown sample mesh returns None."""

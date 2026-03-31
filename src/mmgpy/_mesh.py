@@ -1359,7 +1359,7 @@ class Mesh:
             Output file path. Format determined by extension.
 
         """
-        import meshio
+        import meshio  # noqa: PLC0415
 
         path = Path(filename)
         if path.suffix.lower() in self._NATIVE_EXTENSIONS:

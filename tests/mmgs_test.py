@@ -196,7 +196,7 @@ def test_mesh_quality_analysis(
         ).all(), f"Reference mesh {metric} quality contains non-finite values"
 
         # Get acceptable ranges from PyVista for different cell types
-        cell_types_in_mesh = {int(ct.item()) for ct in test_mesh.celltypes}
+        cell_types_in_mesh = {int(ct) for ct in test_mesh.distinct_cell_types}
 
         for cell_type_id in cell_types_in_mesh:
             if cell_type_id not in VTK_CELL_TYPE_MAP:
@@ -372,8 +372,8 @@ def test_mesh_topology_consistency(
     test_mesh, ref_mesh = generated_meshes
 
     # Check that meshes have consistent cell types
-    test_cell_types: set[int] = {int(ct.item()) for ct in test_mesh.celltypes}
-    ref_cell_types: set[int] = {int(ct.item()) for ct in ref_mesh.celltypes}
+    test_cell_types: set[int] = {int(ct) for ct in test_mesh.distinct_cell_types}
+    ref_cell_types: set[int] = {int(ct) for ct in ref_mesh.distinct_cell_types}
 
     assert len(test_cell_types) > 0, "Test mesh has no cell types"
     assert len(ref_cell_types) > 0, "Reference mesh has no cell types"

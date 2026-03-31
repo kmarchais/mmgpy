@@ -281,10 +281,11 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64", "aarch64"]
-repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
+repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude libmmg2d.so.5 --exclude libmmg3d.so.5 --exclude libmmgs.so.5 {wheel}"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64"]
+repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
