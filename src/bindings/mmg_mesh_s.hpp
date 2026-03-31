@@ -77,6 +77,8 @@ public:
   // File I/O
   void
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
+  void
+  load_sol(const std::variant<std::string, std::filesystem::path> &filename);
 
   // In-memory remeshing
   py::dict remesh(const py::dict &options = py::dict());

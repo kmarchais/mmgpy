@@ -38,24 +38,12 @@ def _is_native(path: str | Path | None) -> bool:
 
 
 def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
-    """Parse a .sol file and set the appropriate field on *mesh*."""
-    from mmgpy._sol import parse_sol_file  # noqa: PLC0415
+    """Load a .sol/.solb file and set the appropriate field on *mesh*.
 
-    content = Path(sol_path).read_text()
-    fields = parse_sol_file(content)
-
-    for name, info in fields.items():
-        if info["location"] != "vertices":
-            continue
-        data = info["data"]
-        if "tensor" in name:
-            mesh["metric"] = data
-        elif "vector" in name:
-            mesh["displacement"] = data
-        else:
-            # Scalar solution — typically the metric field.
-            mesh["metric"] = data.reshape(-1, 1)
-        break
+    Delegates to the C++ ``impl.load_sol()`` which handles both text
+    (.sol) and binary (.solb) formats natively via the MMG library.
+    """
+    mesh._impl.load_sol(str(sol_path))  # noqa: SLF001
 
 
 def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
@@ -68,16 +56,15 @@ def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
         return
 
     n_vertices = len(mesh.get_vertices())
-    _dims_2d = 2
-    dimension = _dims_2d if mesh.kind == MeshKind.TRIANGULAR_2D else 3
+    dimension = 2 if mesh.kind == MeshKind.TRIANGULAR_2D else 3
 
-    if data.ndim == 1 or (data.ndim == _dims_2d and data.shape[1] == 1):
+    if data.ndim == 1 or (data.ndim == 2 and data.shape[1] == 1):  # noqa: PLR2004
         sol_type = _SOL_TYPE_SCALAR
         rows = data.reshape(-1, 1)
-    elif data.ndim == _dims_2d and data.shape[1] == dimension:
+    elif data.ndim == 2 and data.shape[1] == dimension:  # noqa: PLR2004
         sol_type = _SOL_TYPE_VECTOR
         rows = data
-    elif data.ndim == _dims_2d and data.shape[1] in (3, 6):
+    elif data.ndim == 2 and data.shape[1] in (3, 6):  # noqa: PLR2004
         sol_type = _SOL_TYPE_TENSOR
         rows = data
     else:
@@ -94,7 +81,7 @@ def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
         f"1 {sol_type}",
         "",
     ]
-    lines.extend(" ".join(f"{v}" for v in row) for row in rows)
+    lines.extend(" ".join(f"{v:.15g}" for v in row) for row in rows)
     lines.append("")
     lines.append("End")
 

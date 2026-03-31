@@ -140,6 +140,17 @@ PYBIND11_MODULE(_mmgpy, m) {
                        path.attr("__str__")().cast<std::string>())));
              }
            })
+      .def("load_sol",
+           [](MmgMesh &self, const py::object &path) {
+             if (py::isinstance<py::str>(path)) {
+               self.load_sol(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               self.load_sol(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
       .def_property_readonly("is_corrupted", &MmgMesh::is_corrupted)
       .def(
           "remesh",
@@ -269,6 +280,17 @@ PYBIND11_MODULE(_mmgpy, m) {
                        path.attr("__str__")().cast<std::string>())));
              }
            })
+      .def("load_sol",
+           [](MmgMesh2D &self, const py::object &path) {
+             if (py::isinstance<py::str>(path)) {
+               self.load_sol(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               self.load_sol(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
       .def_property_readonly("is_corrupted", &MmgMesh2D::is_corrupted)
       .def(
           "remesh",
@@ -384,6 +406,17 @@ PYBIND11_MODULE(_mmgpy, m) {
                    path.cast<std::string>()));
              } else {
                self.save(std::variant<std::string, std::filesystem::path>(
+                   std::filesystem::path(
+                       path.attr("__str__")().cast<std::string>())));
+             }
+           })
+      .def("load_sol",
+           [](MmgMeshS &self, const py::object &path) {
+             if (py::isinstance<py::str>(path)) {
+               self.load_sol(std::variant<std::string, std::filesystem::path>(
+                   path.cast<std::string>()));
+             } else {
+               self.load_sol(std::variant<std::string, std::filesystem::path>(
                    std::filesystem::path(
                        path.attr("__str__")().cast<std::string>())));
              }

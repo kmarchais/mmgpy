@@ -1431,7 +1431,7 @@ class Mesh:
     # File I/O
     # =========================================================================
 
-    _NATIVE_EXTENSIONS = frozenset({".mesh", ".meshb", ".sol", ".solb"})
+    _NATIVE_EXTENSIONS = frozenset({".mesh", ".meshb"})
 
     def _to_meshio(self) -> meshio.Mesh:
         """Convert to a meshio Mesh object (in-memory, no temp files).
@@ -1446,27 +1446,29 @@ class Mesh:
 
         vertices = self._impl.get_vertices()
 
-        cells: list[meshio.CellBlock] = []
+        cells: list[tuple[str, Any] | meshio.CellBlock] = []
         cell_refs: list[np.ndarray] = []
 
         if self._kind == MeshKind.TETRAHEDRAL:
             tets, refs = cast("MmgMesh3D", self._impl).get_tetrahedra_with_refs()
             if len(tets) > 0:
-                cells.append(meshio.CellBlock("tetra", tets))
+                cells.append(("tetra", tets))
                 cell_refs.append(refs)
-            tris, refs = self._impl.get_triangles_with_refs()
-            if len(tris) > 0:
-                cells.append(meshio.CellBlock("triangle", tris))
-                cell_refs.append(refs)
-        else:
-            tris, refs = self._impl.get_triangles_with_refs()
-            if len(tris) > 0:
-                cells.append(meshio.CellBlock("triangle", tris))
+
+        tris, refs = self._impl.get_triangles_with_refs()
+        if len(tris) > 0:
+            cells.append(("triangle", tris))
+            cell_refs.append(refs)
+
+        if self._kind == MeshKind.TRIANGULAR_2D:
+            quads, refs = cast("MmgMesh2D", self._impl).get_quadrilaterals_with_refs()
+            if len(quads) > 0:
+                cells.append(("quad", quads))
                 cell_refs.append(refs)
 
         edges, refs = self._impl.get_edges_with_refs()
         if len(edges) > 0:
-            cells.append(meshio.CellBlock("line", edges))
+            cells.append(("line", edges))
             cell_refs.append(refs)
 
         # Reference markers as cell data
@@ -1480,7 +1482,7 @@ class Mesh:
 
         return meshio.Mesh(
             points=vertices,
-            cells=[(c.type, c.data) for c in cells],
+            cells=cells,
             point_data=point_data or None,
             cell_data=cell_data or None,
         )
@@ -1507,10 +1509,10 @@ class Mesh:
             meshio.write(path, self._to_meshio())
 
     def load_sol(self, filename: str | Path) -> None:
-        """Load a Medit solution file (.sol) and set the field on the mesh.
+        """Load a Medit solution file (.sol/.solb) and set the field on the mesh.
 
-        Scalar solutions are set as the metric field, vector solutions as
-        displacement, and tensor solutions as the anisotropic metric.
+        Both text (.sol) and binary (.solb) formats are supported via the
+        MMG C library.
 
         Parameters
         ----------

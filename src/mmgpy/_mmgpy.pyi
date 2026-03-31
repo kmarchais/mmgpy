@@ -844,6 +844,21 @@ class MmgMesh3D:
 
         """
 
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a solution file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Path to a .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be loaded.
+
+        """
+
     def remesh(
         self,
         *,
@@ -1496,6 +1511,21 @@ class MmgMesh2D:
 
         """
 
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a solution file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Path to a .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be loaded.
+
+        """
+
     def remesh(
         self,
         *,
@@ -2067,6 +2097,21 @@ class MmgMeshS:
         ------
         RuntimeError
             If the mesh is corrupted.
+
+        """
+
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a solution file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Path to a .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be loaded.
 
         """
 

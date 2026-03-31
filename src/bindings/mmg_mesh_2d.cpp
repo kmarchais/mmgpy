@@ -883,6 +883,25 @@ void MmgMesh2D::save(
   }
 }
 
+void MmgMesh2D::load_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("load_sol");
+  std::string fname = std::visit(
+      [](auto &&arg) -> std::string {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::string>) {
+          return arg;
+        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
+          return arg.string();
+        }
+      },
+      filename);
+
+  if (MMG2D_loadSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to load solution file: " + fname);
+  }
+}
+
 MmgMesh2D::SolutionField
 MmgMesh2D::get_solution_field(const std::string &field_name) const {
   if (field_name == "metric") {
