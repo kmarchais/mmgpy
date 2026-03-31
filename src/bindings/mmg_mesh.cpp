@@ -1016,6 +1016,48 @@ void MmgMesh::set_local_parameters(const py::list &parameters) {
   }
 }
 
+// Multi-material and level-set
+
+void MmgMesh::set_multi_materials(const py::list &materials) {
+  py::ssize_t n = py::len(materials);
+
+  if (!MMG3D_Set_iparameter(mesh, met, MMG3D_IPARAM_numberOfMat,
+                            static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfMat");
+  }
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    py::dict mat = materials[i].cast<py::dict>();
+
+    MMG5_int ref = mat["ref"].cast<MMG5_int>();
+    int split = mat["split"].cast<int>();
+    MMG5_int rmin = mat["ref_minus"].cast<MMG5_int>();
+    MMG5_int rplus = mat["ref_plus"].cast<MMG5_int>();
+
+    if (!MMG3D_Set_multiMat(mesh, met, ref, split, rmin, rplus)) {
+      throw std::runtime_error("Failed to set multi-material for ref " +
+                               std::to_string(ref));
+    }
+  }
+}
+
+void MmgMesh::set_ls_base_references(const py::list &references) {
+  py::ssize_t n = py::len(references);
+
+  if (!MMG3D_Set_iparameter(mesh, met, MMG3D_IPARAM_numberOfLSBaseReferences,
+                            static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfLSBaseReferences");
+  }
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    MMG5_int br = references[i].cast<MMG5_int>();
+    if (!MMG3D_Set_lsBaseReference(mesh, met, br)) {
+      throw std::runtime_error("Failed to set LS base reference " +
+                               std::to_string(br));
+    }
+  }
+}
+
 // Topology queries
 
 py::array_t<int> MmgMesh::get_adjacent_elements(MMG5_int idx) const {

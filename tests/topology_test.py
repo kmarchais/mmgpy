@@ -1531,3 +1531,127 @@ class TestAdvancedTopologySurface:
         assert verts.shape[1] == 2
         assert refs.ndim == 1
         assert verts.shape[0] == refs.shape[0]
+
+
+class TestMultiMaterial3D:
+    """Tests for multi-material and level-set on MmgMesh3D."""
+
+    def test_set_multi_materials(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting multi-material configuration."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        mesh.set_multi_materials(
+            [
+                {"ref": 1, "split": 1, "ref_minus": 10, "ref_plus": 20},
+                {"ref": 2, "split": 0, "ref_minus": 30, "ref_plus": 40},
+            ],
+        )
+
+    def test_set_ls_base_references(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting level-set base references."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        mesh.set_ls_base_references([1, 2])
+
+    def test_empty_materials(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that empty material list works."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        mesh.set_multi_materials([])
+        mesh.set_ls_base_references([])
+
+
+class TestMultiMaterial2D:
+    """Tests for multi-material on MmgMesh2D."""
+
+    def test_set_multi_materials(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting multi-material configuration for 2D."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        mesh.set_multi_materials(
+            [
+                {"ref": 1, "split": 1, "ref_minus": 10, "ref_plus": 20},
+            ],
+        )
+
+    def test_set_ls_base_references(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting level-set base references for 2D."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        mesh.set_ls_base_references([1])
+
+
+class TestMultiMaterialSurface:
+    """Tests for multi-material on MmgMeshS."""
+
+    def test_set_multi_materials(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting multi-material configuration for surface mesh."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        mesh.set_multi_materials(
+            [
+                {"ref": 1, "split": 1, "ref_minus": 10, "ref_plus": 20},
+            ],
+        )
+
+    def test_set_ls_base_references(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting level-set base references for surface mesh."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        mesh.set_ls_base_references([1])
