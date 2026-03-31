@@ -719,6 +719,23 @@ class MmgMesh3D:
 
         """
 
+    def set_local_parameters(self, parameters: list[dict]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[dict]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', 'triangle', or 'tetrahedron'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of tetrahedra sharing faces with element idx.
 
@@ -1657,6 +1674,23 @@ class MmgMesh2D:
 
         """
 
+    def set_local_parameters(self, parameters: list[dict]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[dict]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', or 'triangle'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of triangles sharing edges with element idx.
 
@@ -2373,6 +2407,23 @@ class MmgMeshS:
         -------
         NDArray[np.float64]
             Nx3 array of normal vectors.
+
+        """
+
+    def set_local_parameters(self, parameters: list[dict]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[dict]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', or 'triangle'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
 
         """
 
