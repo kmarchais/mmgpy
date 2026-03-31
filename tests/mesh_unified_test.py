@@ -622,6 +622,109 @@ class TestNonNativeRemeshWithSol:
             np.testing.assert_allclose(data, 0.5)
 
 
+# Lazy field loading tests
+
+
+class TestLazyFieldLoading:
+    """Tests for lazy field loading from non-native formats."""
+
+    def _make_vtk_with_field(self, tmpdir: Path) -> Path:
+        """Create a VTK file with a temperature point_data field."""
+        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+        mesh = read(input_mesh)
+        n_verts = len(mesh.get_vertices())
+        mesh.set_user_field("temperature", np.linspace(0, 100, n_verts))
+        vtk_path = tmpdir / "with_field.vtk"
+        mesh.save(vtk_path)
+        return vtk_path
+
+    def test_lazy_field_available_after_read(self) -> None:
+        """Fields from a VTK file are accessible after read()."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            assert "temperature" in mesh
+            temp = mesh["temperature"]
+            assert temp is not None
+            assert len(temp) == len(mesh.get_vertices())
+
+    def test_lazy_field_in_contains(self) -> None:
+        """'in' operator works for lazy fields without materializing."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            assert "temperature" in mesh
+            assert "nonexistent" not in mesh
+
+    def test_lazy_field_invalidated_after_remesh(self) -> None:
+        """Lazy fields are cleared after remesh with transfer_fields=False."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            assert "temperature" in mesh
+            mesh.remesh(progress=False, verbose=-1)
+            assert "temperature" not in mesh
+
+    def test_lazy_field_transferred_after_remesh(self) -> None:
+        """Lazy fields survive remesh when transfer_fields=True."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            mesh.remesh(progress=False, transfer_fields=True, verbose=-1)
+            assert "temperature" in mesh
+            assert len(mesh["temperature"]) == len(mesh.get_vertices())
+
+    def test_lazy_field_exported_on_save(self) -> None:
+        """Lazy fields are included when saving to a non-native format."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            out_path = Path(tmpdir) / "output.vtu"
+            mesh.save(out_path)
+
+            import meshio
+
+            back = meshio.read(out_path)
+            assert "temperature" in back.point_data
+
+    def test_explicit_set_overrides_lazy(self) -> None:
+        """Explicitly setting a field overrides the lazy version."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            n_verts = len(mesh.get_vertices())
+            mesh.set_user_field("temperature", np.zeros(n_verts))
+
+            np.testing.assert_array_equal(mesh["temperature"], 0.0)
+
+    def test_remesh_vtk_with_transfer_fields(self) -> None:
+        """Full round-trip: VTK with field -> remesh -> VTK with field."""
+        from mmgpy import mmg3d
+
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            out_path = Path(tmpdir) / "remeshed.vtu"
+
+            mmg3d.remesh(
+                input_mesh=vtk_path,
+                output_mesh=out_path,
+                options={"verbose": -1},
+                transfer_fields=True,
+            )
+
+            assert out_path.exists()
+            import meshio
+
+            back = meshio.read(out_path)
+            assert "temperature" in back.point_data
+
+
 # Sizing methods tests
 
 

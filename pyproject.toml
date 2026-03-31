@@ -143,6 +143,7 @@ ignore = [
     "INP001",  # docs/ is not a package, conftest.py doesn't need __init__.py
 ]
 "src/mmgpy/_remesh.py" = [
+    "FBT002",  # transfer_fields has a boolean default for consistency with Mesh.remesh()
     "N801",    # class names match C++ API (mmg2d, mmg3d, mmgs)
     "PLR0913", # _wrapped_remesh mirrors C++ function signatures
 ]

@@ -8,6 +8,7 @@ via ``Mesh.save()`` (meshio).  No temporary files are created.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from mmgpy._mesh import Mesh
+
+FieldTransferParam = bool | Sequence[str] | None
 
 _NATIVE_MESH_EXTENSIONS = frozenset({".mesh", ".meshb"})
 
@@ -105,6 +108,7 @@ def _wrapped_remesh(
     output_mesh: str | Path | None = None,
     output_sol: str | Path | None = None,
     options: dict[str, Any] | None = None,
+    transfer_fields: FieldTransferParam = False,
 ) -> bool:
     input_native = _is_native(input_mesh)
     output_native = _is_native(output_mesh)
@@ -128,7 +132,7 @@ def _wrapped_remesh(
     if input_sol is not None:
         _load_sol(mesh, input_sol)
 
-    mesh.remesh(progress=False, **(options or {}))
+    mesh.remesh(progress=False, transfer_fields=transfer_fields, **(options or {}))
 
     if output_mesh is not None:
         mesh.save(output_mesh)
@@ -149,6 +153,7 @@ class mmg3d:
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
         options: dict[str, Any] | None = None,
+        transfer_fields: FieldTransferParam = False,
     ) -> bool:
         """Remesh a 3D mesh.
 
@@ -164,6 +169,9 @@ class mmg3d:
             Output solution file (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
+        transfer_fields : bool | list[str] | None, default=False
+            Transfer embedded fields through the remesh (non-native formats
+            only).  True transfers all fields, a list transfers named fields.
 
         Returns
         -------
@@ -178,6 +186,7 @@ class mmg3d:
             output_mesh,
             output_sol,
             options,
+            transfer_fields=transfer_fields,
         )
 
 
@@ -191,6 +200,7 @@ class mmg2d:
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
         options: dict[str, Any] | None = None,
+        transfer_fields: FieldTransferParam = False,
     ) -> bool:
         """Remesh a 2D mesh.
 
@@ -206,6 +216,9 @@ class mmg2d:
             Output solution file (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
+        transfer_fields : bool | list[str] | None, default=False
+            Transfer embedded fields through the remesh (non-native formats
+            only).  True transfers all fields, a list transfers named fields.
 
         Returns
         -------
@@ -220,6 +233,7 @@ class mmg2d:
             output_mesh,
             output_sol,
             options,
+            transfer_fields=transfer_fields,
         )
 
 
@@ -233,6 +247,7 @@ class mmgs:
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
         options: dict[str, Any] | None = None,
+        transfer_fields: FieldTransferParam = False,
     ) -> bool:
         """Remesh a surface mesh.
 
@@ -248,6 +263,9 @@ class mmgs:
             Output solution file (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
+        transfer_fields : bool | list[str] | None, default=False
+            Transfer embedded fields through the remesh (non-native formats
+            only).  True transfers all fields, a list transfers named fields.
 
         Returns
         -------
@@ -262,4 +280,5 @@ class mmgs:
             output_mesh,
             output_sol,
             options,
+            transfer_fields=transfer_fields,
         )

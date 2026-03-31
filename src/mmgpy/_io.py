@@ -469,15 +469,24 @@ def read(
 
     """
     # Import here to avoid circular imports
-    from mmgpy._mesh import Mesh  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, _LazyFieldSource  # noqa: PLC0415
     from mmgpy._pyvista import from_pyvista  # noqa: PLC0415
+
+    # MMG field names are routed to C++ — exclude from lazy source
+    _mmg_fields = frozenset({"metric", "displacement", "levelset", "tensor"})
 
     # Handle PyVista objects
     if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
         mesh_class = _mesh_kind_to_class(mesh_kind) if mesh_kind else None
         impl = from_pyvista(source, mesh_class)
         kind = _impl_to_kind(impl)
-        return Mesh._from_impl(impl, kind)  # noqa: SLF001
+        point_data = {
+            k: np.asarray(source.point_data[k])
+            for k in source.point_data
+            if k not in _mmg_fields
+        }
+        lazy = _LazyFieldSource(point_data) if point_data else None
+        return Mesh._from_impl(impl, kind, lazy_source=lazy)  # noqa: SLF001
 
     # Handle file paths
     if isinstance(source, str | Path):
@@ -498,7 +507,13 @@ def read(
         meshio_mesh = meshio.read(path)
         impl = _convert_meshio(meshio_mesh, mesh_kind)
         kind = _impl_to_kind(impl)
-        return Mesh._from_impl(impl, kind)  # noqa: SLF001
+        point_data = {
+            k: v
+            for k, v in (meshio_mesh.point_data or {}).items()
+            if k not in _mmg_fields
+        }
+        lazy = _LazyFieldSource(point_data) if point_data else None
+        return Mesh._from_impl(impl, kind, lazy_source=lazy)  # noqa: SLF001
 
     msg = f"Unsupported source type: {type(source)}"
     raise TypeError(msg)

@@ -153,6 +153,47 @@ def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
     )
 
 
+class _LazyFieldSource:
+    """Deferred point_data from a meshio/PyVista read.
+
+    Fields remain in the original numpy arrays until explicitly accessed,
+    at which point they are validated and moved into ``Mesh._user_fields``.
+    """
+
+    __slots__ = ("_point_data",)
+
+    def __init__(self, point_data: dict[str, NDArray[np.float64]]) -> None:
+        self._point_data: dict[str, NDArray[np.float64]] = dict(point_data)
+
+    def field_names(self) -> frozenset[str]:
+        """Return names of available lazy fields."""
+        return frozenset(self._point_data)
+
+    def has_field(self, name: str) -> bool:
+        """Check whether *name* is available for lazy materialization."""
+        return name in self._point_data
+
+    def pop_field(self, name: str) -> NDArray[np.float64]:
+        """Remove and return a single field, converting to float64."""
+        return np.asarray(self._point_data.pop(name), dtype=np.float64)
+
+    def pop_all(self) -> dict[str, NDArray[np.float64]]:
+        """Materialize and return all remaining lazy fields."""
+        result = {
+            k: np.asarray(v, dtype=np.float64) for k, v in self._point_data.items()
+        }
+        self._point_data.clear()
+        return result
+
+    def invalidate(self) -> None:
+        """Discard all lazy fields (e.g. after remesh changes vertex count)."""
+        self._point_data.clear()
+
+    def is_empty(self) -> bool:
+        """Return True when no lazy fields remain."""
+        return len(self._point_data) == 0
+
+
 class MeshKind(Enum):
     """Enumeration of mesh types.
 
@@ -435,6 +476,7 @@ class Mesh:
     __slots__ = (
         "_impl",
         "_kind",
+        "_lazy_source",
         "_metric_is_tensor",
         "_sizing_constraints",
         "_user_fields",
@@ -442,6 +484,7 @@ class Mesh:
 
     _impl: MmgMesh3D | MmgMesh2D | MmgMeshS
     _kind: MeshKind
+    _lazy_source: _LazyFieldSource | None
     _sizing_constraints: list[SizingConstraint]
     _user_fields: dict[str, NDArray[np.float64]]
 
@@ -457,12 +500,14 @@ class Mesh:
         self._sizing_constraints = []
         self._user_fields = {}
         self._metric_is_tensor = False
+        self._lazy_source = None
 
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
+            self._lazy_source = result._lazy_source  # noqa: SLF001
             return
 
         # Handle file paths
@@ -470,6 +515,7 @@ class Mesh:
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
+            self._lazy_source = result._lazy_source  # noqa: SLF001
             return
 
         # Handle vertices + cells
@@ -488,6 +534,7 @@ class Mesh:
         cls,
         impl: MmgMesh3D | MmgMesh2D | MmgMeshS,
         kind: MeshKind,
+        lazy_source: _LazyFieldSource | None = None,
     ) -> Mesh:
         """Create a Mesh from an existing implementation (internal use).
 
@@ -497,6 +544,8 @@ class Mesh:
             The underlying mesh implementation.
         kind : MeshKind
             The mesh kind.
+        lazy_source : _LazyFieldSource, optional
+            Deferred point data from the original file.
 
         Returns
         -------
@@ -507,6 +556,7 @@ class Mesh:
         mesh = object.__new__(cls)
         mesh._impl = impl  # noqa: SLF001
         mesh._kind = kind  # noqa: SLF001
+        mesh._lazy_source = lazy_source  # noqa: SLF001
         mesh._sizing_constraints = []  # noqa: SLF001
         mesh._user_fields = {}  # noqa: SLF001
         mesh._metric_is_tensor = False  # noqa: SLF001
@@ -954,6 +1004,32 @@ class Mesh:
     # User field operations (arbitrary fields for transfer)
     # =========================================================================
 
+    def _materialize_lazy_field(self, name: str) -> bool:
+        """Move one field from the lazy source into ``_user_fields``.
+
+        Returns True if the field was found and materialized.
+        """
+        if self._lazy_source is None or not self._lazy_source.has_field(name):
+            return False
+        data = self._lazy_source.pop_field(name)
+        n_vertices = len(self._impl.get_vertices())
+        if data.shape[0] != n_vertices:
+            return False
+        self._user_fields[name] = data
+        if self._lazy_source.is_empty():
+            self._lazy_source = None
+        return True
+
+    def _materialize_all_lazy_fields(self) -> None:
+        """Move all remaining lazy fields into ``_user_fields``."""
+        if self._lazy_source is None:
+            return
+        n_vertices = len(self._impl.get_vertices())
+        for name, arr in self._lazy_source.pop_all().items():
+            if name not in self._user_fields and arr.shape[0] == n_vertices:
+                self._user_fields[name] = arr
+        self._lazy_source = None
+
     def set_user_field(self, name: str, values: NDArray[np.float64]) -> None:
         """Set a user-defined field for transfer during remeshing.
 
@@ -986,6 +1062,9 @@ class Mesh:
             )
             raise ValueError(msg)
         self._user_fields[name] = values
+        # Explicit set overrides any lazy field with the same name
+        if self._lazy_source is not None and self._lazy_source.has_field(name):
+            self._lazy_source._point_data.pop(name, None)  # noqa: SLF001
 
     def get_user_field(self, name: str) -> NDArray[np.float64]:
         """Get a user-defined field.
@@ -1006,8 +1085,11 @@ class Mesh:
             If the field does not exist.
 
         """
-        if name not in self._user_fields:
-            msg = f"User field '{name}' not found. Available: {list(self._user_fields)}"
+        if name not in self._user_fields and not self._materialize_lazy_field(name):
+            available = list(self._user_fields)
+            if self._lazy_source is not None:
+                available.extend(self._lazy_source.field_names())
+            msg = f"User field '{name}' not found. Available: {available}"
             raise KeyError(msg)
         return self._user_fields[name]
 
@@ -1020,11 +1102,15 @@ class Mesh:
             Dictionary mapping field names to values.
 
         """
+        self._materialize_all_lazy_fields()
         return dict(self._user_fields)
 
     def clear_user_fields(self) -> None:
         """Remove all user-defined fields."""
         self._user_fields.clear()
+        if self._lazy_source is not None:
+            self._lazy_source.invalidate()
+            self._lazy_source = None
 
     def has_user_field(self, name: str) -> bool:
         """Check if a user field exists.
@@ -1040,7 +1126,9 @@ class Mesh:
             True if the field exists.
 
         """
-        return name in self._user_fields
+        if name in self._user_fields:
+            return True
+        return self._lazy_source is not None and self._lazy_source.has_field(name)
 
     # =========================================================================
     # Geometry operations
@@ -1387,6 +1475,7 @@ class Mesh:
             cell_data["medit:ref"] = cell_refs
 
         # User fields as point data
+        self._materialize_all_lazy_fields()
         point_data: dict[str, Any] = dict(self._user_fields)
 
         return meshio.Mesh(
@@ -1438,9 +1527,11 @@ class Mesh:
             return fields_to_transfer, None, None
 
         if transfer_fields is True:
+            self._materialize_all_lazy_fields()
             fields_to_transfer = dict(self._user_fields)
         else:
             for name in transfer_fields:
+                self._materialize_lazy_field(name)
                 if name in self._user_fields:
                     fields_to_transfer[name] = self._user_fields[name]
                 else:
@@ -1639,6 +1730,9 @@ class Mesh:
             else:
                 # Clear user fields as they have incorrect vertex count after remeshing
                 self._user_fields.clear()
+                if self._lazy_source is not None:
+                    self._lazy_source.invalidate()
+                    self._lazy_source = None
 
             _emit_event(
                 callback,
