@@ -210,20 +210,8 @@ class TestFileTriangulation:
         no_surface_cells_mesh_file: Path,
     ) -> None:
         """Test that mesh with no surface cells raises ValueError."""
-        with pytest.raises(ValueError, match="Cannot determine mesh kind"):
+        with pytest.raises(ValueError, match=r"no faces|Cannot determine"):
             mmgpy.read(no_surface_cells_mesh_file)
-
-    def test_meshio_to_pyvista_no_surface_cells(self) -> None:
-        """Test _meshio_to_pyvista_polydata raises error when no surface cells."""
-        import meshio
-
-        from mmgpy._io import _meshio_to_pyvista_polydata
-
-        # Create mesh with only line cells (no surface cells)
-        points = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype=float)
-        mesh = meshio.Mesh(points, [("line", np.array([[0, 1], [1, 2]]))])
-        with pytest.raises(ValueError, match="No surface cells"):
-            _meshio_to_pyvista_polydata(mesh)
 
     def test_2d_quad_file_is_triangulated(self, quad_2d_mesh_file: Path) -> None:
         """Test that 2D quad meshes from files are triangulated via mmg2d path."""

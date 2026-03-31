@@ -15,33 +15,17 @@ from pathlib import Path
 
 import pyvista as pv
 
-from mmgpy import mmgs
+import mmgpy
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "rodin.mesh"
-OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
 SCREENSHOT = False
 
-mmgs.remesh(
-    input_mesh=INPUT_FILE,
-    output_mesh=OUTPUT_FILE,
-    options={
-        "hausd": 0.001,
-        "angle": 0,
-        "verbose": -1,
-    },
-)
-
-mesh = pv.read(OUTPUT_FILE)
+mesh = mmgpy.read(INPUT_FILE)
+mesh.remesh(hausd=0.001, angle=0, verbose=-1)
 
 pl = pv.Plotter(off_screen=SCREENSHOT)
-pl.add_mesh(
-    mesh,
-    show_edges=True,
-    scalars="medit:ref",
-    cmap="tab10",
-    show_scalar_bar=False,
-)
+pl.add_mesh(mesh.to_pyvista(), show_edges=True)
 pl.camera.elevation = -30
 if SCREENSHOT:
     pl.show(screenshot="smooth_surface_remeshing.png")

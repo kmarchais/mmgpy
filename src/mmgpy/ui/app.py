@@ -17,7 +17,7 @@ from trame.widgets import html
 from trame.widgets import vtk as vtk_widgets
 from trame.widgets import vuetify3 as v3
 
-from mmgpy.ui.parsers import parse_sol_file
+from mmgpy._sol import parse_sol_file
 from mmgpy.ui.remeshing import RemeshingMixin
 from mmgpy.ui.samples import get_sample_mesh
 from mmgpy.ui.utils import (

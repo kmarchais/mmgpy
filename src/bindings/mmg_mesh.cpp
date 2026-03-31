@@ -81,27 +81,9 @@ MmgMesh::MmgMesh(
     throw std::runtime_error("Failed to initialize MMG3D mesh");
   }
 
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMG3D_loadVtkMesh(mesh, met, met, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMG3D_loadVtuMesh(mesh, met, met, fname.c_str());
-  } else {
-    ret = MMG3D_loadMesh(mesh, fname.c_str());
-  }
+  int ret = MMG3D_loadMesh(mesh, fname.c_str());
 
   if (!ret) {
     cleanup();
@@ -286,30 +268,30 @@ void MmgMesh::setitem(const std::string &key,
 void MmgMesh::save(
     const std::variant<std::string, std::filesystem::path> &filename) const {
   check_not_corrupted("save");
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMG3D_saveVtkMesh(mesh, met, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMG3D_saveVtuMesh(mesh, met, fname.c_str());
-  } else {
-    ret = MMG3D_saveMesh(mesh, fname.c_str());
-  }
-
-  if (!ret) {
+  if (!MMG3D_saveMesh(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to save mesh to file: " + fname);
+  }
+}
+
+void MmgMesh::load_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("load_sol");
+  std::string fname = variant_to_string(filename);
+
+  if (MMG3D_loadSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to load solution file: " + fname);
+  }
+}
+
+void MmgMesh::save_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) const {
+  check_not_corrupted("save_sol");
+  std::string fname = variant_to_string(filename);
+
+  if (MMG3D_saveSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to save solution file: " + fname);
   }
 }
 
@@ -338,14 +320,6 @@ int MmgMesh::get_mmg_type(SolutionType type) const {
   default:
     throw std::runtime_error("Unknown solution type");
   }
-}
-
-std::string MmgMesh::get_file_extension(const std::string &filename) {
-  size_t pos = filename.find_last_of('.');
-  if (pos != std::string::npos) {
-    return filename.substr(pos);
-  }
-  return "";
 }
 
 void MmgMesh::cleanup() {

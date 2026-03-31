@@ -41,6 +41,8 @@ mesh.save("output.vtk")
 
 === "pip"
 
+    <!-- pytest-codeblocks:skip -->
+
     ```bash
     pip install mmgpy
     ```

@@ -177,14 +177,6 @@ std::vector<std::string> parse_mmg_warnings(const std::string &output) {
   return warnings;
 }
 
-std::string get_file_extension(const std::string &filename) {
-  size_t pos = filename.find_last_of(".");
-  if (pos != std::string::npos) {
-    return filename.substr(pos);
-  }
-  return "";
-}
-
 std::string path_to_string(const py::object &path) {
   if (py::isinstance<py::str>(path)) {
     return path.cast<std::string>();

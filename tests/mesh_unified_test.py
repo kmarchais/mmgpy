@@ -419,6 +419,40 @@ class TestMeshMethods:
 
             assert filepath.exists()
 
+    def test_save_non_native_format(self) -> None:
+        """Test save to non-native format via PyVista (3D mesh)."""
+        import mmgpy
+
+        # Use a cube mesh that has tets, boundary triangles, and edges
+        mesh = mmgpy.read(Path(__file__).parent.parent / "assets" / "cube.mesh")
+        mesh.set_user_field("temperature", np.ones(len(mesh.get_vertices())))
+
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "output.vtu"
+            mesh.save(filepath)
+
+            assert filepath.exists()
+            assert filepath.stat().st_size > 0
+
+            # Verify round-trip preserves fields
+            back = pv.read(filepath)
+            assert "temperature" in back.point_data
+
+    def test_save_non_native_surface(
+        self,
+        triangle_3d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test save to non-native format via meshio (surface mesh)."""
+        mesh = Mesh(triangle_3d_vertices, triangle_cells)
+
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "output.vtk"
+            mesh.save(filepath)
+
+            assert filepath.exists()
+            assert filepath.stat().st_size > 0
+
     def test_to_pyvista(
         self,
         tetra_vertices: np.ndarray,
@@ -486,6 +520,237 @@ class TestMeshRemeshing:
 
         with pytest.raises(TypeError, match="not available for TRIANGULAR_SURFACE"):
             mesh.remesh_lagrangian(displacement)
+
+
+# Non-native format remesh with sol tests
+
+
+class TestNonNativeRemeshWithSol:
+    """Tests for _remesh.py sol file handling in non-native format paths."""
+
+    def test_remesh_vtk_with_input_sol(self) -> None:
+        """Test remeshing a VTU file with an input .sol file."""
+        from mmgpy import mmg2d
+
+        input_mesh = Path(__file__).parent.parent / "assets" / "hole.mesh"
+        input_sol = Path(__file__).parent.parent / "assets" / "hole.sol"
+
+        with TemporaryDirectory() as tmpdir:
+            # Convert to VTU first via PyVista
+            mesh = read(input_mesh)
+            vtu_input = Path(tmpdir) / "input.vtu"
+            mesh.save(vtu_input)
+
+            vtu_output = Path(tmpdir) / "output.vtu"
+            result = mmg2d.remesh(
+                input_mesh=vtu_input,
+                input_sol=input_sol,
+                output_mesh=vtu_output,
+                options={"verbose": -1},
+            )
+
+            assert result is True
+            assert vtu_output.exists()
+            assert vtu_output.stat().st_size > 0
+
+    def test_remesh_vtk_with_output_sol(self) -> None:
+        """Test remeshing a VTU file with output .sol saving."""
+        from mmgpy import mmg3d
+
+        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+
+        with TemporaryDirectory() as tmpdir:
+            mesh = read(input_mesh)
+            vtu_input = Path(tmpdir) / "input.vtu"
+            mesh.save(vtu_input)
+
+            vtu_output = Path(tmpdir) / "output.vtu"
+            output_sol = Path(tmpdir) / "cube.sol"
+
+            mmg3d.remesh(
+                input_mesh=vtu_input,
+                output_mesh=vtu_output,
+                output_sol=output_sol,
+                options={"verbose": -1},
+            )
+
+            assert vtu_output.exists()
+            assert output_sol.exists()
+            assert output_sol.stat().st_size > 0
+
+    def test_load_sol_sets_metric(self) -> None:
+        """Test that _load_sol correctly sets the metric field."""
+        from mmgpy._remesh import _load_sol
+
+        input_mesh = Path(__file__).parent.parent / "assets" / "hole.mesh"
+        input_sol = Path(__file__).parent.parent / "assets" / "hole.sol"
+
+        mesh = read(input_mesh)
+        _load_sol(mesh, input_sol)
+
+        metric = mesh["metric"]
+        assert metric is not None
+        assert len(metric) == len(mesh.get_vertices())
+
+    def test_save_sol_roundtrip(self) -> None:
+        """Test that save_sol produces a file loadable by load_sol."""
+        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+        mesh = read(input_mesh)
+        n_verts = len(mesh.get_vertices())
+        mesh["metric"] = np.ones((n_verts, 1)) * 0.5
+
+        with TemporaryDirectory() as tmpdir:
+            sol_path = Path(tmpdir) / "cube.sol"
+            mesh.save_sol(sol_path)
+            assert sol_path.exists()
+
+            # Round-trip: load the saved sol into a fresh mesh
+            mesh2 = read(input_mesh)
+            mesh2.load_sol(sol_path)
+            metric = mesh2["metric"]
+            assert len(metric) == n_verts
+
+
+# Lazy field loading tests
+
+
+class TestLazyFieldLoading:
+    """Tests for lazy field loading from non-native formats."""
+
+    def _make_vtk_with_field(self, tmpdir: Path) -> Path:
+        """Create a VTK file with a temperature point_data field."""
+        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+        mesh = read(input_mesh)
+        n_verts = len(mesh.get_vertices())
+        mesh.set_user_field("temperature", np.linspace(0, 100, n_verts))
+        vtk_path = tmpdir / "with_field.vtk"
+        mesh.save(vtk_path)
+        return vtk_path
+
+    def test_lazy_field_available_after_read(self) -> None:
+        """Fields from a VTK file are accessible after read()."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            assert "temperature" in mesh
+            temp = mesh["temperature"]
+            assert temp is not None
+            assert len(temp) == len(mesh.get_vertices())
+
+    def test_lazy_field_in_contains(self) -> None:
+        """'in' operator works for lazy fields without materializing."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            assert "temperature" in mesh
+            assert "nonexistent" not in mesh
+
+    def test_lazy_field_invalidated_after_remesh(self) -> None:
+        """Lazy fields are cleared after remesh with transfer_fields=False."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            assert "temperature" in mesh
+            mesh.remesh(progress=False, verbose=-1)
+            assert "temperature" not in mesh
+
+    def test_lazy_field_transferred_after_remesh(self) -> None:
+        """Lazy fields survive remesh when transfer_fields=True."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            mesh.remesh(progress=False, transfer_fields=True, verbose=-1)
+            assert "temperature" in mesh
+            assert len(mesh["temperature"]) == len(mesh.get_vertices())
+
+    def test_lazy_field_exported_on_save(self) -> None:
+        """Lazy fields are included when saving to a non-native format."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            out_path = Path(tmpdir) / "output.vtu"
+            mesh.save(out_path)
+
+            back = pv.read(out_path)
+            assert "temperature" in back.point_data
+
+    def test_explicit_set_overrides_lazy(self) -> None:
+        """Explicitly setting a field overrides the lazy version."""
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            mesh = read(vtk_path)
+
+            n_verts = len(mesh.get_vertices())
+            mesh.set_user_field("temperature", np.zeros(n_verts))
+
+            np.testing.assert_array_equal(mesh["temperature"], 0.0)
+
+    def test_remesh_vtk_with_transfer_fields(self) -> None:
+        """Full round-trip: VTK with field -> remesh -> VTK with field."""
+        from mmgpy import mmg3d
+
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            out_path = Path(tmpdir) / "remeshed.vtu"
+
+            mmg3d.remesh(
+                input_mesh=vtk_path,
+                output_mesh=out_path,
+                options={"verbose": -1},
+                transfer_fields=True,
+            )
+
+            assert out_path.exists()
+            back = pv.read(out_path)
+            assert "temperature" in back.point_data
+
+    def test_save_surface_mesh_to_vtu(self) -> None:
+        """PolyData meshes are cast to UnstructuredGrid for .vtu save."""
+        input_mesh = Path(__file__).parent.parent / "assets" / "rodin.mesh"
+        mesh = read(input_mesh)
+
+        with TemporaryDirectory() as tmpdir:
+            vtu_path = Path(tmpdir) / "surface.vtu"
+            mesh.save(vtu_path)
+            assert vtu_path.exists()
+            assert vtu_path.stat().st_size > 0
+
+    def test_non_native_remesh_with_output_sol(self) -> None:
+        """Non-native path writes output .sol via C++ save_sol."""
+        from mmgpy import mmg3d
+
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+            out_path = Path(tmpdir) / "output.vtu"
+            sol_path = Path(tmpdir) / "cube.sol"
+
+            mmg3d.remesh(
+                input_mesh=vtk_path,
+                output_mesh=out_path,
+                output_sol=sol_path,
+                options={"verbose": -1},
+            )
+
+            assert sol_path.exists()
+            assert sol_path.stat().st_size > 0
+
+    def test_non_native_remesh_no_output_file(self) -> None:
+        """Non-native path works in-memory without writing output files."""
+        from mmgpy import mmg3d
+
+        with TemporaryDirectory() as tmpdir:
+            vtk_path = self._make_vtk_with_field(Path(tmpdir))
+
+            result = mmg3d.remesh(
+                input_mesh=vtk_path,
+                options={"verbose": -1},
+            )
+            assert result is True
 
 
 # Sizing methods tests
@@ -593,28 +858,16 @@ class TestReadFunction:
             assert result.get_vertices().shape[1] == 2
 
     def test_read_unsupported_element_type_raises(self) -> None:
-        """Test read() raises for unsupported element types like hexahedra."""
-        vertices = np.array(
-            [
-                [0, 0, 0],
-                [1, 0, 0],
-                [1, 1, 0],
-                [0, 1, 0],
-                [0, 0, 1],
-                [1, 0, 1],
-                [1, 1, 1],
-                [0, 1, 1],
-            ],
-            dtype=np.float64,
+        """Test read() raises for meshes with no extractable surface."""
+        # Lines only — no surface cells
+        vertices = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype=np.float64)
+        grid = pv.UnstructuredGrid(
+            {pv.CellType.LINE: np.array([[0, 1], [1, 2]])},
+            vertices,
         )
-        hexahedra = np.array([[0, 1, 2, 3, 4, 5, 6, 7]], dtype=np.int32)
 
-        with TemporaryDirectory() as tmpdir:
-            filepath = Path(tmpdir) / "hex_mesh.vtk"
-            meshio.Mesh(vertices, [("hexahedron", hexahedra)]).write(filepath)
-
-            with pytest.raises(ValueError, match="Unsupported element types"):
-                read(filepath)
+        with pytest.raises(ValueError, match=r"tetrahedra or triangles|no faces"):
+            read(grid)
 
     def test_read_multiple_triangle_blocks(
         self,

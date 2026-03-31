@@ -222,7 +222,7 @@ def get_sample_mesh(name: str) -> pv.DataSet | None:
     # Triangulate if needed (but not for tetrahedral meshes)
     if hasattr(pv_mesh, "triangulate") and pv_mesh.n_cells > 0:
         # Only triangulate if not already tetrahedral
-        if not (hasattr(pv_mesh, "celltypes") and 10 in pv_mesh.celltypes):
+        if pv.CellType.TETRA not in pv_mesh.distinct_cell_types:
             pv_mesh = pv_mesh.triangulate()
 
     return pv_mesh

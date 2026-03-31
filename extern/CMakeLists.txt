@@ -38,7 +38,7 @@ set(BUILD_MMG2D ON CACHE BOOL "Build MMG2D library and executable" FORCE)
 set(BUILD_MMG3D ON CACHE BOOL "Build MMG3D library and executable" FORCE)
 set(BUILD_MMGS ON CACHE BOOL "Build MMGS library and executable" FORCE)
 
-set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
+set(USE_VTK OFF CACHE BOOL "Do not use VTK — I/O handled in Python via meshio" FORCE)
 set(USE_ELAS OFF CACHE BOOL "Do not use ELAS" FORCE)
 
 # Make MMG available

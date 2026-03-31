@@ -1529,8 +1529,6 @@ dependencies = [
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
-    { name = "vtk", version = "9.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
-    { name = "vtk", version = "9.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
 ]
 
 [package.optional-dependencies]
@@ -1585,8 +1583,6 @@ requires-dist = [
     { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.16.0,<1" },
     { name = "trame-vuetify", marker = "extra == 'ui'", specifier = ">=3.2.0,<4" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0,<5" },
-    { name = "vtk", marker = "python_full_version < '3.14'", specifier = ">=9.5,<9.7" },
-    { name = "vtk", marker = "python_full_version >= '3.14'", specifier = ">=9.6,<9.7" },
 ]
 provides-extras = ["ui"]
 

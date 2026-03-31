@@ -15,22 +15,15 @@ from pathlib import Path
 
 import pyvista as pv
 
-from mmgpy import mmg2d
+import mmgpy
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "hole.mesh"
 SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "hole.sol"
-OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
-mmg2d.remesh(
-    input_mesh=INPUT_FILE,
-    input_sol=SOL_FILE,
-    output_mesh=OUTPUT_FILE,
-    options={"verbose": -1},
-)
-
-mesh = pv.read(OUTPUT_FILE)
+mesh = mmgpy.read(INPUT_FILE)
+mesh.remesh(input_sol=SOL_FILE, verbose=-1)
 
 pl = pv.Plotter()
-pl.add_mesh(mesh, show_edges=True, scalars=mesh.array_names[1])
+pl.add_mesh(mesh.to_pyvista(), show_edges=True)
 pl.view_xy()
 pl.show()

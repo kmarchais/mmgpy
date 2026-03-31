@@ -3,10 +3,12 @@
 #ifndef MMG_COMMON_HPP
 #define MMG_COMMON_HPP
 
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 #include "mmg/mmg3d/libmmg3d.h"
@@ -14,6 +16,21 @@
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+// Convert a std::variant<string, path> to a plain std::string.
+inline std::string
+variant_to_string(const std::variant<std::string, std::filesystem::path> &v) {
+  return std::visit(
+      [](auto &&arg) -> std::string {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::string>) {
+          return arg;
+        } else {
+          return arg.string();
+        }
+      },
+      v);
+}
 
 // Cross-platform stderr capture for MMG warning collection.
 // MMG outputs warnings to stderr (via fprintf), so we need to capture
@@ -91,8 +108,6 @@ struct RemeshStats {
   double quality_min;
   double quality_mean;
 };
-
-std::string get_file_extension(const std::string &filename);
 
 void set_mesh_options_2D(MMG5_pMesh mesh, MMG5_pSol met,
                          const py::dict &options);

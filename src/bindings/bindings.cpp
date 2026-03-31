@@ -5,6 +5,15 @@
 #include "mmg_mesh_s.hpp"
 
 namespace {
+// Convert a Python str or Path object to a std::variant for C++ file I/O.
+std::variant<std::string, std::filesystem::path>
+path_to_variant(const py::object &path) {
+  if (py::isinstance<py::str>(path)) {
+    return path.cast<std::string>();
+  }
+  return std::filesystem::path(path.attr("__str__")().cast<std::string>());
+}
+
 // MMG verbose level constants for Pythonic bool conversion
 constexpr int MMG_VERBOSE_SILENT = -1; // Suppress all output
 constexpr int MMG_VERBOSE_DEFAULT = 1; // Standard output
@@ -35,16 +44,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
       .def(py::init([](const py::object &path) {
-        // Handle both str and Path objects
-        if (py::isinstance<py::str>(path)) {
-          return new MmgMesh(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          // Assume it's a Path object
-          return new MmgMesh(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
+        return new MmgMesh(path_to_variant(path));
       }))
       .def("set_vertices_and_elements", &MmgMesh::set_vertices_and_elements)
       .def("get_vertices", &MmgMesh::get_vertices)
@@ -129,16 +129,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("__setitem__", &MmgMesh::setitem)
       .def("save",
            [](const MmgMesh &self, const py::object &path) {
-             // Handle both str and Path objects
-             if (py::isinstance<py::str>(path)) {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   path.cast<std::string>()));
-             } else {
-               // Assume it's a Path object
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   std::filesystem::path(
-                       path.attr("__str__")().cast<std::string>())));
-             }
+             self.save(path_to_variant(path));
+           })
+      .def("load_sol",
+           [](MmgMesh &self, const py::object &path) {
+             self.load_sol(path_to_variant(path));
+           })
+      .def("save_sol",
+           [](const MmgMesh &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
            })
       .def_property_readonly("is_corrupted", &MmgMesh::is_corrupted)
       .def(
@@ -183,14 +182,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
       .def(py::init([](const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          return new MmgMesh2D(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          return new MmgMesh2D(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
+        return new MmgMesh2D(path_to_variant(path));
       }))
       // Mesh sizing
       .def("set_mesh_size", &MmgMesh2D::set_mesh_size, py::arg("vertices") = 0,
@@ -260,14 +252,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       // File I/O
       .def("save",
            [](const MmgMesh2D &self, const py::object &path) {
-             if (py::isinstance<py::str>(path)) {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   path.cast<std::string>()));
-             } else {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   std::filesystem::path(
-                       path.attr("__str__")().cast<std::string>())));
-             }
+             self.save(path_to_variant(path));
+           })
+      .def("load_sol",
+           [](MmgMesh2D &self, const py::object &path) {
+             self.load_sol(path_to_variant(path));
+           })
+      .def("save_sol",
+           [](const MmgMesh2D &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
            })
       .def_property_readonly("is_corrupted", &MmgMesh2D::is_corrupted)
       .def(
@@ -312,14 +305,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
       .def(py::init([](const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          return new MmgMeshS(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          return new MmgMeshS(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
+        return new MmgMeshS(path_to_variant(path));
       }))
       // Mesh sizing
       .def("set_mesh_size", &MmgMeshS::set_mesh_size, py::arg("vertices") = 0,
@@ -379,14 +365,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       // File I/O
       .def("save",
            [](const MmgMeshS &self, const py::object &path) {
-             if (py::isinstance<py::str>(path)) {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   path.cast<std::string>()));
-             } else {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   std::filesystem::path(
-                       path.attr("__str__")().cast<std::string>())));
-             }
+             self.save(path_to_variant(path));
+           })
+      .def("load_sol",
+           [](MmgMeshS &self, const py::object &path) {
+             self.load_sol(path_to_variant(path));
+           })
+      .def("save_sol",
+           [](const MmgMeshS &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
            })
       .def_property_readonly("is_corrupted", &MmgMeshS::is_corrupted)
       .def(

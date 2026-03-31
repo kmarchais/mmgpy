@@ -183,14 +183,45 @@ class TestFromPyvista:
         with pytest.raises(ValueError, match="MmgMesh3D requires UnstructuredGrid"):
             from_pyvista(triangle_polydata_2d, mesh_type=MmgMesh3D)
 
-    def test_error_on_no_tetrahedra(self) -> None:
-        """Test error when UnstructuredGrid has no tetrahedra."""
-        vertices = np.array([[0, 0, 0], [1, 0, 0], [0.5, 1, 0]])
+    def test_error_on_no_surface_cells(self) -> None:
+        """Test error when UnstructuredGrid has no extractable surface."""
+        # A single point with no cells has no extractable surface
+        vertices = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype=np.float64)
+        cells = {pv.CellType.LINE: np.array([[0, 1], [1, 2]])}
+        grid = pv.UnstructuredGrid(cells, vertices)
+
+        with pytest.raises(ValueError, match=r"tetrahedra or triangles|no faces"):
+            from_pyvista(grid)
+
+    def test_unstructured_grid_triangles_auto_detect_2d(self) -> None:
+        """Test auto-detection of 2D mesh from UnstructuredGrid with triangles."""
+        vertices = np.array([[0, 0, 0], [1, 0, 0], [0.5, 1, 0]], dtype=np.float64)
         cells = {pv.CellType.TRIANGLE: np.array([[0, 1, 2]])}
         grid = pv.UnstructuredGrid(cells, vertices)
 
-        with pytest.raises(ValueError, match="must contain tetrahedra"):
-            from_pyvista(grid)
+        result = from_pyvista(grid)
+        assert isinstance(result, MmgMesh2D)
+
+    def test_unstructured_grid_hex_auto_detect_surface(self) -> None:
+        """Test hex mesh gets surface-extracted and treated as surface mesh."""
+        vertices = np.array(
+            [
+                [0, 0, 0],
+                [1, 0, 0],
+                [1, 1, 0],
+                [0, 1, 0],
+                [0, 0, 1],
+                [1, 0, 1],
+                [1, 1, 1],
+                [0, 1, 1],
+            ],
+            dtype=np.float64,
+        )
+        cells = {pv.CellType.HEXAHEDRON: np.array([[0, 1, 2, 3, 4, 5, 6, 7]])}
+        grid = pv.UnstructuredGrid(cells, vertices)
+
+        result = from_pyvista(grid)
+        assert isinstance(result, MmgMeshS)
 
 
 # to_pyvista tests

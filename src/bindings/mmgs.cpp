@@ -26,31 +26,13 @@ void cleanup_mmgs_structures(MMG5_pMesh &mesh, MMG5_pSol &met, MMG5_pSol &ls) {
 // Helper function to load mesh based on format
 int mmgs_load_mesh(MMG5_pMesh mesh, MMG5_pSol met, MMG5_pSol sol,
                    const std::string &filename) {
-  std::string ext = get_file_extension(filename);
-  if (ext == ".vtk") {
-    return MMGS_loadVtkMesh(mesh, met, sol, filename.c_str());
-  } else if (ext == ".vtu") {
-    return MMGS_loadVtuMesh(mesh, met, sol, filename.c_str());
-  } else if (ext == ".vtp") {
-    return MMGS_loadVtpMesh(mesh, met, sol, filename.c_str());
-  } else {
-    return MMGS_loadMesh(mesh, filename.c_str());
-  }
+  return MMGS_loadMesh(mesh, filename.c_str());
 }
 
 // Helper function to save mesh based on format
 int mmgs_save_mesh(MMG5_pMesh mesh, MMG5_pSol met,
                    const std::string &filename) {
-  std::string ext = get_file_extension(filename);
-  if (ext == ".vtk") {
-    return MMGS_saveVtkMesh(mesh, met, filename.c_str());
-  } else if (ext == ".vtu") {
-    return MMGS_saveVtuMesh(mesh, met, filename.c_str());
-  } else if (ext == ".vtp") {
-    return MMGS_saveVtpMesh(mesh, met, filename.c_str());
-  } else {
-    return MMGS_saveMesh(mesh, filename.c_str());
-  }
+  return MMGS_saveMesh(mesh, filename.c_str());
 }
 
 bool remesh_s(const py::object &input_mesh, const py::object &input_sol,

@@ -147,9 +147,7 @@ def _run_mmg() -> None:  # pragma: no cover
     This unified command automatically detects the mesh type from the input file
     and delegates to the appropriate mmg2d_O3, mmg3d_O3, or mmgs_O3 executable.
     """
-    import meshio  # noqa: PLC0415
-
-    from ._io import _detect_mesh_kind  # noqa: PLC0415
+    from ._io import read as _read  # noqa: PLC0415
     from ._mesh import MeshKind  # noqa: PLC0415
 
     args = sys.argv[1:]
@@ -221,10 +219,10 @@ def _run_mmg() -> None:  # pragma: no cover
         _get_cli_logger().error("No input mesh file found in arguments")
         sys.exit(1)
 
-    # Detect mesh type
+    # Detect mesh type (input_mesh is str after the None check above)
     try:
-        meshio_mesh = meshio.read(input_mesh)
-        mesh_kind = _detect_mesh_kind(meshio_mesh)
+        mesh = _read(str(input_mesh))
+        mesh_kind = mesh.kind
     except Exception:  # noqa: BLE001
         _get_cli_logger().exception(
             "Failed to detect mesh type from '%s'. "

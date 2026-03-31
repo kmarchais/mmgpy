@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import pyvista as pv
 
 from mmgpy.ui.parsers import (
     SafeFormulaEvaluator,
@@ -276,6 +277,32 @@ End
         assert "solution@vertices" in fields
         # Single value should still work
         assert fields["solution@vertices"]["data"].shape == (1,)
+
+    def test_parse_dimension_at_eof(self):
+        """Test parsing 'Dimension' keyword at end of file with no value."""
+        content = "Dimension"
+        fields = parse_sol_file(content)
+        assert fields == {}
+
+    def test_parse_multi_solution_tensor_and_scalar(self):
+        """Test parsing multiple solution types (tensor + scalar) in one section."""
+        content = """MeshVersionFormatted 2
+Dimension 3
+SolAtVertices
+2
+2 3 1
+1.0 2.0 3.0 4.0 5.0 6.0 0.5
+7.0 8.0 9.0 10.0 11.0 12.0 0.3
+End
+"""
+        fields = parse_sol_file(content)
+        assert "tensor_0@vertices" in fields
+        assert fields["tensor_0@vertices"]["data"].shape == (2, 6)
+        assert "solution_1@vertices" in fields
+        np.testing.assert_array_almost_equal(
+            fields["solution_1@vertices"]["data"],
+            np.array([0.5, 0.3]),
+        )
 
 
 class TestSafeFormulaEvaluator:
@@ -660,7 +687,7 @@ class TestSampleMeshes:
         assert mesh.n_cells > 0
         assert mesh.n_points > 0
         # Check it's a 3D mesh with tetrahedra (cell type 10)
-        assert 10 in mesh.celltypes
+        assert pv.CellType.TETRA in mesh.distinct_cell_types
 
     def test_create_tetra_sphere(self):
         """Test tetrahedral sphere creation."""
@@ -669,7 +696,7 @@ class TestSampleMeshes:
         assert mesh is not None
         assert mesh.n_cells > 0
         assert mesh.n_points > 0
-        assert 10 in mesh.celltypes
+        assert pv.CellType.TETRA in mesh.distinct_cell_types
 
     def test_create_2d_disc(self):
         """Test 2D disc creation."""
@@ -699,7 +726,7 @@ class TestSampleMeshes:
         mesh = get_sample_mesh("tetra_cube")
 
         assert mesh is not None
-        assert 10 in mesh.celltypes
+        assert pv.CellType.TETRA in mesh.distinct_cell_types
 
     def test_get_sample_mesh_unknown(self):
         """Test getting unknown sample mesh returns None."""
