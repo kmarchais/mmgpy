@@ -8,6 +8,7 @@ via ``Mesh.save()`` (meshio).  No temporary files are created.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -15,6 +16,8 @@ from typing import TYPE_CHECKING, Any
 from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
 from mmgpy._mmgpy import mmg3d as _mmg3d_cpp
 from mmgpy._mmgpy import mmgs as _mmgs_cpp
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -53,6 +56,10 @@ def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
     try:
         data = mesh["metric"]
     except KeyError:
+        logger.warning(
+            "No metric field found; output sol file '%s' not written.",
+            sol_path,
+        )
         return
 
     n_vertices = len(mesh.get_vertices())
@@ -102,11 +109,11 @@ def _wrapped_remesh(
 
     if input_native and output_native:
         return cpp_remesh(
-            input_mesh,
-            input_sol,
-            output_mesh,
-            output_sol,
-            options or {},
+            input_mesh=input_mesh,
+            input_sol=input_sol,
+            output_mesh=output_mesh,
+            output_sol=output_sol,
+            options=options or {},
         )
 
     # Non-native format detected — use the in-memory remesh path.
