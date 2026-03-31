@@ -2,90 +2,90 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/changelog/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/io/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/lagrangian/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/mesh-classes/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/metrics/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/options/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/results-validation/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/api/sizing/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/examples/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/getting-started/concepts/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/getting-started/installation/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/getting-started/quickstart/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/reference/cli/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/reference/file-formats/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/reference/mmg-parameters/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/tutorials/adaptive-sizing/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/tutorials/basic-remeshing/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/tutorials/levelset-extraction/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/tutorials/pyvista-integration/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
     <url>
          <loc>https://kmarchais.github.io/mmgpy/latest/tutorials/surface-remeshing/</loc>
-         <lastmod>2026-03-24</lastmod>
+         <lastmod>2026-03-31</lastmod>
     </url>
 </urlset>
