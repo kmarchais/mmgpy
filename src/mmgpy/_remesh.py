@@ -39,7 +39,7 @@ def _is_native(path: str | Path | None) -> bool:
 
 def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
     """Parse a .sol file and set the appropriate field on *mesh*."""
-    from mmgpy.ui.parsers import parse_sol_file  # noqa: PLC0415
+    from mmgpy._sol import parse_sol_file  # noqa: PLC0415
 
     content = Path(sol_path).read_text()
     fields = parse_sol_file(content)

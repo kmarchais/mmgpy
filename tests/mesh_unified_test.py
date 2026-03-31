@@ -602,7 +602,7 @@ class TestNonNativeRemeshWithSol:
     def test_save_sol_roundtrip(self) -> None:
         """Test that _save_sol produces a file parseable by parse_sol_file."""
         from mmgpy._remesh import _save_sol
-        from mmgpy.ui.parsers import parse_sol_file
+        from mmgpy._sol import parse_sol_file
 
         input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
         mesh = read(input_mesh)
