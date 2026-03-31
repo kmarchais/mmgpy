@@ -419,6 +419,21 @@ class TestMeshMethods:
 
             assert filepath.exists()
 
+    def test_save_non_native_format(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test save to non-native format via meshio."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "output.vtk"
+            mesh.save(filepath)
+
+            assert filepath.exists()
+            assert filepath.stat().st_size > 0
+
     def test_to_pyvista(
         self,
         tetra_vertices: np.ndarray,
