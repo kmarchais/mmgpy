@@ -153,7 +153,7 @@ def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
 
 
 class _LazyFieldSource:
-    """Deferred point_data from a meshio/PyVista read.
+    """Deferred point_data from a PyVista read.
 
     Fields remain in the original numpy arrays until explicitly accessed,
     at which point they are validated and moved into ``Mesh._user_fields``.

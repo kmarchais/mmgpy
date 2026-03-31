@@ -68,7 +68,7 @@ def _wrapped_remesh(
         )
 
     # Non-native format detected — use the in-memory remesh path.
-    # mmgpy.read() handles any format via meshio/PyVista, Mesh.remesh()
+    # mmgpy.read() handles any format via PyVista, Mesh.remesh()
     # works in-memory, and Mesh.save() converts back via PyVista.
     from mmgpy._io import read as _read  # noqa: PLC0415
 
@@ -109,11 +109,11 @@ class mmg3d:
         Parameters
         ----------
         input_mesh : str or Path
-            Input mesh file. Any format supported by meshio.
+            Input mesh file. Any format supported by PyVista.
         input_sol : str or Path, optional
             Input solution file (.sol/.solb).
         output_mesh : str or Path, optional
-            Output mesh file. Any format supported by meshio.
+            Output mesh file. Any format supported by PyVista.
         output_sol : str or Path, optional
             Output solution file (.sol/.solb).
         options : dict, optional
@@ -156,11 +156,11 @@ class mmg2d:
         Parameters
         ----------
         input_mesh : str or Path
-            Input mesh file. Any format supported by meshio.
+            Input mesh file. Any format supported by PyVista.
         input_sol : str or Path, optional
             Input solution file (.sol/.solb).
         output_mesh : str or Path, optional
-            Output mesh file. Any format supported by meshio.
+            Output mesh file. Any format supported by PyVista.
         output_sol : str or Path, optional
             Output solution file (.sol/.solb).
         options : dict, optional
@@ -203,11 +203,11 @@ class mmgs:
         Parameters
         ----------
         input_mesh : str or Path
-            Input mesh file. Any format supported by meshio.
+            Input mesh file. Any format supported by PyVista.
         input_sol : str or Path, optional
             Input solution file (.sol/.solb).
         output_mesh : str or Path, optional
-            Output mesh file. Any format supported by meshio.
+            Output mesh file. Any format supported by PyVista.
         output_sol : str or Path, optional
             Output solution file (.sol/.solb).
         options : dict, optional

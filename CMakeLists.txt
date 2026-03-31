@@ -24,7 +24,6 @@ else()
     message(FATAL_ERROR "Could not find mmg_version in pyproject.toml")
 endif()
 
-
 # Extract numeric version for CMake project() which doesn't support suffixes
 string(REGEX MATCH "([0-9]+\\.[0-9]+\\.[0-9]+([.][0-9]+)?)" _ ${MMGPY_VERSION})
 set(MMGPY_NUMERIC_VERSION ${CMAKE_MATCH_1})

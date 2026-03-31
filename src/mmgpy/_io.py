@@ -220,7 +220,8 @@ def read(
         - STL: .stl (via PyVista)
         - OBJ: .obj (via PyVista)
         - PLY: .ply (via PyVista)
-        - And many more via PyVista...
+        - Gmsh, Abaqus, NASTRAN, Exodus, XDMF, etc. (via PyVista + meshio)
+        - And many more via PyVista (which uses meshio as fallback)...
 
     Example:
         >>> import mmgpy

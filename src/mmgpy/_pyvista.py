@@ -198,9 +198,13 @@ def _from_pyvista_auto_detect(
     if isinstance(mesh, pv.UnstructuredGrid):
         if pv.CellType.TETRA in mesh.cells_dict:
             return _from_pyvista_to_mmg3d(mesh)
-        # UnstructuredGrid with surface cells (triangles, quads, etc.)
+        # UnstructuredGrid with no tets — extract surface and treat as 2D/surface
         polydata = mesh.extract_surface(algorithm=None)
         if polydata.n_cells > 0:
+            logger.warning(
+                "UnstructuredGrid has no tetrahedra; extracting surface for MMG. "
+                "Volume element types (hex, wedge, pyramid) are not supported by MMG.",
+            )
             if _is_2d_mesh(polydata.points):
                 return _from_pyvista_to_mmg2d(polydata)
             return _from_pyvista_to_mmgs(polydata)
