@@ -1949,11 +1949,10 @@
 
         <p>Read a mesh from a file or PyVista object.</p>
 <p>This function provides unified mesh loading from any format supported by
-meshio (40+ formats including VTK, Gmsh, STL, OBJ, etc.) or directly from
-PyVista mesh objects.</p>
+PyVista or directly from PyVista mesh objects.</p>
 <p>For Medit format (.mesh) files, native MMG loading is used to preserve
 MMG-specific keywords like Ridges, RequiredVertices, Tangents, and
-reference markers that meshio does not understand.</p>
+reference markers.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2033,13 +2032,13 @@ reference markers that meshio does not understand.</p>
 <details class="supported-file-formats" open>
   <summary>Supported file formats</summary>
   <ul>
-<li>Medit: .mesh (native MMG loading, preserves all MMG keywords)</li>
-<li>VTK: .vtk, .vtu, .vtp (via meshio)</li>
-<li>Gmsh: .msh (via meshio)</li>
-<li>STL: .stl (via meshio)</li>
-<li>OBJ: .obj (via meshio)</li>
-<li>PLY: .ply (via meshio)</li>
-<li>And many more via meshio...</li>
+<li>Medit: .mesh, .meshb (native MMG loading, preserves all MMG keywords)</li>
+<li>VTK: .vtk, .vtu, .vtp (via PyVista)</li>
+<li>STL: .stl (via PyVista)</li>
+<li>OBJ: .obj (via PyVista)</li>
+<li>PLY: .ply (via PyVista)</li>
+<li>Gmsh, Abaqus, NASTRAN, Exodus, XDMF, etc. (via PyVista + meshio)</li>
+<li>And many more via PyVista (which uses meshio as fallback)...</li>
 </ul>
 </details>
 

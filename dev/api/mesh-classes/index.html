@@ -2340,6 +2340,62 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.load_sol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;load_sol
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" load_sol">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.load_sol--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.save_sol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;save_sol
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" save_sol">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.save_sol--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mmgpy.Mesh.remesh" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5049,6 +5105,62 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.load_sol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;load_sol
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" load_sol">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.load_sol--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.save_sol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;save_sol
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" save_sol">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.save_sol--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mmgpy.Mesh.remesh" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7227,9 +7339,62 @@ print(f"Bounding box diagonal: {diagonal:.2f}")</p>
     <div class="doc doc-contents ">
 
         <p>Save mesh to file.</p>
+<p>Medit formats (.mesh, .meshb) are written directly by the MMG C
+library.  All other formats (.vtk, .vtu, .vtp, .stl, .obj, ...)
+are converted via PyVista.</p>
 <h5 id="mmgpy.Mesh.save--parameters">Parameters<a class="headerlink" href="#mmgpy.Mesh.save--parameters" title="Permanent link">&para;</a></h5>
 <p>filename : str or Path
     Output file path. Format determined by extension.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="mmgpy.Mesh.load_sol" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">load_sol</span>
+
+
+<a href="#mmgpy.Mesh.load_sol" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_sol</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Load a Medit solution file (.sol/.solb) and set the field on the mesh.</p>
+<p>Both text (.sol) and binary (.solb) formats are supported via the
+MMG C library.</p>
+<h5 id="mmgpy.Mesh.load_sol--parameters">Parameters<a class="headerlink" href="#mmgpy.Mesh.load_sol--parameters" title="Permanent link">&para;</a></h5>
+<p>filename : str or Path
+    Path to a .sol or .solb file.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="mmgpy.Mesh.save_sol" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">save_sol</span>
+
+
+<a href="#mmgpy.Mesh.save_sol" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">save_sol</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Save the solution/metric field to a Medit .sol file.</p>
+<p>Both text (.sol) and binary (.solb) formats are supported via the
+MMG C library.</p>
+<h5 id="mmgpy.Mesh.save_sol--parameters">Parameters<a class="headerlink" href="#mmgpy.Mesh.save_sol--parameters" title="Permanent link">&para;</a></h5>
+<p>filename : str or Path
+    Output path for the .sol or .solb file.</p>
 
 
     </div>
@@ -7247,11 +7412,12 @@ print(f"Bounding box diagonal: {diagonal:.2f}")</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remesh</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">options</span><span class="p">:</span> <span class="n">Mmg3DOptions</span> <span class="o">|</span> <span class="n">Mmg2DOptions</span> <span class="o">|</span> <span class="n">MmgSOptions</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">progress</span><span class="p">:</span> <span class="n">ProgressParam</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">transfer_fields</span><span class="p">:</span> <span class="n">FieldTransferParam</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">interpolation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemeshResult</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">input_sol</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">progress</span><span class="p">:</span> <span class="n">ProgressParam</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">transfer_fields</span><span class="p">:</span> <span class="n">FieldTransferParam</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">interpolation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemeshResult</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -7260,6 +7426,10 @@ print(f"Bounding box diagonal: {diagonal:.2f}")</p>
 <h5 id="mmgpy.Mesh.remesh--parameters">Parameters<a class="headerlink" href="#mmgpy.Mesh.remesh--parameters" title="Permanent link">&para;</a></h5>
 <p>options : Mmg3DOptions | Mmg2DOptions | MmgSOptions, optional
     Options object for remeshing parameters.
+input_sol : str, Path, or ndarray, optional
+    Solution data for adaptive remeshing.  Can be a path to a
+    Medit .sol file, or a numpy array (scalar metric, Nx3/Nx6
+    anisotropic tensor, or Nx2/Nx3 displacement vector).
 progress : bool | Callable[[ProgressEvent], bool] | None, default=True
     Progress reporting option:
     - True: Show Rich progress bar (default)
