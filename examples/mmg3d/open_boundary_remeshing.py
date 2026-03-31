@@ -15,10 +15,11 @@ from pathlib import Path
 
 import pyvista as pv
 
+import mmgpy
 from mmgpy import mmg3d
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "island.mesh"
-OUTPUT_FILE = Path(__file__).parent / "output.vtk"
+OUTPUT_FILE = Path(__file__).parent / "output.mesh"
 
 
 pl = pv.Plotter(shape=(1, 2), window_size=(800, 400))
@@ -33,7 +34,7 @@ for open_boundary in [False, True]:
         },
     )
 
-    mesh = pv.read(OUTPUT_FILE)
+    mesh = mmgpy.read(OUTPUT_FILE).to_pyvista()
     pl.add_mesh(
         mesh.extract_cells(mesh.cell_centers().points[:, :] < 0),
         show_edges=True,
