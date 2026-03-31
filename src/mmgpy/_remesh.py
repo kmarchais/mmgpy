@@ -8,6 +8,7 @@ via ``Mesh.save()`` (meshio).  No temporary files are created.
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -50,6 +51,19 @@ def _wrapped_remesh(
     # Non-native format detected — use the in-memory remesh path.
     # mmgpy.read() handles any format via meshio, Mesh.remesh() works
     # in-memory, and Mesh.save() converts back via meshio.
+    if input_sol is not None:
+        warnings.warn(
+            "input_sol is ignored for non-native formats; "
+            "solution data must be embedded in the mesh file or set via Mesh API",
+            stacklevel=3,
+        )
+    if output_sol is not None:
+        warnings.warn(
+            "output_sol is ignored for non-native formats; "
+            "use Mesh.save() to write the result in the desired format",
+            stacklevel=3,
+        )
+
     from mmgpy._io import read as _read  # noqa: PLC0415
 
     mesh = _read(input_mesh)
