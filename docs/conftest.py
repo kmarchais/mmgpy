@@ -233,6 +233,19 @@ def _patched_pv_save(
 pv.PolyData.save = _patched_pv_save  # type: ignore[assignment]
 pv.UnstructuredGrid.save = _patched_pv_save  # type: ignore[assignment]
 
+# Patch .plot() to be a no-op — VTK rendering can segfault in CI environments
+# without proper GL libraries, especially when VTK is an indirect dependency.
+_real_pv_polydata_plot = pv.PolyData.plot
+_real_pv_unstructured_plot = pv.UnstructuredGrid.plot
+
+
+def _noop_plot(self: object, **_kwargs: object) -> None:
+    pass
+
+
+pv.PolyData.plot = _noop_plot  # type: ignore[assignment]
+pv.UnstructuredGrid.plot = _noop_plot  # type: ignore[assignment]
+
 
 # ---------------------------------------------------------------------------
 # Restore originals on pytest teardown (avoids polluting other test suites
@@ -248,3 +261,5 @@ def pytest_unconfigure() -> None:
     pv.read = _real_pv_read  # type: ignore[assignment]
     pv.PolyData.save = _real_pv_polydata_save  # type: ignore[assignment]
     pv.UnstructuredGrid.save = _real_pv_unstructured_save  # type: ignore[assignment]
+    pv.PolyData.plot = _real_pv_polydata_plot  # type: ignore[assignment]
+    pv.UnstructuredGrid.plot = _real_pv_unstructured_plot  # type: ignore[assignment]
