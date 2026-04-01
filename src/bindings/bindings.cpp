@@ -142,6 +142,17 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_normal_at_vertices", &MmgMesh::get_normal_at_vertices,
            py::arg("vertex_indices"),
            "Get normal vectors at specified vertices. Returns Nx3 array.")
+      // Local parameters
+      .def("set_local_parameters", &MmgMesh::set_local_parameters,
+           py::arg("parameters"),
+           "Set region-specific mesh sizing parameters.\n\n"
+           "Parameters:\n"
+           "    parameters: list of dicts, each with keys:\n"
+           "        type: 'vertex', 'edge', 'triangle', or 'tetrahedron'\n"
+           "        ref: reference number (material ID)\n"
+           "        hmin: minimum edge size\n"
+           "        hmax: maximum edge size\n"
+           "        hausd: Hausdorff distance")
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh::get_adjacent_elements,
            py::arg("idx"),
@@ -274,6 +285,17 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("edge_indices"))
       // Attribute queries
       .def("get_vertex_flags", &MmgMesh2D::get_vertex_flags, py::arg("idx"))
+      // Local parameters
+      .def("set_local_parameters", &MmgMesh2D::set_local_parameters,
+           py::arg("parameters"),
+           "Set region-specific mesh sizing parameters.\n\n"
+           "Parameters:\n"
+           "    parameters: list of dicts, each with keys:\n"
+           "        type: 'vertex', 'edge', or 'triangle'\n"
+           "        ref: reference number (material ID)\n"
+           "        hmin: minimum edge size\n"
+           "        hmax: maximum edge size\n"
+           "        hausd: Hausdorff distance")
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh2D::get_adjacent_elements,
            py::arg("idx"),
@@ -410,6 +432,17 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("get_normal_at_vertices", &MmgMeshS::get_normal_at_vertices,
            py::arg("vertex_indices"),
            "Get normal vectors at specified vertices. Returns Nx3 array.")
+      // Local parameters
+      .def("set_local_parameters", &MmgMeshS::set_local_parameters,
+           py::arg("parameters"),
+           "Set region-specific mesh sizing parameters.\n\n"
+           "Parameters:\n"
+           "    parameters: list of dicts, each with keys:\n"
+           "        type: 'vertex', 'edge', or 'triangle'\n"
+           "        ref: reference number (material ID)\n"
+           "        hmin: minimum edge size\n"
+           "        hmax: maximum edge size\n"
+           "        hausd: Hausdorff distance")
       // Topology queries
       .def("get_adjacent_elements", &MmgMeshS::get_adjacent_elements,
            py::arg("idx"),

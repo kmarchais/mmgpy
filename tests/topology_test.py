@@ -1180,3 +1180,159 @@ class TestUnsetAttributesSurface:
         indices = np.array([0, 2], dtype=np.int32)
         mesh.set_ridge_edges(indices)
         mesh.unset_ridge_edges(indices)
+
+
+class TestLocalParameters3D:
+    """Tests for local parameters on MmgMesh3D."""
+
+    def test_set_local_parameters(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting local parameters for MmgMesh3D."""
+        vertices, elements = cube_mesh
+
+        triangles = np.array(
+            [[0, 1, 3], [1, 2, 3], [4, 5, 7], [5, 6, 7]],
+            dtype=np.int32,
+        )
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(
+            vertices=len(vertices),
+            tetrahedra=len(elements),
+            triangles=len(triangles),
+        )
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+        mesh.set_triangles(
+            triangles,
+            refs=np.array([1, 1, 2, 2], dtype=np.int64),
+        )
+
+        mesh.set_local_parameters(
+            [
+                {
+                    "type": "triangle",
+                    "ref": 1,
+                    "hmin": 0.01,
+                    "hmax": 0.1,
+                    "hausd": 0.01,
+                },
+                {
+                    "type": "triangle",
+                    "ref": 2,
+                    "hmin": 0.05,
+                    "hmax": 0.5,
+                    "hausd": 0.05,
+                },
+            ],
+        )
+
+    def test_empty_parameters(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that empty parameter list works."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        mesh.set_local_parameters([])
+
+    def test_invalid_entity_type(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that invalid entity type raises error."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        with pytest.raises(RuntimeError, match="Unknown entity type"):
+            mesh.set_local_parameters(
+                [
+                    {
+                        "type": "invalid",
+                        "ref": 1,
+                        "hmin": 0.01,
+                        "hmax": 0.1,
+                        "hausd": 0.01,
+                    },
+                ],
+            )
+
+
+class TestLocalParameters2D:
+    """Tests for local parameters on MmgMesh2D."""
+
+    def test_set_local_parameters(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting local parameters for MmgMesh2D."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(
+            triangles,
+            refs=np.array([1, 2], dtype=np.int64),
+        )
+
+        mesh.set_local_parameters(
+            [
+                {
+                    "type": "triangle",
+                    "ref": 1,
+                    "hmin": 0.01,
+                    "hmax": 0.1,
+                    "hausd": 0.01,
+                },
+            ],
+        )
+
+
+class TestLocalParametersSurface:
+    """Tests for local parameters on MmgMeshS."""
+
+    def test_set_local_parameters(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test setting local parameters for MmgMeshS."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(
+            triangles,
+            refs=np.array([1, 1, 2, 2], dtype=np.int64),
+        )
+
+        mesh.set_local_parameters(
+            [
+                {
+                    "type": "triangle",
+                    "ref": 1,
+                    "hmin": 0.01,
+                    "hmax": 0.1,
+                    "hausd": 0.01,
+                },
+                {
+                    "type": "triangle",
+                    "ref": 2,
+                    "hmin": 0.05,
+                    "hmax": 0.5,
+                    "hausd": 0.05,
+                },
+            ],
+        )

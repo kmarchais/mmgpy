@@ -93,6 +93,9 @@ public:
   py::array_t<double>
   get_normal_at_vertices(const py::array_t<int> &vertex_indices) const;
 
+  // Local parameters
+  void set_local_parameters(const py::list &parameters);
+
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
   py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;
