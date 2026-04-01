@@ -811,7 +811,9 @@ class MmgMesh3D:
         Returns
         -------
         tuple[int, int]
-            (tet_idx, face_idx). tet_idx is -1 if no adjacent tetrahedron.
+            (tet_idx, face_idx) where tet_idx is 0-based (-1 if no adjacent
+            tetrahedron) and face_idx is the local face index within the
+            tetrahedron (0-3).
 
         """
 
@@ -829,7 +831,9 @@ class MmgMesh3D:
         Returns
         -------
         tuple[tuple[int, int], tuple[int, int]]
-            ((tet0, face0), (tet1, face1)). -1 if no neighbor.
+            ((tet0, face0), (tet1, face1)) where tet indices are 0-based (-1
+            if no neighbor) and face indices are local within the tetrahedron
+            (0-3).
 
         """
 
@@ -1811,7 +1815,9 @@ class MmgMesh2D:
         Returns
         -------
         tuple[int, int]
-            (tri_idx, local_edge_idx). tri_idx is -1 if no adjacent triangle.
+            (tri_idx, local_edge_idx) where tri_idx is 0-based (-1 if no
+            adjacent triangle) and local_edge_idx is the local edge index
+            within the triangle (0-2).
 
         """
 
@@ -1829,7 +1835,9 @@ class MmgMesh2D:
         Returns
         -------
         tuple[tuple[int, int], tuple[int, int]]
-            ((tri0, edge0), (tri1, edge1)). -1 if no neighbor.
+            ((tri0, edge0), (tri1, edge1)) where tri indices are 0-based (-1
+            if no neighbor) and edge indices are local within the triangle
+            (0-2).
 
         """
 

@@ -1354,13 +1354,14 @@ class TestAdvancedTopology3D:
         # After remesh, the mesh has boundary triangles
         mesh_size = mesh.get_mesh_size()
         n_triangles = mesh_size[3]
-        if n_triangles > 0:
-            result = mesh.get_tet_from_tria(0)
-            assert isinstance(result, tuple)
-            assert len(result) == 2
-            tet_idx, face_idx = result
-            assert isinstance(tet_idx, int)
-            assert isinstance(face_idx, int)
+        assert n_triangles > 0
+
+        result = mesh.get_tet_from_tria(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        tet_idx, face_idx = result
+        assert isinstance(tet_idx, int)
+        assert isinstance(face_idx, int)
 
     def test_get_tets_from_tria(
         self,
@@ -1374,13 +1375,14 @@ class TestAdvancedTopology3D:
 
         mesh_size = mesh.get_mesh_size()
         n_triangles = mesh_size[3]
-        if n_triangles > 0:
-            result = mesh.get_tets_from_tria(0)
-            assert isinstance(result, tuple)
-            assert len(result) == 2
-            (tet0, face0), (_tet1, _face1) = result
-            assert isinstance(tet0, int)
-            assert isinstance(face0, int)
+        assert n_triangles > 0
+
+        result = mesh.get_tets_from_tria(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        (tet0, face0), (_tet1, _face1) = result
+        assert isinstance(tet0, int)
+        assert isinstance(face0, int)
 
     def test_get_non_boundary_triangles(
         self,
@@ -1441,10 +1443,11 @@ class TestAdvancedTopology2D:
 
         mesh_size = mesh.get_mesh_size()
         n_edges = mesh_size[3]
-        if n_edges > 0:
-            result = mesh.get_tri_from_edge(0)
-            assert isinstance(result, tuple)
-            assert len(result) == 2
+        assert n_edges > 0
+
+        result = mesh.get_tri_from_edge(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
 
     def test_get_tris_from_edge(
         self,
@@ -1458,10 +1461,11 @@ class TestAdvancedTopology2D:
 
         mesh_size = mesh.get_mesh_size()
         n_edges = mesh_size[3]
-        if n_edges > 0:
-            result = mesh.get_tris_from_edge(0)
-            assert isinstance(result, tuple)
-            assert len(result) == 2
+        assert n_edges > 0
+
+        result = mesh.get_tris_from_edge(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
 
     def test_get_non_boundary_edges(
         self,
@@ -1502,6 +1506,9 @@ class TestAdvancedTopology2D:
 
         with pytest.raises(RuntimeError, match="out of range"):
             mesh.get_tri_from_edge(100)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.get_tris_from_edge(100)
 
 
 class TestAdvancedTopologySurface:
