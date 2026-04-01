@@ -745,6 +745,34 @@ class MmgMesh3D:
 
         """
 
+    def set_multi_materials(self, materials: list[dict]) -> None:
+        """Set multi-material configuration for level-set discretization.
+
+        Automatically sets numberOfMat before applying materials.
+
+        Parameters
+        ----------
+        materials : list[dict]
+            List of material dicts, each with keys:
+            - ref: reference number
+            - split: split flag (1 to split, 0 otherwise)
+            - ref_minus: reference for negative side
+            - ref_plus: reference for positive side
+
+        """
+
+    def set_ls_base_references(self, references: list[int]) -> None:
+        """Set level-set base references for isovalue discretization.
+
+        Automatically sets numberOfLSBaseReferences.
+
+        Parameters
+        ----------
+        references : list[int]
+            List of base reference values.
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of tetrahedra sharing faces with element idx.
 
@@ -1749,6 +1777,34 @@ class MmgMesh2D:
 
         """
 
+    def set_multi_materials(self, materials: list[dict]) -> None:
+        """Set multi-material configuration for level-set discretization.
+
+        Automatically sets numberOfMat before applying materials.
+
+        Parameters
+        ----------
+        materials : list[dict]
+            List of material dicts, each with keys:
+            - ref: reference number
+            - split: split flag (1 to split, 0 otherwise)
+            - ref_minus: reference for negative side
+            - ref_plus: reference for positive side
+
+        """
+
+    def set_ls_base_references(self, references: list[int]) -> None:
+        """Set level-set base references for isovalue discretization.
+
+        Automatically sets numberOfLSBaseReferences.
+
+        Parameters
+        ----------
+        references : list[int]
+            List of base reference values.
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of triangles sharing edges with element idx.
 
@@ -2531,6 +2587,34 @@ class MmgMeshS:
             - hmin: minimum edge size
             - hmax: maximum edge size
             - hausd: Hausdorff distance
+
+        """
+
+    def set_multi_materials(self, materials: list[dict]) -> None:
+        """Set multi-material configuration for level-set discretization.
+
+        Automatically sets numberOfMat before applying materials.
+
+        Parameters
+        ----------
+        materials : list[dict]
+            List of material dicts, each with keys:
+            - ref: reference number
+            - split: split flag (1 to split, 0 otherwise)
+            - ref_minus: reference for negative side
+            - ref_plus: reference for positive side
+
+        """
+
+    def set_ls_base_references(self, references: list[int]) -> None:
+        """Set level-set base references for isovalue discretization.
+
+        Automatically sets numberOfLSBaseReferences.
+
+        Parameters
+        ----------
+        references : list[int]
+            List of base reference values.
 
         """
 
