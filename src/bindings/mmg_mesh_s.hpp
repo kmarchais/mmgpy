@@ -84,6 +84,9 @@ public:
   double get_element_quality(MMG5_int idx) const;
   py::array_t<double> get_element_qualities() const;
 
+  // Advanced topology queries
+  py::tuple get_non_boundary_edges() const;
+
   // Solution fields
   void set_field(const std::string &field_name,
                  const py::array_t<double> &values);

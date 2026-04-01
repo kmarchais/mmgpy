@@ -1336,3 +1336,198 @@ class TestLocalParametersSurface:
                 },
             ],
         )
+
+
+class TestAdvancedTopology3D:
+    """Tests for advanced 3D topology queries."""
+
+    def test_get_tet_from_tria(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test getting tetrahedron from triangle (requires remesh first)."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D(vertices, elements)
+        mesh.remesh(verbose=False)
+
+        # After remesh, the mesh has boundary triangles
+        mesh_size = mesh.get_mesh_size()
+        n_triangles = mesh_size[3]
+        assert n_triangles > 0
+
+        result = mesh.get_tet_from_tria(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        tet_idx, face_idx = result
+        assert isinstance(tet_idx, int)
+        assert isinstance(face_idx, int)
+
+    def test_get_tets_from_tria(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test getting both tetrahedra from triangle (requires remesh first)."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D(vertices, elements)
+        mesh.remesh(verbose=False)
+
+        mesh_size = mesh.get_mesh_size()
+        n_triangles = mesh_size[3]
+        assert n_triangles > 0
+
+        result = mesh.get_tets_from_tria(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        (tet0, face0), (_tet1, _face1) = result
+        assert isinstance(tet0, int)
+        assert isinstance(face0, int)
+
+    def test_get_non_boundary_triangles(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test getting non-boundary triangles."""
+        vertices, elements = cube_mesh
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(elements))
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+
+        verts, refs = mesh.get_non_boundary_triangles()
+        assert verts.ndim == 2
+        assert verts.shape[1] == 3
+        assert refs.ndim == 1
+        assert verts.shape[0] == refs.shape[0]
+
+    def test_invalid_tri_index(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that invalid triangle index raises error."""
+        vertices, elements = cube_mesh
+
+        triangles = np.array([[0, 1, 3]], dtype=np.int32)
+
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(
+            vertices=len(vertices),
+            tetrahedra=len(elements),
+            triangles=len(triangles),
+        )
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(elements)
+        mesh.set_triangles(triangles)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.get_tet_from_tria(100)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.get_tets_from_tria(100)
+
+
+class TestAdvancedTopology2D:
+    """Tests for advanced 2D topology queries."""
+
+    def test_get_tri_from_edge(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test getting triangle from edge (requires remesh first)."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D(vertices, triangles)
+        mesh.remesh(verbose=False)
+
+        mesh_size = mesh.get_mesh_size()
+        n_edges = mesh_size[3]
+        assert n_edges > 0
+
+        result = mesh.get_tri_from_edge(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    def test_get_tris_from_edge(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test getting both triangles from edge (requires remesh first)."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D(vertices, triangles)
+        mesh.remesh(verbose=False)
+
+        mesh_size = mesh.get_mesh_size()
+        n_edges = mesh_size[3]
+        assert n_edges > 0
+
+        result = mesh.get_tris_from_edge(0)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    def test_get_non_boundary_edges(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test getting non-boundary edges."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        verts, refs = mesh.get_non_boundary_edges()
+        assert verts.ndim == 2
+        assert verts.shape[1] == 2
+        assert refs.ndim == 1
+        assert verts.shape[0] == refs.shape[0]
+
+    def test_invalid_edge_index(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that invalid edge index raises error."""
+        vertices, triangles = square_mesh
+
+        edges = np.array([[0, 1]], dtype=np.int32)
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(
+            vertices=len(vertices),
+            triangles=len(triangles),
+            edges=len(edges),
+        )
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+        mesh.set_edges(edges)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.get_tri_from_edge(100)
+
+        with pytest.raises(RuntimeError, match="out of range"):
+            mesh.get_tris_from_edge(100)
+
+
+class TestAdvancedTopologySurface:
+    """Tests for advanced surface mesh topology queries."""
+
+    def test_get_non_boundary_edges(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test getting non-boundary edges for surface mesh."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        verts, refs = mesh.get_non_boundary_edges()
+        assert verts.ndim == 2
+        assert verts.shape[1] == 2
+        assert refs.ndim == 1
+        assert verts.shape[0] == refs.shape[0]

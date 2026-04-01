@@ -788,6 +788,38 @@ py::array_t<double> MmgMeshS::get_element_qualities() const {
   return result;
 }
 
+// Advanced topology queries
+
+py::tuple MmgMeshS::get_non_boundary_edges() const {
+  MMG5_int nb_edges = 0;
+  if (!MMGS_Get_numberOfNonBdyEdges(mesh, &nb_edges)) {
+    throw std::runtime_error("Failed to get number of non-boundary edges");
+  }
+
+  py::array_t<int> vertices(
+      {static_cast<py::ssize_t>(nb_edges), py::ssize_t{2}});
+  py::array_t<int> refs(static_cast<py::ssize_t>(nb_edges));
+  auto v_buf = vertices.request();
+  auto r_buf = refs.request();
+  int *v_ptr = static_cast<int *>(v_buf.ptr);
+  int *r_ptr = static_cast<int *>(r_buf.ptr);
+
+  for (MMG5_int i = 0; i < nb_edges; i++) {
+    MMG5_int e0 = 0;
+    MMG5_int e1 = 0;
+    MMG5_int ref = 0;
+    if (!MMGS_Get_nonBdyEdge(mesh, &e0, &e1, &ref, i + 1)) {
+      throw std::runtime_error("Failed to get non-boundary edge " +
+                               std::to_string(i));
+    }
+    v_ptr[i * 2] = static_cast<int>(e0 - 1);
+    v_ptr[i * 2 + 1] = static_cast<int>(e1 - 1);
+    r_ptr[i] = static_cast<int>(ref);
+  }
+
+  return py::make_tuple(vertices, refs);
+}
+
 void MmgMeshS::set_field(const std::string &field_name,
                          const py::array_t<double> &values) {
   auto field = get_solution_field(field_name);
