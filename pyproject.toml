@@ -276,8 +276,9 @@ unresolved-import = "ignore"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-build = "cp310-* cp311-* cp312-* cp313-* cp314-* cp314t-*"
-# Skip 32-bit builds and musllinux (pyvista depends on vtk which has no musllinux wheels)
+build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
+# Skip 32-bit builds, musllinux (pyvista depends on vtk which has no musllinux wheels),
+# and free-threaded builds (vtk has no free-threaded wheels)
 skip = "*-win32 *-manylinux_i686 *-musllinux*"
 test-command = 'python -c "import mmgpy"'
 build-verbosity = 1
