@@ -897,6 +897,84 @@ py::tuple MmgMesh::get_vertex_flags(MMG5_int idx) const {
   return py::make_tuple(static_cast<bool>(corner), static_cast<bool>(required));
 }
 
+// Normal vectors
+
+void MmgMesh::set_normal_at_vertices(const py::array_t<int> &vertex_indices,
+                                     const py::array_t<double> &normals) {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  ensure_c_contiguous(normals, "Normals");
+
+  py::buffer_info idx_buf = vertex_indices.request();
+  py::buffer_info nrm_buf = normals.request();
+
+  if (idx_buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
+  }
+  if (nrm_buf.ndim != 2 || nrm_buf.shape[1] != 3) {
+    throw std::runtime_error("Normals must be an Nx3 array");
+  }
+  if (idx_buf.shape[0] != nrm_buf.shape[0]) {
+    throw std::runtime_error(
+        "vertex_indices and normals must have the same length");
+  }
+
+  const int *idx_ptr = static_cast<int *>(idx_buf.ptr);
+  const double *nrm_ptr = static_cast<double *>(nrm_buf.ptr);
+  py::ssize_t n = idx_buf.shape[0];
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->np) {
+      throw std::runtime_error("Vertex index out of range: " +
+                               std::to_string(idx));
+    }
+    double n0 = nrm_ptr[i * 3];
+    double n1 = nrm_ptr[i * 3 + 1];
+    double n2 = nrm_ptr[i * 3 + 2];
+    if (!MMG3D_Set_normalAtVertex(mesh, idx + 1, n0, n1, n2)) {
+      throw std::runtime_error("Failed to set normal at vertex index " +
+                               std::to_string(idx));
+    }
+  }
+}
+
+py::array_t<double>
+MmgMesh::get_normal_at_vertices(const py::array_t<int> &vertex_indices) const {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  py::buffer_info idx_buf = vertex_indices.request();
+
+  if (idx_buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(idx_buf.ptr);
+  py::ssize_t n = idx_buf.shape[0];
+
+  py::array_t<double> result({n, py::ssize_t{3}});
+  auto res_buf = result.request();
+  double *res_ptr = static_cast<double *>(res_buf.ptr);
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= mesh->np) {
+      throw std::runtime_error("Vertex index out of range: " +
+                               std::to_string(idx));
+    }
+    double n0 = 0;
+    double n1 = 0;
+    double n2 = 0;
+    if (!MMG3D_Get_normalAtVertex(mesh, idx + 1, &n0, &n1, &n2)) {
+      throw std::runtime_error("Failed to get normal at vertex index " +
+                               std::to_string(idx));
+    }
+    res_ptr[i * 3] = n0;
+    res_ptr[i * 3 + 1] = n1;
+    res_ptr[i * 3 + 2] = n2;
+  }
+
+  return result;
+}
+
 // Topology queries
 
 py::array_t<int> MmgMesh::get_adjacent_elements(MMG5_int idx) const {

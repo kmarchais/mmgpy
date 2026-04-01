@@ -132,6 +132,16 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("triangle_indices"))
       // Attribute queries
       .def("get_vertex_flags", &MmgMesh::get_vertex_flags, py::arg("idx"))
+      // Normal vectors
+      .def("set_normal_at_vertices", &MmgMesh::set_normal_at_vertices,
+           py::arg("vertex_indices"), py::arg("normals"),
+           "Set normal vectors at specified vertices.\n\n"
+           "Parameters:\n"
+           "    vertex_indices: 1D array of vertex indices (0-based).\n"
+           "    normals: Nx3 array of normal vectors.")
+      .def("get_normal_at_vertices", &MmgMesh::get_normal_at_vertices,
+           py::arg("vertex_indices"),
+           "Get normal vectors at specified vertices. Returns Nx3 array.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh::get_adjacent_elements,
            py::arg("idx"),
@@ -390,6 +400,16 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("edge_indices"))
       // Attribute queries
       .def("get_vertex_flags", &MmgMeshS::get_vertex_flags, py::arg("idx"))
+      // Normal vectors
+      .def("set_normal_at_vertices", &MmgMeshS::set_normal_at_vertices,
+           py::arg("vertex_indices"), py::arg("normals"),
+           "Set normal vectors at specified vertices.\n\n"
+           "Parameters:\n"
+           "    vertex_indices: 1D array of vertex indices (0-based).\n"
+           "    normals: Nx3 array of normal vectors.")
+      .def("get_normal_at_vertices", &MmgMeshS::get_normal_at_vertices,
+           py::arg("vertex_indices"),
+           "Get normal vectors at specified vertices. Returns Nx3 array.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMeshS::get_adjacent_elements,
            py::arg("idx"),
