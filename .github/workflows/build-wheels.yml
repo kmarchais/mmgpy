@@ -25,8 +25,8 @@ jobs:
   build-wheels-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
       - name: Build manylinux_2_28 x86_64 wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
@@ -34,7 +34,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
         uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-x86_64
           path: wheelhouse/*.whl
@@ -59,8 +59,8 @@ jobs:
   build-wheels-linux-aarch64:
     runs-on: ubuntu-24.04-arm # Native ARM runner (no QEMU needed)
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
       - name: Build manylinux_2_28 aarch64 wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
@@ -68,7 +68,7 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
         uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-aarch64
           path: wheelhouse/*.whl
@@ -93,14 +93,14 @@ jobs:
   build-wheels-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
         uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows
           path: wheelhouse/*.whl
@@ -125,14 +125,14 @@ jobs:
   build-wheels-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
         uses: pypa/cibuildwheel@v3.4
       - name: Upload wheels as artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-macos
           path: wheelhouse/*.whl
@@ -159,8 +159,8 @@ jobs:
     name: Build source distribution
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8
 
       - name: Install build dependencies
         run: |
@@ -171,7 +171,7 @@ jobs:
         run: uv build --sdist
 
       - name: Upload sdist as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -200,7 +200,7 @@ jobs:
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           merge-multiple: true
           path: dist/
@@ -240,7 +240,7 @@ jobs:
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           merge-multiple: true
           path: dist/
@@ -264,11 +264,11 @@ jobs:
     name: Test uvx (${{ matrix.os }})
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v8
 
       - name: Wait for TestPyPI to index package
         shell: bash
