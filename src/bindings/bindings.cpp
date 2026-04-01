@@ -130,6 +130,8 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("edge_indices"))
       .def("unset_parallel_triangles", &MmgMesh::unset_parallel_triangles,
            py::arg("triangle_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMesh::get_vertex_flags, py::arg("idx"))
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh::get_adjacent_elements,
            py::arg("idx"),
@@ -260,6 +262,8 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("triangle_indices"))
       .def("unset_required_edges", &MmgMesh2D::unset_required_edges,
            py::arg("edge_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMesh2D::get_vertex_flags, py::arg("idx"))
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh2D::get_adjacent_elements,
            py::arg("idx"),
@@ -384,6 +388,8 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("edge_indices"))
       .def("unset_ridge_edges", &MmgMeshS::unset_ridge_edges,
            py::arg("edge_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMeshS::get_vertex_flags, py::arg("idx"))
       // Topology queries
       .def("get_adjacent_elements", &MmgMeshS::get_adjacent_elements,
            py::arg("idx"),

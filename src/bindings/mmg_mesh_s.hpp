@@ -66,6 +66,9 @@ public:
   void unset_required_edges(const py::array_t<int> &edge_indices);
   void unset_ridge_edges(const py::array_t<int> &edge_indices);
 
+  // Attribute queries
+  py::tuple get_vertex_flags(MMG5_int idx) const;
+
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
   py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;

@@ -178,6 +178,14 @@ class TestElementAttributes3D:
         corner_indices = np.array([0, 2, 4, 6], dtype=np.int32)
         mesh.set_corners(corner_indices)
 
+        for idx in corner_indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert is_corner, f"Vertex {idx} should be marked as corner"
+
+        non_corner = 1
+        is_corner, _ = mesh.get_vertex_flags(non_corner)
+        assert not is_corner, f"Vertex {non_corner} should not be corner"
+
     def test_set_required_vertices(
         self,
         cube_mesh: tuple[np.ndarray, np.ndarray],
@@ -192,6 +200,14 @@ class TestElementAttributes3D:
 
         required_indices = np.array([0, 1, 2, 3], dtype=np.int32)
         mesh.set_required_vertices(required_indices)
+
+        for idx in required_indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert is_required, f"Vertex {idx} should be marked as required"
+
+        non_required = 4
+        _, is_required = mesh.get_vertex_flags(non_required)
+        assert not is_required, f"Vertex {non_required} should not be required"
 
     def test_set_required_triangles(
         self,
@@ -371,6 +387,10 @@ class TestElementAttributes2D:
         corner_indices = np.array([0, 1, 2, 3], dtype=np.int32)
         mesh.set_corners(corner_indices)
 
+        for idx in corner_indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert is_corner
+
     def test_set_required_vertices(
         self,
         square_mesh: tuple[np.ndarray, np.ndarray],
@@ -385,6 +405,10 @@ class TestElementAttributes2D:
 
         required_indices = np.array([0, 2], dtype=np.int32)
         mesh.set_required_vertices(required_indices)
+
+        for idx in required_indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert is_required
 
     def test_set_required_triangles(
         self,
@@ -480,6 +504,10 @@ class TestElementAttributesSurface:
         corner_indices = np.array([0, 1, 2, 3], dtype=np.int32)
         mesh.set_corners(corner_indices)
 
+        for idx in corner_indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert is_corner
+
     def test_set_required_vertices(
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
@@ -494,6 +522,10 @@ class TestElementAttributesSurface:
 
         required_indices = np.array([0, 2], dtype=np.int32)
         mesh.set_required_vertices(required_indices)
+
+        for idx in required_indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert is_required
 
     def test_set_required_triangles(
         self,
@@ -585,7 +617,16 @@ class TestUnsetAttributes3D:
 
         indices = np.array([0, 2, 4], dtype=np.int32)
         mesh.set_corners(indices)
+
+        for idx in indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert is_corner
+
         mesh.unset_corners(indices)
+
+        for idx in indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert not is_corner
 
     def test_unset_required_vertices(
         self,
@@ -601,7 +642,16 @@ class TestUnsetAttributes3D:
 
         indices = np.array([0, 1, 2], dtype=np.int32)
         mesh.set_required_vertices(indices)
+
+        for idx in indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert is_required
+
         mesh.unset_required_vertices(indices)
+
+        for idx in indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert not is_required
 
     def test_unset_required_triangles(
         self,
@@ -750,7 +800,16 @@ class TestUnsetAttributes2D:
 
         indices = np.array([0, 1, 2], dtype=np.int32)
         mesh.set_corners(indices)
+
+        for idx in indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert is_corner
+
         mesh.unset_corners(indices)
+
+        for idx in indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert not is_corner
 
     def test_unset_required_vertices(
         self,
@@ -766,7 +825,16 @@ class TestUnsetAttributes2D:
 
         indices = np.array([0, 2], dtype=np.int32)
         mesh.set_required_vertices(indices)
+
+        for idx in indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert is_required
+
         mesh.unset_required_vertices(indices)
+
+        for idx in indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert not is_required
 
     def test_unset_required_triangles(
         self,
@@ -825,7 +893,16 @@ class TestUnsetAttributesSurface:
 
         indices = np.array([0, 1, 2], dtype=np.int32)
         mesh.set_corners(indices)
+
+        for idx in indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert is_corner
+
         mesh.unset_corners(indices)
+
+        for idx in indices:
+            is_corner, _ = mesh.get_vertex_flags(idx)
+            assert not is_corner
 
     def test_unset_required_vertices(
         self,
@@ -841,7 +918,16 @@ class TestUnsetAttributesSurface:
 
         indices = np.array([0, 2], dtype=np.int32)
         mesh.set_required_vertices(indices)
+
+        for idx in indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert is_required
+
         mesh.unset_required_vertices(indices)
+
+        for idx in indices:
+            _, is_required = mesh.get_vertex_flags(idx)
+            assert not is_required
 
     def test_unset_required_triangles(
         self,

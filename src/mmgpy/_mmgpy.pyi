@@ -670,6 +670,21 @@ class MmgMesh3D:
 
         """
 
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of tetrahedra sharing faces with element idx.
 
@@ -1593,6 +1608,21 @@ class MmgMesh2D:
 
         """
 
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of triangles sharing edges with element idx.
 
@@ -2260,6 +2290,21 @@ class MmgMeshS:
         ----------
         edge_indices : NDArray[np.int32]
             Indices of edges to unmark (0-based).
+
+        """
+
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
 
         """
 
