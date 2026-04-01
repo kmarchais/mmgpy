@@ -96,6 +96,10 @@ public:
   // Local parameters
   void set_local_parameters(const py::list &parameters);
 
+  // Multi-material and level-set
+  void set_multi_materials(const py::list &materials);
+  void set_ls_base_references(const py::list &references);
+
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
   py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;

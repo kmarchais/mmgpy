@@ -153,6 +153,13 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      // Multi-material and level-set
+      .def("set_multi_materials", &MmgMesh::set_multi_materials,
+           py::arg("materials"),
+           "Set multi-material configuration for level-set discretization.")
+      .def("set_ls_base_references", &MmgMesh::set_ls_base_references,
+           py::arg("references"),
+           "Set level-set base references for isovalue discretization.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh::get_adjacent_elements,
            py::arg("idx"),
@@ -305,6 +312,13 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      // Multi-material and level-set
+      .def("set_multi_materials", &MmgMesh2D::set_multi_materials,
+           py::arg("materials"),
+           "Set multi-material configuration for level-set discretization.")
+      .def("set_ls_base_references", &MmgMesh2D::set_ls_base_references,
+           py::arg("references"),
+           "Set level-set base references for isovalue discretization.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh2D::get_adjacent_elements,
            py::arg("idx"),
@@ -462,6 +476,13 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      // Multi-material and level-set
+      .def("set_multi_materials", &MmgMeshS::set_multi_materials,
+           py::arg("materials"),
+           "Set multi-material configuration for level-set discretization.")
+      .def("set_ls_base_references", &MmgMeshS::set_ls_base_references,
+           py::arg("references"),
+           "Set level-set base references for isovalue discretization.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMeshS::get_adjacent_elements,
            py::arg("idx"),
