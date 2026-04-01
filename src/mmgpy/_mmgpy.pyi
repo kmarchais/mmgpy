@@ -685,6 +685,40 @@ class MmgMesh3D:
 
         """
 
+    def set_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+        normals: NDArray[np.float64],
+    ) -> None:
+        """Set normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+        normals : NDArray[np.float64]
+            Nx3 array of normal vectors.
+
+        """
+
+    def get_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> NDArray[np.float64]:
+        """Get normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Nx3 array of normal vectors.
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of tetrahedra sharing faces with element idx.
 
@@ -2305,6 +2339,40 @@ class MmgMeshS:
         -------
         tuple[bool, bool]
             Tuple of (is_corner, is_required).
+
+        """
+
+    def set_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+        normals: NDArray[np.float64],
+    ) -> None:
+        """Set normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+        normals : NDArray[np.float64]
+            Nx3 array of normal vectors.
+
+        """
+
+    def get_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> NDArray[np.float64]:
+        """Get normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Nx3 array of normal vectors.
 
         """
 
