@@ -1620,6 +1620,21 @@ class TestMultiMaterial2D:
 
         mesh.set_ls_base_references([1])
 
+    def test_empty_materials(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that empty material list works for 2D."""
+        vertices, triangles = square_mesh
+
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        mesh.set_multi_materials([])
+        mesh.set_ls_base_references([])
+
 
 class TestMultiMaterialSurface:
     """Tests for multi-material on MmgMeshS."""
@@ -1655,3 +1670,18 @@ class TestMultiMaterialSurface:
         mesh.set_triangles(triangles)
 
         mesh.set_ls_base_references([1])
+
+    def test_empty_materials(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Test that empty material list works for surface mesh."""
+        vertices, triangles = tetrahedron_surface_mesh
+
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles)
+
+        mesh.set_multi_materials([])
+        mesh.set_ls_base_references([])
