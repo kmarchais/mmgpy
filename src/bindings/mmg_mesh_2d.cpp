@@ -768,6 +768,78 @@ py::array_t<double> MmgMesh2D::get_element_qualities() const {
   return result;
 }
 
+// Advanced topology queries
+
+py::tuple MmgMesh2D::get_tri_from_edge(MMG5_int edge_idx) const {
+  MMG5_int mmg_idx = edge_idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->na) {
+    throw std::runtime_error("Edge index out of range: " +
+                             std::to_string(edge_idx));
+  }
+
+  MMG5_int ktri = 0;
+  int ied = 0;
+  if (!MMG2D_Get_triFromEdge(mesh, mmg_idx, &ktri, &ied)) {
+    throw std::runtime_error("Failed to get triangle from edge " +
+                             std::to_string(edge_idx));
+  }
+
+  int tri_py = ktri > 0 ? static_cast<int>(ktri - 1) : -1;
+  return py::make_tuple(tri_py, ied);
+}
+
+py::tuple MmgMesh2D::get_tris_from_edge(MMG5_int edge_idx) const {
+  MMG5_int mmg_idx = edge_idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->na) {
+    throw std::runtime_error("Edge index out of range: " +
+                             std::to_string(edge_idx));
+  }
+
+  MMG5_int ktri[2] = {0, 0};
+  int ied[2] = {0, 0};
+  if (!MMG2D_Get_trisFromEdge(mesh, mmg_idx, ktri, ied)) {
+    throw std::runtime_error("Failed to get triangles from edge " +
+                             std::to_string(edge_idx));
+  }
+
+  int tri0 = ktri[0] > 0 ? static_cast<int>(ktri[0] - 1) : -1;
+  int tri1 = ktri[1] > 0 ? static_cast<int>(ktri[1] - 1) : -1;
+  return py::make_tuple(py::make_tuple(tri0, ied[0]),
+                        py::make_tuple(tri1, ied[1]));
+}
+
+py::tuple MmgMesh2D::get_non_boundary_edges() const {
+  MMG5_int nb_edges = 0;
+  if (!MMG2D_Get_numberOfNonBdyEdges(mesh, &nb_edges)) {
+    throw std::runtime_error("Failed to get number of non-boundary edges");
+  }
+
+  py::array_t<int> vertices(
+      {static_cast<py::ssize_t>(nb_edges), py::ssize_t{2}});
+  py::array_t<int> refs(static_cast<py::ssize_t>(nb_edges));
+  auto v_buf = vertices.request();
+  auto r_buf = refs.request();
+  int *v_ptr = static_cast<int *>(v_buf.ptr);
+  int *r_ptr = static_cast<int *>(r_buf.ptr);
+
+  for (MMG5_int i = 0; i < nb_edges; i++) {
+    MMG5_int e0 = 0;
+    MMG5_int e1 = 0;
+    MMG5_int ref = 0;
+    if (!MMG2D_Get_nonBdyEdge(mesh, &e0, &e1, &ref, i + 1)) {
+      throw std::runtime_error("Failed to get non-boundary edge " +
+                               std::to_string(i));
+    }
+    v_ptr[i * 2] = static_cast<int>(e0 - 1);
+    v_ptr[i * 2 + 1] = static_cast<int>(e1 - 1);
+    r_ptr[i] = static_cast<int>(ref);
+  }
+
+  return py::make_tuple(vertices, refs);
+}
+
 void MmgMesh2D::set_field(const std::string &field_name,
                           const py::array_t<double> &values) {
   auto field = get_solution_field(field_name);
