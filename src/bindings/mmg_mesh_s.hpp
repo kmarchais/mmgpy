@@ -57,7 +57,26 @@ public:
   void set_corners(const py::array_t<int> &vertex_indices);
   void set_required_vertices(const py::array_t<int> &vertex_indices);
   void set_required_triangles(const py::array_t<int> &triangle_indices);
+  void set_required_edges(const py::array_t<int> &edge_indices);
   void set_ridge_edges(const py::array_t<int> &edge_indices);
+
+  void unset_corners(const py::array_t<int> &vertex_indices);
+  void unset_required_vertices(const py::array_t<int> &vertex_indices);
+  void unset_required_triangles(const py::array_t<int> &triangle_indices);
+  void unset_required_edges(const py::array_t<int> &edge_indices);
+  void unset_ridge_edges(const py::array_t<int> &edge_indices);
+
+  // Attribute queries
+  py::tuple get_vertex_flags(MMG5_int idx) const;
+
+  // Normal vectors
+  void set_normal_at_vertices(const py::array_t<int> &vertex_indices,
+                              const py::array_t<double> &normals);
+  py::array_t<double>
+  get_normal_at_vertices(const py::array_t<int> &vertex_indices) const;
+
+  // Local parameters
+  void set_local_parameters(const py::list &parameters);
 
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
