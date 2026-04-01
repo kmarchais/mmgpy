@@ -28,7 +28,7 @@ jobs:
         with:
           ref: v${{ steps.version.outputs.version }}
 
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
 
