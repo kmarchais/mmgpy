@@ -31,7 +31,7 @@ jobs:
     if: ${{ github.event.inputs.mode != 'calibrate' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -39,7 +39,7 @@ jobs:
           packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
           enable-cache: true
@@ -186,7 +186,7 @@ jobs:
             }
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-results
           path: benchmark-results.json
@@ -197,7 +197,7 @@ jobs:
     if: ${{ github.event.inputs.mode == 'calibrate' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -205,7 +205,7 @@ jobs:
           packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
           enable-cache: true
@@ -225,7 +225,7 @@ jobs:
           uv run python benchmarks/scripts/analyze_benchmark_variance.py calibration-results.json
 
       - name: Upload calibration results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: calibration-results
           path: |
