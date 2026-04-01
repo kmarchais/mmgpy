@@ -77,6 +77,9 @@ public:
   // Attribute queries
   py::tuple get_vertex_flags(MMG5_int idx) const;
 
+  // Local parameters
+  void set_local_parameters(const py::list &parameters);
+
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
   py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;

@@ -12,10 +12,19 @@ Supported solution fields (accessible via dictionary syntax, e.g. ``mesh["metric
 """
 
 from pathlib import Path
-from typing import Any, overload
+from typing import Any, Literal, TypedDict, overload
 
 import numpy as np
 from numpy.typing import NDArray
+
+class LocalParameter(TypedDict):
+    """Region-specific mesh sizing parameter."""
+
+    type: Literal["vertex", "edge", "triangle", "tetrahedron"]
+    ref: int
+    hmin: float
+    hmax: float
+    hausd: float
 
 MMG_VERSION: str
 
@@ -716,6 +725,23 @@ class MmgMesh3D:
         -------
         NDArray[np.float64]
             Nx3 array of normal vectors.
+
+        """
+
+    def set_local_parameters(self, parameters: list[LocalParameter]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[LocalParameter]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', 'triangle', or 'tetrahedron'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
 
         """
 
@@ -1657,6 +1683,23 @@ class MmgMesh2D:
 
         """
 
+    def set_local_parameters(self, parameters: list[LocalParameter]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[LocalParameter]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', or 'triangle'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of triangles sharing edges with element idx.
 
@@ -2373,6 +2416,23 @@ class MmgMeshS:
         -------
         NDArray[np.float64]
             Nx3 array of normal vectors.
+
+        """
+
+    def set_local_parameters(self, parameters: list[LocalParameter]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[LocalParameter]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', or 'triangle'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
 
         """
 

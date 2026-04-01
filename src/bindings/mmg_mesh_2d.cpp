@@ -633,6 +633,44 @@ py::tuple MmgMesh2D::get_vertex_flags(MMG5_int idx) const {
   return py::make_tuple(static_cast<bool>(corner), static_cast<bool>(required));
 }
 
+// Local parameters
+
+void MmgMesh2D::set_local_parameters(const py::list &parameters) {
+  py::ssize_t n = py::len(parameters);
+
+  if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_numberOfLocalParam,
+                            static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfLocalParam");
+  }
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    py::dict param = parameters[i].cast<py::dict>();
+
+    std::string type_str = param["type"].cast<std::string>();
+    MMG5_int ref = param["ref"].cast<MMG5_int>();
+    double hmin = param["hmin"].cast<double>();
+    double hmax = param["hmax"].cast<double>();
+    double hausd = param["hausd"].cast<double>();
+
+    int typ = 0;
+    if (type_str == "triangle") {
+      typ = MMG5_Triangle;
+    } else if (type_str == "edge") {
+      typ = MMG5_Edg;
+    } else if (type_str == "vertex") {
+      typ = MMG5_Vertex;
+    } else {
+      throw std::runtime_error("Unknown entity type: '" + type_str +
+                               "'. Must be 'vertex', 'edge', or 'triangle'");
+    }
+
+    if (!MMG2D_Set_localParameter(mesh, met, typ, ref, hmin, hmax, hausd)) {
+      throw std::runtime_error("Failed to set local parameter for ref " +
+                               std::to_string(ref));
+    }
+  }
+}
+
 // Topology queries
 
 py::array_t<int> MmgMesh2D::get_adjacent_elements(MMG5_int idx) const {
