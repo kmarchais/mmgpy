@@ -5,23 +5,6 @@
 #include <stdexcept>
 
 namespace {
-// Helper to ensure array is C-contiguous for safe memory access
-// This is critical because we use raw pointer arithmetic to access elements.
-// Non-contiguous arrays (e.g., Fortran-order or sliced views) will have
-// incorrect data access patterns if we assume C-contiguous layout.
-template <typename T>
-void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
-  // Check if array is C-contiguous by examining its flags
-  // PyArray_CHKFLAGS checks the NPY_ARRAY_C_CONTIGUOUS flag
-  py::object flags = arr.attr("flags");
-  py::object c_contiguous_obj = flags.attr("c_contiguous");
-  bool c_contiguous = c_contiguous_obj.template cast<bool>();
-  if (!c_contiguous) {
-    throw std::runtime_error(
-        name +
-        " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
-  }
-}
 
 // Collect mesh statistics for 3D tetrahedral mesh
 RemeshStats collect_mesh_stats_3d(MMG5_pMesh mesh, MMG5_pSol met) {
@@ -814,99 +797,104 @@ py::tuple MmgMesh::get_edge(MMG5_int idx) const {
 // Element attributes
 
 void MmgMesh::set_corners(const py::array_t<int> &vertex_indices) {
-  ensure_c_contiguous(vertex_indices, "Vertex indices");
-  py::buffer_info buf = vertex_indices.request();
-
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Vertex indices must be a 1D array");
-  }
-
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
-
-  for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->np) {
-      throw std::runtime_error("Vertex index out of range: " +
-                               std::to_string(idx));
-    }
-    if (!MMG3D_Set_corner(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set corner at vertex index " +
-                               std::to_string(idx));
-    }
-  }
+  apply_attribute_to_indices(vertex_indices, mesh->np, "Vertex", "set corner",
+                             [&](int k) { return MMG3D_Set_corner(mesh, k); });
 }
 
 void MmgMesh::set_required_vertices(const py::array_t<int> &vertex_indices) {
-  ensure_c_contiguous(vertex_indices, "Vertex indices");
-  py::buffer_info buf = vertex_indices.request();
-
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Vertex indices must be a 1D array");
-  }
-
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
-
-  for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->np) {
-      throw std::runtime_error("Vertex index out of range: " +
-                               std::to_string(idx));
-    }
-    if (!MMG3D_Set_requiredVertex(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set required vertex at index " +
-                               std::to_string(idx));
-    }
-  }
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "set required vertex",
+      [&](int k) { return MMG3D_Set_requiredVertex(mesh, k); });
 }
 
 void MmgMesh::set_required_triangles(const py::array_t<int> &triangle_indices) {
-  ensure_c_contiguous(triangle_indices, "Triangle indices");
-  py::buffer_info buf = triangle_indices.request();
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "set required triangle",
+      [&](int k) { return MMG3D_Set_requiredTriangle(mesh, k); });
+}
 
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Triangle indices must be a 1D array");
-  }
+void MmgMesh::set_required_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(
+      edge_indices, mesh->na, "Edge", "set required edge",
+      [&](int k) { return MMG3D_Set_requiredEdge(mesh, k); });
+}
 
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
-
-  for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->nt) {
-      throw std::runtime_error("Triangle index out of range: " +
-                               std::to_string(idx));
-    }
-    if (!MMG3D_Set_requiredTriangle(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set required triangle at index " +
-                               std::to_string(idx));
-    }
-  }
+void MmgMesh::set_required_tetrahedra(
+    const py::array_t<int> &tetrahedra_indices) {
+  apply_attribute_to_indices(
+      tetrahedra_indices, mesh->ne, "Tetrahedron", "set required tetrahedron",
+      [&](int k) { return MMG3D_Set_requiredTetrahedron(mesh, k); });
 }
 
 void MmgMesh::set_ridge_edges(const py::array_t<int> &edge_indices) {
-  ensure_c_contiguous(edge_indices, "Edge indices");
-  py::buffer_info buf = edge_indices.request();
+  apply_attribute_to_indices(edge_indices, mesh->na, "Edge", "set ridge",
+                             [&](int k) { return MMG3D_Set_ridge(mesh, k); });
+}
 
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Edge indices must be a 1D array");
+void MmgMesh::set_parallel_triangles(const py::array_t<int> &triangle_indices) {
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "set parallel triangle",
+      [&](int k) { return MMG3D_Set_parallelTriangle(mesh, k); });
+}
+
+void MmgMesh::unset_corners(const py::array_t<int> &vertex_indices) {
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "unset corner",
+      [&](int k) { return MMG3D_Unset_corner(mesh, k); });
+}
+
+void MmgMesh::unset_required_vertices(const py::array_t<int> &vertex_indices) {
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "unset required vertex",
+      [&](int k) { return MMG3D_Unset_requiredVertex(mesh, k); });
+}
+
+void MmgMesh::unset_required_triangles(
+    const py::array_t<int> &triangle_indices) {
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "unset required triangle",
+      [&](int k) { return MMG3D_Unset_requiredTriangle(mesh, k); });
+}
+
+void MmgMesh::unset_required_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(
+      edge_indices, mesh->na, "Edge", "unset required edge",
+      [&](int k) { return MMG3D_Unset_requiredEdge(mesh, k); });
+}
+
+void MmgMesh::unset_required_tetrahedra(
+    const py::array_t<int> &tetrahedra_indices) {
+  apply_attribute_to_indices(
+      tetrahedra_indices, mesh->ne, "Tetrahedron", "unset required tetrahedron",
+      [&](int k) { return MMG3D_Unset_requiredTetrahedron(mesh, k); });
+}
+
+void MmgMesh::unset_ridge_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(edge_indices, mesh->na, "Edge", "unset ridge",
+                             [&](int k) { return MMG3D_Unset_ridge(mesh, k); });
+}
+
+void MmgMesh::unset_parallel_triangles(
+    const py::array_t<int> &triangle_indices) {
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "unset parallel triangle",
+      [&](int k) { return MMG3D_Unset_parallelTriangle(mesh, k); });
+}
+
+// Attribute queries
+
+py::tuple MmgMesh::get_vertex_flags(MMG5_int idx) const {
+  double x, y, z;
+  MMG5_int ref;
+  int corner, required;
+
+  if (!MMG3D_GetByIdx_vertex(mesh, &x, &y, &z, &ref, &corner, &required,
+                             idx + 1)) {
+    throw std::runtime_error("Failed to get vertex flags at index " +
+                             std::to_string(idx));
   }
 
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
-
-  for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->na) {
-      throw std::runtime_error("Edge index out of range: " +
-                               std::to_string(idx));
-    }
-    if (!MMG3D_Set_ridge(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set ridge at edge index " +
-                               std::to_string(idx));
-    }
-  }
+  return py::make_tuple(static_cast<bool>(corner), static_cast<bool>(required));
 }
 
 // Normal vectors

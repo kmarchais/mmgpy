@@ -109,8 +109,29 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("vertex_indices"))
       .def("set_required_triangles", &MmgMesh::set_required_triangles,
            py::arg("triangle_indices"))
+      .def("set_required_edges", &MmgMesh::set_required_edges,
+           py::arg("edge_indices"))
+      .def("set_required_tetrahedra", &MmgMesh::set_required_tetrahedra,
+           py::arg("tetrahedra_indices"))
       .def("set_ridge_edges", &MmgMesh::set_ridge_edges,
            py::arg("edge_indices"))
+      .def("set_parallel_triangles", &MmgMesh::set_parallel_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_corners", &MmgMesh::unset_corners, py::arg("vertex_indices"))
+      .def("unset_required_vertices", &MmgMesh::unset_required_vertices,
+           py::arg("vertex_indices"))
+      .def("unset_required_triangles", &MmgMesh::unset_required_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_required_edges", &MmgMesh::unset_required_edges,
+           py::arg("edge_indices"))
+      .def("unset_required_tetrahedra", &MmgMesh::unset_required_tetrahedra,
+           py::arg("tetrahedra_indices"))
+      .def("unset_ridge_edges", &MmgMesh::unset_ridge_edges,
+           py::arg("edge_indices"))
+      .def("unset_parallel_triangles", &MmgMesh::unset_parallel_triangles,
+           py::arg("triangle_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMesh::get_vertex_flags, py::arg("idx"))
       // Normal vectors
       .def("set_normal_at_vertices", &MmgMesh::set_normal_at_vertices,
            py::arg("vertex_indices"), py::arg("normals"),
@@ -241,6 +262,18 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("triangle_indices"))
       .def("set_required_edges", &MmgMesh2D::set_required_edges,
            py::arg("edge_indices"))
+      .def("set_parallel_edges", &MmgMesh2D::set_parallel_edges,
+           py::arg("edge_indices"))
+      .def("unset_corners", &MmgMesh2D::unset_corners,
+           py::arg("vertex_indices"))
+      .def("unset_required_vertices", &MmgMesh2D::unset_required_vertices,
+           py::arg("vertex_indices"))
+      .def("unset_required_triangles", &MmgMesh2D::unset_required_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_required_edges", &MmgMesh2D::unset_required_edges,
+           py::arg("edge_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMesh2D::get_vertex_flags, py::arg("idx"))
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh2D::get_adjacent_elements,
            py::arg("idx"),
@@ -352,8 +385,21 @@ PYBIND11_MODULE(_mmgpy, m) {
            py::arg("vertex_indices"))
       .def("set_required_triangles", &MmgMeshS::set_required_triangles,
            py::arg("triangle_indices"))
+      .def("set_required_edges", &MmgMeshS::set_required_edges,
+           py::arg("edge_indices"))
       .def("set_ridge_edges", &MmgMeshS::set_ridge_edges,
            py::arg("edge_indices"))
+      .def("unset_corners", &MmgMeshS::unset_corners, py::arg("vertex_indices"))
+      .def("unset_required_vertices", &MmgMeshS::unset_required_vertices,
+           py::arg("vertex_indices"))
+      .def("unset_required_triangles", &MmgMeshS::unset_required_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_required_edges", &MmgMeshS::unset_required_edges,
+           py::arg("edge_indices"))
+      .def("unset_ridge_edges", &MmgMeshS::unset_ridge_edges,
+           py::arg("edge_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMeshS::get_vertex_flags, py::arg("idx"))
       // Normal vectors
       .def("set_normal_at_vertices", &MmgMeshS::set_normal_at_vertices,
            py::arg("vertex_indices"), py::arg("normals"),
