@@ -542,6 +542,29 @@ class MmgMesh3D:
 
         """
 
+    def set_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Mark edges as required (cannot be modified).
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of required edges (0-based).
+
+        """
+
+    def set_required_tetrahedra(
+        self,
+        tetrahedra_indices: NDArray[np.int32],
+    ) -> None:
+        """Mark tetrahedra as required (cannot be modified).
+
+        Parameters
+        ----------
+        tetrahedra_indices : NDArray[np.int32]
+            Indices of required tetrahedra (0-based).
+
+        """
+
     def set_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
         """Mark edges as ridges (sharp features preserved).
 
@@ -549,6 +572,116 @@ class MmgMesh3D:
         ----------
         edge_indices : NDArray[np.int32]
             Indices of ridge edges (0-based).
+
+        """
+
+    def set_parallel_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Mark triangles as parallel (for parallel mesh partitioning).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of parallel triangles (0-based).
+
+        """
+
+    def unset_corners(self, vertex_indices: NDArray[np.int32]) -> None:
+        """Remove corner marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def unset_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove required marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def unset_required_tetrahedra(
+        self,
+        tetrahedra_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from tetrahedra.
+
+        Parameters
+        ----------
+        tetrahedra_indices : NDArray[np.int32]
+            Indices of tetrahedra to unmark (0-based).
+
+        """
+
+    def unset_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove ridge marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def unset_parallel_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove parallel marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
 
         """
 
@@ -1419,6 +1552,77 @@ class MmgMesh2D:
 
         """
 
+    def set_parallel_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Mark edges as parallel (for parallel mesh partitioning).
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of parallel edges (0-based).
+
+        """
+
+    def unset_corners(self, vertex_indices: NDArray[np.int32]) -> None:
+        """Remove corner marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def unset_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove required marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
+
+        """
+
     def get_adjacent_elements(self, idx: int) -> NDArray[np.int32]:
         """Get indices of triangles sharing edges with element idx.
 
@@ -2013,6 +2217,16 @@ class MmgMeshS:
 
         """
 
+    def set_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Mark edges as required (cannot be modified).
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of required edges (0-based).
+
+        """
+
     def set_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
         """Mark edges as ridges (sharp features preserved).
 
@@ -2020,6 +2234,77 @@ class MmgMeshS:
         ----------
         edge_indices : NDArray[np.int32]
             Indices of ridge edges (0-based).
+
+        """
+
+    def unset_corners(self, vertex_indices: NDArray[np.int32]) -> None:
+        """Remove corner marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def unset_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove required marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def unset_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove ridge marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
 
         """
 
