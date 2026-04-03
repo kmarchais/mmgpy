@@ -117,7 +117,12 @@ nav:
       - File Formats: reference/file-formats.md
       - MMG Parameters: reference/mmg-parameters.md
       - API Coverage: reference/mmg-api-coverage.md
+      - Benchmarks: reference/benchmarks.md
   - Changelog: changelog.md
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/chart.js@4
+  - assets/js/benchmarks.js
 
 extra:
   version:
