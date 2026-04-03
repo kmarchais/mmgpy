@@ -111,9 +111,9 @@ dev = [
     "pytest-codeblocks>=0.17.0",
 ]
 docs = [
-    "mike>=2.0.0,<3",
-    "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
+    "mike @ git+https://github.com/squidfunk/mike.git",
+    "mkdocstrings-python>=0.24.0",
+    "zensical>=0.0.28",
 ]
 ui = [
     "pywebview>=6.1",

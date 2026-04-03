@@ -49,6 +49,8 @@ plugins:
   - mike:
       alias_type: symlink
       canonical_version: latest
+      redirect_template: null
+      deploy_prefix: ""
   - mkdocstrings:
       handlers:
         python:

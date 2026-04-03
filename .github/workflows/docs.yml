@@ -44,7 +44,7 @@ jobs:
       # Only validate on PRs; mike builds internally on deploy
       - name: Build documentation
         if: github.event_name == 'pull_request'
-        run: uv run mkdocs build --strict
+        run: uv run zensical build
 
       - name: Configure Git for mike
         if: github.event_name == 'push' || github.event_name == 'release'

@@ -1,3 +1,7 @@
+---
+icon: lucide/check-square
+---
+
 # MMG C API Binding Coverage
 
 This document tracks every public function in the MMG C library and whether it has a
