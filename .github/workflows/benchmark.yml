@@ -133,11 +133,9 @@ jobs:
             --fail-on-regression
 
       - name: Generate benchmark summary
-        id: summary
         run: |
           python3 << 'EOF'
           import json
-          import os
           from pathlib import Path
 
           with open("current-results.json") as f:
@@ -177,18 +175,15 @@ jobs:
           summary = "\n".join(summary_lines)
           print(summary)
 
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write("summary<<EOF\n")
-              f.write(summary)
-              f.write("\nEOF\n")
+          Path("benchmark-summary.md").write_text(summary)
           EOF
 
       - name: Comment benchmark summary on PR
-        if: steps.summary.outputs.summary
         uses: actions/github-script@v7
         with:
           script: |
-            const summary = `${{ steps.summary.outputs.summary }}`;
+            const fs = require('fs');
+            const summary = fs.readFileSync('benchmark-summary.md', 'utf8');
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
