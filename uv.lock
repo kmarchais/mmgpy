@@ -1367,7 +1367,7 @@ wheels = [
 [[package]]
 name = "mike"
 version = "2.2.0+zensical.0.1.0"
-source = { git = "https://github.com/squidfunk/mike.git#0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3" }
+source = { git = "https://github.com/squidfunk/mike.git?rev=0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3#0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3" }
 dependencies = [
     { name = "jinja2" },
     { name = "pyparsing" },
@@ -1546,7 +1546,7 @@ dev = [
     { name = "scikit-build-core", specifier = ">=0.11.5" },
 ]
 docs = [
-    { name = "mike", git = "https://github.com/squidfunk/mike.git" },
+    { name = "mike", git = "https://github.com/squidfunk/mike.git?rev=0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3" },
     { name = "mkdocstrings-python", specifier = ">=0.24.0" },
     { name = "zensical", specifier = ">=0.0.28" },
 ]
