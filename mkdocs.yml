@@ -121,7 +121,7 @@ nav:
   - Changelog: changelog.md
 
 extra_javascript:
-  - https://cdn.jsdelivr.net/npm/chart.js@4
+  - https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js
   - assets/js/benchmarks.js
 
 extra:

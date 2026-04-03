@@ -124,7 +124,6 @@ jobs:
       # --- Phase 3: Compare ---
       - name: Compare benchmarks
         id: compare
-        continue-on-error: true
         run: |
           uv run python benchmarks/scripts/compare_benchmarks.py \
             --baseline baseline-results.json \
@@ -135,7 +134,7 @@ jobs:
 
       - name: Generate benchmark summary
         run: |
-          python3 << 'EOF'
+          uv run python << 'EOF'
           import json
           from pathlib import Path
 
