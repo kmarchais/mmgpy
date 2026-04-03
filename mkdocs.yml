@@ -114,6 +114,7 @@ nav:
       - CLI Tools: reference/cli.md
       - File Formats: reference/file-formats.md
       - MMG Parameters: reference/mmg-parameters.md
+      - API Coverage: reference/mmg-api-coverage.md
   - Changelog: changelog.md
 
 extra:

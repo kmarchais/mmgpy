@@ -1,60 +1,13 @@
 #include "mmg_mesh_s.hpp"
 #include "mmg_common.hpp"
 #include <chrono>
-#include <cmath>
 #include <set>
 #include <stdexcept>
 
 namespace {
 
-// Compute triangle quality manually since MMGS_Get_triangleQuality
-// is not properly exported on Windows DLL.
-// Uses threshold 1e-30 for near-zero detection (well above denormal range
-// ~2e-308, but catches degenerate triangles with area or edge sum near zero).
-double compute_triangle_quality(MMG5_pMesh mesh, MMG5_int k) {
-  MMG5_pTria pt = &mesh->tria[k];
-  MMG5_pPoint p0 = &mesh->point[pt->v[0]];
-  MMG5_pPoint p1 = &mesh->point[pt->v[1]];
-  MMG5_pPoint p2 = &mesh->point[pt->v[2]];
-
-  // Compute edge vectors
-  double ax = p1->c[0] - p0->c[0];
-  double ay = p1->c[1] - p0->c[1];
-  double az = p1->c[2] - p0->c[2];
-  double bx = p2->c[0] - p0->c[0];
-  double by = p2->c[1] - p0->c[1];
-  double bz = p2->c[2] - p0->c[2];
-  double cx = p2->c[0] - p1->c[0];
-  double cy = p2->c[1] - p1->c[1];
-  double cz = p2->c[2] - p1->c[2];
-
-  // Compute edge lengths squared
-  double a2 = ax * ax + ay * ay + az * az;
-  double b2 = bx * bx + by * by + bz * bz;
-  double c2 = cx * cx + cy * cy + cz * cz;
-
-  // Compute cross product for area
-  double nx = ay * bz - az * by;
-  double ny = az * bx - ax * bz;
-  double nz = ax * by - ay * bx;
-  double area2 = nx * nx + ny * ny + nz * nz;
-
-  if (area2 < 1e-30) {
-    return 0.0;
-  }
-
-  // Quality = 4 * sqrt(3) * area / (a^2 + b^2 + c^2)
-  // This is the standard triangle quality metric (ratio to equilateral)
-  double sum_edges = a2 + b2 + c2;
-  if (sum_edges < 1e-30) {
-    return 0.0;
-  }
-
-  return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
-}
-
 // Collect mesh statistics for surface mesh
-RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh) {
+RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh, MMG5_pSol met) {
   RemeshStats stats;
   stats.vertices = mesh->np;
   stats.elements = mesh->nt; // triangles are primary elements for surface mesh
@@ -65,7 +18,7 @@ RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh) {
   double quality_sum = 0.0;
   if (stats.triangles > 0) {
     for (MMG5_int i = 1; i <= stats.triangles; i++) {
-      double q = compute_triangle_quality(mesh, i);
+      double q = MMGS_Get_triangleQuality(mesh, met, i);
       quality_sum += q;
       if (q < stats.quality_min)
         stats.quality_min = q;
@@ -814,7 +767,7 @@ double MmgMeshS::get_element_quality(MMG5_int idx) const {
                              std::to_string(idx));
   }
 
-  return compute_triangle_quality(mesh, mmg_idx);
+  return MMGS_Get_triangleQuality(mesh, met, mmg_idx);
 }
 
 py::array_t<double> MmgMeshS::get_element_qualities() const {
@@ -824,7 +777,7 @@ py::array_t<double> MmgMeshS::get_element_qualities() const {
   double *ptr = static_cast<double *>(buf.ptr);
 
   for (MMG5_int i = 0; i < nt; i++) {
-    ptr[i] = compute_triangle_quality(mesh, i + 1);
+    ptr[i] = MMGS_Get_triangleQuality(mesh, met, i + 1);
   }
 
   return result;
@@ -1017,7 +970,7 @@ void MmgMeshS::cleanup() {
 
 py::dict MmgMeshS::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
-  RemeshStats before = collect_mesh_stats_surface(mesh);
+  RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
   set_mesh_options_surface(mesh, met, options);
 
@@ -1053,7 +1006,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 
-  RemeshStats after = collect_mesh_stats_surface(mesh);
+  RemeshStats after = collect_mesh_stats_surface(mesh, met);
 
   return build_remesh_result(before, after, duration, ret, warnings);
 }
@@ -1061,7 +1014,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
 py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                                    const py::dict &options) {
   check_not_corrupted("remesh");
-  RemeshStats before = collect_mesh_stats_surface(mesh);
+  RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
@@ -1088,7 +1041,7 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                              std::to_string(ret) + ")");
   }
 
-  RemeshStats after = collect_mesh_stats_surface(mesh);
+  RemeshStats after = collect_mesh_stats_surface(mesh, met);
 
   return build_remesh_result(before, after, duration, ret, warnings);
 }
