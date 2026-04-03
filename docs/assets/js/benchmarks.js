@@ -11,9 +11,12 @@
   const container = document.getElementById("benchmark-charts");
   if (!container) return;
 
-  // Resolve the base URL for the site (handles versioned docs paths like /mmgpy/dev/)
-  const siteBase = document.querySelector('meta[name="site-url"]')?.content || "/mmgpy/";
-  const dataUrl = new URL("bench/data.js", siteBase).pathname;
+  // Resolve the data URL relative to the site root.
+  // The site lives at /mmgpy/ and bench data is at /mmgpy/bench/data.js.
+  const base =
+    document.querySelector("link[rel='canonical']")?.href.split("/").slice(0, 4).join("/") ||
+    window.location.origin + "/mmgpy";
+  const dataUrl = base + "/bench/data.js";
 
   function getThemeColors() {
     const isDark =
