@@ -49,7 +49,7 @@ double get_triangle_quality([[maybe_unused]] MMG5_pMesh mesh,
   // Equivalent to MMGS_ALPHAD * sqrt(area2) / sum_edges for isotropic meshes.
   return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
 #else
-  return get_triangle_quality(mesh, met, k);
+  return MMGS_Get_triangleQuality(mesh, met, k);
 #endif
 }
 
