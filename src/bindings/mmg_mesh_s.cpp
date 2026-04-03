@@ -4,7 +4,54 @@
 #include <set>
 #include <stdexcept>
 
+#ifdef _WIN32
+#include <cmath>
+#endif
+
 namespace {
+
+// Wrapper for MMGS_Get_triangleQuality.
+// On Windows, the symbol is not exported from the MMG DLL (missing
+// LIBMMGS_EXPORT in MMG v5.8.0 header), so we compute the quality manually.
+// On other platforms we call the C API directly.
+double get_triangle_quality([[maybe_unused]] MMG5_pMesh mesh,
+                            [[maybe_unused]] MMG5_pSol met, MMG5_int k) {
+#ifdef _WIN32
+  MMG5_pTria pt = &mesh->tria[k];
+  MMG5_pPoint p0 = &mesh->point[pt->v[0]];
+  MMG5_pPoint p1 = &mesh->point[pt->v[1]];
+  MMG5_pPoint p2 = &mesh->point[pt->v[2]];
+
+  double ax = p1->c[0] - p0->c[0], ay = p1->c[1] - p0->c[1],
+         az = p1->c[2] - p0->c[2];
+  double bx = p2->c[0] - p0->c[0], by = p2->c[1] - p0->c[1],
+         bz = p2->c[2] - p0->c[2];
+  double cx = p2->c[0] - p1->c[0], cy = p2->c[1] - p1->c[1],
+         cz = p2->c[2] - p1->c[2];
+
+  double a2 = ax * ax + ay * ay + az * az;
+  double b2 = bx * bx + by * by + bz * bz;
+  double c2 = cx * cx + cy * cy + cz * cz;
+
+  double nx = ay * bz - az * by;
+  double ny = az * bx - ax * bz;
+  double nz = ax * by - ay * bx;
+  double area2 = nx * nx + ny * ny + nz * nz;
+
+  if (area2 < 1e-30)
+    return 0.0;
+
+  double sum_edges = a2 + b2 + c2;
+  if (sum_edges < 1e-30)
+    return 0.0;
+
+  // Quality = 4 * sqrt(3) * area / (2 * (a^2 + b^2 + c^2))
+  // Equivalent to MMGS_ALPHAD * sqrt(area2) / sum_edges for isotropic meshes.
+  return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
+#else
+  return get_triangle_quality(mesh, met, k);
+#endif
+}
 
 // Collect mesh statistics for surface mesh
 RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh, MMG5_pSol met) {
@@ -18,7 +65,7 @@ RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh, MMG5_pSol met) {
   double quality_sum = 0.0;
   if (stats.triangles > 0) {
     for (MMG5_int i = 1; i <= stats.triangles; i++) {
-      double q = MMGS_Get_triangleQuality(mesh, met, i);
+      double q = get_triangle_quality(mesh, met, i);
       quality_sum += q;
       if (q < stats.quality_min)
         stats.quality_min = q;
@@ -767,7 +814,7 @@ double MmgMeshS::get_element_quality(MMG5_int idx) const {
                              std::to_string(idx));
   }
 
-  return MMGS_Get_triangleQuality(mesh, met, mmg_idx);
+  return get_triangle_quality(mesh, met, mmg_idx);
 }
 
 py::array_t<double> MmgMeshS::get_element_qualities() const {
@@ -777,7 +824,7 @@ py::array_t<double> MmgMeshS::get_element_qualities() const {
   double *ptr = static_cast<double *>(buf.ptr);
 
   for (MMG5_int i = 0; i < nt; i++) {
-    ptr[i] = MMGS_Get_triangleQuality(mesh, met, i + 1);
+    ptr[i] = get_triangle_quality(mesh, met, i + 1);
   }
 
   return result;

@@ -1,7 +1,3 @@
----
-icon: lucide/check-square
----
-
 # MMG C API Binding Coverage
 
 This document tracks every public function in the MMG C library and whether it has a
@@ -517,13 +513,13 @@ Many "not bound" functions fall into categories that are intentionally excluded:
 
 ### Triangle Operations
 
-| Function                   | Status   | Notes                                                        |
-| -------------------------- | -------- | ------------------------------------------------------------ |
-| `MMGS_Set_triangle`        | Bound    | `MmgMeshS.set_triangle()` and loops in `set_triangles()`     |
-| `MMGS_Set_triangles`       | Indirect | `set_triangles()` loops over `Set_triangle` instead          |
-| `MMGS_Get_triangle`        | Bound    | `MmgMeshS.get_triangle()`                                    |
-| `MMGS_Get_triangles`       | Indirect | `get_triangles()` accesses struct directly                   |
-| `MMGS_Get_triangleQuality` | Bound    | `MmgMeshS.get_element_quality()` / `get_element_qualities()` |
+| Function                   | Status   | Notes                                                                                                                             |
+| -------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `MMGS_Set_triangle`        | Bound    | `MmgMeshS.set_triangle()` and loops in `set_triangles()`                                                                          |
+| `MMGS_Set_triangles`       | Indirect | `set_triangles()` loops over `Set_triangle` instead                                                                               |
+| `MMGS_Get_triangle`        | Bound    | `MmgMeshS.get_triangle()`                                                                                                         |
+| `MMGS_Get_triangles`       | Indirect | `get_triangles()` accesses struct directly                                                                                        |
+| `MMGS_Get_triangleQuality` | Bound    | `MmgMeshS.get_element_quality()` / `get_element_qualities()`. Manual fallback on Windows due to missing DLL export in MMG v5.8.0. |
 
 ### Edge Operations
 
