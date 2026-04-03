@@ -50,6 +50,7 @@ jobs:
         with:
           tool: "pytest"
           output-file-path: benchmark-results.json
+          benchmark-data-dir-path: bench
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           alert-threshold: "200%"
