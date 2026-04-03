@@ -6,19 +6,6 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      calibration_runs:
-        description: "Number of calibration runs (10+ recommended)"
-        required: false
-        default: "10"
-      mode:
-        description: "Mode: benchmark (default) or calibrate"
-        required: false
-        default: "benchmark"
-        type: choice
-        options:
-          - benchmark
-          - calibrate
 
 permissions:
   contents: write
@@ -28,7 +15,7 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.mode != 'calibrate' }}
+    if: github.event_name != 'pull_request'
 
     steps:
       - uses: actions/checkout@v6
@@ -55,58 +42,103 @@ jobs:
             --benchmark-group-by=group \
             --benchmark-sort=mean \
             --benchmark-warmup=on \
-            --benchmark-min-rounds=3
-
-      - name: Compare against thresholds
-        id: compare
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -f benchmarks/thresholds.json ]; then
-            uv run python benchmarks/scripts/compare_benchmarks.py \
-              --results benchmark-results.json \
-              --thresholds benchmarks/thresholds.json \
-              --github-output comparison-report.md
-            echo "has_thresholds=true" >> $GITHUB_OUTPUT
-          else
-            echo "No thresholds.json found. Run calibration to enable per-benchmark comparison."
-            echo "has_thresholds=false" >> $GITHUB_OUTPUT
-          fi
+            --benchmark-min-rounds=5 \
+            --benchmark-disable-gc
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name != 'pull_request'
         with:
           tool: "pytest"
           output-file-path: benchmark-results.json
+          benchmark-data-dir-path: bench
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           alert-threshold: "200%"
           comment-on-alert: true
           fail-on-alert: false
 
-      - name: Compare benchmarks (PR only)
-        uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'pull_request'
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v7
         with:
-          tool: "pytest"
-          output-file-path: benchmark-results.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          alert-threshold: "200%"
-          comment-on-alert: true
-          fail-on-alert: false
-          comment-always: false
+          name: benchmark-results
+          path: benchmark-results.json
+          retention-days: 30
+
+  benchmark-pr:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      # --- Setup ---
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          version: 1.0
+
+      - uses: astral-sh/setup-uv@v8.0.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      # --- Phase 1: Baseline (main) ---
+      - name: Install dependencies (baseline)
+        run: uv sync -v
+
+      - name: Run baseline benchmarks
+        run: |
+          uv run pytest benchmarks/ \
+            --benchmark-only \
+            --benchmark-json=baseline-results.json \
+            --benchmark-group-by=group \
+            --benchmark-sort=mean \
+            --benchmark-warmup=on \
+            --benchmark-min-rounds=5 \
+            --benchmark-disable-gc
+
+      # --- Phase 2: Current (PR branch) ---
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          clean: false
+
+      - name: Install dependencies (PR branch)
+        run: uv sync -v
+
+      - name: Run PR benchmarks
+        run: |
+          uv run pytest benchmarks/ \
+            --benchmark-only \
+            --benchmark-json=current-results.json \
+            --benchmark-group-by=group \
+            --benchmark-sort=mean \
+            --benchmark-warmup=on \
+            --benchmark-min-rounds=5 \
+            --benchmark-disable-gc
+
+      # --- Phase 3: Compare ---
+      - name: Compare benchmarks
+        id: compare
+        run: |
+          uv run python benchmarks/scripts/compare_benchmarks.py \
+            --baseline baseline-results.json \
+            --current current-results.json \
+            --threshold 1.3 \
+            --github-output comparison-report.md \
+            --fail-on-regression
 
       - name: Generate benchmark summary
-        if: github.event_name == 'pull_request'
-        id: summary
         run: |
-          python3 << 'EOF'
+          uv run python << 'EOF'
           import json
-          import os
           from pathlib import Path
 
-          with open("benchmark-results.json") as f:
+          with open("current-results.json") as f:
               data = json.load(f)
 
           benchmarks = data.get("benchmarks", [])
@@ -134,7 +166,7 @@ jobs:
 
           summary_lines.append(f"\n*Total: {len(benchmarks)} benchmarks*")
 
-          # Add comparison results if available
+          # Add comparison results
           comparison_file = Path("comparison-report.md")
           if comparison_file.exists():
               summary_lines.append("\n---\n")
@@ -143,21 +175,16 @@ jobs:
           summary = "\n".join(summary_lines)
           print(summary)
 
-          # Write to GitHub step output
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write("summary<<EOF\n")
-              f.write(summary)
-              f.write("\nEOF\n")
+          Path("benchmark-summary.md").write_text(summary)
           EOF
 
       - name: Comment benchmark summary on PR
-        if: github.event_name == 'pull_request' && steps.summary.outputs.summary
         uses: actions/github-script@v7
         with:
           script: |
-            const summary = `${{ steps.summary.outputs.summary }}`;
+            const fs = require('fs');
+            const summary = fs.readFileSync('benchmark-summary.md', 'utf8');
 
-            // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -189,59 +216,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: benchmark-results
-          path: benchmark-results.json
-          retention-days: 30
-
-  calibrate:
-    runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.mode == 'calibrate' }}
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Cache apt packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
-          version: 1.0
-
-      - uses: astral-sh/setup-uv@v8.0.0
-        with:
-          python-version: "3.12"
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync -v
-
-      - name: Run benchmark calibration
-        run: |
-          uv run python benchmarks/scripts/calibrate_benchmarks.py \
-            --runs ${{ github.event.inputs.calibration_runs || '10' }} \
-            --output calibration-results.json \
-            --thresholds-output benchmarks/thresholds.json
-
-      - name: Analyze calibration results
-        run: |
-          uv run python benchmarks/scripts/analyze_benchmark_variance.py calibration-results.json
-
-      - name: Upload calibration results
-        uses: actions/upload-artifact@v7
-        with:
-          name: calibration-results
           path: |
-            calibration-results.json
-            benchmarks/thresholds.json
-          retention-days: 90
-
-      - name: Show next steps
-        run: |
-          echo "=============================================="
-          echo "CALIBRATION COMPLETE"
-          echo "=============================================="
-          echo ""
-          echo "Next steps:"
-          echo "1. Download the 'calibration-results' artifact"
-          echo "2. Copy benchmarks/thresholds.json to your local repo"
-          echo "3. Commit and push thresholds.json to enable per-benchmark comparison"
-          echo ""
-          echo "Or create a PR with the thresholds file to update them."
+            baseline-results.json
+            current-results.json
+            comparison-report.md
+          retention-days: 30
