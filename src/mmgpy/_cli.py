@@ -34,7 +34,11 @@ def _get_cli_logger() -> logging.Logger:  # pragma: no cover
 
 
 def _ensure_executable(path: Path) -> None:  # pragma: no cover
-    """Ensure a file has execute permissions (Unix only)."""
+    """Ensure a file has execute permissions (Unix only).
+
+    .. note:: Kept for the public API re-export in ``__init__.py``
+       (used by tests and downstream code).
+    """
     if sys.platform == "win32":
         return
 
@@ -53,6 +57,10 @@ def _ensure_executable(path: Path) -> None:  # pragma: no cover
 
 def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     """Find an MMG executable in mmgpy/bin, venv bin, or system PATH.
+
+    .. note:: No longer used by the CLI entry point (the unified ``mmg``
+       command calls the Python API directly).  Kept for the public
+       re-export in ``__init__.py`` and for test usage.
 
     Args:
         base_name: Base name of executable (e.g., "mmg3d_O3")
@@ -126,7 +134,7 @@ _FLAGS_WITH_VALUE = {
     "-ls",
     "-lag",
     "-ar",
-    "-nr",
+    "-nr",  # consumed but intentionally unhandled (MMG no-ridge flag)
     "-hmin",
     "-hmax",
     "-hsiz",
@@ -192,7 +200,7 @@ def _parse_args(args: list[str]) -> _ParsedArgs:
         # -- flags with a value argument -------------------------------------
         if arg in _FLAGS_WITH_VALUE and i + 1 < len(args):
             value = args[i + 1]
-            if arg in ("-in",):
+            if arg == "-in":
                 parsed.input_mesh = value
             elif arg in ("-o", "-out"):
                 parsed.output_mesh = value
@@ -327,6 +335,13 @@ def _run_mmg() -> None:  # pragma: no cover
     get_logger().info("Detected %s mesh", mesh.kind.value)
 
     # -- load solution / metric files ----------------------------------------
+    if parsed.sol_file is not None and parsed.met_file is not None:
+        _get_cli_logger().error(
+            "-sol and -met cannot both be specified "
+            "(the second would overwrite the first)",
+        )
+        sys.exit(1)
+
     if parsed.sol_file is not None:
         mesh._impl.load_sol(str(parsed.sol_file))  # noqa: SLF001
 
@@ -336,6 +351,12 @@ def _run_mmg() -> None:  # pragma: no cover
     # -- remesh --------------------------------------------------------------
     try:
         if parsed.ls_value is not None:
+            if "levelset" not in mesh:
+                _get_cli_logger().error(
+                    "-ls requires a 'levelset' field in the mesh; "
+                    "load one with -sol or set it via the Python API",
+                )
+                sys.exit(1)
             result = mesh.remesh_levelset(
                 mesh["levelset"],
                 ls=parsed.ls_value,
@@ -343,6 +364,12 @@ def _run_mmg() -> None:  # pragma: no cover
                 **parsed.remesh_options,
             )
         elif parsed.lag_value is not None:
+            if "displacement" not in mesh:
+                _get_cli_logger().error(
+                    "-lag requires a 'displacement' field in the mesh; "
+                    "load one with -sol or set it via the Python API",
+                )
+                sys.exit(1)
             result = mesh.remesh_lagrangian(
                 mesh["displacement"],
                 progress=False,

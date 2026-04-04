@@ -255,8 +255,8 @@ class TestDefaultOutputPath:
 
     def test_path_with_directory(self) -> None:
         """Full path is preserved."""
-        expected = "/data/meshes/cube.o.mesh"
-        assert _default_output_path("/data/meshes/cube.mesh") == expected
+        result = Path(_default_output_path("/data/meshes/cube.mesh"))
+        assert result == Path("/data/meshes/cube.o.mesh")
 
 
 class TestMmgCLI:
