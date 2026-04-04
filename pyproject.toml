@@ -76,16 +76,11 @@ wheel.packages = ["src/mmgpy"]
 sdist.include = ["CMakeLists.txt", "src/*", "extern/*", "scripts/*"]
 sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 
-# Scripts entry points - wrappers that find and run native MMG executables.
-# Native executables (mmg3d_O3, mmg2d_O3, mmgs_O3) are installed to mmgpy/bin/
-# and symlinked to venv/bin/ by CMake. These wrapper entry points provide
-# shorter command names (mmg3d, mmg2d, mmgs) and the unified 'mmg' command.
+# Scripts entry points - the unified 'mmg' command auto-detects mesh type
+# and remeshes via the Python API (no subprocess, single file read).
 [project.scripts]
 mmgpy = "mmgpy._cli:_run_mmg"
 mmg = "mmgpy._cli:_run_mmg"
-mmg2d = "mmgpy._cli:_run_mmg2d"
-mmg3d = "mmgpy._cli:_run_mmg3d"
-mmgs = "mmgpy._cli:_run_mmgs"
 
 [project.entry-points."mmgpy.ui"]
 ui = "mmgpy.ui:run_ui"
@@ -214,10 +209,10 @@ ignore = [
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
 ]
 "src/mmgpy/_cli.py" = [
-    "S603",    # subprocess calls with absolute paths to system tools are safe
-    "C901",    # executable finder has many fallback paths
+    "C901",    # _run_mmg and _find_mmg_executable have many branches
     "T201",    # print statements for CLI output
-    "PLR0912", # many branches in executable search fallback paths
+    "PLR0912", # many branches in executable search and arg parsing
+    "PLR0915", # many statements in _run_mmg entry point
 ]
 "src/mmgpy/_logging.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency

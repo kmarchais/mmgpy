@@ -168,46 +168,6 @@ class TestExecutableRuns:
 class TestPythonEntryPoints:
     """Test that Python entry points work correctly."""
 
-    def test_mmg3d_entry_point(self) -> None:
-        """Test that mmg3d entry point works."""
-        result = subprocess.run(
-            ["mmg3d", "-h"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        # Entry point should either show help (returncode 0) or fail gracefully
-        # Error message may be in stdout (rich logger) or stderr
-        combined = (result.stdout + result.stderr).lower()
-        assert result.returncode == 0 or "not found" in combined
-
-    def test_mmg2d_entry_point(self) -> None:
-        """Test that mmg2d entry point works."""
-        result = subprocess.run(
-            ["mmg2d", "-h"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        # Error message may be in stdout (rich logger) or stderr
-        combined = (result.stdout + result.stderr).lower()
-        assert result.returncode == 0 or "not found" in combined
-
-    def test_mmgs_entry_point(self) -> None:
-        """Test that mmgs entry point works."""
-        result = subprocess.run(
-            ["mmgs", "-h"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        # Error message may be in stdout (rich logger) or stderr
-        combined = (result.stdout + result.stderr).lower()
-        assert result.returncode == 0 or "not found" in combined
-
     def test_mmg_unified_entry_point(self) -> None:
         """Test that unified mmg entry point shows help."""
         result = subprocess.run(
