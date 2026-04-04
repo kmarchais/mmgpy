@@ -4,23 +4,25 @@ Each benchmark exercises a unique combination of remesh options across
 3D, 2D, and surface meshes.  When multiple benchmarks regress, the
 intersection of their feature sets identifies the likely culprit.
 
-Feature coverage matrix (8 features, 9 benchmarks):
+Feature coverage matrix (8 features, 10 benchmarks):
 
-+-------+------+------+-------+-------+----------+---------+--------+-------+
-| Bench | hmin | hmax | hausd | hgrad | optimize | uniform | metric | angle |
-+=======+======+======+=======+=======+==========+=========+========+=======+
-| B1 3D |  x   |  x   |   x   |       |          |         |        |       |
-| B2 3D |      |      |       |   x   |          |         |   x    |       |
-| B3 3D |      |      |       |       |    x     |         |        |       |
-| B4 2D |      |  x   |       |   x   |          |         |        |   x   |
-| B5 2D |  x   |      |   x   |       |          |         |   x    |       |
-| B6 2D |      |      |       |       |          |    x    |        |   x   |
-| B7 Sf |  x   |      |       |   x   |          |         |        |       |
-| B8 Sf |      |  x   |   x   |       |          |         |   x    |   x   |
-| B9 Sf |      |      |       |       |    x     |    x    |        |       |
-+-------+------+------+-------+-------+----------+---------+--------+-------+
++--------+------+------+-------+-------+----------+---------+--------+-------+
+| Bench  | hmin | hmax | hausd | hgrad | optimize | uniform | metric | angle |
++========+======+======+=======+=======+==========+=========+========+=======+
+| B1  3D |  x   |  x   |   x   |       |          |         |        |       |
+| B2  3D |      |      |       |   x   |          |         |   x    |       |
+| B3  3D |      |      |       |       |    x     |         |        |       |
+| B4  2D |      |  x   |       |   x   |          |         |        |   x   |
+| B5  2D |  x   |      |   x   |       |          |         |   x    |       |
+| B6  2D |      |      |       |       |          |    x    |        |   x   |
+| B7  Sf |  x   |      |       |   x   |          |         |        |       |
+| B8  Sf |      |  x   |   x   |       |          |         |   x    |   x   |
+| B9  Sf |      |      |       |       |    x     |         |        |       |
+| B10 Sf |      |      |       |       |          |    x    |        |       |
++--------+------+------+-------+-------+----------+---------+--------+-------+
 
-All feature signatures are unique — single-feature isolation is guaranteed.
+Feature signatures are unique within each dimension — the dimension axis
+provides additional isolation.
 """
 
 from __future__ import annotations
@@ -161,7 +163,7 @@ class TestRemesh2D:
 
 
 class TestRemeshSurface:
-    """Surface remeshing benchmarks (B7-B9)."""
+    """Surface remeshing benchmarks (B7-B10)."""
 
     @pytest.mark.benchmark(group="remesh-surface")
     def test_surface_adaptive_hmin_hgrad(
@@ -200,22 +202,35 @@ class TestRemeshSurface:
         assert len(result.get_triangles()) > 0
 
     @pytest.mark.benchmark(group="remesh-surface")
-    def test_surface_optimize_uniform(
+    def test_surface_optimize(
         self,
         benchmark: BenchmarkFixture,
         mesh_surface_large: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
-        """B9: Surface optimize + uniform (two modes in one benchmark)."""
+        """B9: Surface optimization-only (no topology changes)."""
         vertices, triangles = mesh_surface_large
 
         def run() -> MmgMeshS:
-            # Optimize pass (no topology changes)
-            mesh_opt = MmgMeshS(vertices, triangles)
-            mesh_opt.remesh(optim=1, noinsert=1, verbose=-1)
-            # Uniform pass (fresh mesh)
-            mesh_uni = MmgMeshS(vertices, triangles)
-            mesh_uni.remesh(hsiz=0.04, verbose=-1)
-            return mesh_uni
+            mesh = MmgMeshS(vertices, triangles)
+            mesh.remesh(optim=1, noinsert=1, verbose=-1)
+            return mesh
+
+        result = benchmark(run)
+        assert len(result.get_triangles()) > 0
+
+    @pytest.mark.benchmark(group="remesh-surface")
+    def test_surface_uniform(
+        self,
+        benchmark: BenchmarkFixture,
+        mesh_surface_large: tuple[NDArray[np.float64], NDArray[np.int32]],
+    ) -> None:
+        """B10: Surface uniform sizing."""
+        vertices, triangles = mesh_surface_large
+
+        def run() -> MmgMeshS:
+            mesh = MmgMeshS(vertices, triangles)
+            mesh.remesh(hsiz=0.04, verbose=-1)
+            return mesh
 
         result = benchmark(run)
         assert len(result.get_triangles()) > 0

@@ -76,19 +76,33 @@ class TestOperations:
         assert len(result.get_vertices()) > 0
 
     @pytest.mark.benchmark(group="operations")
-    def test_quality_and_validate(
+    def test_quality_3d(
         self,
         benchmark: BenchmarkFixture,
         mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
     ) -> None:
-        """Quality computation + validation."""
+        """Element quality computation."""
         vertices, tetrahedra = mesh_3d_medium
-        mesh_low = MmgMesh3D(vertices, tetrahedra)
-        mesh_high = Mesh(vertices, tetrahedra)
+        mesh = MmgMesh3D(vertices, tetrahedra)
+
+        def run() -> np.ndarray:
+            return mesh.get_element_qualities()
+
+        result = benchmark(run)
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="operations")
+    def test_validate_3d(
+        self,
+        benchmark: BenchmarkFixture,
+        mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
+    ) -> None:
+        """Mesh validation."""
+        vertices, tetrahedra = mesh_3d_medium
+        mesh = Mesh(vertices, tetrahedra)
 
         def run() -> None:
-            _ = mesh_low.get_element_qualities()
-            mesh_high.validate()
+            mesh.validate()
 
         benchmark(run)
 

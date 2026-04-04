@@ -22,11 +22,11 @@ uv run pytest benchmarks/ --benchmark-only --benchmark-json=results.json
 
 | File                  | Benchmarks | Description                                            |
 | --------------------- | ---------- | ------------------------------------------------------ |
-| `bench_remesh.py`     | 9          | Remesh isolation matrix (3D, 2D, surface)              |
-| `bench_operations.py` | 5          | Cheap operations (construction, I/O, PyVista, quality) |
+| `bench_remesh.py`     | 10         | Remesh isolation matrix (3D, 2D, surface)              |
+| `bench_operations.py` | 6          | Cheap operations (construction, I/O, PyVista, quality) |
 | `bench_validation.py` | 2          | KD-tree duplicate vertex detection                     |
 
-**Total: 16 benchmarks** (designed for low noise and fast diagnosis).
+**Total: 18 benchmarks** (designed for low noise and fast diagnosis).
 
 ## Isolation Matrix (bench_remesh.py)
 
@@ -43,10 +43,11 @@ When benchmarks fail, the pattern of pass/fail identifies the culprit.
 | B6    | 2D  |      |      |       |       |          |    x    |        |   x   |
 | B7    | Srf |  x   |      |       |   x   |          |         |        |       |
 | B8    | Srf |      |  x   |   x   |       |          |         |   x    |   x   |
-| B9    | Srf |      |      |       |       |    x     |    x    |        |       |
+| B9    | Srf |      |      |       |       |    x     |         |        |       |
+| B10   | Srf |      |      |       |       |          |    x    |        |       |
 
-**All feature signatures are unique** -- single-feature regressions can be
-identified unambiguously.
+**Feature signatures are unique within each dimension** -- the dimension axis
+provides additional isolation.
 
 ### How to Diagnose a Regression
 

@@ -10,8 +10,6 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy._mmgpy import MmgMesh3D
-
 if TYPE_CHECKING:
     from collections.abc import Generator
 
@@ -163,39 +161,17 @@ def mesh_3d_large() -> tuple[NDArray[np.float64], NDArray[np.int32]]:
 
 @pytest.fixture(scope="session")
 def mesh_2d_large() -> tuple[NDArray[np.float64], NDArray[np.int32]]:
-    """Large 2D mesh (~320,000 elements)."""
-    return _generate_square_mesh_2d(n_cells_per_edge=400)
+    """Large 2D mesh (~80,000 elements)."""
+    return _generate_square_mesh_2d(n_cells_per_edge=200)
 
 
 @pytest.fixture(scope="session")
 def mesh_surface_large() -> tuple[NDArray[np.float64], NDArray[np.int32]]:
-    """Large surface mesh (~327,680 elements)."""
-    return _generate_sphere_surface(n_subdivisions=7)
+    """Large surface mesh (~81,920 elements)."""
+    return _generate_sphere_surface(n_subdivisions=6)
 
 
-# -- Derived fixtures for Tier 1 operations benchmarks -----------------------
-
-
-@pytest.fixture(scope="session")
-def mesh_file_3d_medium(
-    mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Path:
-    """Pre-written medium 3D mesh file for I/O benchmarks."""
-    vertices, tetrahedra = mesh_3d_medium
-    mesh = MmgMesh3D(vertices, tetrahedra)
-    path = tmp_path_factory.mktemp("bench") / "medium_3d.mesh"
-    mesh.save(str(path))
-    return path
-
-
-@pytest.fixture(scope="session")
-def pyvista_tetra_grid_medium(
-    mesh_3d_medium: tuple[NDArray[np.float64], NDArray[np.int32]],
-) -> pv.UnstructuredGrid:
-    """PyVista UnstructuredGrid for conversion benchmarks."""
-    vertices, tetrahedra = mesh_3d_medium
-    return pv.UnstructuredGrid({pv.CellType.TETRA: tetrahedra}, vertices)
+# -- Utility fixtures --------------------------------------------------------
 
 
 @pytest.fixture
