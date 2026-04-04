@@ -41,6 +41,9 @@ classifiers = [
 # Optional dependencies for pip/uvx users (e.g., pip install mmgpy[ui])
 # Note: dependency-groups below are for local dev with uv sync --group <name>
 [project.optional-dependencies]
+fem = [
+    "fedoo>=0.7.0",
+]
 ui = [
     "pywebview>=6.1,<7",
     "trame>=3.12.0,<4",
@@ -169,6 +172,9 @@ ignore = [
     "C901",    # complex wheel optimization function is acceptable
     "PLR0912", # many branches in wheel optimization is acceptable
     "PLR0915", # many statements in wheel optimization is acceptable
+]
+"src/mmgpy/lagrangian.py" = [
+    "N803",    # uppercase argument names (E for Young's modulus) standard in mechanics
 ]
 "src/mmgpy/metrics.py" = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
