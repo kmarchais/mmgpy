@@ -1,5 +1,6 @@
 #include "mmg_mesh_s.hpp"
 #include "mmg_common.hpp"
+#include "mmg_progress.hpp"
 #include <chrono>
 #include <set>
 #include <stdexcept>
@@ -1015,11 +1016,18 @@ void MmgMeshS::cleanup() {
   }
 }
 
-py::dict MmgMeshS::remesh(const py::dict &options) {
+py::dict MmgMeshS::remesh(const py::dict &options,
+                          const py::object &progress_callback) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
   set_mesh_options_surface(mesh, met, options);
+
+  // Set up progress callback if provided
+  ProgressCallbackData cb_data{progress_callback};
+  if (!progress_callback.is_none()) {
+    MMGS_Set_progressCallback(mesh, progress_trampoline, &cb_data);
+  }
 
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
@@ -1041,6 +1049,8 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
       mode_name = "MMGS_mmgslib (standard remeshing)";
     }
   }
+
+  MMGS_Set_progressCallback(mesh, nullptr, nullptr);
 
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();

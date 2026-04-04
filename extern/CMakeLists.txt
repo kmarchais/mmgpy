@@ -5,9 +5,9 @@ include(FetchContent)
 # MMG version is set from pyproject.toml via parent CMakeLists.txt
 # This provides a fallback default if called standalone
 if(NOT DEFINED MMG_GIT_TAG)
-    set(MMG_GIT_TAG "v5.8.0" CACHE STRING "MMG version to build")
+    set(MMG_GIT_TAG "feature/progress-callback" CACHE STRING "MMG version to build")
 endif()
-set(MMG_REPOSITORY "https://github.com/MmgTools/mmg.git" CACHE STRING "MMG repository URL")
+set(MMG_REPOSITORY "https://github.com/kmarchais/mmg.git" CACHE STRING "MMG repository URL")
 message(STATUS "Building MMG version: ${MMG_GIT_TAG}")
 
 # Fetch MMG

@@ -3,6 +3,7 @@
 #include "mmg_mesh.hpp"
 #include "mmg_mesh_2d.hpp"
 #include "mmg_mesh_s.hpp"
+#include "mmg_progress.hpp"
 
 namespace {
 // Convert a Python str or Path object to a std::variant for C++ file I/O.
@@ -21,10 +22,16 @@ constexpr int MMG_VERBOSE_DEFAULT = 1; // Standard output
 // Helper to convert Python kwargs to options dict with verbose bool->int
 // conversion. MMG uses integer verbosity levels where -1 = silent and
 // positive values increase output verbosity.
+// Reserved kwargs that are consumed by the binding layer, not passed to MMG.
+static const char *KWARG_PROGRESS_CALLBACK = "_progress_callback";
+
 py::dict kwargs_to_options(const py::kwargs &kwargs) {
   py::dict options;
   for (const auto &item : kwargs) {
     std::string key = py::str(item.first);
+    // Skip reserved binding-layer kwargs
+    if (key == KWARG_PROGRESS_CALLBACK)
+      continue;
     if (key == "verbose" && py::isinstance<py::bool_>(item.second)) {
       // Convert bool to MMG verbose level for Pythonic API
       bool verbose_bool = item.second.cast<bool>();
@@ -35,6 +42,15 @@ py::dict kwargs_to_options(const py::kwargs &kwargs) {
     }
   }
   return options;
+}
+
+// Extract optional _progress_callback from kwargs (returns py::none() if
+// absent).
+py::object extract_progress_callback(const py::kwargs &kwargs) {
+  if (kwargs.contains(KWARG_PROGRESS_CALLBACK)) {
+    return kwargs[KWARG_PROGRESS_CALLBACK].cast<py::object>();
+  }
+  return py::none();
 }
 } // namespace
 
@@ -201,16 +217,22 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh &self, py::kwargs kwargs) {
-            return self.remesh(kwargs_to_options(kwargs));
+            auto cb = extract_progress_callback(kwargs);
+            return self.remesh(kwargs_to_options(kwargs), cb);
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
-          "hgrad, optim, verbose.")
+          "hgrad, optim, verbose.\n\n"
+          "Pass _progress_callback=callable to receive iteration-level "
+          "progress updates.  The callable receives (phase, iteration, "
+          "max_iterations, n_split, n_collapse, n_swap, n_move) and must "
+          "return True to continue or False to cancel.")
       .def(
           "remesh_lagrangian",
           [](MmgMesh &self, const py::array_t<double> &displacement,
              py::kwargs kwargs) {
+            auto cb = extract_progress_callback(kwargs);
             return self.remesh_lagrangian(displacement,
-                                          kwargs_to_options(kwargs));
+                                          kwargs_to_options(kwargs), cb);
           },
           py::arg("displacement"),
           "Remesh the mesh following Lagrangian motion defined by a "
@@ -225,7 +247,9 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_levelset",
           [](MmgMesh &self, const py::array_t<double> &levelset,
              py::kwargs kwargs) {
-            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+            auto cb = extract_progress_callback(kwargs);
+            return self.remesh_levelset(levelset, kwargs_to_options(kwargs),
+                                        cb);
           },
           py::arg("levelset"),
           "Remesh the mesh to conform to a level-set isosurface.\n\n"
@@ -364,7 +388,8 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh2D &self, py::kwargs kwargs) {
-            return self.remesh(kwargs_to_options(kwargs));
+            auto cb = extract_progress_callback(kwargs);
+            return self.remesh(kwargs_to_options(kwargs), cb);
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
           "hgrad, optim, verbose.")
@@ -521,7 +546,8 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMeshS &self, py::kwargs kwargs) {
-            return self.remesh(kwargs_to_options(kwargs));
+            auto cb = extract_progress_callback(kwargs);
+            return self.remesh(kwargs_to_options(kwargs), cb);
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
           "hgrad, optim, verbose.")
@@ -570,4 +596,10 @@ PYBIND11_MODULE(_mmgpy, m) {
       py::arg("output_sol") = py::none(), py::arg("options") = py::dict());
 
   m.attr("MMG_VERSION") = MMG_VERSION_RELEASE;
+
+  // Progress callback phase constants
+  m.attr("MMG5_PHASE_GEOMETRIC_MESH") = (int)MMG5_PHASE_GEOMETRIC_MESH;
+  m.attr("MMG5_PHASE_COMPUTATIONAL_MESH") = (int)MMG5_PHASE_COMPUTATIONAL_MESH;
+  m.attr("MMG5_PHASE_ADAPTATION") = (int)MMG5_PHASE_ADAPTATION;
+  m.attr("MMG5_PHASE_OPTIMIZATION") = (int)MMG5_PHASE_OPTIMIZATION;
 }

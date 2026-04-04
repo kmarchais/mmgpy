@@ -85,7 +85,8 @@ if(MMGPY_CONDA_BUILD)
     message(STATUS "Using system MMG: ${MMG_LIBRARIES}")
 else()
     # Build MMG from source via FetchContent
-    set(MMG_GIT_TAG "v${MMG_VERSION_FROM_TOML}" CACHE STRING "MMG version to build")
+    # Use our fork's progress-callback branch instead of the release tag
+    set(MMG_GIT_TAG "feature/progress-callback" CACHE STRING "MMG version to build" FORCE)
 
     if(MMGPY_SKIP_EXECUTABLES)
         add_subdirectory(extern EXCLUDE_FROM_ALL)

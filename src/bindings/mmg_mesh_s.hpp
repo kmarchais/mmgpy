@@ -109,7 +109,8 @@ public:
       const std::variant<std::string, std::filesystem::path> &filename) const;
 
   // In-memory remeshing
-  py::dict remesh(const py::dict &options = py::dict());
+  py::dict remesh(const py::dict &options = py::dict(),
+                  const py::object &progress_callback = py::none());
   py::dict remesh_levelset(const py::array_t<double> &levelset,
                            const py::dict &options = py::dict());
 

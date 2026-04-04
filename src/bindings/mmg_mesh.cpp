@@ -1,5 +1,6 @@
 #include "mmg_mesh.hpp"
 #include "mmg_common.hpp"
+#include "mmg_progress.hpp"
 #include <chrono>
 #include <set>
 #include <stdexcept>
@@ -1457,11 +1458,18 @@ py::tuple MmgMesh::get_tetrahedra_with_refs() const {
   return get_elements_with_refs();
 }
 
-py::dict MmgMesh::remesh(const py::dict &options) {
+py::dict MmgMesh::remesh(const py::dict &options,
+                         const py::object &progress_callback) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
   set_mesh_options_3D(mesh, met, options);
+
+  // Set up progress callback if provided
+  ProgressCallbackData cb_data{progress_callback};
+  if (!progress_callback.is_none()) {
+    MMG3D_Set_progressCallback(mesh, progress_trampoline, &cb_data);
+  }
 
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
@@ -1484,6 +1492,9 @@ py::dict MmgMesh::remesh(const py::dict &options) {
     }
   }
 
+  // Clear the callback pointer (cb_data is stack-local)
+  MMG3D_Set_progressCallback(mesh, nullptr, nullptr);
+
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
@@ -1501,7 +1512,8 @@ py::dict MmgMesh::remesh(const py::dict &options) {
 }
 
 py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
-                                    const py::dict &options) {
+                                    const py::dict &options,
+                                    const py::object &progress_callback) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
@@ -1509,6 +1521,12 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
   py::dict lag_options =
       merge_options_with_default(options, "lag", py::int_(1));
   set_mesh_options_3D(mesh, met, lag_options);
+
+  // Set up progress callback if provided
+  ProgressCallbackData cb_data{progress_callback};
+  if (!progress_callback.is_none()) {
+    MMG3D_Set_progressCallback(mesh, progress_trampoline, &cb_data);
+  }
 
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
@@ -1519,6 +1537,9 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
     py::gil_scoped_release release;
     ret = MMG3D_mmg3dmov(mesh, met, disp);
   }
+
+  MMG3D_Set_progressCallback(mesh, nullptr, nullptr);
+
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
@@ -1537,13 +1558,20 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
 }
 
 py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
-                                  const py::dict &options) {
+                                  const py::dict &options,
+                                  const py::object &progress_callback) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
   set_mesh_options_3D(mesh, met, ls_options);
+
+  // Set up progress callback if provided
+  ProgressCallbackData cb_data{progress_callback};
+  if (!progress_callback.is_none()) {
+    MMG3D_Set_progressCallback(mesh, progress_trampoline, &cb_data);
+  }
 
   // Capture stderr to collect MMG warnings
   StderrCapture capture;
@@ -1554,6 +1582,9 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
     py::gil_scoped_release release;
     ret = MMG3D_mmg3dls(mesh, ls, met);
   }
+
+  MMG3D_Set_progressCallback(mesh, nullptr, nullptr);
+
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
