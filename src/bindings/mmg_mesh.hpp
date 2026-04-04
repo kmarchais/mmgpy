@@ -70,13 +70,46 @@ public:
   // Element attributes
   void set_corners(const py::array_t<int> &vertex_indices);
   void set_required_vertices(const py::array_t<int> &vertex_indices);
+  void set_required_triangles(const py::array_t<int> &triangle_indices);
+  void set_required_edges(const py::array_t<int> &edge_indices);
+  void set_required_tetrahedra(const py::array_t<int> &tetrahedra_indices);
   void set_ridge_edges(const py::array_t<int> &edge_indices);
+  void set_parallel_triangles(const py::array_t<int> &triangle_indices);
+
+  void unset_corners(const py::array_t<int> &vertex_indices);
+  void unset_required_vertices(const py::array_t<int> &vertex_indices);
+  void unset_required_triangles(const py::array_t<int> &triangle_indices);
+  void unset_required_edges(const py::array_t<int> &edge_indices);
+  void unset_required_tetrahedra(const py::array_t<int> &tetrahedra_indices);
+  void unset_ridge_edges(const py::array_t<int> &edge_indices);
+  void unset_parallel_triangles(const py::array_t<int> &triangle_indices);
+
+  // Attribute queries
+  py::tuple get_vertex_flags(MMG5_int idx) const;
+
+  // Normal vectors
+  void set_normal_at_vertices(const py::array_t<int> &vertex_indices,
+                              const py::array_t<double> &normals);
+  py::array_t<double>
+  get_normal_at_vertices(const py::array_t<int> &vertex_indices) const;
+
+  // Local parameters
+  void set_local_parameters(const py::list &parameters);
+
+  // Multi-material and level-set
+  void set_multi_materials(const py::list &materials);
+  void set_ls_base_references(const py::list &references);
 
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
   py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;
   double get_element_quality(MMG5_int idx) const;
   py::array_t<double> get_element_qualities() const;
+
+  // Advanced topology queries
+  py::tuple get_tet_from_tria(MMG5_int tri_idx) const;
+  py::tuple get_tets_from_tria(MMG5_int tri_idx) const;
+  py::tuple get_non_boundary_triangles() const;
 
   // Phase 3: Advanced element types (prisms and quadrilaterals)
   void set_prism(int v0, int v1, int v2, int v3, int v4, int v5, MMG5_int ref,
@@ -106,6 +139,10 @@ public:
 
   void
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
+  void
+  load_sol(const std::variant<std::string, std::filesystem::path> &filename);
+  void save_sol(
+      const std::variant<std::string, std::filesystem::path> &filename) const;
 
   // In-memory remeshing
   py::dict remesh(const py::dict &options = py::dict());
@@ -136,7 +173,6 @@ private:
 
   SolutionField get_solution_field(const std::string &field_name) const;
   int get_mmg_type(SolutionType type) const;
-  static std::string get_file_extension(const std::string &filename);
   void cleanup();
   void check_not_corrupted(const char *operation) const;
 

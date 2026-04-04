@@ -152,6 +152,47 @@ def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
     )
 
 
+class _LazyFieldSource:
+    """Deferred point_data from a PyVista read.
+
+    Fields remain in the original numpy arrays until explicitly accessed,
+    at which point they are validated and moved into ``Mesh._user_fields``.
+    """
+
+    __slots__ = ("_point_data",)
+
+    def __init__(self, point_data: dict[str, NDArray[np.float64]]) -> None:
+        self._point_data: dict[str, NDArray[np.float64]] = dict(point_data)
+
+    def field_names(self) -> frozenset[str]:
+        """Return names of available lazy fields."""
+        return frozenset(self._point_data)
+
+    def has_field(self, name: str) -> bool:
+        """Check whether *name* is available for lazy materialization."""
+        return name in self._point_data
+
+    def pop_field(self, name: str) -> NDArray[np.float64]:
+        """Remove and return a single field, converting to float64."""
+        return np.asarray(self._point_data.pop(name), dtype=np.float64)
+
+    def pop_all(self) -> dict[str, NDArray[np.float64]]:
+        """Materialize and return all remaining lazy fields."""
+        result = {
+            k: np.asarray(v, dtype=np.float64) for k, v in self._point_data.items()
+        }
+        self._point_data.clear()
+        return result
+
+    def invalidate(self) -> None:
+        """Discard all lazy fields (e.g. after remesh changes vertex count)."""
+        self._point_data.clear()
+
+    def is_empty(self) -> bool:
+        """Return True when no lazy fields remain."""
+        return len(self._point_data) == 0
+
+
 class MeshKind(Enum):
     """Enumeration of mesh types.
 
@@ -434,6 +475,7 @@ class Mesh:
     __slots__ = (
         "_impl",
         "_kind",
+        "_lazy_source",
         "_metric_is_tensor",
         "_sizing_constraints",
         "_user_fields",
@@ -441,6 +483,7 @@ class Mesh:
 
     _impl: MmgMesh3D | MmgMesh2D | MmgMeshS
     _kind: MeshKind
+    _lazy_source: _LazyFieldSource | None
     _sizing_constraints: list[SizingConstraint]
     _user_fields: dict[str, NDArray[np.float64]]
 
@@ -456,12 +499,14 @@ class Mesh:
         self._sizing_constraints = []
         self._user_fields = {}
         self._metric_is_tensor = False
+        self._lazy_source = None
 
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
+            self._lazy_source = result._lazy_source  # noqa: SLF001
             return
 
         # Handle file paths
@@ -469,6 +514,7 @@ class Mesh:
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
+            self._lazy_source = result._lazy_source  # noqa: SLF001
             return
 
         # Handle vertices + cells
@@ -487,6 +533,7 @@ class Mesh:
         cls,
         impl: MmgMesh3D | MmgMesh2D | MmgMeshS,
         kind: MeshKind,
+        lazy_source: _LazyFieldSource | None = None,
     ) -> Mesh:
         """Create a Mesh from an existing implementation (internal use).
 
@@ -496,6 +543,8 @@ class Mesh:
             The underlying mesh implementation.
         kind : MeshKind
             The mesh kind.
+        lazy_source : _LazyFieldSource, optional
+            Deferred point data from the original file.
 
         Returns
         -------
@@ -506,6 +555,7 @@ class Mesh:
         mesh = object.__new__(cls)
         mesh._impl = impl  # noqa: SLF001
         mesh._kind = kind  # noqa: SLF001
+        mesh._lazy_source = lazy_source  # noqa: SLF001
         mesh._sizing_constraints = []  # noqa: SLF001
         mesh._user_fields = {}  # noqa: SLF001
         mesh._metric_is_tensor = False  # noqa: SLF001
@@ -690,7 +740,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_tetrahedra() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_tetrahedra()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_tetrahedra()
 
     def get_tetrahedra_with_refs(
         self,
@@ -715,7 +765,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_tetrahedra_with_refs() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_tetrahedra_with_refs()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_tetrahedra_with_refs()
 
     def get_elements(self) -> NDArray[np.int32]:
         """Get primary element connectivity (alias for get_tetrahedra).
@@ -736,7 +786,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_elements() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_elements()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_elements()
 
     def get_elements_with_refs(self) -> tuple[NDArray[np.int32], NDArray[np.int64]]:
         """Get primary element connectivity and reference markers.
@@ -759,7 +809,7 @@ class Mesh:
         if self._kind != MeshKind.TETRAHEDRAL:
             msg = "get_elements_with_refs() is only available for TETRAHEDRAL meshes"
             raise TypeError(msg)
-        return self._impl.get_elements_with_refs()  # type: ignore[union-attr]
+        return cast("MmgMesh3D", self._impl).get_elements_with_refs()
 
     # =========================================================================
     # Field operations (solution data)
@@ -953,6 +1003,32 @@ class Mesh:
     # User field operations (arbitrary fields for transfer)
     # =========================================================================
 
+    def _materialize_lazy_field(self, name: str) -> bool:
+        """Move one field from the lazy source into ``_user_fields``.
+
+        Returns True if the field was found and materialized.
+        """
+        if self._lazy_source is None or not self._lazy_source.has_field(name):
+            return False
+        data = self._lazy_source.pop_field(name)
+        n_vertices = len(self._impl.get_vertices())
+        if data.shape[0] != n_vertices:
+            return False
+        self._user_fields[name] = data
+        if self._lazy_source.is_empty():
+            self._lazy_source = None
+        return True
+
+    def _materialize_all_lazy_fields(self) -> None:
+        """Move all remaining lazy fields into ``_user_fields``."""
+        if self._lazy_source is None:
+            return
+        n_vertices = len(self._impl.get_vertices())
+        for name, arr in self._lazy_source.pop_all().items():
+            if name not in self._user_fields and arr.shape[0] == n_vertices:
+                self._user_fields[name] = arr
+        self._lazy_source = None
+
     def set_user_field(self, name: str, values: NDArray[np.float64]) -> None:
         """Set a user-defined field for transfer during remeshing.
 
@@ -985,6 +1061,9 @@ class Mesh:
             )
             raise ValueError(msg)
         self._user_fields[name] = values
+        # Explicit set overrides any lazy field with the same name
+        if self._lazy_source is not None and self._lazy_source.has_field(name):
+            self._lazy_source._point_data.pop(name, None)  # noqa: SLF001
 
     def get_user_field(self, name: str) -> NDArray[np.float64]:
         """Get a user-defined field.
@@ -1005,8 +1084,11 @@ class Mesh:
             If the field does not exist.
 
         """
-        if name not in self._user_fields:
-            msg = f"User field '{name}' not found. Available: {list(self._user_fields)}"
+        if name not in self._user_fields and not self._materialize_lazy_field(name):
+            available = list(self._user_fields)
+            if self._lazy_source is not None:
+                available.extend(self._lazy_source.field_names())
+            msg = f"User field '{name}' not found. Available: {available}"
             raise KeyError(msg)
         return self._user_fields[name]
 
@@ -1019,11 +1101,15 @@ class Mesh:
             Dictionary mapping field names to values.
 
         """
+        self._materialize_all_lazy_fields()
         return dict(self._user_fields)
 
     def clear_user_fields(self) -> None:
         """Remove all user-defined fields."""
         self._user_fields.clear()
+        if self._lazy_source is not None:
+            self._lazy_source.invalidate()
+            self._lazy_source = None
 
     def has_user_field(self, name: str) -> bool:
         """Check if a user field exists.
@@ -1039,7 +1125,9 @@ class Mesh:
             True if the field exists.
 
         """
-        return name in self._user_fields
+        if name in self._user_fields:
+            return True
+        return self._lazy_source is not None and self._lazy_source.has_field(name)
 
     # =========================================================================
     # Geometry operations
@@ -1345,13 +1433,66 @@ class Mesh:
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
+        Medit formats (.mesh, .meshb) are written directly by the MMG C
+        library.  All other formats (.vtk, .vtu, .vtp, .stl, .obj, ...)
+        are converted via PyVista.
+
         Parameters
         ----------
         filename : str or Path
             Output file path. Format determined by extension.
 
         """
-        self._impl.save(filename)
+        from mmgpy._remesh import NATIVE_MESH_EXTENSIONS  # noqa: PLC0415
+
+        path = Path(filename)
+        if path.suffix.lower() in NATIVE_MESH_EXTENSIONS:
+            self._impl.save(str(path))
+        else:
+            pv_mesh = self.to_pyvista()
+            # Attach user fields as point data
+            self._materialize_all_lazy_fields()
+            for name, arr in self._user_fields.items():
+                pv_mesh.point_data[name] = arr
+            # Cast PolyData → UnstructuredGrid for formats that require it
+            if isinstance(pv_mesh, pv.PolyData) and path.suffix.lower() in (
+                ".vtu",
+                ".vtkhdf",
+            ):
+                pv_mesh = pv_mesh.cast_to_unstructured_grid()
+            pv_mesh.save(str(path))
+
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a Medit solution file (.sol/.solb) and set the field on the mesh.
+
+        Both text (.sol) and binary (.solb) formats are supported via the
+        MMG C library.
+
+        Parameters
+        ----------
+        filename : str or Path
+            Path to a .sol or .solb file.
+
+        """
+        from mmgpy._remesh import _load_sol  # noqa: PLC0415
+
+        _load_sol(self, filename)
+
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a Medit .sol file.
+
+        Both text (.sol) and binary (.solb) formats are supported via the
+        MMG C library.
+
+        Parameters
+        ----------
+        filename : str or Path
+            Output path for the .sol or .solb file.
+
+        """
+        from mmgpy._remesh import _save_sol  # noqa: PLC0415
+
+        _save_sol(self, filename)
 
     # =========================================================================
     # Remeshing operations
@@ -1374,9 +1515,11 @@ class Mesh:
             return fields_to_transfer, None, None
 
         if transfer_fields is True:
+            self._materialize_all_lazy_fields()
             fields_to_transfer = dict(self._user_fields)
         else:
             for name in transfer_fields:
+                self._materialize_lazy_field(name)
                 if name in self._user_fields:
                     fields_to_transfer[name] = self._user_fields[name]
                 else:
@@ -1414,10 +1557,11 @@ class Mesh:
             method=interpolation,
         )
 
-    def remesh(  # noqa: C901, PLR0912
+    def remesh(  # noqa: C901, PLR0912, PLR0915
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         *,
+        input_sol: str | Path | NDArray[np.float64] | None = None,
         progress: ProgressParam = True,
         transfer_fields: FieldTransferParam = False,
         interpolation: str = "linear",
@@ -1429,6 +1573,10 @@ class Mesh:
         ----------
         options : Mmg3DOptions | Mmg2DOptions | MmgSOptions, optional
             Options object for remeshing parameters.
+        input_sol : str, Path, or ndarray, optional
+            Solution data for adaptive remeshing.  Can be a path to a
+            Medit .sol file, or a numpy array (scalar metric, Nx3/Nx6
+            anisotropic tensor, or Nx2/Nx3 displacement vector).
         progress : bool | Callable[[ProgressEvent], bool] | None, default=True
             Progress reporting option:
             - True: Show Rich progress bar (default)
@@ -1494,6 +1642,16 @@ class Mesh:
         )
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
+        # Load solution data if provided
+        if input_sol is not None:
+            if isinstance(input_sol, str | Path):
+                self.load_sol(input_sol)
+            else:
+                arr = np.asarray(input_sol, dtype=np.float64)
+                if arr.ndim == 1:
+                    arr = arr.reshape(-1, 1)
+                self["metric"] = arr
+
         # Validate interpolation method
         valid_methods = ("linear", "nearest")
         if interpolation not in valid_methods:
@@ -1525,7 +1683,7 @@ class Mesh:
                     f"got {type(options).__name__}"
                 )
                 raise TypeError(msg)
-            kwargs = options.to_dict()
+            kwargs.update(options.to_dict())
 
         # Apply sizing constraints before remeshing
         if self._sizing_constraints:
@@ -1557,7 +1715,7 @@ class Mesh:
                 raise CancellationError.for_phase("remesh")  # noqa: EM101
 
             # Call raw C++ method and convert result
-            stats = self._impl.remesh(**kwargs)  # type: ignore[arg-type]
+            stats = self._impl.remesh(**kwargs)
             final_vertices = len(self._impl.get_vertices())
 
             # Transfer fields to new mesh if captured, otherwise clear stale fields
@@ -1575,6 +1733,9 @@ class Mesh:
             else:
                 # Clear user fields as they have incorrect vertex count after remeshing
                 self._user_fields.clear()
+                if self._lazy_source is not None:
+                    self._lazy_source.invalidate()
+                    self._lazy_source = None
 
             _emit_event(
                 callback,
@@ -1799,10 +1960,10 @@ class Mesh:
             Statistics from the remeshing operation.
 
         """
-        opts: dict[str, int | float] = {"optim": 1, "noinsert": 1}
+        opts: dict[str, Any] = {"optim": 1, "noinsert": 1}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(progress=progress, **opts)  # type: ignore[arg-type]
+        return self.remesh(progress=progress, **opts)
 
     def remesh_uniform(
         self,
@@ -1831,10 +1992,10 @@ class Mesh:
             Statistics from the remeshing operation.
 
         """
-        opts: dict[str, int | float] = {"hsiz": size}
+        opts: dict[str, Any] = {"hsiz": size}
         if verbose is not None:
             opts["verbose"] = verbose
-        return self.remesh(progress=progress, **opts)  # type: ignore[arg-type]
+        return self.remesh(progress=progress, **opts)
 
     # =========================================================================
     # Local sizing constraints

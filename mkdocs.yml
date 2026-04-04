@@ -49,6 +49,8 @@ plugins:
   - mike:
       alias_type: symlink
       canonical_version: latest
+      redirect_template: null
+      deploy_prefix: ""
   - mkdocstrings:
       handlers:
         python:
@@ -114,7 +116,13 @@ nav:
       - CLI Tools: reference/cli.md
       - File Formats: reference/file-formats.md
       - MMG Parameters: reference/mmg-parameters.md
+      - API Coverage: reference/mmg-api-coverage.md
+      - Benchmarks: reference/benchmarks.md
   - Changelog: changelog.md
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js
+  - assets/js/benchmarks.js
 
 extra:
   version:

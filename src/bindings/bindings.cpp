@@ -5,6 +5,15 @@
 #include "mmg_mesh_s.hpp"
 
 namespace {
+// Convert a Python str or Path object to a std::variant for C++ file I/O.
+std::variant<std::string, std::filesystem::path>
+path_to_variant(const py::object &path) {
+  if (py::isinstance<py::str>(path)) {
+    return path.cast<std::string>();
+  }
+  return std::filesystem::path(path.attr("__str__")().cast<std::string>());
+}
+
 // MMG verbose level constants for Pythonic bool conversion
 constexpr int MMG_VERBOSE_SILENT = -1; // Suppress all output
 constexpr int MMG_VERBOSE_DEFAULT = 1; // Standard output
@@ -35,16 +44,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
       .def(py::init([](const py::object &path) {
-        // Handle both str and Path objects
-        if (py::isinstance<py::str>(path)) {
-          return new MmgMesh(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          // Assume it's a Path object
-          return new MmgMesh(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
+        return new MmgMesh(path_to_variant(path));
       }))
       .def("set_vertices_and_elements", &MmgMesh::set_vertices_and_elements)
       .def("get_vertices", &MmgMesh::get_vertices)
@@ -107,8 +107,59 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("set_corners", &MmgMesh::set_corners, py::arg("vertex_indices"))
       .def("set_required_vertices", &MmgMesh::set_required_vertices,
            py::arg("vertex_indices"))
+      .def("set_required_triangles", &MmgMesh::set_required_triangles,
+           py::arg("triangle_indices"))
+      .def("set_required_edges", &MmgMesh::set_required_edges,
+           py::arg("edge_indices"))
+      .def("set_required_tetrahedra", &MmgMesh::set_required_tetrahedra,
+           py::arg("tetrahedra_indices"))
       .def("set_ridge_edges", &MmgMesh::set_ridge_edges,
            py::arg("edge_indices"))
+      .def("set_parallel_triangles", &MmgMesh::set_parallel_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_corners", &MmgMesh::unset_corners, py::arg("vertex_indices"))
+      .def("unset_required_vertices", &MmgMesh::unset_required_vertices,
+           py::arg("vertex_indices"))
+      .def("unset_required_triangles", &MmgMesh::unset_required_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_required_edges", &MmgMesh::unset_required_edges,
+           py::arg("edge_indices"))
+      .def("unset_required_tetrahedra", &MmgMesh::unset_required_tetrahedra,
+           py::arg("tetrahedra_indices"))
+      .def("unset_ridge_edges", &MmgMesh::unset_ridge_edges,
+           py::arg("edge_indices"))
+      .def("unset_parallel_triangles", &MmgMesh::unset_parallel_triangles,
+           py::arg("triangle_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMesh::get_vertex_flags, py::arg("idx"))
+      // Normal vectors
+      .def("set_normal_at_vertices", &MmgMesh::set_normal_at_vertices,
+           py::arg("vertex_indices"), py::arg("normals"),
+           "Set normal vectors at specified vertices.\n\n"
+           "Parameters:\n"
+           "    vertex_indices: 1D array of vertex indices (0-based).\n"
+           "    normals: Nx3 array of normal vectors.")
+      .def("get_normal_at_vertices", &MmgMesh::get_normal_at_vertices,
+           py::arg("vertex_indices"),
+           "Get normal vectors at specified vertices. Returns Nx3 array.")
+      // Local parameters
+      .def("set_local_parameters", &MmgMesh::set_local_parameters,
+           py::arg("parameters"),
+           "Set region-specific mesh sizing parameters.\n\n"
+           "Parameters:\n"
+           "    parameters: list of dicts, each with keys:\n"
+           "        type: 'vertex', 'edge', 'triangle', or 'tetrahedron'\n"
+           "        ref: reference number (material ID)\n"
+           "        hmin: minimum edge size\n"
+           "        hmax: maximum edge size\n"
+           "        hausd: Hausdorff distance")
+      // Multi-material and level-set
+      .def("set_multi_materials", &MmgMesh::set_multi_materials,
+           py::arg("materials"),
+           "Set multi-material configuration for level-set discretization.")
+      .def("set_ls_base_references", &MmgMesh::set_ls_base_references,
+           py::arg("references"),
+           "Set level-set base references for isovalue discretization.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh::get_adjacent_elements,
            py::arg("idx"),
@@ -121,22 +172,30 @@ PYBIND11_MODULE(_mmgpy, m) {
            "Get quality metric for tetrahedron idx (0-1, higher is better).")
       .def("get_element_qualities", &MmgMesh::get_element_qualities,
            "Get quality metrics for all tetrahedra.")
+      // Advanced topology queries
+      .def("get_tet_from_tria", &MmgMesh::get_tet_from_tria, py::arg("tri_idx"),
+           "Get tetrahedron adjacent to triangle. Returns (tet_idx, face_idx).")
+      .def("get_tets_from_tria", &MmgMesh::get_tets_from_tria,
+           py::arg("tri_idx"),
+           "Get both tetrahedra adjacent to triangle. Returns "
+           "((tet0, face0), (tet1, face1)). -1 if no neighbor.")
+      .def("get_non_boundary_triangles", &MmgMesh::get_non_boundary_triangles,
+           "Get all non-boundary triangles. Returns (Nx3 vertices, N refs).")
       .def("set_field", &MmgMesh::set_field)
       .def("get_field", &MmgMesh::get_field)
       .def("__getitem__", &MmgMesh::getitem)
       .def("__setitem__", &MmgMesh::setitem)
       .def("save",
            [](const MmgMesh &self, const py::object &path) {
-             // Handle both str and Path objects
-             if (py::isinstance<py::str>(path)) {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   path.cast<std::string>()));
-             } else {
-               // Assume it's a Path object
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   std::filesystem::path(
-                       path.attr("__str__")().cast<std::string>())));
-             }
+             self.save(path_to_variant(path));
+           })
+      .def("load_sol",
+           [](MmgMesh &self, const py::object &path) {
+             self.load_sol(path_to_variant(path));
+           })
+      .def("save_sol",
+           [](const MmgMesh &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
            })
       .def_property_readonly("is_corrupted", &MmgMesh::is_corrupted)
       .def(
@@ -181,14 +240,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
       .def(py::init([](const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          return new MmgMesh2D(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          return new MmgMesh2D(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
+        return new MmgMesh2D(path_to_variant(path));
       }))
       // Mesh sizing
       .def("set_mesh_size", &MmgMesh2D::set_mesh_size, py::arg("vertices") = 0,
@@ -233,8 +285,40 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("set_corners", &MmgMesh2D::set_corners, py::arg("vertex_indices"))
       .def("set_required_vertices", &MmgMesh2D::set_required_vertices,
            py::arg("vertex_indices"))
+      .def("set_required_triangles", &MmgMesh2D::set_required_triangles,
+           py::arg("triangle_indices"))
       .def("set_required_edges", &MmgMesh2D::set_required_edges,
            py::arg("edge_indices"))
+      .def("set_parallel_edges", &MmgMesh2D::set_parallel_edges,
+           py::arg("edge_indices"))
+      .def("unset_corners", &MmgMesh2D::unset_corners,
+           py::arg("vertex_indices"))
+      .def("unset_required_vertices", &MmgMesh2D::unset_required_vertices,
+           py::arg("vertex_indices"))
+      .def("unset_required_triangles", &MmgMesh2D::unset_required_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_required_edges", &MmgMesh2D::unset_required_edges,
+           py::arg("edge_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMesh2D::get_vertex_flags, py::arg("idx"))
+      // Local parameters
+      .def("set_local_parameters", &MmgMesh2D::set_local_parameters,
+           py::arg("parameters"),
+           "Set region-specific mesh sizing parameters.\n\n"
+           "Parameters:\n"
+           "    parameters: list of dicts, each with keys:\n"
+           "        type: 'vertex', 'edge', or 'triangle'\n"
+           "        ref: reference number (material ID)\n"
+           "        hmin: minimum edge size\n"
+           "        hmax: maximum edge size\n"
+           "        hausd: Hausdorff distance")
+      // Multi-material and level-set
+      .def("set_multi_materials", &MmgMesh2D::set_multi_materials,
+           py::arg("materials"),
+           "Set multi-material configuration for level-set discretization.")
+      .def("set_ls_base_references", &MmgMesh2D::set_ls_base_references,
+           py::arg("references"),
+           "Set level-set base references for isovalue discretization.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMesh2D::get_adjacent_elements,
            py::arg("idx"),
@@ -248,6 +332,16 @@ PYBIND11_MODULE(_mmgpy, m) {
            "Get quality metric for triangle idx (0-1, higher is better).")
       .def("get_element_qualities", &MmgMesh2D::get_element_qualities,
            "Get quality metrics for all triangles.")
+      // Advanced topology queries
+      .def("get_tri_from_edge", &MmgMesh2D::get_tri_from_edge,
+           py::arg("edge_idx"),
+           "Get triangle adjacent to edge. Returns (tri_idx, local_edge_idx).")
+      .def("get_tris_from_edge", &MmgMesh2D::get_tris_from_edge,
+           py::arg("edge_idx"),
+           "Get both triangles adjacent to edge. Returns "
+           "((tri0, edge0), (tri1, edge1)). -1 if no neighbor.")
+      .def("get_non_boundary_edges", &MmgMesh2D::get_non_boundary_edges,
+           "Get all non-boundary edges. Returns (Nx2 vertices, N refs).")
       // Solution fields
       .def("set_field", &MmgMesh2D::set_field)
       .def("get_field", &MmgMesh2D::get_field)
@@ -256,14 +350,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       // File I/O
       .def("save",
            [](const MmgMesh2D &self, const py::object &path) {
-             if (py::isinstance<py::str>(path)) {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   path.cast<std::string>()));
-             } else {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   std::filesystem::path(
-                       path.attr("__str__")().cast<std::string>())));
-             }
+             self.save(path_to_variant(path));
+           })
+      .def("load_sol",
+           [](MmgMesh2D &self, const py::object &path) {
+             self.load_sol(path_to_variant(path));
+           })
+      .def("save_sol",
+           [](const MmgMesh2D &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
            })
       .def_property_readonly("is_corrupted", &MmgMesh2D::is_corrupted)
       .def(
@@ -308,14 +403,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(py::init<>())
       .def(py::init<const py::array_t<double> &, const py::array_t<int> &>())
       .def(py::init([](const py::object &path) {
-        if (py::isinstance<py::str>(path)) {
-          return new MmgMeshS(std::variant<std::string, std::filesystem::path>(
-              path.cast<std::string>()));
-        } else {
-          return new MmgMeshS(std::variant<std::string, std::filesystem::path>(
-              std::filesystem::path(
-                  path.attr("__str__")().cast<std::string>())));
-        }
+        return new MmgMeshS(path_to_variant(path));
       }))
       // Mesh sizing
       .def("set_mesh_size", &MmgMeshS::set_mesh_size, py::arg("vertices") = 0,
@@ -350,8 +438,51 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def("set_corners", &MmgMeshS::set_corners, py::arg("vertex_indices"))
       .def("set_required_vertices", &MmgMeshS::set_required_vertices,
            py::arg("vertex_indices"))
+      .def("set_required_triangles", &MmgMeshS::set_required_triangles,
+           py::arg("triangle_indices"))
+      .def("set_required_edges", &MmgMeshS::set_required_edges,
+           py::arg("edge_indices"))
       .def("set_ridge_edges", &MmgMeshS::set_ridge_edges,
            py::arg("edge_indices"))
+      .def("unset_corners", &MmgMeshS::unset_corners, py::arg("vertex_indices"))
+      .def("unset_required_vertices", &MmgMeshS::unset_required_vertices,
+           py::arg("vertex_indices"))
+      .def("unset_required_triangles", &MmgMeshS::unset_required_triangles,
+           py::arg("triangle_indices"))
+      .def("unset_required_edges", &MmgMeshS::unset_required_edges,
+           py::arg("edge_indices"))
+      .def("unset_ridge_edges", &MmgMeshS::unset_ridge_edges,
+           py::arg("edge_indices"))
+      // Attribute queries
+      .def("get_vertex_flags", &MmgMeshS::get_vertex_flags, py::arg("idx"))
+      // Normal vectors
+      .def("set_normal_at_vertices", &MmgMeshS::set_normal_at_vertices,
+           py::arg("vertex_indices"), py::arg("normals"),
+           "Set normal vectors at specified vertices.\n\n"
+           "Parameters:\n"
+           "    vertex_indices: 1D array of vertex indices (0-based).\n"
+           "    normals: Nx3 array of normal vectors.")
+      .def("get_normal_at_vertices", &MmgMeshS::get_normal_at_vertices,
+           py::arg("vertex_indices"),
+           "Get normal vectors at specified vertices. Returns Nx3 array.")
+      // Local parameters
+      .def("set_local_parameters", &MmgMeshS::set_local_parameters,
+           py::arg("parameters"),
+           "Set region-specific mesh sizing parameters.\n\n"
+           "Parameters:\n"
+           "    parameters: list of dicts, each with keys:\n"
+           "        type: 'vertex', 'edge', or 'triangle'\n"
+           "        ref: reference number (material ID)\n"
+           "        hmin: minimum edge size\n"
+           "        hmax: maximum edge size\n"
+           "        hausd: Hausdorff distance")
+      // Multi-material and level-set
+      .def("set_multi_materials", &MmgMeshS::set_multi_materials,
+           py::arg("materials"),
+           "Set multi-material configuration for level-set discretization.")
+      .def("set_ls_base_references", &MmgMeshS::set_ls_base_references,
+           py::arg("references"),
+           "Set level-set base references for isovalue discretization.")
       // Topology queries
       .def("get_adjacent_elements", &MmgMeshS::get_adjacent_elements,
            py::arg("idx"),
@@ -365,6 +496,9 @@ PYBIND11_MODULE(_mmgpy, m) {
            "Get quality metric for triangle idx (0-1, higher is better).")
       .def("get_element_qualities", &MmgMeshS::get_element_qualities,
            "Get quality metrics for all triangles.")
+      // Advanced topology queries
+      .def("get_non_boundary_edges", &MmgMeshS::get_non_boundary_edges,
+           "Get all non-boundary edges. Returns (Nx2 vertices, N refs).")
       // Solution fields
       .def("set_field", &MmgMeshS::set_field)
       .def("get_field", &MmgMeshS::get_field)
@@ -373,14 +507,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       // File I/O
       .def("save",
            [](const MmgMeshS &self, const py::object &path) {
-             if (py::isinstance<py::str>(path)) {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   path.cast<std::string>()));
-             } else {
-               self.save(std::variant<std::string, std::filesystem::path>(
-                   std::filesystem::path(
-                       path.attr("__str__")().cast<std::string>())));
-             }
+             self.save(path_to_variant(path));
+           })
+      .def("load_sol",
+           [](MmgMeshS &self, const py::object &path) {
+             self.load_sol(path_to_variant(path));
+           })
+      .def("save_sol",
+           [](const MmgMeshS &self, const py::object &path) {
+             self.save_sol(path_to_variant(path));
            })
       .def_property_readonly("is_corrupted", &MmgMeshS::is_corrupted)
       .def(

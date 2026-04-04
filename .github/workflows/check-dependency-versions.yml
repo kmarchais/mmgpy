@@ -12,27 +12,20 @@ jobs:
   check-versions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get current versions from pyproject.toml
         id: current
         run: |
           MMG_VERSION=$(grep 'mmg_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
-          VTK_VERSION=$(grep 'vtk_version' pyproject.toml | sed 's/.*"\([0-9.]*\)".*/\1/')
 
           if [ -z "$MMG_VERSION" ]; then
             echo "::error::Failed to parse mmg_version from pyproject.toml"
             exit 1
           fi
-          if [ -z "$VTK_VERSION" ]; then
-            echo "::error::Failed to parse vtk_version from pyproject.toml"
-            exit 1
-          fi
 
           echo "mmg=$MMG_VERSION" >> $GITHUB_OUTPUT
-          echo "vtk=$VTK_VERSION" >> $GITHUB_OUTPUT
           echo "Current MMG version: $MMG_VERSION"
-          echo "Current VTK version: $VTK_VERSION"
 
       - name: Check latest MMG release
         id: mmg-latest
@@ -42,18 +35,6 @@ jobs:
           LATEST=$(gh api repos/MmgTools/mmg/releases/latest --jq '.tag_name' | tr -d 'v')
           echo "version=$LATEST" >> $GITHUB_OUTPUT
           echo "Latest MMG version: $LATEST"
-
-      - name: Check latest VTK release
-        id: vtk-latest
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # Get stable VTK versions from official repo (filter out RCs)
-          LATEST=$(gh api repos/Kitware/VTK/tags --jq '.[].name' \
-            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-            | tr -d 'v' | sort -V | tail -n1)
-          echo "version=$LATEST" >> $GITHUB_OUTPUT
-          echo "Latest VTK version: $LATEST"
 
       - name: Check for updates
         id: check
@@ -70,13 +51,6 @@ jobs:
           if version_lt "$CURRENT_MMG" "$LATEST_MMG"; then
             UPDATES="${UPDATES}MMG: $CURRENT_MMG -> $LATEST_MMG\n"
             echo "mmg_update=true" >> $GITHUB_OUTPUT
-          fi
-
-          CURRENT_VTK="${{ steps.current.outputs.vtk }}"
-          LATEST_VTK="${{ steps.vtk-latest.outputs.version }}"
-          if version_lt "$CURRENT_VTK" "$LATEST_VTK"; then
-            UPDATES="${UPDATES}VTK: $CURRENT_VTK -> $LATEST_VTK\n"
-            echo "vtk_update=true" >> $GITHUB_OUTPUT
           fi
 
           if [ -n "$UPDATES" ]; then
@@ -103,13 +77,6 @@ jobs:
             BODY="${BODY}- Current: \`${{ steps.current.outputs.mmg }}\`\n"
             BODY="${BODY}- Latest: \`${{ steps.mmg-latest.outputs.version }}\`\n"
             BODY="${BODY}- [Release notes](https://github.com/MmgTools/mmg/releases/tag/v${{ steps.mmg-latest.outputs.version }})\n\n"
-          fi
-
-          if [ "${{ steps.check.outputs.vtk_update }}" == "true" ]; then
-            BODY="${BODY}### VTK\n"
-            BODY="${BODY}- Current: \`${{ steps.current.outputs.vtk }}\`\n"
-            BODY="${BODY}- Latest: \`${{ steps.vtk-latest.outputs.version }}\`\n"
-            BODY="${BODY}- [Release notes](https://github.com/Kitware/VTK/releases/tag/v${{ steps.vtk-latest.outputs.version }})\n\n"
           fi
 
           BODY="${BODY}---\n"

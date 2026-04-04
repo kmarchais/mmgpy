@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from mmgpy._mesh import MeshKind
 
 os.environ["PYVISTA_OFF_SCREEN"] = "true"
+pv.OFF_SCREEN = True
 
 # ---------------------------------------------------------------------------
 # Mesh factories — use scipy/numpy only (no VTK objects) to avoid segfaults

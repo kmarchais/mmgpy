@@ -17,6 +17,8 @@ The fastest way to install mmgpy:
 
 === "pip"
 
+    <!-- pytest-codeblocks:skip -->
+
     ```bash
     pip install mmgpy
     ```
@@ -70,6 +72,8 @@ Use **PyPI** for the fastest, most portable setup. Use **conda-forge** when you 
 ## Installing from Source
 
 To install the latest development version:
+
+<!-- pytest-codeblocks:skip -->
 
 ```bash
 pip install git+https://github.com/kmarchais/mmgpy.git

@@ -65,13 +65,35 @@ public:
   // Element attributes
   void set_corners(const py::array_t<int> &vertex_indices);
   void set_required_vertices(const py::array_t<int> &vertex_indices);
+  void set_required_triangles(const py::array_t<int> &triangle_indices);
   void set_required_edges(const py::array_t<int> &edge_indices);
+  void set_parallel_edges(const py::array_t<int> &edge_indices);
+
+  void unset_corners(const py::array_t<int> &vertex_indices);
+  void unset_required_vertices(const py::array_t<int> &vertex_indices);
+  void unset_required_triangles(const py::array_t<int> &triangle_indices);
+  void unset_required_edges(const py::array_t<int> &edge_indices);
+
+  // Attribute queries
+  py::tuple get_vertex_flags(MMG5_int idx) const;
+
+  // Local parameters
+  void set_local_parameters(const py::list &parameters);
+
+  // Multi-material and level-set
+  void set_multi_materials(const py::list &materials);
+  void set_ls_base_references(const py::list &references);
 
   // Topology queries
   py::array_t<int> get_adjacent_elements(MMG5_int idx) const;
   py::array_t<int> get_vertex_neighbors(MMG5_int idx) const;
   double get_element_quality(MMG5_int idx) const;
   py::array_t<double> get_element_qualities() const;
+
+  // Advanced topology queries
+  py::tuple get_tri_from_edge(MMG5_int edge_idx) const;
+  py::tuple get_tris_from_edge(MMG5_int edge_idx) const;
+  py::tuple get_non_boundary_edges() const;
 
   // Solution fields
   void set_field(const std::string &field_name,
@@ -85,6 +107,10 @@ public:
   // File I/O
   void
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
+  void
+  load_sol(const std::variant<std::string, std::filesystem::path> &filename);
+  void save_sol(
+      const std::variant<std::string, std::filesystem::path> &filename) const;
 
   // In-memory remeshing
   py::dict remesh(const py::dict &options = py::dict());
@@ -115,7 +141,6 @@ private:
 
   SolutionField get_solution_field(const std::string &field_name) const;
   int get_mmg_type(SolutionType type) const;
-  static std::string get_file_extension(const std::string &filename);
   void cleanup();
   void check_not_corrupted(const char *operation) const;
 

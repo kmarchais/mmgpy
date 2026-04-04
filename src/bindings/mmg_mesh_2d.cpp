@@ -5,23 +5,6 @@
 #include <stdexcept>
 
 namespace {
-// Helper to ensure array is C-contiguous for safe memory access
-// This is critical because we use raw pointer arithmetic to access elements.
-// Non-contiguous arrays (e.g., Fortran-order or sliced views) will have
-// incorrect data access patterns if we assume C-contiguous layout.
-template <typename T>
-void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
-  // Check if array is C-contiguous by examining its flags
-  // PyArray_CHKFLAGS checks the NPY_ARRAY_C_CONTIGUOUS flag
-  py::object flags = arr.attr("flags");
-  py::object c_contiguous_obj = flags.attr("c_contiguous");
-  bool c_contiguous = c_contiguous_obj.template cast<bool>();
-  if (!c_contiguous) {
-    throw std::runtime_error(
-        name +
-        " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
-  }
-}
 
 // Collect mesh statistics for 2D triangular mesh
 RemeshStats collect_mesh_stats_2d(MMG5_pMesh mesh, MMG5_pSol met) {
@@ -96,27 +79,9 @@ MmgMesh2D::MmgMesh2D(
     throw std::runtime_error("Failed to initialize MMG2D mesh");
   }
 
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMG2D_loadVtkMesh(mesh, met, nullptr, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMG2D_loadVtuMesh(mesh, met, nullptr, fname.c_str());
-  } else {
-    ret = MMG2D_loadMesh(mesh, fname.c_str());
-  }
+  int ret = MMG2D_loadMesh(mesh, fname.c_str());
 
   if (!ret) {
     cleanup();
@@ -598,73 +563,152 @@ py::tuple MmgMesh2D::get_edge(MMG5_int idx) const {
 // Element attributes
 
 void MmgMesh2D::set_corners(const py::array_t<int> &vertex_indices) {
-  ensure_c_contiguous(vertex_indices, "Vertex indices");
-  py::buffer_info buf = vertex_indices.request();
-
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Vertex indices must be a 1D array");
-  }
-
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
-
-  for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->np) {
-      throw std::runtime_error("Vertex index out of range: " +
-                               std::to_string(idx));
-    }
-    if (!MMG2D_Set_corner(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set corner at vertex index " +
-                               std::to_string(idx));
-    }
-  }
+  apply_attribute_to_indices(vertex_indices, mesh->np, "Vertex", "set corner",
+                             [&](int k) { return MMG2D_Set_corner(mesh, k); });
 }
 
 void MmgMesh2D::set_required_vertices(const py::array_t<int> &vertex_indices) {
-  ensure_c_contiguous(vertex_indices, "Vertex indices");
-  py::buffer_info buf = vertex_indices.request();
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "set required vertex",
+      [&](int k) { return MMG2D_Set_requiredVertex(mesh, k); });
+}
 
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Vertex indices must be a 1D array");
+void MmgMesh2D::set_required_triangles(
+    const py::array_t<int> &triangle_indices) {
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "set required triangle",
+      [&](int k) { return MMG2D_Set_requiredTriangle(mesh, k); });
+}
+
+void MmgMesh2D::set_required_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(
+      edge_indices, mesh->na, "Edge", "set required edge",
+      [&](int k) { return MMG2D_Set_requiredEdge(mesh, k); });
+}
+
+void MmgMesh2D::set_parallel_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(
+      edge_indices, mesh->na, "Edge", "set parallel edge",
+      [&](int k) { return MMG2D_Set_parallelEdge(mesh, k); });
+}
+
+void MmgMesh2D::unset_corners(const py::array_t<int> &vertex_indices) {
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "unset corner",
+      [&](int k) { return MMG2D_Unset_corner(mesh, k); });
+}
+
+void MmgMesh2D::unset_required_vertices(
+    const py::array_t<int> &vertex_indices) {
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "unset required vertex",
+      [&](int k) { return MMG2D_Unset_requiredVertex(mesh, k); });
+}
+
+void MmgMesh2D::unset_required_triangles(
+    const py::array_t<int> &triangle_indices) {
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "unset required triangle",
+      [&](int k) { return MMG2D_Unset_requiredTriangle(mesh, k); });
+}
+
+void MmgMesh2D::unset_required_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(
+      edge_indices, mesh->na, "Edge", "unset required edge",
+      [&](int k) { return MMG2D_Unset_requiredEdge(mesh, k); });
+}
+
+// Attribute queries
+
+py::tuple MmgMesh2D::get_vertex_flags(MMG5_int idx) const {
+  double x, y;
+  MMG5_int ref;
+  int corner, required;
+
+  if (!MMG2D_GetByIdx_vertex(mesh, &x, &y, &ref, &corner, &required, idx + 1)) {
+    throw std::runtime_error("Failed to get vertex flags at index " +
+                             std::to_string(idx));
   }
 
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
+  return py::make_tuple(static_cast<bool>(corner), static_cast<bool>(required));
+}
+
+// Local parameters
+
+void MmgMesh2D::set_local_parameters(const py::list &parameters) {
+  py::ssize_t n = py::len(parameters);
+
+  if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_numberOfLocalParam,
+                            static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfLocalParam");
+  }
 
   for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->np) {
-      throw std::runtime_error("Vertex index out of range: " +
-                               std::to_string(idx));
+    py::dict param = parameters[i].cast<py::dict>();
+
+    std::string type_str = param["type"].cast<std::string>();
+    MMG5_int ref = param["ref"].cast<MMG5_int>();
+    double hmin = param["hmin"].cast<double>();
+    double hmax = param["hmax"].cast<double>();
+    double hausd = param["hausd"].cast<double>();
+
+    int typ = 0;
+    if (type_str == "triangle") {
+      typ = MMG5_Triangle;
+    } else if (type_str == "edge") {
+      typ = MMG5_Edg;
+    } else if (type_str == "vertex") {
+      typ = MMG5_Vertex;
+    } else {
+      throw std::runtime_error("Unknown entity type: '" + type_str +
+                               "'. Must be 'vertex', 'edge', or 'triangle'");
     }
-    if (!MMG2D_Set_requiredVertex(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set required vertex at index " +
-                               std::to_string(idx));
+
+    if (!MMG2D_Set_localParameter(mesh, met, typ, ref, hmin, hmax, hausd)) {
+      throw std::runtime_error("Failed to set local parameter for ref " +
+                               std::to_string(ref));
     }
   }
 }
 
-void MmgMesh2D::set_required_edges(const py::array_t<int> &edge_indices) {
-  ensure_c_contiguous(edge_indices, "Edge indices");
-  py::buffer_info buf = edge_indices.request();
+// Multi-material and level-set
 
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Edge indices must be a 1D array");
+void MmgMesh2D::set_multi_materials(const py::list &materials) {
+  py::ssize_t n = py::len(materials);
+
+  if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_numberOfMat,
+                            static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfMat");
   }
 
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
+  for (py::ssize_t i = 0; i < n; i++) {
+    py::dict mat = materials[i].cast<py::dict>();
+
+    MMG5_int ref = mat["ref"].cast<MMG5_int>();
+    int split = mat["split"].cast<int>();
+    MMG5_int rmin = mat["ref_minus"].cast<MMG5_int>();
+    MMG5_int rplus = mat["ref_plus"].cast<MMG5_int>();
+
+    if (!MMG2D_Set_multiMat(mesh, met, ref, split, rmin, rplus)) {
+      throw std::runtime_error("Failed to set multi-material for ref " +
+                               std::to_string(ref));
+    }
+  }
+}
+
+void MmgMesh2D::set_ls_base_references(const py::list &references) {
+  py::ssize_t n = py::len(references);
+
+  if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_numberOfLSBaseReferences,
+                            static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfLSBaseReferences");
+  }
 
   for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->na) {
-      throw std::runtime_error("Edge index out of range: " +
-                               std::to_string(idx));
-    }
-    if (!MMG2D_Set_requiredEdge(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set required edge at index " +
-                               std::to_string(idx));
+    MMG5_int br = references[i].cast<MMG5_int>();
+    if (!MMG2D_Set_lsBaseReference(mesh, met, br)) {
+      throw std::runtime_error("Failed to set LS base reference " +
+                               std::to_string(br));
     }
   }
 }
@@ -766,6 +810,78 @@ py::array_t<double> MmgMesh2D::get_element_qualities() const {
   return result;
 }
 
+// Advanced topology queries
+
+py::tuple MmgMesh2D::get_tri_from_edge(MMG5_int edge_idx) const {
+  MMG5_int mmg_idx = edge_idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->na) {
+    throw std::runtime_error("Edge index out of range: " +
+                             std::to_string(edge_idx));
+  }
+
+  MMG5_int ktri = 0;
+  int ied = 0;
+  if (!MMG2D_Get_triFromEdge(mesh, mmg_idx, &ktri, &ied)) {
+    throw std::runtime_error("Failed to get triangle from edge " +
+                             std::to_string(edge_idx));
+  }
+
+  int tri_py = ktri > 0 ? static_cast<int>(ktri - 1) : -1;
+  return py::make_tuple(tri_py, ied);
+}
+
+py::tuple MmgMesh2D::get_tris_from_edge(MMG5_int edge_idx) const {
+  MMG5_int mmg_idx = edge_idx + 1;
+
+  if (mmg_idx < 1 || mmg_idx > mesh->na) {
+    throw std::runtime_error("Edge index out of range: " +
+                             std::to_string(edge_idx));
+  }
+
+  MMG5_int ktri[2] = {0, 0};
+  int ied[2] = {0, 0};
+  if (!MMG2D_Get_trisFromEdge(mesh, mmg_idx, ktri, ied)) {
+    throw std::runtime_error("Failed to get triangles from edge " +
+                             std::to_string(edge_idx));
+  }
+
+  int tri0 = ktri[0] > 0 ? static_cast<int>(ktri[0] - 1) : -1;
+  int tri1 = ktri[1] > 0 ? static_cast<int>(ktri[1] - 1) : -1;
+  return py::make_tuple(py::make_tuple(tri0, ied[0]),
+                        py::make_tuple(tri1, ied[1]));
+}
+
+py::tuple MmgMesh2D::get_non_boundary_edges() const {
+  MMG5_int nb_edges = 0;
+  if (!MMG2D_Get_numberOfNonBdyEdges(mesh, &nb_edges)) {
+    throw std::runtime_error("Failed to get number of non-boundary edges");
+  }
+
+  py::array_t<int> vertices(
+      {static_cast<py::ssize_t>(nb_edges), py::ssize_t{2}});
+  py::array_t<int> refs(static_cast<py::ssize_t>(nb_edges));
+  auto v_buf = vertices.request();
+  auto r_buf = refs.request();
+  int *v_ptr = static_cast<int *>(v_buf.ptr);
+  int *r_ptr = static_cast<int *>(r_buf.ptr);
+
+  for (MMG5_int i = 0; i < nb_edges; i++) {
+    MMG5_int e0 = 0;
+    MMG5_int e1 = 0;
+    MMG5_int ref = 0;
+    if (!MMG2D_Get_nonBdyEdge(mesh, &e0, &e1, &ref, i + 1)) {
+      throw std::runtime_error("Failed to get non-boundary edge " +
+                               std::to_string(i));
+    }
+    v_ptr[i * 2] = static_cast<int>(e0 - 1);
+    v_ptr[i * 2 + 1] = static_cast<int>(e1 - 1);
+    r_ptr[i] = static_cast<int>(ref);
+  }
+
+  return py::make_tuple(vertices, refs);
+}
+
 void MmgMesh2D::set_field(const std::string &field_name,
                           const py::array_t<double> &values) {
   auto field = get_solution_field(field_name);
@@ -849,30 +965,30 @@ void MmgMesh2D::setitem(const std::string &key,
 void MmgMesh2D::save(
     const std::variant<std::string, std::filesystem::path> &filename) const {
   check_not_corrupted("save");
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMG2D_saveVtkMesh(mesh, met, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMG2D_saveVtuMesh(mesh, met, fname.c_str());
-  } else {
-    ret = MMG2D_saveMesh(mesh, fname.c_str());
-  }
-
-  if (!ret) {
+  if (!MMG2D_saveMesh(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to save mesh to file: " + fname);
+  }
+}
+
+void MmgMesh2D::load_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("load_sol");
+  std::string fname = variant_to_string(filename);
+
+  if (MMG2D_loadSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to load solution file: " + fname);
+  }
+}
+
+void MmgMesh2D::save_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) const {
+  check_not_corrupted("save_sol");
+  std::string fname = variant_to_string(filename);
+
+  if (MMG2D_saveSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to save solution file: " + fname);
   }
 }
 
@@ -901,14 +1017,6 @@ int MmgMesh2D::get_mmg_type(SolutionType type) const {
   default:
     throw std::runtime_error("Unknown solution type");
   }
-}
-
-std::string MmgMesh2D::get_file_extension(const std::string &filename) {
-  size_t pos = filename.find_last_of('.');
-  if (pos != std::string::npos) {
-    return filename.substr(pos);
-  }
-  return "";
 }
 
 void MmgMesh2D::cleanup() {

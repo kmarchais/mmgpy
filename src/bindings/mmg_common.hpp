@@ -3,17 +3,35 @@
 #ifndef MMG_COMMON_HPP
 #define MMG_COMMON_HPP
 
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 #include "mmg/mmg3d/libmmg3d.h"
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+// Convert a std::variant<string, path> to a plain std::string.
+inline std::string
+variant_to_string(const std::variant<std::string, std::filesystem::path> &v) {
+  return std::visit(
+      [](auto &&arg) -> std::string {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::string>) {
+          return arg;
+        } else {
+          return arg.string();
+        }
+      },
+      v);
+}
 
 // Cross-platform stderr capture for MMG warning collection.
 // MMG outputs warnings to stderr (via fprintf), so we need to capture
@@ -92,8 +110,6 @@ struct RemeshStats {
   double quality_mean;
 };
 
-std::string get_file_extension(const std::string &filename);
-
 void set_mesh_options_2D(MMG5_pMesh mesh, MMG5_pSol met,
                          const py::dict &options);
 void set_mesh_options_3D(MMG5_pMesh mesh, MMG5_pSol met,
@@ -112,5 +128,49 @@ py::dict build_remesh_result(const RemeshStats &before,
                              const RemeshStats &after, double duration_seconds,
                              int return_code,
                              const std::vector<std::string> &warnings = {});
+
+// Ensure a numpy array is C-contiguous for safe raw pointer access.
+template <typename T>
+void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
+  py::object flags = arr.attr("flags");
+  py::object c_contiguous_obj = flags.attr("c_contiguous");
+  bool c_contiguous = c_contiguous_obj.template cast<bool>();
+  if (!c_contiguous) {
+    throw std::runtime_error(
+        name +
+        " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
+  }
+}
+
+// Apply an MMG attribute API call to each index in a 1D array.
+// Handles validation, 0-to-1-based conversion, and error reporting.
+template <typename ApiFunc>
+void apply_attribute_to_indices(const py::array_t<int> &indices,
+                                MMG5_int max_count, const char *entity_name,
+                                const char *operation_name,
+                                ApiFunc &&api_func) {
+  ensure_c_contiguous(indices, std::string(entity_name) + " indices");
+  py::buffer_info buf = indices.request();
+
+  if (buf.ndim != 1) {
+    throw std::runtime_error(std::string(entity_name) +
+                             " indices must be a 1D array");
+  }
+
+  const int *idx_ptr = static_cast<int *>(buf.ptr);
+  py::ssize_t n = buf.shape[0];
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    int idx = idx_ptr[i];
+    if (idx < 0 || idx >= max_count) {
+      throw std::runtime_error(std::string(entity_name) +
+                               " index out of range: " + std::to_string(idx));
+    }
+    if (!api_func(idx + 1)) {
+      throw std::runtime_error("Failed to " + std::string(operation_name) +
+                               " at index " + std::to_string(idx));
+    }
+  }
+}
 
 #endif // MMG_COMMON_HPP

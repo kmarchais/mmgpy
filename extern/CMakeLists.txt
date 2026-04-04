@@ -38,11 +38,20 @@ set(BUILD_MMG2D ON CACHE BOOL "Build MMG2D library and executable" FORCE)
 set(BUILD_MMG3D ON CACHE BOOL "Build MMG3D library and executable" FORCE)
 set(BUILD_MMGS ON CACHE BOOL "Build MMGS library and executable" FORCE)
 
-set(USE_VTK ON CACHE BOOL "Use VTK" FORCE)
+set(USE_VTK OFF CACHE BOOL "Do not use VTK — I/O handled in Python via meshio" FORCE)
 set(USE_ELAS OFF CACHE BOOL "Do not use ELAS" FORCE)
 
 # Make MMG available
 FetchContent_MakeAvailable(mmg)
+
+# Work around missing LIBMMGS_EXPORT on MMGS_Get_triangleQuality in MMG v5.8.0.
+# On Windows, only __declspec(dllexport) symbols are exported from DLLs.
+# This generates a .def file that exports all symbols, including the one
+# missing the export macro in the upstream header.
+# https://cmake.org/cmake/help/latest/prop_tgt/WINDOWS_EXPORT_ALL_SYMBOLS.html
+if(WIN32)
+    set_target_properties(libmmgs_so PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 # Set the correct library targets
 set(MMG_LIBRARIES

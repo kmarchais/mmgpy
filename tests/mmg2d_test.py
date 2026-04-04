@@ -22,8 +22,8 @@ def mesh_paths() -> tuple[Path, Path, Path]:
     """Provide input and output mesh paths."""
     input_mesh: Path = Path(__file__).parent.parent / "assets" / "acdcBdy.mesh"
     current_dir: Path = Path(__file__).parent
-    test_path: Path = current_dir / "acdcBdy_remeshed.vtk"
-    ref_path: Path = current_dir / "acdcBdy.o.vtk"
+    test_path: Path = current_dir / "acdcBdy_remeshed.mesh"
+    ref_path: Path = current_dir / "acdcBdy.o.mesh"
     return input_mesh, test_path, ref_path
 
 
@@ -77,8 +77,8 @@ def generated_meshes(
     subprocess.check_call(command)
 
     # Load meshes with PyVista
-    test_mesh: pv.PolyData = pv.read(test_path)
-    ref_mesh: pv.PolyData = pv.read(ref_path)
+    test_mesh: pv.PolyData = mmgpy.read(test_path).to_pyvista()
+    ref_mesh: pv.PolyData = mmgpy.read(ref_path).to_pyvista()
 
     return test_mesh, ref_mesh
 
@@ -185,7 +185,7 @@ def test_mesh_quality_analysis(generated_meshes: tuple[pv.DataSet, pv.DataSet]) 
         ).all(), f"Reference mesh {metric} quality contains non-finite values"
 
         # Get acceptable ranges from PyVista for different cell types
-        cell_types_in_mesh = {int(ct.item()) for ct in test_mesh.celltypes}
+        cell_types_in_mesh = {int(ct) for ct in test_mesh.distinct_cell_types}
 
         for cell_type_id in cell_types_in_mesh:
             # Map VTK cell type IDs to PyVista CellType names
@@ -369,8 +369,8 @@ def test_mesh_topology_consistency(
     test_mesh, ref_mesh = generated_meshes
 
     # Check that meshes have consistent cell types
-    test_cell_types: set[int] = {int(ct.item()) for ct in test_mesh.celltypes}
-    ref_cell_types: set[int] = {int(ct.item()) for ct in ref_mesh.celltypes}
+    test_cell_types: set[int] = {int(ct) for ct in test_mesh.distinct_cell_types}
+    ref_cell_types: set[int] = {int(ct) for ct in ref_mesh.distinct_cell_types}
 
     assert len(test_cell_types) > 0, "Test mesh has no cell types"
     assert len(ref_cell_types) > 0, "Reference mesh has no cell types"

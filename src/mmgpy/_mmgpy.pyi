@@ -12,10 +12,19 @@ Supported solution fields (accessible via dictionary syntax, e.g. ``mesh["metric
 """
 
 from pathlib import Path
-from typing import Any, overload
+from typing import Any, Literal, TypedDict, overload
 
 import numpy as np
 from numpy.typing import NDArray
+
+class LocalParameter(TypedDict):
+    """Region-specific mesh sizing parameter."""
+
+    type: Literal["vertex", "edge", "triangle", "tetrahedron"]
+    ref: int
+    hmin: float
+    hmax: float
+    hausd: float
 
 MMG_VERSION: str
 
@@ -532,6 +541,39 @@ class MmgMesh3D:
 
         """
 
+    def set_required_triangles(self, triangle_indices: NDArray[np.int32]) -> None:
+        """Mark triangles as required (cannot be modified).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of required triangles (0-based).
+
+        """
+
+    def set_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Mark edges as required (cannot be modified).
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of required edges (0-based).
+
+        """
+
+    def set_required_tetrahedra(
+        self,
+        tetrahedra_indices: NDArray[np.int32],
+    ) -> None:
+        """Mark tetrahedra as required (cannot be modified).
+
+        Parameters
+        ----------
+        tetrahedra_indices : NDArray[np.int32]
+            Indices of required tetrahedra (0-based).
+
+        """
+
     def set_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
         """Mark edges as ridges (sharp features preserved).
 
@@ -539,6 +581,195 @@ class MmgMesh3D:
         ----------
         edge_indices : NDArray[np.int32]
             Indices of ridge edges (0-based).
+
+        """
+
+    def set_parallel_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Mark triangles as parallel (for parallel mesh partitioning).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of parallel triangles (0-based).
+
+        """
+
+    def unset_corners(self, vertex_indices: NDArray[np.int32]) -> None:
+        """Remove corner marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def unset_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove required marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def unset_required_tetrahedra(
+        self,
+        tetrahedra_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from tetrahedra.
+
+        Parameters
+        ----------
+        tetrahedra_indices : NDArray[np.int32]
+            Indices of tetrahedra to unmark (0-based).
+
+        """
+
+    def unset_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove ridge marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def unset_parallel_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove parallel marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
+
+        """
+
+    def set_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+        normals: NDArray[np.float64],
+    ) -> None:
+        """Set normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+        normals : NDArray[np.float64]
+            Nx3 array of normal vectors.
+
+        """
+
+    def get_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> NDArray[np.float64]:
+        """Get normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Nx3 array of normal vectors.
+
+        """
+
+    def set_local_parameters(self, parameters: list[LocalParameter]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[LocalParameter]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', 'triangle', or 'tetrahedron'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
+
+        """
+
+    def set_multi_materials(self, materials: list[dict]) -> None:
+        """Set multi-material configuration for level-set discretization.
+
+        Automatically sets numberOfMat before applying materials.
+
+        Parameters
+        ----------
+        materials : list[dict]
+            List of material dicts, each with keys:
+            - ref: reference number
+            - split: split flag (1 to split, 0 otherwise)
+            - ref_minus: reference for negative side
+            - ref_plus: reference for positive side
+
+        """
+
+    def set_ls_base_references(self, references: list[int]) -> None:
+        """Set level-set base references for isovalue discretization.
+
+        Automatically sets numberOfLSBaseReferences.
+
+        Parameters
+        ----------
+        references : list[int]
+            List of base reference values.
 
         """
 
@@ -594,6 +825,55 @@ class MmgMesh3D:
         -------
         NDArray[np.float64]
             Quality metrics for all elements.
+
+        """
+
+    def get_tet_from_tria(self, tri_idx: int) -> tuple[int, int]:
+        """Get tetrahedron adjacent to a boundary triangle.
+
+        Parameters
+        ----------
+        tri_idx : int
+            Triangle index (0-based).
+
+        Returns
+        -------
+        tuple[int, int]
+            (tet_idx, face_idx) where tet_idx is 0-based (-1 if no adjacent
+            tetrahedron) and face_idx is the local face index within the
+            tetrahedron (0-3).
+
+        """
+
+    def get_tets_from_tria(
+        self,
+        tri_idx: int,
+    ) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Get both tetrahedra adjacent to a boundary triangle.
+
+        Parameters
+        ----------
+        tri_idx : int
+            Triangle index (0-based).
+
+        Returns
+        -------
+        tuple[tuple[int, int], tuple[int, int]]
+            ((tet0, face0), (tet1, face1)) where tet indices are 0-based (-1
+            if no neighbor) and face indices are local within the tetrahedron
+            (0-3).
+
+        """
+
+    def get_non_boundary_triangles(
+        self,
+    ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
+        """Get all non-boundary (internal) triangles.
+
+        Returns
+        -------
+        tuple[NDArray[np.int32], NDArray[np.int32]]
+            (Nx3 vertex indices, N reference values).
 
         """
 
@@ -831,6 +1111,36 @@ class MmgMesh3D:
         ------
         RuntimeError
             If the mesh is corrupted.
+
+        """
+
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a solution file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Path to a .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be loaded.
+
+        """
+
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Output path for the .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be saved.
 
         """
 
@@ -1359,6 +1669,16 @@ class MmgMesh2D:
 
         """
 
+    def set_required_triangles(self, triangle_indices: NDArray[np.int32]) -> None:
+        """Mark triangles as required (cannot be modified).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of required triangles (0-based).
+
+        """
+
     def set_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
         """Mark edges as required (cannot be modified).
 
@@ -1366,6 +1686,122 @@ class MmgMesh2D:
         ----------
         edge_indices : NDArray[np.int32]
             Indices of required edges (0-based).
+
+        """
+
+    def set_parallel_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Mark edges as parallel (for parallel mesh partitioning).
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of parallel edges (0-based).
+
+        """
+
+    def unset_corners(self, vertex_indices: NDArray[np.int32]) -> None:
+        """Remove corner marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def unset_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove required marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
+
+        """
+
+    def set_local_parameters(self, parameters: list[LocalParameter]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[LocalParameter]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', or 'triangle'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
+
+        """
+
+    def set_multi_materials(self, materials: list[dict]) -> None:
+        """Set multi-material configuration for level-set discretization.
+
+        Automatically sets numberOfMat before applying materials.
+
+        Parameters
+        ----------
+        materials : list[dict]
+            List of material dicts, each with keys:
+            - ref: reference number
+            - split: split flag (1 to split, 0 otherwise)
+            - ref_minus: reference for negative side
+            - ref_plus: reference for positive side
+
+        """
+
+    def set_ls_base_references(self, references: list[int]) -> None:
+        """Set level-set base references for isovalue discretization.
+
+        Automatically sets numberOfLSBaseReferences.
+
+        Parameters
+        ----------
+        references : list[int]
+            List of base reference values.
 
         """
 
@@ -1424,6 +1860,55 @@ class MmgMesh2D:
 
         """
 
+    def get_tri_from_edge(self, edge_idx: int) -> tuple[int, int]:
+        """Get triangle adjacent to an edge.
+
+        Parameters
+        ----------
+        edge_idx : int
+            Edge index (0-based).
+
+        Returns
+        -------
+        tuple[int, int]
+            (tri_idx, local_edge_idx) where tri_idx is 0-based (-1 if no
+            adjacent triangle) and local_edge_idx is the local edge index
+            within the triangle (0-2).
+
+        """
+
+    def get_tris_from_edge(
+        self,
+        edge_idx: int,
+    ) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Get both triangles adjacent to an edge.
+
+        Parameters
+        ----------
+        edge_idx : int
+            Edge index (0-based).
+
+        Returns
+        -------
+        tuple[tuple[int, int], tuple[int, int]]
+            ((tri0, edge0), (tri1, edge1)) where tri indices are 0-based (-1
+            if no neighbor) and edge indices are local within the triangle
+            (0-2).
+
+        """
+
+    def get_non_boundary_edges(
+        self,
+    ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
+        """Get all non-boundary (internal) edges.
+
+        Returns
+        -------
+        tuple[NDArray[np.int32], NDArray[np.int32]]
+            (Nx2 vertex indices, N reference values).
+
+        """
+
     def set_field(self, key: str, value: NDArray[np.float64]) -> None:
         """Set a solution field on vertices.
 
@@ -1473,6 +1958,36 @@ class MmgMesh2D:
         ------
         RuntimeError
             If the mesh is corrupted.
+
+        """
+
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a solution file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Path to a .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be loaded.
+
+        """
+
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Output path for the .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be saved.
 
         """
 
@@ -1923,6 +2438,26 @@ class MmgMeshS:
 
         """
 
+    def set_required_triangles(self, triangle_indices: NDArray[np.int32]) -> None:
+        """Mark triangles as required (cannot be modified).
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of required triangles (0-based).
+
+        """
+
+    def set_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Mark edges as required (cannot be modified).
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of required edges (0-based).
+
+        """
+
     def set_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
         """Mark edges as ridges (sharp features preserved).
 
@@ -1930,6 +2465,156 @@ class MmgMeshS:
         ----------
         edge_indices : NDArray[np.int32]
             Indices of ridge edges (0-based).
+
+        """
+
+    def unset_corners(self, vertex_indices: NDArray[np.int32]) -> None:
+        """Remove corner marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices to unmark (0-based).
+
+        """
+
+    def unset_required_triangles(
+        self,
+        triangle_indices: NDArray[np.int32],
+    ) -> None:
+        """Remove required marks from triangles.
+
+        Parameters
+        ----------
+        triangle_indices : NDArray[np.int32]
+            Indices of triangles to unmark (0-based).
+
+        """
+
+    def unset_required_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove required marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def unset_ridge_edges(self, edge_indices: NDArray[np.int32]) -> None:
+        """Remove ridge marks from edges.
+
+        Parameters
+        ----------
+        edge_indices : NDArray[np.int32]
+            Indices of edges to unmark (0-based).
+
+        """
+
+    def get_vertex_flags(self, idx: int) -> tuple[bool, bool]:
+        """Get corner and required flags for a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            Vertex index (0-based).
+
+        Returns
+        -------
+        tuple[bool, bool]
+            Tuple of (is_corner, is_required).
+
+        """
+
+    def set_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+        normals: NDArray[np.float64],
+    ) -> None:
+        """Set normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+        normals : NDArray[np.float64]
+            Nx3 array of normal vectors.
+
+        """
+
+    def get_normal_at_vertices(
+        self,
+        vertex_indices: NDArray[np.int32],
+    ) -> NDArray[np.float64]:
+        """Get normal vectors at specified vertices.
+
+        Parameters
+        ----------
+        vertex_indices : NDArray[np.int32]
+            Indices of vertices (0-based).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Nx3 array of normal vectors.
+
+        """
+
+    def set_local_parameters(self, parameters: list[LocalParameter]) -> None:
+        """Set region-specific mesh sizing parameters.
+
+        Automatically sets numberOfLocalParam before applying parameters.
+
+        Parameters
+        ----------
+        parameters : list[LocalParameter]
+            List of parameter dicts, each with keys:
+            - type: 'vertex', 'edge', or 'triangle'
+            - ref: reference number (material ID)
+            - hmin: minimum edge size
+            - hmax: maximum edge size
+            - hausd: Hausdorff distance
+
+        """
+
+    def set_multi_materials(self, materials: list[dict]) -> None:
+        """Set multi-material configuration for level-set discretization.
+
+        Automatically sets numberOfMat before applying materials.
+
+        Parameters
+        ----------
+        materials : list[dict]
+            List of material dicts, each with keys:
+            - ref: reference number
+            - split: split flag (1 to split, 0 otherwise)
+            - ref_minus: reference for negative side
+            - ref_plus: reference for positive side
+
+        """
+
+    def set_ls_base_references(self, references: list[int]) -> None:
+        """Set level-set base references for isovalue discretization.
+
+        Automatically sets numberOfLSBaseReferences.
+
+        Parameters
+        ----------
+        references : list[int]
+            List of base reference values.
 
         """
 
@@ -1988,6 +2673,18 @@ class MmgMeshS:
 
         """
 
+    def get_non_boundary_edges(
+        self,
+    ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
+        """Get all non-boundary (internal) edges.
+
+        Returns
+        -------
+        tuple[NDArray[np.int32], NDArray[np.int32]]
+            (Nx2 vertex indices, N reference values).
+
+        """
+
     def set_field(self, key: str, value: NDArray[np.float64]) -> None:
         """Set a solution field on vertices.
 
@@ -2037,6 +2734,36 @@ class MmgMeshS:
         ------
         RuntimeError
             If the mesh is corrupted.
+
+        """
+
+    def load_sol(self, filename: str | Path) -> None:
+        """Load a solution file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Path to a .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be loaded.
+
+        """
+
+    def save_sol(self, filename: str | Path) -> None:
+        """Save the solution/metric field to a file (.sol/.solb).
+
+        Parameters
+        ----------
+        filename : str | Path
+            Output path for the .sol or .solb file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file cannot be saved.
 
         """
 

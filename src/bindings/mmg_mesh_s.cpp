@@ -1,77 +1,60 @@
 #include "mmg_mesh_s.hpp"
 #include "mmg_common.hpp"
 #include <chrono>
-#include <cmath>
 #include <set>
 #include <stdexcept>
 
-namespace {
-// Helper to ensure array is C-contiguous for safe memory access
-// This is critical because we use raw pointer arithmetic to access elements.
-// Non-contiguous arrays (e.g., Fortran-order or sliced views) will have
-// incorrect data access patterns if we assume C-contiguous layout.
-template <typename T>
-void ensure_c_contiguous(const py::array_t<T> &arr, const std::string &name) {
-  // Check if array is C-contiguous by examining its flags
-  // PyArray_CHKFLAGS checks the NPY_ARRAY_C_CONTIGUOUS flag
-  py::object flags = arr.attr("flags");
-  py::object c_contiguous_obj = flags.attr("c_contiguous");
-  bool c_contiguous = c_contiguous_obj.template cast<bool>();
-  if (!c_contiguous) {
-    throw std::runtime_error(
-        name +
-        " array must be C-contiguous. Use numpy.ascontiguousarray() to fix.");
-  }
-}
+#ifdef _WIN32
+#include <cmath>
+#endif
 
-// Compute triangle quality manually since MMGS_Get_triangleQuality
-// is not properly exported on Windows DLL.
-// Uses threshold 1e-30 for near-zero detection (well above denormal range
-// ~2e-308, but catches degenerate triangles with area or edge sum near zero).
-double compute_triangle_quality(MMG5_pMesh mesh, MMG5_int k) {
+namespace {
+
+// Wrapper for MMGS_Get_triangleQuality.
+// On Windows, the symbol is not exported from the MMG DLL (missing
+// LIBMMGS_EXPORT in MMG v5.8.0 header), so we compute the quality manually.
+// On other platforms we call the C API directly.
+double get_triangle_quality([[maybe_unused]] MMG5_pMesh mesh,
+                            [[maybe_unused]] MMG5_pSol met, MMG5_int k) {
+#ifdef _WIN32
   MMG5_pTria pt = &mesh->tria[k];
   MMG5_pPoint p0 = &mesh->point[pt->v[0]];
   MMG5_pPoint p1 = &mesh->point[pt->v[1]];
   MMG5_pPoint p2 = &mesh->point[pt->v[2]];
 
-  // Compute edge vectors
-  double ax = p1->c[0] - p0->c[0];
-  double ay = p1->c[1] - p0->c[1];
-  double az = p1->c[2] - p0->c[2];
-  double bx = p2->c[0] - p0->c[0];
-  double by = p2->c[1] - p0->c[1];
-  double bz = p2->c[2] - p0->c[2];
-  double cx = p2->c[0] - p1->c[0];
-  double cy = p2->c[1] - p1->c[1];
-  double cz = p2->c[2] - p1->c[2];
+  double ax = p1->c[0] - p0->c[0], ay = p1->c[1] - p0->c[1],
+         az = p1->c[2] - p0->c[2];
+  double bx = p2->c[0] - p0->c[0], by = p2->c[1] - p0->c[1],
+         bz = p2->c[2] - p0->c[2];
+  double cx = p2->c[0] - p1->c[0], cy = p2->c[1] - p1->c[1],
+         cz = p2->c[2] - p1->c[2];
 
-  // Compute edge lengths squared
   double a2 = ax * ax + ay * ay + az * az;
   double b2 = bx * bx + by * by + bz * bz;
   double c2 = cx * cx + cy * cy + cz * cz;
 
-  // Compute cross product for area
   double nx = ay * bz - az * by;
   double ny = az * bx - ax * bz;
   double nz = ax * by - ay * bx;
   double area2 = nx * nx + ny * ny + nz * nz;
 
-  if (area2 < 1e-30) {
+  if (area2 < 1e-30)
     return 0.0;
-  }
 
-  // Quality = 4 * sqrt(3) * area / (a^2 + b^2 + c^2)
-  // This is the standard triangle quality metric (ratio to equilateral)
   double sum_edges = a2 + b2 + c2;
-  if (sum_edges < 1e-30) {
+  if (sum_edges < 1e-30)
     return 0.0;
-  }
 
+  // Quality = 4 * sqrt(3) * area / (2 * (a^2 + b^2 + c^2))
+  // Equivalent to MMGS_ALPHAD * sqrt(area2) / sum_edges for isotropic meshes.
   return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
+#else
+  return MMGS_Get_triangleQuality(mesh, met, k);
+#endif
 }
 
 // Collect mesh statistics for surface mesh
-RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh) {
+RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh, MMG5_pSol met) {
   RemeshStats stats;
   stats.vertices = mesh->np;
   stats.elements = mesh->nt; // triangles are primary elements for surface mesh
@@ -82,7 +65,7 @@ RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh) {
   double quality_sum = 0.0;
   if (stats.triangles > 0) {
     for (MMG5_int i = 1; i <= stats.triangles; i++) {
-      double q = compute_triangle_quality(mesh, i);
+      double q = get_triangle_quality(mesh, met, i);
       quality_sum += q;
       if (q < stats.quality_min)
         stats.quality_min = q;
@@ -139,27 +122,9 @@ MmgMeshS::MmgMeshS(
     throw std::runtime_error("Failed to initialize MMGS mesh");
   }
 
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMGS_loadVtkMesh(mesh, met, nullptr, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMGS_loadVtuMesh(mesh, met, nullptr, fname.c_str());
-  } else {
-    ret = MMGS_loadMesh(mesh, fname.c_str());
-  }
+  int ret = MMGS_loadMesh(mesh, fname.c_str());
 
   if (!ret) {
     cleanup();
@@ -536,39 +501,103 @@ py::tuple MmgMeshS::get_edge(MMG5_int idx) const {
 // Element attributes
 
 void MmgMeshS::set_corners(const py::array_t<int> &vertex_indices) {
-  ensure_c_contiguous(vertex_indices, "Vertex indices");
-  py::buffer_info buf = vertex_indices.request();
-
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Vertex indices must be a 1D array");
-  }
-
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
-
-  for (py::ssize_t i = 0; i < n; i++) {
-    int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->np) {
-      throw std::runtime_error("Vertex index out of range: " +
-                               std::to_string(idx));
-    }
-    if (!MMGS_Set_corner(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set corner at vertex index " +
-                               std::to_string(idx));
-    }
-  }
+  apply_attribute_to_indices(vertex_indices, mesh->np, "Vertex", "set corner",
+                             [&](int k) { return MMGS_Set_corner(mesh, k); });
 }
 
 void MmgMeshS::set_required_vertices(const py::array_t<int> &vertex_indices) {
-  ensure_c_contiguous(vertex_indices, "Vertex indices");
-  py::buffer_info buf = vertex_indices.request();
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "set required vertex",
+      [&](int k) { return MMGS_Set_requiredVertex(mesh, k); });
+}
 
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Vertex indices must be a 1D array");
+void MmgMeshS::set_required_triangles(
+    const py::array_t<int> &triangle_indices) {
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "set required triangle",
+      [&](int k) { return MMGS_Set_requiredTriangle(mesh, k); });
+}
+
+void MmgMeshS::set_required_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(
+      edge_indices, mesh->na, "Edge", "set required edge",
+      [&](int k) { return MMGS_Set_requiredEdge(mesh, k); });
+}
+
+void MmgMeshS::set_ridge_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(edge_indices, mesh->na, "Edge", "set ridge",
+                             [&](int k) { return MMGS_Set_ridge(mesh, k); });
+}
+
+void MmgMeshS::unset_corners(const py::array_t<int> &vertex_indices) {
+  apply_attribute_to_indices(vertex_indices, mesh->np, "Vertex", "unset corner",
+                             [&](int k) { return MMGS_Unset_corner(mesh, k); });
+}
+
+void MmgMeshS::unset_required_vertices(const py::array_t<int> &vertex_indices) {
+  apply_attribute_to_indices(
+      vertex_indices, mesh->np, "Vertex", "unset required vertex",
+      [&](int k) { return MMGS_Unset_requiredVertex(mesh, k); });
+}
+
+void MmgMeshS::unset_required_triangles(
+    const py::array_t<int> &triangle_indices) {
+  apply_attribute_to_indices(
+      triangle_indices, mesh->nt, "Triangle", "unset required triangle",
+      [&](int k) { return MMGS_Unset_requiredTriangle(mesh, k); });
+}
+
+void MmgMeshS::unset_required_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(
+      edge_indices, mesh->na, "Edge", "unset required edge",
+      [&](int k) { return MMGS_Unset_requiredEdge(mesh, k); });
+}
+
+void MmgMeshS::unset_ridge_edges(const py::array_t<int> &edge_indices) {
+  apply_attribute_to_indices(edge_indices, mesh->na, "Edge", "unset ridge",
+                             [&](int k) { return MMGS_Unset_ridge(mesh, k); });
+}
+
+// Attribute queries
+
+py::tuple MmgMeshS::get_vertex_flags(MMG5_int idx) const {
+  double x, y, z;
+  MMG5_int ref;
+  int corner, required;
+
+  if (!MMGS_GetByIdx_vertex(mesh, &x, &y, &z, &ref, &corner, &required,
+                            idx + 1)) {
+    throw std::runtime_error("Failed to get vertex flags at index " +
+                             std::to_string(idx));
   }
 
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
+  return py::make_tuple(static_cast<bool>(corner), static_cast<bool>(required));
+}
+
+// Normal vectors
+
+void MmgMeshS::set_normal_at_vertices(const py::array_t<int> &vertex_indices,
+                                      const py::array_t<double> &normals) {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  ensure_c_contiguous(normals, "Normals");
+
+  py::buffer_info idx_buf = vertex_indices.request();
+  py::buffer_info nrm_buf = normals.request();
+
+  if (idx_buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
+  }
+  if (nrm_buf.ndim != 2 || nrm_buf.shape[1] != 3) {
+    throw std::runtime_error("Normals must be an Nx3 array");
+  }
+  if (idx_buf.shape[0] != nrm_buf.shape[0]) {
+    throw std::runtime_error(
+        "vertex_indices and normals must have the same length");
+  }
+
+  const int *idx_ptr = static_cast<int *>(idx_buf.ptr);
+  const double *nrm_ptr = static_cast<double *>(nrm_buf.ptr);
+  py::ssize_t n = idx_buf.shape[0];
 
   for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
@@ -576,33 +605,129 @@ void MmgMeshS::set_required_vertices(const py::array_t<int> &vertex_indices) {
       throw std::runtime_error("Vertex index out of range: " +
                                std::to_string(idx));
     }
-    if (!MMGS_Set_requiredVertex(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set required vertex at index " +
+    double n0 = nrm_ptr[i * 3];
+    double n1 = nrm_ptr[i * 3 + 1];
+    double n2 = nrm_ptr[i * 3 + 2];
+    if (!MMGS_Set_normalAtVertex(mesh, idx + 1, n0, n1, n2)) {
+      throw std::runtime_error("Failed to set normal at vertex index " +
                                std::to_string(idx));
     }
   }
 }
 
-void MmgMeshS::set_ridge_edges(const py::array_t<int> &edge_indices) {
-  ensure_c_contiguous(edge_indices, "Edge indices");
-  py::buffer_info buf = edge_indices.request();
+py::array_t<double>
+MmgMeshS::get_normal_at_vertices(const py::array_t<int> &vertex_indices) const {
+  ensure_c_contiguous(vertex_indices, "Vertex indices");
+  py::buffer_info idx_buf = vertex_indices.request();
 
-  if (buf.ndim != 1) {
-    throw std::runtime_error("Edge indices must be a 1D array");
+  if (idx_buf.ndim != 1) {
+    throw std::runtime_error("Vertex indices must be a 1D array");
   }
 
-  const int *idx_ptr = static_cast<int *>(buf.ptr);
-  py::ssize_t n = buf.shape[0];
+  const int *idx_ptr = static_cast<int *>(idx_buf.ptr);
+  py::ssize_t n = idx_buf.shape[0];
+
+  py::array_t<double> result({n, py::ssize_t{3}});
+  auto res_buf = result.request();
+  double *res_ptr = static_cast<double *>(res_buf.ptr);
 
   for (py::ssize_t i = 0; i < n; i++) {
     int idx = idx_ptr[i];
-    if (idx < 0 || idx >= mesh->na) {
-      throw std::runtime_error("Edge index out of range: " +
+    if (idx < 0 || idx >= mesh->np) {
+      throw std::runtime_error("Vertex index out of range: " +
                                std::to_string(idx));
     }
-    if (!MMGS_Set_ridge(mesh, idx + 1)) {
-      throw std::runtime_error("Failed to set ridge at edge index " +
+    double n0 = 0;
+    double n1 = 0;
+    double n2 = 0;
+    if (!MMGS_Get_normalAtVertex(mesh, idx + 1, &n0, &n1, &n2)) {
+      throw std::runtime_error("Failed to get normal at vertex index " +
                                std::to_string(idx));
+    }
+    res_ptr[i * 3] = n0;
+    res_ptr[i * 3 + 1] = n1;
+    res_ptr[i * 3 + 2] = n2;
+  }
+
+  return result;
+}
+
+// Local parameters
+
+void MmgMeshS::set_local_parameters(const py::list &parameters) {
+  py::ssize_t n = py::len(parameters);
+
+  if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLocalParam,
+                           static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfLocalParam");
+  }
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    py::dict param = parameters[i].cast<py::dict>();
+
+    std::string type_str = param["type"].cast<std::string>();
+    MMG5_int ref = param["ref"].cast<MMG5_int>();
+    double hmin = param["hmin"].cast<double>();
+    double hmax = param["hmax"].cast<double>();
+    double hausd = param["hausd"].cast<double>();
+
+    int typ = 0;
+    if (type_str == "triangle") {
+      typ = MMG5_Triangle;
+    } else if (type_str == "edge") {
+      typ = MMG5_Edg;
+    } else if (type_str == "vertex") {
+      typ = MMG5_Vertex;
+    } else {
+      throw std::runtime_error("Unknown entity type: '" + type_str +
+                               "'. Must be 'vertex', 'edge', or 'triangle'");
+    }
+
+    if (!MMGS_Set_localParameter(mesh, met, typ, ref, hmin, hmax, hausd)) {
+      throw std::runtime_error("Failed to set local parameter for ref " +
+                               std::to_string(ref));
+    }
+  }
+}
+
+// Multi-material and level-set
+
+void MmgMeshS::set_multi_materials(const py::list &materials) {
+  py::ssize_t n = py::len(materials);
+
+  if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfMat,
+                           static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfMat");
+  }
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    py::dict mat = materials[i].cast<py::dict>();
+
+    MMG5_int ref = mat["ref"].cast<MMG5_int>();
+    int split = mat["split"].cast<int>();
+    MMG5_int rmin = mat["ref_minus"].cast<MMG5_int>();
+    MMG5_int rplus = mat["ref_plus"].cast<MMG5_int>();
+
+    if (!MMGS_Set_multiMat(mesh, met, ref, split, rmin, rplus)) {
+      throw std::runtime_error("Failed to set multi-material for ref " +
+                               std::to_string(ref));
+    }
+  }
+}
+
+void MmgMeshS::set_ls_base_references(const py::list &references) {
+  py::ssize_t n = py::len(references);
+
+  if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLSBaseReferences,
+                           static_cast<int>(n))) {
+    throw std::runtime_error("Failed to set numberOfLSBaseReferences");
+  }
+
+  for (py::ssize_t i = 0; i < n; i++) {
+    MMG5_int br = references[i].cast<MMG5_int>();
+    if (!MMGS_Set_lsBaseReference(mesh, met, br)) {
+      throw std::runtime_error("Failed to set LS base reference " +
+                               std::to_string(br));
     }
   }
 }
@@ -689,7 +814,7 @@ double MmgMeshS::get_element_quality(MMG5_int idx) const {
                              std::to_string(idx));
   }
 
-  return compute_triangle_quality(mesh, mmg_idx);
+  return get_triangle_quality(mesh, met, mmg_idx);
 }
 
 py::array_t<double> MmgMeshS::get_element_qualities() const {
@@ -699,10 +824,42 @@ py::array_t<double> MmgMeshS::get_element_qualities() const {
   double *ptr = static_cast<double *>(buf.ptr);
 
   for (MMG5_int i = 0; i < nt; i++) {
-    ptr[i] = compute_triangle_quality(mesh, i + 1);
+    ptr[i] = get_triangle_quality(mesh, met, i + 1);
   }
 
   return result;
+}
+
+// Advanced topology queries
+
+py::tuple MmgMeshS::get_non_boundary_edges() const {
+  MMG5_int nb_edges = 0;
+  if (!MMGS_Get_numberOfNonBdyEdges(mesh, &nb_edges)) {
+    throw std::runtime_error("Failed to get number of non-boundary edges");
+  }
+
+  py::array_t<int> vertices(
+      {static_cast<py::ssize_t>(nb_edges), py::ssize_t{2}});
+  py::array_t<int> refs(static_cast<py::ssize_t>(nb_edges));
+  auto v_buf = vertices.request();
+  auto r_buf = refs.request();
+  int *v_ptr = static_cast<int *>(v_buf.ptr);
+  int *r_ptr = static_cast<int *>(r_buf.ptr);
+
+  for (MMG5_int i = 0; i < nb_edges; i++) {
+    MMG5_int e0 = 0;
+    MMG5_int e1 = 0;
+    MMG5_int ref = 0;
+    if (!MMGS_Get_nonBdyEdge(mesh, &e0, &e1, &ref, i + 1)) {
+      throw std::runtime_error("Failed to get non-boundary edge " +
+                               std::to_string(i));
+    }
+    v_ptr[i * 2] = static_cast<int>(e0 - 1);
+    v_ptr[i * 2 + 1] = static_cast<int>(e1 - 1);
+    r_ptr[i] = static_cast<int>(ref);
+  }
+
+  return py::make_tuple(vertices, refs);
 }
 
 void MmgMeshS::set_field(const std::string &field_name,
@@ -796,30 +953,30 @@ void MmgMeshS::check_not_corrupted(const char *operation) const {
 void MmgMeshS::save(
     const std::variant<std::string, std::filesystem::path> &filename) const {
   check_not_corrupted("save");
-  std::string fname = std::visit(
-      [](auto &&arg) -> std::string {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          return arg;
-        } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
-          return arg.string();
-        }
-      },
-      filename);
+  std::string fname = variant_to_string(filename);
 
-  std::string ext = get_file_extension(fname);
-  int ret;
-
-  if (ext == ".vtk") {
-    ret = MMGS_saveVtkMesh(mesh, met, fname.c_str());
-  } else if (ext == ".vtu") {
-    ret = MMGS_saveVtuMesh(mesh, met, fname.c_str());
-  } else {
-    ret = MMGS_saveMesh(mesh, fname.c_str());
-  }
-
-  if (!ret) {
+  if (!MMGS_saveMesh(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to save mesh to file: " + fname);
+  }
+}
+
+void MmgMeshS::load_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("load_sol");
+  std::string fname = variant_to_string(filename);
+
+  if (MMGS_loadSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to load solution file: " + fname);
+  }
+}
+
+void MmgMeshS::save_sol(
+    const std::variant<std::string, std::filesystem::path> &filename) const {
+  check_not_corrupted("save_sol");
+  std::string fname = variant_to_string(filename);
+
+  if (MMGS_saveSol(mesh, met, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to save solution file: " + fname);
   }
 }
 
@@ -848,14 +1005,6 @@ int MmgMeshS::get_mmg_type(SolutionType type) const {
   }
 }
 
-std::string MmgMeshS::get_file_extension(const std::string &filename) {
-  size_t pos = filename.find_last_of('.');
-  if (pos != std::string::npos) {
-    return filename.substr(pos);
-  }
-  return "";
-}
-
 void MmgMeshS::cleanup() {
   if (mesh || met || ls) {
     MMGS_Free_all(MMG5_ARG_start, MMG5_ARG_ppMesh, &mesh, MMG5_ARG_ppMet, &met,
@@ -868,7 +1017,7 @@ void MmgMeshS::cleanup() {
 
 py::dict MmgMeshS::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
-  RemeshStats before = collect_mesh_stats_surface(mesh);
+  RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
   set_mesh_options_surface(mesh, met, options);
 
@@ -904,7 +1053,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
   }
 
-  RemeshStats after = collect_mesh_stats_surface(mesh);
+  RemeshStats after = collect_mesh_stats_surface(mesh, met);
 
   return build_remesh_result(before, after, duration, ret, warnings);
 }
@@ -912,7 +1061,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
 py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                                    const py::dict &options) {
   check_not_corrupted("remesh");
-  RemeshStats before = collect_mesh_stats_surface(mesh);
+  RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
@@ -939,7 +1088,7 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
                              std::to_string(ret) + ")");
   }
 
-  RemeshStats after = collect_mesh_stats_surface(mesh);
+  RemeshStats after = collect_mesh_stats_surface(mesh, met);
 
   return build_remesh_result(before, after, duration, ret, warnings);
 }
