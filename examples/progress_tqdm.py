@@ -67,6 +67,7 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict
     """Remesh with per-phase tqdm bars (one visible at a time)."""
     bar: tqdm | None = None
     active_phase: int | None = None
+    total_ops = 0
 
     def on_progress(
         phase: int,
@@ -77,13 +78,15 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict
         n_swap: int,
         n_move: int,
     ) -> bool:
-        nonlocal bar, active_phase
+        nonlocal bar, active_phase, total_ops
+        total_ops += n_split + n_collapse + n_swap + n_move
         name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-        # Phase changed: close old bar, open new one
+        # Phase changed: close old bar (leave=False hides it), open new one
         if active_phase != phase:
             if bar is not None:
-                bar.update(bar.total - bar.n)  # jump to 100%
+                bar.n = bar.total  # force 100%
+                bar.display()
                 bar.close()
             bar = tqdm(
                 total=max_iterations,
@@ -107,7 +110,10 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
     finally:
         if bar is not None:
-            bar.update(bar.total - bar.n)
+            bar.n = bar.total
+            bar.leave = True  # keep the final bar visible
+            bar.set_postfix_str(f"done, {total_ops:,} total ops")
+            bar.display()
             bar.close()
 
     return result
@@ -163,10 +169,10 @@ if __name__ == "__main__":
 
     print(f"\n=== Example 1: Per-phase tqdm bars  (hmax={hmax}) ===\n")
     mesh = make_cube_mesh()
-    result = remesh_with_tqdm_bars(mesh, hmax=hmax, verbose=False)
+    result = remesh_with_tqdm_bars(mesh, hmax=hmax, verbose=-1)
     print(f"\n  vertices: {result['vertices_before']} → {result['vertices_after']}")
 
     print(f"\n=== Example 2: Single tqdm bar  (hmax={hmax}) ===\n")
     mesh2 = make_cube_mesh()
-    result2 = remesh_with_single_tqdm(mesh2, hmax=hmax, verbose=False)
+    result2 = remesh_with_single_tqdm(mesh2, hmax=hmax, verbose=-1)
     print(f"\n  vertices: {result2['vertices_before']} → {result2['vertices_after']}")

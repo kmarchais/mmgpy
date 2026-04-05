@@ -1817,8 +1817,10 @@ class Mesh:
             if mmg_bar is not None:  # pragma: no cover
                 mmg_bar_ctx, mmg_bar_cb, mmg_bar_finalize = mmg_bar
                 kwargs["_progress_callback"] = mmg_bar_cb
-                # Suppress MMG stdout when showing a progress bar
-                kwargs.setdefault("verbose", False)
+                # Suppress MMG stdout/stderr when showing a progress bar.
+                # -1 silences warnings too (they'd leak since StderrCapture
+                # is skipped when a callback is active).
+                kwargs.setdefault("verbose", -1)
                 mmg_bar_ctx.__enter__()
         elif callable(progress):
             callback = progress
