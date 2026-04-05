@@ -135,12 +135,15 @@ def remesh_with_single_tqdm(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
 
 
 if __name__ == "__main__":
-    print("\n=== Example 1: Per-phase tqdm bars ===\n")
+    # Use hmax=0.03 so remeshing takes a few seconds and progress is visible
+    hmax = 0.03
+
+    print(f"\n=== Example 1: Per-phase tqdm bars  (hmax={hmax}) ===\n")
     mesh = make_cube_mesh()
-    result = remesh_with_tqdm_bars(mesh, hmax=0.1, verbose=False)
+    result = remesh_with_tqdm_bars(mesh, hmax=hmax, verbose=False)
     print(f"\n  vertices: {result['vertices_before']} → {result['vertices_after']}")
 
-    print("\n=== Example 2: Single tqdm bar ===\n")
+    print(f"\n=== Example 2: Single tqdm bar  (hmax={hmax}) ===\n")
     mesh2 = make_cube_mesh()
-    result2 = remesh_with_single_tqdm(mesh2, hmax=0.1, verbose=False)
+    result2 = remesh_with_single_tqdm(mesh2, hmax=hmax, verbose=False)
     print(f"\n  vertices: {result2['vertices_before']} → {result2['vertices_after']}")

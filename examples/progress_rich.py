@@ -158,16 +158,24 @@ if __name__ == "__main__":
 
     console = Console()
 
+    # Use hmax=0.03 so remeshing takes a few seconds and progress is visible
+    hmax = 0.03
+
     mesh = make_cube_mesh()
-    console.print("\n[bold]Example 1: Two-level progress (one bar per phase)[/bold]\n")
-    result = remesh_with_rich_progress(mesh, hmax=0.1, verbose=False)
+    console.print(
+        f"\n[bold]Example 1: Two-level progress (one bar per phase)"
+        f"  hmax={hmax}[/bold]\n",
+    )
+    result = remesh_with_rich_progress(mesh, hmax=hmax, verbose=False)
     console.print(
         f"  vertices: {result['vertices_before']} → {result['vertices_after']}\n",
     )
 
     mesh2 = make_cube_mesh()
-    console.print("[bold]Example 2: Single cumulative progress bar[/bold]\n")
-    result2 = remesh_with_single_bar(mesh2, hmax=0.1, verbose=False)
+    console.print(
+        f"[bold]Example 2: Single cumulative progress bar  hmax={hmax}[/bold]\n",
+    )
+    result2 = remesh_with_single_bar(mesh2, hmax=hmax, verbose=False)
     console.print(
         f"  vertices: {result2['vertices_before']} → {result2['vertices_after']}\n",
     )
