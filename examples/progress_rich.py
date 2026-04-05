@@ -31,8 +31,8 @@ PHASE_NAMES = {
 }
 
 
-def make_cube_mesh() -> MmgMesh3D:
-    """Create a simple cube mesh with a center vertex for testing."""
+def _cube_arrays() -> tuple[np.ndarray, np.ndarray]:
+    """Return (vertices, elements) arrays for a simple cube mesh."""
     vertices = np.array(
         [
             [0, 0, 0],
@@ -64,6 +64,12 @@ def make_cube_mesh() -> MmgMesh3D:
         ],
         dtype=np.int32,
     )
+    return vertices, elements
+
+
+def make_cube_mesh() -> MmgMesh3D:
+    """Create a simple cube mesh with a center vertex for testing."""
+    vertices, elements = _cube_arrays()
     return MmgMesh3D(vertices, elements)
 
 
@@ -204,26 +210,39 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
 if __name__ == "__main__":
     from rich.console import Console
 
+    from mmgpy import Mesh
+
     console = Console()
 
     # Use hmax=0.03 so remeshing takes a few seconds and progress is visible
     hmax = 0.03
 
-    mesh = make_cube_mesh()
+    # --- Example 1: Just pass progress=True (the default!) ---
     console.print(
-        f"\n[bold]Example 1: Two-level progress (one bar per phase)"
-        f"  hmax={hmax}[/bold]\n",
+        f"\n[bold]Example 1: mesh.remesh(hmax={hmax}, progress=True)[/bold]\n",
     )
-    result = remesh_with_rich_progress(mesh, hmax=hmax, verbose=False)
+    mesh = Mesh(*_cube_arrays())
+    result = mesh.remesh(hmax=hmax)  # progress=True is the default
     console.print(
-        f"  vertices: {result['vertices_before']} → {result['vertices_after']}\n",
+        f"  vertices: {result.vertices_before} → {result.vertices_after}\n",
     )
 
-    mesh2 = make_cube_mesh()
+    # --- Example 2: Two-level bars (main + secondary) ---
     console.print(
-        f"[bold]Example 2: Single cumulative progress bar  hmax={hmax}[/bold]\n",
+        f"[bold]Example 2: Two-level bars  hmax={hmax}[/bold]\n",
     )
-    result2 = remesh_with_single_bar(mesh2, hmax=hmax, verbose=False)
+    mesh2 = make_cube_mesh()
+    result2 = remesh_with_rich_progress(mesh2, hmax=hmax, verbose=False)
     console.print(
         f"  vertices: {result2['vertices_before']} → {result2['vertices_after']}\n",
+    )
+
+    # --- Example 3: Single cumulative bar ---
+    console.print(
+        f"[bold]Example 3: Single cumulative bar  hmax={hmax}[/bold]\n",
+    )
+    mesh3 = make_cube_mesh()
+    result3 = remesh_with_single_bar(mesh3, hmax=hmax, verbose=False)
+    console.print(
+        f"  vertices: {result3['vertices_before']} → {result3['vertices_after']}\n",
     )

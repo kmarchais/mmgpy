@@ -129,6 +129,117 @@ def _resolve_progress_callback(
     return None, None
 
 
+def _make_mmg_progress_bar() -> (
+    tuple[Any, Callable[..., bool], Callable[[], None]] | None
+):  # pragma: no cover
+    """Create a Rich progress bar for the MMG iteration callback.
+
+    Returns None if not in an interactive terminal or Rich is unavailable.
+    Otherwise returns (progress_ctx, callback_fn, finalize_fn).
+    """
+    if not _is_interactive_terminal():
+        return None
+
+    try:
+        from rich.progress import (  # noqa: PLC0415
+            BarColumn,
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            TimeElapsedColumn,
+        )
+    except ImportError:
+        return None
+
+    from mmgpy._mmgpy import (  # noqa: PLC0415
+        MMG5_PHASE_ADAPTATION,
+        MMG5_PHASE_OPTIMIZATION,
+    )
+
+    phase_names = {
+        MMG5_PHASE_ADAPTATION: "Adaptation",
+        MMG5_PHASE_OPTIMIZATION: "Optimization",
+    }
+
+    progress_ctx = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.fields[status]}"),
+        TimeElapsedColumn(),
+    )
+
+    state: dict[str, Any] = {
+        "n": 0,
+        "peak": 0.0,
+        "total_ops": 0,
+        "main_task": None,
+        "sub_task": None,
+        "active_phase": None,
+    }
+
+    def callback(
+        phase: int,
+        iteration: int,
+        max_iterations: int,
+        n_split: int,
+        n_collapse: int,
+        n_swap: int,
+        n_move: int,
+    ) -> bool:
+        s = state
+        s["n"] += 1
+        s["total_ops"] += n_split + n_collapse + n_swap + n_move
+        name = phase_names.get(phase, f"Phase {phase}")
+
+        if s["main_task"] is None:
+            s["main_task"] = progress_ctx.add_task(
+                "[bold cyan]Remeshing",
+                total=1.0,
+                status="",
+            )
+
+        # Main bar: monotonically increasing
+        s["peak"] = max(s["peak"], 1.0 - 1.0 / (s["n"] + 1))
+        progress_ctx.update(
+            s["main_task"],
+            completed=s["peak"],
+            status=f"{name} | {s['total_ops']:,} ops",
+        )
+
+        # Secondary bar: one per phase, hidden on phase change
+        if s["active_phase"] != phase:
+            if s["sub_task"] is not None:
+                progress_ctx.update(s["sub_task"], visible=False)
+            s["sub_task"] = progress_ctx.add_task(
+                f"  [dim]{name}",
+                total=max_iterations,
+                status="",
+            )
+            s["active_phase"] = phase
+        else:
+            progress_ctx.update(s["sub_task"], total=max_iterations)
+
+        ops = (
+            f"split={n_split}  collapse={n_collapse}  "
+            f"swap={n_swap}  move={n_move}"
+        )
+        progress_ctx.update(s["sub_task"], completed=iteration + 1, status=ops)
+        return True
+
+    def finalize() -> None:
+        if state["sub_task"] is not None:
+            progress_ctx.update(state["sub_task"], visible=False)
+        if state["main_task"] is not None:
+            progress_ctx.update(
+                state["main_task"],
+                completed=1.0,
+                status=f"[green]\u2713 {state['total_ops']:,} total operations",
+            )
+
+    return progress_ctx, callback, finalize
+
+
 def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
     """Convert C++ remesh statistics dict to RemeshResult dataclass."""
     from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
@@ -1694,25 +1805,48 @@ class Mesh:
             transfer_fields,
         )
 
-        # Resolve progress callback
-        callback, reporter_ctx = _resolve_progress_callback(progress)
-        if reporter_ctx is not None:  # pragma: no cover
-            reporter_ctx.__enter__()
+        # Resolve progress: either a Rich bar (progress=True), a custom
+        # callback, or nothing.
+        callback: ProgressCallback | None = None
+        reporter_ctx: RichProgressReporter | None = None
+        mmg_bar = None  # Rich bar for MMG iteration callback
+
+        if progress is True:
+            # Use the new MMG iteration-level progress bar
+            mmg_bar = _make_mmg_progress_bar()  # pragma: no cover
+            if mmg_bar is not None:  # pragma: no cover
+                mmg_bar_ctx, mmg_bar_cb, mmg_bar_finalize = mmg_bar
+                kwargs["_progress_callback"] = mmg_bar_cb
+                # Suppress MMG stdout when showing a progress bar
+                kwargs.setdefault("verbose", False)
+                mmg_bar_ctx.__enter__()
+        elif callable(progress):
+            callback = progress
+            reporter_ctx = None
+        # else: progress is False/None → no progress
 
         try:
-            # Emit progress events
-            if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
-                raise CancellationError.for_phase("init")  # noqa: EM101
+            if callback is not None:
+                # Legacy phase-level progress events for custom callbacks
+                if not _emit_event(
+                    callback, "init", "start", "Initializing", progress=0.0,
+                ):
+                    raise CancellationError.for_phase("init")  # noqa: EM101
 
             initial_vertices = len(self._impl.get_vertices())
 
-            if not _emit_event(callback, "options", "start", "Options", progress=0.0):
-                raise CancellationError.for_phase("options")  # noqa: EM101
-
-            _emit_event(callback, "options", "complete", "Options set", progress=1.0)
-
-            if not _emit_event(callback, "remesh", "start", "Remeshing", progress=0.0):
-                raise CancellationError.for_phase("remesh")  # noqa: EM101
+            if callback is not None:
+                if not _emit_event(
+                    callback, "options", "start", "Options", progress=0.0,
+                ):
+                    raise CancellationError.for_phase("options")  # noqa: EM101
+                _emit_event(
+                    callback, "options", "complete", "Options set", progress=1.0,
+                )
+                if not _emit_event(
+                    callback, "remesh", "start", "Remeshing", progress=0.0,
+                ):
+                    raise CancellationError.for_phase("remesh")  # noqa: EM101
 
             # Call raw C++ method and convert result
             stats = self._impl.remesh(**kwargs)
@@ -1737,20 +1871,24 @@ class Mesh:
                     self._lazy_source.invalidate()
                     self._lazy_source = None
 
-            _emit_event(
-                callback,
-                "remesh",
-                "complete",
-                "Remeshing complete",
-                progress=1.0,
-                details={
-                    "initial_vertices": initial_vertices,
-                    "final_vertices": final_vertices,
-                    "vertex_change": final_vertices - initial_vertices,
-                },
-            )
+            if callback is not None:
+                _emit_event(
+                    callback,
+                    "remesh",
+                    "complete",
+                    "Remeshing complete",
+                    progress=1.0,
+                    details={
+                        "initial_vertices": initial_vertices,
+                        "final_vertices": final_vertices,
+                        "vertex_change": final_vertices - initial_vertices,
+                    },
+                )
             return _dict_to_remesh_result(stats)
         finally:
+            if mmg_bar is not None:  # pragma: no cover
+                mmg_bar_finalize()
+                mmg_bar_ctx.__exit__(None, None, None)
             if reporter_ctx is not None:  # pragma: no cover
                 reporter_ctx.__exit__(None, None, None)
 
