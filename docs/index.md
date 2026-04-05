@@ -1,3 +1,7 @@
+---
+icon: lucide/house
+---
+
 # mmgpy
 
 Python bindings for the [MMG](https://www.mmgtools.org) remeshing library.

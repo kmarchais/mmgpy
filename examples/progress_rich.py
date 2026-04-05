@@ -109,9 +109,10 @@ def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
 
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
 
-        # Mark all tasks complete
+        # Mark all tasks as fully complete
         for task_id in tasks.values():
-            progress.update(task_id, status="[green]✓")
+            t = progress.tasks[task_id]
+            progress.update(task_id, completed=t.total, status="[green]✓")
 
     return result
 
@@ -125,7 +126,7 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         TextColumn("{task.fields[status]}"),
         TimeElapsedColumn(),
     ) as progress:
-        task = progress.add_task("[cyan]Remeshing", total=None, status="starting...")
+        task = progress.add_task("[cyan]Remeshing", total=1.0, status="starting...")
         total_ops = 0
 
         def on_progress(
@@ -140,15 +141,27 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
             nonlocal total_ops
             total_ops += n_split + n_collapse + n_swap + n_move
             name = PHASE_NAMES.get(phase, f"Phase {phase}")
+
+            # Estimate overall progress: adaptation is ~70% of work,
+            # optimization is ~30%
+            if phase == MMG5_PHASE_ADAPTATION:
+                frac = 0.7 * (iteration + 1) / max(max_iterations, 1)
+            else:
+                frac = 0.7 + 0.3 * (iteration + 1) / max(max_iterations, 1)
+
             status = (
                 f"{name} iter {iteration + 1}/{max_iterations} "
                 f"| {total_ops:,} total ops"
             )
-            progress.update(task, advance=1, status=status)
+            progress.update(task, completed=frac, status=status)
             return True
 
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
-        progress.update(task, status=f"[green]✓ {total_ops:,} total operations")
+        progress.update(
+            task,
+            completed=1.0,
+            status=f"[green]✓ {total_ops:,} total operations",
+        )
 
     return result
 

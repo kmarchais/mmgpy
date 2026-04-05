@@ -1,3 +1,7 @@
+---
+icon: lucide/layers
+---
+
 # Surface Remeshing
 
 This tutorial covers remeshing 3D surface meshes with mmgpy.

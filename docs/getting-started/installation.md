@@ -1,3 +1,7 @@
+---
+icon: lucide/download
+---
+
 # Installation
 
 ## Requirements

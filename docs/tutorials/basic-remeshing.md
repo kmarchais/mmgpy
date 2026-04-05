@@ -1,3 +1,7 @@
+---
+icon: lucide/box
+---
+
 # Basic Remeshing
 
 This tutorial covers the fundamentals of mesh remeshing with mmgpy.

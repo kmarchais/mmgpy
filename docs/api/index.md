@@ -1,3 +1,7 @@
+---
+icon: lucide/book-open
+---
+
 # API Reference
 
 This section provides detailed API documentation for all public classes and functions in mmgpy.

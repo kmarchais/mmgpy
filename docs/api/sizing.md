@@ -1,3 +1,7 @@
+---
+icon: lucide/ruler
+---
+
 # Sizing Constraints
 
 This page documents the sizing constraint classes for local mesh refinement.

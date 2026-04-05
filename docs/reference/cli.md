@@ -1,3 +1,7 @@
+---
+icon: lucide/terminal
+---
+
 # CLI Tools
 
 Installing mmgpy gives you access to the MMG command-line executables:

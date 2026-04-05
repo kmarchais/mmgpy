@@ -1,3 +1,7 @@
+---
+icon: lucide/scaling
+---
+
 # Adaptive Sizing
 
 This tutorial covers local mesh refinement using sizing constraints.

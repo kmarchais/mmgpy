@@ -1,3 +1,7 @@
+---
+icon: lucide/puzzle
+---
+
 # PyVista Integration
 
 This tutorial covers the integration between mmgpy and PyVista for visualization and mesh interoperability.

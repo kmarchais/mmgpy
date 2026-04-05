@@ -1,3 +1,7 @@
+---
+icon: lucide/check-circle
+---
+
 # Results & Validation
 
 This page documents the result and validation classes returned by mmgpy operations.

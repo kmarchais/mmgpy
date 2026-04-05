@@ -1,3 +1,7 @@
+---
+icon: lucide/file-input
+---
+
 # I/O Functions
 
 This page documents the input/output functions for loading and saving meshes.

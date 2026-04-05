@@ -1,3 +1,7 @@
+---
+icon: lucide/scan-search
+---
+
 # Level-Set Extraction
 
 This tutorial covers extracting and remeshing isosurfaces using level-set functions.

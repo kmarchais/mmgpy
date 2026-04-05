@@ -1,3 +1,7 @@
+---
+icon: lucide/move-3d
+---
+
 # Lagrangian Motion
 
 This page documents the Lagrangian mesh motion functions in the `mmgpy.lagrangian` module.

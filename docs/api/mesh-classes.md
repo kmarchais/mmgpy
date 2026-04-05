@@ -1,3 +1,7 @@
+---
+icon: lucide/hexagon
+---
+
 # Mesh Classes
 
 This page documents the mesh classes provided by mmgpy.

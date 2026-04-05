@@ -1,3 +1,7 @@
+---
+icon: lucide/gallery-horizontal-end
+---
+
 # Examples Gallery
 
 This page showcases complete examples from the mmgpy repository.

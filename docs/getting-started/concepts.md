@@ -1,3 +1,7 @@
+---
+icon: lucide/lightbulb
+---
+
 # Core Concepts
 
 This page explains the fundamental concepts behind mmgpy and mesh remeshing.

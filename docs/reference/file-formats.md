@@ -1,3 +1,7 @@
+---
+icon: lucide/file-type
+---
+
 # File Formats
 
 mmgpy supports numerous file formats through its integration with meshio.

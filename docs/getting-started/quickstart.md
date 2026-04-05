@@ -1,3 +1,7 @@
+---
+icon: lucide/rocket
+---
+
 # Quick Start
 
 Get started with mmgpy in 5 minutes.

@@ -1,3 +1,7 @@
+---
+icon: lucide/gauge
+---
+
 # Metrics
 
 This page documents the metric tensor operations in the `mmgpy.metrics` module.

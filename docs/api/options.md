@@ -1,3 +1,7 @@
+---
+icon: lucide/sliders-horizontal
+---
+
 # Options Classes
 
 This page documents the options classes for configuring remeshing operations.
