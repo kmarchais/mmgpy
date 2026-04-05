@@ -1,8 +1,4 @@
-"""tqdm progress bar example for mmgpy remeshing.
-
-Demonstrates iteration-level progress with tqdm:
-  1. Per-phase bars (one bar at a time, disappears on phase change)
-  2. A single bar showing overall progress
+"""tqdm progress bar examples for mmgpy remeshing.
 
 Usage:
     uv run python examples/progress_tqdm.py
@@ -11,8 +7,8 @@ Usage:
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
-import numpy as np
 from tqdm import tqdm
 
 from mmgpy._mmgpy import (
@@ -26,45 +22,11 @@ PHASE_NAMES = {
     MMG5_PHASE_OPTIMIZATION: "Optimization",
 }
 
-
-def make_cube_mesh() -> MmgMesh3D:
-    """Create a simple cube mesh for testing."""
-    vertices = np.array(
-        [
-            [0, 0, 0],
-            [1, 0, 0],
-            [1, 1, 0],
-            [0, 1, 0],
-            [0, 0, 1],
-            [1, 0, 1],
-            [1, 1, 1],
-            [0, 1, 1],
-            [0.5, 0.5, 0.5],
-        ],
-        dtype=np.float64,
-    )
-    elements = np.array(
-        [
-            [0, 1, 2, 8],
-            [0, 2, 3, 8],
-            [0, 1, 5, 8],
-            [1, 5, 6, 8],
-            [1, 2, 6, 8],
-            [2, 3, 7, 8],
-            [2, 6, 7, 8],
-            [0, 3, 7, 8],
-            [0, 4, 5, 8],
-            [0, 4, 7, 8],
-            [4, 5, 6, 8],
-            [4, 6, 7, 8],
-        ],
-        dtype=np.int32,
-    )
-    return MmgMesh3D(vertices, elements)
+ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
-def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
-    """Remesh with a main bar + secondary bar per phase."""
+def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
+    """Main bar (overall) + secondary bar (per-phase iterations)."""
     state = {"n": 0, "ops": 0, "phase": None, "sub": None}
 
     main_bar = tqdm(
@@ -90,13 +52,11 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict
         state["ops"] += n_split + n_collapse + n_swap + n_move
         name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-        # Main bar: monotonic progress
         pct = 100.0 * (1.0 - 1.0 / (state["n"] + 1))
         main_bar.n = pct
         main_bar.set_postfix_str(f"{name}, {state['ops']:,} ops")
         main_bar.display()
 
-        # Secondary bar: one per phase, hidden on phase change
         if state["phase"] != phase:
             if state["sub"] is not None:
                 state["sub"].n = state["sub"].total
@@ -127,12 +87,10 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict
     try:
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
     finally:
-        # Hide secondary bar
         if state["sub"] is not None:
             state["sub"].n = state["sub"].total
             state["sub"].display()
             state["sub"].close()
-        # Complete main bar
         main_bar.n = 100
         main_bar.set_postfix_str(f"done, {state['ops']:,} total ops")
         main_bar.display()
@@ -141,8 +99,8 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict
     return result
 
 
-def remesh_with_single_tqdm(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
-    """Remesh with a single tqdm bar showing overall progress."""
+def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
+    """Single cumulative progress bar."""
     state = {"n": 0, "ops": 0}
 
     bar = tqdm(
@@ -169,7 +127,9 @@ def remesh_with_single_tqdm(mesh: MmgMesh3D, **kwargs: float | int | bool) -> di
 
         pct = 100.0 * (1.0 - 1.0 / (state["n"] + 1))
         bar.n = pct
-        bar.set_postfix_str(f"{name} {iteration + 1}/{max_iterations}, {state['ops']:,} ops")
+        bar.set_postfix_str(
+            f"{name} {iteration + 1}/{max_iterations}, {state['ops']:,} ops",
+        )
         bar.display()
         sys.stderr.flush()
         return True
@@ -186,15 +146,14 @@ def remesh_with_single_tqdm(mesh: MmgMesh3D, **kwargs: float | int | bool) -> di
 
 
 if __name__ == "__main__":
-    # Use hmax=0.03 so remeshing takes a few seconds and progress is visible
-    hmax = 0.03
+    mesh_path = ASSETS / "linkrods.mesh"
 
-    print(f"\n=== Example 1: Per-phase tqdm bars  (hmax={hmax}) ===\n")
-    mesh = make_cube_mesh()
-    result = remesh_with_tqdm_bars(mesh, hmax=hmax, verbose=-1)
-    print(f"\n  vertices: {result['vertices_before']} → {result['vertices_after']}")
+    print(f"\n=== Example 1: Two-level bars (main + secondary) ===\n")
+    mesh = MmgMesh3D(str(mesh_path))
+    result = remesh_with_two_bars(mesh, hmax=0.05, verbose=-1)
+    print(f"\n  vertices: {result['vertices_before']} \u2192 {result['vertices_after']}")
 
-    print(f"\n=== Example 2: Single tqdm bar  (hmax={hmax}) ===\n")
-    mesh2 = make_cube_mesh()
-    result2 = remesh_with_single_tqdm(mesh2, hmax=hmax, verbose=-1)
-    print(f"\n  vertices: {result2['vertices_before']} → {result2['vertices_after']}")
+    print(f"\n=== Example 2: Single bar ===\n")
+    mesh2 = MmgMesh3D(str(mesh_path))
+    result2 = remesh_with_single_bar(mesh2, hmax=0.05, verbose=-1)
+    print(f"\n  vertices: {result2['vertices_before']} \u2192 {result2['vertices_after']}")
