@@ -2,6 +2,7 @@
 #include "mmg_common.hpp"
 #include "mmg_progress.hpp"
 #include <chrono>
+#include <optional>
 #include <set>
 #include <stdexcept>
 
@@ -1048,12 +1049,16 @@ py::dict MmgMesh2D::remesh(const py::dict &options,
 
   // Set up progress callback if provided
   ProgressCallbackData cb_data{progress_callback};
-  if (!progress_callback.is_none()) {
+  bool has_callback = !progress_callback.is_none();
+  if (has_callback) {
     MMG2D_Set_progressCallback(mesh, progress_trampoline, &cb_data);
   }
 
-  // Capture stderr to collect MMG warnings
-  StderrCapture capture;
+  // Skip stderr capture when a callback is active (it may write to stderr)
+  std::optional<StderrCapture> capture;
+  if (!has_callback) {
+    capture.emplace();
+  }
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -1082,7 +1087,7 @@ py::dict MmgMesh2D::remesh(const py::dict &options,
   double duration = std::chrono::duration<double>(end - start).count();
 
   // Stop capture and parse warnings before potentially throwing
-  std::string captured = capture.get();
+  std::string captured = capture ? capture->get() : "";
   std::vector<std::string> warnings = parse_mmg_warnings(captured);
 
   if (ret != MMG5_SUCCESS) {

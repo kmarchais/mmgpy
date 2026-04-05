@@ -2,6 +2,7 @@
 #include "mmg_common.hpp"
 #include "mmg_progress.hpp"
 #include <chrono>
+#include <optional>
 #include <set>
 #include <stdexcept>
 
@@ -1467,12 +1468,19 @@ py::dict MmgMesh::remesh(const py::dict &options,
 
   // Set up progress callback if provided
   ProgressCallbackData cb_data{progress_callback};
-  if (!progress_callback.is_none()) {
+  bool has_callback = !progress_callback.is_none();
+  if (has_callback) {
     MMG3D_Set_progressCallback(mesh, progress_trampoline, &cb_data);
   }
 
-  // Capture stderr to collect MMG warnings
-  StderrCapture capture;
+  // Capture stderr to collect MMG warnings.
+  // Skip capture when a progress callback is active — the callback may
+  // write to stderr (e.g. tqdm) and StderrCapture redirects fd 2 to a
+  // temp file, which would swallow all progress output.
+  std::optional<StderrCapture> capture;
+  if (!has_callback) {
+    capture.emplace();
+  }
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -1499,7 +1507,7 @@ py::dict MmgMesh::remesh(const py::dict &options,
   double duration = std::chrono::duration<double>(end - start).count();
 
   // Stop capture and parse warnings before potentially throwing
-  std::string captured = capture.get();
+  std::string captured = capture ? capture->get() : "";
   std::vector<std::string> warnings = parse_mmg_warnings(captured);
 
   if (ret != MMG5_SUCCESS) {
@@ -1524,12 +1532,15 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
 
   // Set up progress callback if provided
   ProgressCallbackData cb_data{progress_callback};
-  if (!progress_callback.is_none()) {
+  bool has_callback = !progress_callback.is_none();
+  if (has_callback) {
     MMG3D_Set_progressCallback(mesh, progress_trampoline, &cb_data);
   }
 
-  // Capture stderr to collect MMG warnings
-  StderrCapture capture;
+  std::optional<StderrCapture> capture;
+  if (!has_callback) {
+    capture.emplace();
+  }
 
   int ret;
   auto start = std::chrono::high_resolution_clock::now();
@@ -1543,8 +1554,7 @@ py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
-  // Stop capture and parse warnings before potentially throwing
-  std::string captured = capture.get();
+  std::string captured = capture ? capture->get() : "";
   std::vector<std::string> warnings = parse_mmg_warnings(captured);
 
   if (ret != MMG5_SUCCESS) {
@@ -1569,12 +1579,15 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
 
   // Set up progress callback if provided
   ProgressCallbackData cb_data{progress_callback};
-  if (!progress_callback.is_none()) {
+  bool has_callback = !progress_callback.is_none();
+  if (has_callback) {
     MMG3D_Set_progressCallback(mesh, progress_trampoline, &cb_data);
   }
 
-  // Capture stderr to collect MMG warnings
-  StderrCapture capture;
+  std::optional<StderrCapture> capture;
+  if (!has_callback) {
+    capture.emplace();
+  }
 
   int ret;
   auto start = std::chrono::high_resolution_clock::now();
@@ -1588,8 +1601,7 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
   auto end = std::chrono::high_resolution_clock::now();
   double duration = std::chrono::duration<double>(end - start).count();
 
-  // Stop capture and parse warnings before potentially throwing
-  std::string captured = capture.get();
+  std::string captured = capture ? capture->get() : "";
   std::vector<std::string> warnings = parse_mmg_warnings(captured);
 
   if (ret != MMG5_SUCCESS) {
