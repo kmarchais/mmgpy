@@ -13,7 +13,6 @@ from __future__ import annotations
 import numpy as np
 from rich.progress import (
     BarColumn,
-    MofNCompleteColumn,
     Progress,
     SpinnerColumn,
     TextColumn,
@@ -69,21 +68,28 @@ def make_cube_mesh() -> MmgMesh3D:
 
 
 def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
-    """Remesh with a Rich two-level progress display.
+    """Remesh with a two-level Rich progress display.
 
-    Shows one bar per active phase.  When a phase finishes (another phase
-    starts, or remeshing ends) its bar is hidden so only the current
-    phase is visible at any time.
+    - Main bar: overall remeshing progress (stays visible at the end).
+    - Secondary bar: iteration detail for the current phase (disappears
+      when the phase changes or remeshing completes).
     """
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
-        MofNCompleteColumn(),
-        TimeElapsedColumn(),
         TextColumn("{task.fields[status]}"),
+        TimeElapsedColumn(),
     ) as progress:
-        tasks: dict[int, int] = {}  # phase -> task_id
+        n_callbacks = 0
+        total_ops = 0
+        peak = 0.0
+        main_task = progress.add_task(
+            "[bold cyan]Remeshing",
+            total=1.0,
+            status="",
+        )
+        sub_task: int | None = None
         active_phase: int | None = None
 
         def on_progress(
@@ -95,42 +101,51 @@ def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
             n_swap: int,
             n_move: int,
         ) -> bool:
-            nonlocal active_phase
+            nonlocal active_phase, sub_task, n_callbacks, total_ops, peak
+            n_callbacks += 1
+            total_ops += n_split + n_collapse + n_swap + n_move
             name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-            # Phase changed: hide the previous bar
-            if active_phase is not None and active_phase != phase:
-                prev_id = tasks[active_phase]
-                t = progress.tasks[prev_id]
-                progress.update(
-                    prev_id,
-                    completed=t.total,
-                    visible=False,
-                )
-            active_phase = phase
+            # --- Main bar: monotonically increasing ---
+            peak = max(peak, 1.0 - 1.0 / (n_callbacks + 1))
+            progress.update(
+                main_task,
+                completed=peak,
+                status=f"{name} | {total_ops:,} ops",
+            )
 
-            if phase not in tasks:
-                task_id = progress.add_task(
-                    f"[cyan]{name}",
+            # --- Secondary bar: one per phase, hidden on phase change ---
+            if active_phase != phase:
+                # Hide previous secondary bar
+                if sub_task is not None:
+                    progress.update(sub_task, visible=False)
+                # Create new secondary bar for this phase
+                sub_task = progress.add_task(
+                    f"  [dim]{name}",
                     total=max_iterations,
                     status="",
                 )
-                tasks[phase] = task_id
+                active_phase = phase
             else:
-                task_id = tasks[phase]
                 # Phase may restart with a different max_iterations
-                progress.update(task_id, total=max_iterations, visible=True)
+                progress.update(sub_task, total=max_iterations)
 
-            ops = f"split={n_split} collapse={n_collapse} swap={n_swap} move={n_move}"
-            progress.update(task_id, completed=iteration + 1, status=ops)
-            return True  # continue
+            ops = (
+                f"split={n_split}  collapse={n_collapse}  swap={n_swap}  move={n_move}"
+            )
+            progress.update(sub_task, completed=iteration + 1, status=ops)
+            return True
 
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
 
-        # Hide all remaining bars
-        for task_id in tasks.values():
-            t = progress.tasks[task_id]
-            progress.update(task_id, completed=t.total, visible=False)
+        # Hide secondary bar, complete main bar
+        if sub_task is not None:
+            progress.update(sub_task, visible=False)
+        progress.update(
+            main_task,
+            completed=1.0,
+            status=f"[green]✓ {total_ops:,} total operations",
+        )
 
     return result
 
