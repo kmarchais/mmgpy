@@ -11,7 +11,6 @@ from pathlib import Path
 from rich.console import Console
 from rich.progress import (
     BarColumn,
-    MofNCompleteColumn,
     Progress,
     SpinnerColumn,
     TextColumn,
@@ -33,8 +32,8 @@ PHASE_NAMES = {
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
-def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
-    """Main bar (overall) + secondary bar (per-phase iterations)."""
+def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
+    """Show a main bar and a secondary bar per phase."""
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -65,22 +64,25 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
 
             peak = max(peak, 1.0 - 1.0 / (n_callbacks + 1))
             progress.update(
-                main_task, completed=peak, status=f"{name} | {total_ops:,} ops",
+                main_task,
+                completed=peak,
+                status=f"{name} | {total_ops:,} ops",
             )
 
             if active_phase != phase:
                 if sub_task is not None:
                     progress.update(sub_task, visible=False)
                 sub_task = progress.add_task(
-                    f"  [dim]{name}", total=max_iterations, status="",
+                    f"  [dim]{name}",
+                    total=max_iterations,
+                    status="",
                 )
                 active_phase = phase
             else:
                 progress.update(sub_task, total=max_iterations)
 
             ops = (
-                f"split={n_split}  collapse={n_collapse}  "
-                f"swap={n_swap}  move={n_move}"
+                f"split={n_split}  collapse={n_collapse}  swap={n_swap}  move={n_move}"
             )
             progress.update(sub_task, completed=iteration + 1, status=ops)
             return True
@@ -98,7 +100,7 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
     return result
 
 
-def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
+def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
     """Single cumulative progress bar."""
     with Progress(
         SpinnerColumn(),
@@ -149,19 +151,29 @@ if __name__ == "__main__":
     mesh_path = ASSETS / "linkrods.mesh"
 
     # --- Example 1: Just use progress=True (the default!) ---
-    console.print(f"\n[bold]Example 1: mesh.remesh(hmax=0.05)  \u2014  built-in progress[/bold]\n")
+    console.print(
+        "\n[bold]Example 1: mesh.remesh(hmax=0.05)  \u2014  built-in progress[/bold]\n",
+    )
     mesh = Mesh(mesh_path)
     result = mesh.remesh(hmax=0.05)
-    console.print(f"  vertices: {result.vertices_before} \u2192 {result.vertices_after}\n")
+    console.print(
+        f"  vertices: {result.vertices_before} \u2192 {result.vertices_after}\n",
+    )
 
     # --- Example 2: Two-level bars (main + secondary) ---
-    console.print("[bold]Example 2: Two-level bars (main + secondary)[/bold]\n")
+    console.print(
+        "[bold]Example 2: Two-level bars[/bold]\n",
+    )
     mesh2 = MmgMesh3D(str(mesh_path))
-    result2 = remesh_with_two_bars(mesh2, hmax=0.05, verbose=-1)
-    console.print(f"  vertices: {result2['vertices_before']} \u2192 {result2['vertices_after']}\n")
+    r2 = remesh_with_two_bars(mesh2, hmax=0.05, verbose=-1)
+    console.print(
+        f"  vertices: {r2['vertices_before']} \u2192 {r2['vertices_after']}\n",
+    )
 
     # --- Example 3: Single cumulative bar ---
-    console.print("[bold]Example 3: Single cumulative bar[/bold]\n")
+    console.print("[bold]Example 3: Single bar[/bold]\n")
     mesh3 = MmgMesh3D(str(mesh_path))
-    result3 = remesh_with_single_bar(mesh3, hmax=0.05, verbose=-1)
-    console.print(f"  vertices: {result3['vertices_before']} \u2192 {result3['vertices_after']}\n")
+    r3 = remesh_with_single_bar(mesh3, hmax=0.05, verbose=-1)
+    console.print(
+        f"  vertices: {r3['vertices_before']} \u2192 {r3['vertices_after']}\n",
+    )

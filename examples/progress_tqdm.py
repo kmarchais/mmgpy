@@ -25,8 +25,8 @@ PHASE_NAMES = {
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
-def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
-    """Main bar (overall) + secondary bar (per-phase iterations)."""
+def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
+    """Show a main bar and a secondary bar per phase."""
     state = {"n": 0, "ops": 0, "phase": None, "sub": None}
 
     main_bar = tqdm(
@@ -99,7 +99,7 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
     return result
 
 
-def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
+def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
     """Single cumulative progress bar."""
     state = {"n": 0, "ops": 0}
 
@@ -148,12 +148,14 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dic
 if __name__ == "__main__":
     mesh_path = ASSETS / "linkrods.mesh"
 
-    print(f"\n=== Example 1: Two-level bars (main + secondary) ===\n")
+    print("\n=== Example 1: Two-level bars ===")
     mesh = MmgMesh3D(str(mesh_path))
-    result = remesh_with_two_bars(mesh, hmax=0.05, verbose=-1)
-    print(f"\n  vertices: {result['vertices_before']} \u2192 {result['vertices_after']}")
+    r = remesh_with_two_bars(mesh, hmax=0.05, verbose=-1)
+    vb, va = r["vertices_before"], r["vertices_after"]
+    print(f"\n  vertices: {vb} \u2192 {va}")
 
-    print(f"\n=== Example 2: Single bar ===\n")
+    print("\n=== Example 2: Single bar ===")
     mesh2 = MmgMesh3D(str(mesh_path))
-    result2 = remesh_with_single_bar(mesh2, hmax=0.05, verbose=-1)
-    print(f"\n  vertices: {result2['vertices_before']} \u2192 {result2['vertices_after']}")
+    r2 = remesh_with_single_bar(mesh2, hmax=0.05, verbose=-1)
+    vb2, va2 = r2["vertices_before"], r2["vertices_after"]
+    print(f"\n  vertices: {vb2} \u2192 {va2}")
