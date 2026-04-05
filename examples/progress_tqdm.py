@@ -1,14 +1,16 @@
 """tqdm progress bar example for mmgpy remeshing.
 
-Demonstrates iteration-level progress with tqdm, with two styles:
-  1. Two nested bars (phase + iteration)
-  2. A single bar that updates with each callback
+Demonstrates iteration-level progress with tqdm:
+  1. Per-phase bars (one bar at a time, disappears on phase change)
+  2. A single bar showing overall progress
 
 Usage:
     uv run python examples/progress_tqdm.py
 """
 
 from __future__ import annotations
+
+import sys
 
 import numpy as np
 from tqdm import tqdm
@@ -61,9 +63,9 @@ def make_cube_mesh() -> MmgMesh3D:
     return MmgMesh3D(vertices, elements)
 
 
-def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
-    """Remesh with per-phase tqdm bars."""
-    bars: dict[int, tqdm] = {}
+def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
+    """Remesh with per-phase tqdm bars (one visible at a time)."""
+    bar: tqdm | None = None
     active_phase: int | None = None
 
     def on_progress(
@@ -75,58 +77,52 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         n_swap: int,
         n_move: int,
     ) -> bool:
-        nonlocal active_phase
+        nonlocal bar, active_phase
         name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-        # Phase changed: close previous bar
-        if active_phase is not None and active_phase != phase and active_phase in bars:
-            old = bars[active_phase]
-            old.n = old.total  # force 100%
-            old.close()
-        active_phase = phase
-
-        if phase not in bars:
-            bars[phase] = tqdm(
+        # Phase changed: close old bar, open new one
+        if active_phase != phase:
+            if bar is not None:
+                bar.update(bar.total - bar.n)  # jump to 100%
+                bar.close()
+            bar = tqdm(
                 total=max_iterations,
                 desc=f"{name:<14s}",
                 unit="iter",
                 leave=False,
-                mininterval=0,
+                file=sys.stderr,
                 dynamic_ncols=True,
             )
-        else:
-            bars[phase].total = max_iterations
-            bars[phase].reset(total=max_iterations)
+            active_phase = phase
 
-        bar = bars[phase]
         bar.n = iteration + 1
         bar.set_postfix_str(
             f"split={n_split} col={n_collapse} swap={n_swap} move={n_move}",
         )
-        bar.refresh()
+        bar.display()
+        sys.stderr.flush()
         return True
 
     try:
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
     finally:
-        for bar in bars.values():
-            bar.n = bar.total  # force 100%
-            bar.refresh()
+        if bar is not None:
+            bar.update(bar.total - bar.n)
             bar.close()
 
     return result
 
 
-def remesh_with_single_tqdm(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
-    """Remesh with a single tqdm bar."""
-    total_ops = 0
-    n_callbacks = 0
+def remesh_with_single_tqdm(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
+    """Remesh with a single tqdm bar showing overall progress."""
+    state = {"n": 0, "ops": 0}
+
     bar = tqdm(
         total=100,
         desc="Remeshing",
         unit="%",
         leave=True,
-        mininterval=0.1,
+        file=sys.stderr,
         bar_format="{l_bar}{bar}| {n:.0f}% [{elapsed}, {postfix}]",
     )
 
@@ -139,26 +135,23 @@ def remesh_with_single_tqdm(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         n_swap: int,
         n_move: int,
     ) -> bool:
-        nonlocal total_ops, n_callbacks
-        total_ops += n_split + n_collapse + n_swap + n_move
-        n_callbacks += 1
+        state["n"] += 1
+        state["ops"] += n_split + n_collapse + n_swap + n_move
         name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-        # Monotonic progress: 1 - 1/(n+1) scaled to 100
-        pct = 100.0 * (1.0 - 1.0 / (n_callbacks + 1))
+        pct = 100.0 * (1.0 - 1.0 / (state["n"] + 1))
         bar.n = pct
-        bar.set_postfix_str(
-            f"{name} {iteration + 1}/{max_iterations}, {total_ops:,} ops",
-        )
-        bar.refresh()
+        bar.set_postfix_str(f"{name} {iteration + 1}/{max_iterations}, {state['ops']:,} ops")
+        bar.display()
+        sys.stderr.flush()
         return True
 
     try:
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
     finally:
         bar.n = 100
-        bar.set_postfix_str(f"done, {total_ops:,} ops")
-        bar.refresh()
+        bar.set_postfix_str(f"done, {state['ops']:,} ops")
+        bar.display()
         bar.close()
 
     return result
