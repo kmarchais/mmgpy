@@ -69,7 +69,12 @@ def make_cube_mesh() -> MmgMesh3D:
 
 
 def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
-    """Remesh with a Rich two-level progress display."""
+    """Remesh with a Rich two-level progress display.
+
+    Shows one bar per active phase.  When a phase finishes (another phase
+    starts, or remeshing ends) its bar is hidden so only the current
+    phase is visible at any time.
+    """
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -79,6 +84,7 @@ def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         TextColumn("{task.fields[status]}"),
     ) as progress:
         tasks: dict[int, int] = {}  # phase -> task_id
+        active_phase: int | None = None
 
         def on_progress(
             phase: int,
@@ -89,7 +95,19 @@ def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
             n_swap: int,
             n_move: int,
         ) -> bool:
+            nonlocal active_phase
             name = PHASE_NAMES.get(phase, f"Phase {phase}")
+
+            # Phase changed: hide the previous bar
+            if active_phase is not None and active_phase != phase:
+                prev_id = tasks[active_phase]
+                t = progress.tasks[prev_id]
+                progress.update(
+                    prev_id,
+                    completed=t.total,
+                    visible=False,
+                )
+            active_phase = phase
 
             if phase not in tasks:
                 task_id = progress.add_task(
@@ -100,8 +118,8 @@ def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
                 tasks[phase] = task_id
             else:
                 task_id = tasks[phase]
-                # Update total if max_iterations changed between calls
-                progress.update(task_id, total=max_iterations)
+                # Phase may restart with a different max_iterations
+                progress.update(task_id, total=max_iterations, visible=True)
 
             ops = f"split={n_split} collapse={n_collapse} swap={n_swap} move={n_move}"
             progress.update(task_id, completed=iteration + 1, status=ops)
@@ -109,10 +127,10 @@ def remesh_with_rich_progress(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
 
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
 
-        # Mark all tasks as fully complete
+        # Hide all remaining bars
         for task_id in tasks.values():
             t = progress.tasks[task_id]
-            progress.update(task_id, completed=t.total, status="[green]✓")
+            progress.update(task_id, completed=t.total, visible=False)
 
     return result
 
@@ -128,6 +146,8 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
     ) as progress:
         task = progress.add_task("[cyan]Remeshing", total=1.0, status="starting...")
         total_ops = 0
+        n_callbacks = 0
+        peak = 0.0  # monotonically increasing progress
 
         def on_progress(
             phase: int,
@@ -138,22 +158,22 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
             n_swap: int,
             n_move: int,
         ) -> bool:
-            nonlocal total_ops
+            nonlocal total_ops, n_callbacks, peak
             total_ops += n_split + n_collapse + n_swap + n_move
+            n_callbacks += 1
             name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-            # Estimate overall progress: adaptation is ~70% of work,
-            # optimization is ~30%
-            if phase == MMG5_PHASE_ADAPTATION:
-                frac = 0.7 * (iteration + 1) / max(max_iterations, 1)
-            else:
-                frac = 0.7 + 0.3 * (iteration + 1) / max(max_iterations, 1)
+            # Simple monotonic progress: each callback advances by a small
+            # step.  We don't know the total count upfront, so we use
+            # 1 - 1/(n+1) which approaches 1.0 asymptotically.
+            frac = 1.0 - 1.0 / (n_callbacks + 1)
+            peak = max(peak, frac)
 
             status = (
                 f"{name} iter {iteration + 1}/{max_iterations} "
                 f"| {total_ops:,} total ops"
             )
-            progress.update(task, completed=frac, status=status)
+            progress.update(task, completed=peak, status=status)
             return True
 
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
