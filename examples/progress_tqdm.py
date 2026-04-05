@@ -64,10 +64,18 @@ def make_cube_mesh() -> MmgMesh3D:
 
 
 def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict:
-    """Remesh with per-phase tqdm bars (one visible at a time)."""
-    bar: tqdm | None = None
-    active_phase: int | None = None
-    total_ops = 0
+    """Remesh with a main bar + secondary bar per phase."""
+    state = {"n": 0, "ops": 0, "phase": None, "sub": None}
+
+    main_bar = tqdm(
+        total=100,
+        desc="Remeshing",
+        unit="%",
+        leave=True,
+        position=0,
+        file=sys.stderr,
+        bar_format="{l_bar}{bar}| {n:.0f}% [{elapsed}, {postfix}]",
+    )
 
     def on_progress(
         phase: int,
@@ -78,43 +86,57 @@ def remesh_with_tqdm_bars(mesh: MmgMesh3D, **kwargs: float | int | bool) -> dict
         n_swap: int,
         n_move: int,
     ) -> bool:
-        nonlocal bar, active_phase, total_ops
-        total_ops += n_split + n_collapse + n_swap + n_move
+        state["n"] += 1
+        state["ops"] += n_split + n_collapse + n_swap + n_move
         name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-        # Phase changed: close old bar (leave=False hides it), open new one
-        if active_phase != phase:
-            if bar is not None:
-                bar.n = bar.total  # force 100%
-                bar.display()
-                bar.close()
-            bar = tqdm(
+        # Main bar: monotonic progress
+        pct = 100.0 * (1.0 - 1.0 / (state["n"] + 1))
+        main_bar.n = pct
+        main_bar.set_postfix_str(f"{name}, {state['ops']:,} ops")
+        main_bar.display()
+
+        # Secondary bar: one per phase, hidden on phase change
+        if state["phase"] != phase:
+            if state["sub"] is not None:
+                state["sub"].n = state["sub"].total
+                state["sub"].display()
+                state["sub"].close()
+            state["sub"] = tqdm(
                 total=max_iterations,
-                desc=f"{name:<14s}",
+                desc=f"  {name}",
                 unit="iter",
                 leave=False,
+                position=1,
                 file=sys.stderr,
                 dynamic_ncols=True,
             )
-            active_phase = phase
+            state["phase"] = phase
+        else:
+            state["sub"].total = max_iterations
 
-        bar.n = iteration + 1
-        bar.set_postfix_str(
+        sub = state["sub"]
+        sub.n = iteration + 1
+        sub.set_postfix_str(
             f"split={n_split} col={n_collapse} swap={n_swap} move={n_move}",
         )
-        bar.display()
+        sub.display()
         sys.stderr.flush()
         return True
 
     try:
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
     finally:
-        if bar is not None:
-            bar.n = bar.total
-            bar.leave = True  # keep the final bar visible
-            bar.set_postfix_str(f"done, {total_ops:,} total ops")
-            bar.display()
-            bar.close()
+        # Hide secondary bar
+        if state["sub"] is not None:
+            state["sub"].n = state["sub"].total
+            state["sub"].display()
+            state["sub"].close()
+        # Complete main bar
+        main_bar.n = 100
+        main_bar.set_postfix_str(f"done, {state['ops']:,} total ops")
+        main_bar.display()
+        main_bar.close()
 
     return result
 
