@@ -7,12 +7,14 @@ Usage:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from rich.console import Console
 from rich.progress import (
     BarColumn,
     Progress,
     SpinnerColumn,
+    TaskID,
     TextColumn,
     TimeElapsedColumn,
 )
@@ -32,7 +34,7 @@ PHASE_NAMES = {
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
-def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
+def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: Any) -> dict:
     """Show a main bar and a secondary bar per phase."""
     with Progress(
         SpinnerColumn(),
@@ -45,7 +47,7 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         total_ops = 0
         peak = 0.0
         main_task = progress.add_task("[bold cyan]Remeshing", total=1.0, status="")
-        sub_task: int | None = None
+        sub_task: TaskID | None = None
         active_phase: int | None = None
 
         def on_progress(
@@ -79,8 +81,10 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
                 )
                 active_phase = phase
             else:
+                assert sub_task is not None
                 progress.update(sub_task, total=max_iterations)
 
+            assert sub_task is not None
             ops = (
                 f"split={n_split}  collapse={n_collapse}  swap={n_swap}  move={n_move}"
             )
@@ -100,7 +104,7 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
     return result
 
 
-def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
+def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: Any) -> dict:
     """Single cumulative progress bar."""
     with Progress(
         SpinnerColumn(),

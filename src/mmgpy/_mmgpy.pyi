@@ -11,8 +11,12 @@ Supported solution fields (accessible via dictionary syntax, e.g. ``mesh["metric
     - "tensor": Anisotropic metric (Nx6 array, stored as xx, xy, xz, yy, yz, zz)
 """
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal, TypedDict, overload
+from typing import Any, Literal, TypeAlias, TypedDict, overload
+
+# Progress callback: (phase, iteration, max_iterations, n_split, n_collapse, n_swap, n_move) -> bool
+ProgressCallback: TypeAlias = Callable[[int, int, int, int, int, int, int], bool] | None
 
 import numpy as np
 from numpy.typing import NDArray
@@ -27,6 +31,12 @@ class LocalParameter(TypedDict):
     hausd: float
 
 MMG_VERSION: str
+
+# Progress callback phase constants
+MMG5_PHASE_GEOMETRIC_MESH: int
+MMG5_PHASE_COMPUTATIONAL_MESH: int
+MMG5_PHASE_ADAPTATION: int
+MMG5_PHASE_OPTIMIZATION: int
 
 class mmg3d:  # noqa: N801
     """Static methods for file-based 3D mesh remeshing."""
@@ -1158,7 +1168,8 @@ class MmgMesh3D:
         noswap: int | None = None,
         nomove: int | None = None,
         nosurf: int | None = None,
-        **kwargs: float | None,
+        _progress_callback: ProgressCallback = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Remesh the mesh in-place.
 
@@ -2004,7 +2015,8 @@ class MmgMesh2D:
         noinsert: int | None = None,
         noswap: int | None = None,
         nomove: int | None = None,
-        **kwargs: float | None,
+        _progress_callback: ProgressCallback = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Remesh the mesh in-place.
 
@@ -2780,7 +2792,8 @@ class MmgMeshS:
         noinsert: int | None = None,
         noswap: int | None = None,
         nomove: int | None = None,
-        **kwargs: float | None,
+        _progress_callback: ProgressCallback = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Remesh the mesh in-place.
 

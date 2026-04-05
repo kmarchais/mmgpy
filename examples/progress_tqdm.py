@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any
 
 from tqdm import tqdm
 
@@ -25,11 +26,14 @@ PHASE_NAMES = {
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
-def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
+def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: Any) -> dict:
     """Show a main bar and a secondary bar per phase."""
-    state = {"n": 0, "ops": 0, "phase": None, "sub": None}
+    n_callbacks = 0
+    total_ops = 0
+    active_phase: int | None = None
+    sub_bar: tqdm[None] | None = None
 
-    main_bar = tqdm(
+    main_bar: tqdm[None] = tqdm(
         total=100,
         desc="Remeshing",
         unit="%",
@@ -48,21 +52,22 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         n_swap: int,
         n_move: int,
     ) -> bool:
-        state["n"] += 1
-        state["ops"] += n_split + n_collapse + n_swap + n_move
+        nonlocal n_callbacks, total_ops, active_phase, sub_bar
+        n_callbacks += 1
+        total_ops += n_split + n_collapse + n_swap + n_move
         name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-        pct = 100.0 * (1.0 - 1.0 / (state["n"] + 1))
+        pct = 100.0 * (1.0 - 1.0 / (n_callbacks + 1))
         main_bar.n = pct
-        main_bar.set_postfix_str(f"{name}, {state['ops']:,} ops")
+        main_bar.set_postfix_str(f"{name}, {total_ops:,} ops")
         main_bar.display()
 
-        if state["phase"] != phase:
-            if state["sub"] is not None:
-                state["sub"].n = state["sub"].total
-                state["sub"].display()
-                state["sub"].close()
-            state["sub"] = tqdm(
+        if active_phase != phase:
+            if sub_bar is not None:
+                sub_bar.n = sub_bar.total
+                sub_bar.display()
+                sub_bar.close()
+            sub_bar = tqdm(
                 total=max_iterations,
                 desc=f"  {name}",
                 unit="iter",
@@ -71,39 +76,41 @@ def remesh_with_two_bars(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
                 file=sys.stderr,
                 dynamic_ncols=True,
             )
-            state["phase"] = phase
+            active_phase = phase
         else:
-            state["sub"].total = max_iterations
+            assert sub_bar is not None
+            sub_bar.total = max_iterations
 
-        sub = state["sub"]
-        sub.n = iteration + 1
-        sub.set_postfix_str(
+        assert sub_bar is not None
+        sub_bar.n = iteration + 1
+        sub_bar.set_postfix_str(
             f"split={n_split} col={n_collapse} swap={n_swap} move={n_move}",
         )
-        sub.display()
+        sub_bar.display()
         sys.stderr.flush()
         return True
 
     try:
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
     finally:
-        if state["sub"] is not None:
-            state["sub"].n = state["sub"].total
-            state["sub"].display()
-            state["sub"].close()
+        if sub_bar is not None:
+            sub_bar.n = sub_bar.total
+            sub_bar.display()
+            sub_bar.close()
         main_bar.n = 100
-        main_bar.set_postfix_str(f"done, {state['ops']:,} total ops")
+        main_bar.set_postfix_str(f"done, {total_ops:,} total ops")
         main_bar.display()
         main_bar.close()
 
     return result
 
 
-def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
-    """Single cumulative progress bar."""
-    state = {"n": 0, "ops": 0}
+def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: Any) -> dict:
+    """Show a single cumulative progress bar."""
+    n_callbacks = 0
+    total_ops = 0
 
-    bar = tqdm(
+    bar: tqdm[None] = tqdm(
         total=100,
         desc="Remeshing",
         unit="%",
@@ -121,14 +128,15 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         n_swap: int,
         n_move: int,
     ) -> bool:
-        state["n"] += 1
-        state["ops"] += n_split + n_collapse + n_swap + n_move
+        nonlocal n_callbacks, total_ops
+        n_callbacks += 1
+        total_ops += n_split + n_collapse + n_swap + n_move
         name = PHASE_NAMES.get(phase, f"Phase {phase}")
 
-        pct = 100.0 * (1.0 - 1.0 / (state["n"] + 1))
+        pct = 100.0 * (1.0 - 1.0 / (n_callbacks + 1))
         bar.n = pct
         bar.set_postfix_str(
-            f"{name} {iteration + 1}/{max_iterations}, {state['ops']:,} ops",
+            f"{name} {iteration + 1}/{max_iterations}, {total_ops:,} ops",
         )
         bar.display()
         sys.stderr.flush()
@@ -138,7 +146,7 @@ def remesh_with_single_bar(mesh: MmgMesh3D, **kwargs: float | bool) -> dict:
         result = mesh.remesh(**kwargs, _progress_callback=on_progress)
     finally:
         bar.n = 100
-        bar.set_postfix_str(f"done, {state['ops']:,} ops")
+        bar.set_postfix_str(f"done, {total_ops:,} ops")
         bar.display()
         bar.close()
 
