@@ -264,6 +264,7 @@ def _create_impl(
     vertices: NDArray[np.floating],
     cells: NDArray[np.integer],
     kind: MeshKind,
+    refs: NDArray[np.int64] | None = None,
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Create the appropriate mesh implementation.
 
@@ -275,6 +276,8 @@ def _create_impl(
         Cell connectivity.
     kind : MeshKind
         Mesh kind to create.
+    refs : ndarray, optional
+        Reference markers for each cell.
 
     Returns
     -------
@@ -285,17 +288,34 @@ def _create_impl(
     vertices = np.ascontiguousarray(vertices, dtype=np.float64)
     cells = np.ascontiguousarray(cells, dtype=np.int32)
 
+    if refs is not None:
+        refs = np.ascontiguousarray(refs, dtype=np.int64)
+        if len(refs) != len(cells):
+            msg = f"refs length ({len(refs)}) must match cells length ({len(cells)})"
+            raise ValueError(msg)
+
     if kind == MeshKind.TETRAHEDRAL:
-        return MmgMesh3D(vertices, cells)
+        impl = MmgMesh3D()
+        impl.set_mesh_size(vertices=len(vertices), tetrahedra=len(cells))
+        impl.set_vertices(vertices)
+        impl.set_tetrahedra(cells, refs)
+        return impl
 
     if kind == MeshKind.TRIANGULAR_2D:
-        # Ensure 2D vertices
         if vertices.shape[1] == _DIMS_3D:
             vertices = np.ascontiguousarray(vertices[:, :2])
-        return MmgMesh2D(vertices, cells)
+        impl = MmgMesh2D()
+        impl.set_mesh_size(vertices=len(vertices), triangles=len(cells))
+        impl.set_vertices(vertices)
+        impl.set_triangles(cells, refs)
+        return impl
 
     if kind == MeshKind.TRIANGULAR_SURFACE:
-        return MmgMeshS(vertices, cells)
+        impl = MmgMeshS()
+        impl.set_mesh_size(vertices=len(vertices), triangles=len(cells))
+        impl.set_vertices(vertices)
+        impl.set_triangles(cells, refs)
+        return impl
 
     msg = f"Unknown mesh kind: {kind}"
     raise ValueError(msg)
@@ -491,6 +511,7 @@ class Mesh:
         self,
         source: NDArray[np.floating] | str | Path | pv.UnstructuredGrid | pv.PolyData,
         cells: NDArray[np.integer] | None = None,
+        refs: NDArray[np.integer] | None = None,
     ) -> None:
         """Initialize a Mesh from various sources."""
         # Import here to avoid circular imports
@@ -503,6 +524,9 @@ class Mesh:
 
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
+            if refs is not None:
+                msg = "refs parameter is only supported when source is a vertices array"
+                raise ValueError(msg)
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
@@ -511,6 +535,9 @@ class Mesh:
 
         # Handle file paths
         if isinstance(source, str | Path):
+            if refs is not None:
+                msg = "refs parameter is only supported when source is a vertices array"
+                raise ValueError(msg)
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
@@ -524,9 +551,10 @@ class Mesh:
 
         vertices = np.asarray(source)
         cells = np.asarray(cells)
+        cell_refs = np.asarray(refs) if refs is not None else None
 
         self._kind = _detect_mesh_kind(vertices, cells)
-        self._impl = _create_impl(vertices, cells, self._kind)
+        self._impl = _create_impl(vertices, cells, self._kind, refs=cell_refs)
 
     @classmethod
     def _from_impl(
