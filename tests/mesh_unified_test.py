@@ -173,6 +173,45 @@ class TestMeshConstructor:
         assert mesh.kind == MeshKind.TETRAHEDRAL
         assert len(mesh.get_vertices()) == 4
 
+    def test_tetrahedral_with_refs(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test creating tetrahedral mesh with cell refs."""
+        refs = np.array([5], dtype=np.int64)
+        mesh = Mesh(tetra_vertices, tetra_cells, refs=refs)
+
+        assert mesh.kind == MeshKind.TETRAHEDRAL
+        _, retrieved_refs = mesh.get_tetrahedra_with_refs()
+        np.testing.assert_array_equal(retrieved_refs, refs)
+
+    def test_2d_with_refs(
+        self,
+        triangle_2d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test creating 2D mesh with cell refs."""
+        refs = np.array([3], dtype=np.int64)
+        mesh = Mesh(triangle_2d_vertices, triangle_cells, refs=refs)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_2D
+        _, retrieved_refs = mesh.get_triangles_with_refs()
+        np.testing.assert_array_equal(retrieved_refs, refs)
+
+    def test_surface_with_refs(
+        self,
+        triangle_3d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test creating surface mesh with cell refs."""
+        refs = np.array([7], dtype=np.int64)
+        mesh = Mesh(triangle_3d_vertices, triangle_cells, refs=refs)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
+        _, retrieved_refs = mesh.get_triangles_with_refs()
+        np.testing.assert_array_equal(retrieved_refs, refs)
+
     def test_missing_cells_raises(self, tetra_vertices: np.ndarray) -> None:
         """Test that missing cells parameter raises error."""
         with pytest.raises(ValueError, match="cells parameter is required"):
