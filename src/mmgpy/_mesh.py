@@ -288,19 +288,11 @@ def _create_impl(
     vertices = np.ascontiguousarray(vertices, dtype=np.float64)
     cells = np.ascontiguousarray(cells, dtype=np.int32)
 
-    if refs is None:
-        if kind == MeshKind.TETRAHEDRAL:
-            return MmgMesh3D(vertices, cells)
-        if kind == MeshKind.TRIANGULAR_2D:
-            if vertices.shape[1] == _DIMS_3D:
-                vertices = np.ascontiguousarray(vertices[:, :2])
-            return MmgMesh2D(vertices, cells)
-        if kind == MeshKind.TRIANGULAR_SURFACE:
-            return MmgMeshS(vertices, cells)
-        msg = f"Unknown mesh kind: {kind}"
-        raise ValueError(msg)
-
-    refs = np.ascontiguousarray(refs, dtype=np.int64)
+    if refs is not None:
+        refs = np.ascontiguousarray(refs, dtype=np.int64)
+        if len(refs) != len(cells):
+            msg = f"refs length ({len(refs)}) must match cells length ({len(cells)})"
+            raise ValueError(msg)
 
     if kind == MeshKind.TETRAHEDRAL:
         impl = MmgMesh3D()
@@ -532,6 +524,9 @@ class Mesh:
 
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
+            if refs is not None:
+                msg = "refs parameter is only supported when source is a vertices array"
+                raise ValueError(msg)
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
@@ -540,6 +535,9 @@ class Mesh:
 
         # Handle file paths
         if isinstance(source, str | Path):
+            if refs is not None:
+                msg = "refs parameter is only supported when source is a vertices array"
+                raise ValueError(msg)
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
             self._kind = result._kind  # noqa: SLF001
@@ -553,7 +551,7 @@ class Mesh:
 
         vertices = np.asarray(source)
         cells = np.asarray(cells)
-        cell_refs = np.asarray(refs, dtype=np.int64) if refs is not None else None
+        cell_refs = np.asarray(refs) if refs is not None else None
 
         self._kind = _detect_mesh_kind(vertices, cells)
         self._impl = _create_impl(vertices, cells, self._kind, refs=cell_refs)

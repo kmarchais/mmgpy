@@ -173,44 +173,87 @@ class TestMeshConstructor:
         assert mesh.kind == MeshKind.TETRAHEDRAL
         assert len(mesh.get_vertices()) == 4
 
-    def test_tetrahedral_with_refs(
-        self,
-        tetra_vertices: np.ndarray,
-        tetra_cells: np.ndarray,
-    ) -> None:
+    def test_tetrahedral_with_refs(self) -> None:
         """Test creating tetrahedral mesh with cell refs."""
-        refs = np.array([5], dtype=np.int64)
-        mesh = Mesh(tetra_vertices, tetra_cells, refs=refs)
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [1.0, 1.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3], [1, 2, 3, 4]], dtype=np.int32)
+        refs = np.array([1, 2], dtype=np.int64)
+        mesh = Mesh(vertices, cells, refs=refs)
 
         assert mesh.kind == MeshKind.TETRAHEDRAL
         _, retrieved_refs = mesh.get_tetrahedra_with_refs()
         np.testing.assert_array_equal(retrieved_refs, refs)
 
-    def test_2d_with_refs(
-        self,
-        triangle_2d_vertices: np.ndarray,
-        triangle_cells: np.ndarray,
-    ) -> None:
+    def test_2d_with_refs(self) -> None:
         """Test creating 2D mesh with cell refs."""
-        refs = np.array([3], dtype=np.int64)
-        mesh = Mesh(triangle_2d_vertices, triangle_cells, refs=refs)
+        vertices = np.array(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        refs = np.array([10, 20], dtype=np.int64)
+        mesh = Mesh(vertices, cells, refs=refs)
 
         assert mesh.kind == MeshKind.TRIANGULAR_2D
         _, retrieved_refs = mesh.get_triangles_with_refs()
         np.testing.assert_array_equal(retrieved_refs, refs)
 
-    def test_surface_with_refs(
-        self,
-        triangle_3d_vertices: np.ndarray,
-        triangle_cells: np.ndarray,
-    ) -> None:
+    def test_surface_with_refs(self) -> None:
         """Test creating surface mesh with cell refs."""
-        refs = np.array([7], dtype=np.int64)
-        mesh = Mesh(triangle_3d_vertices, triangle_cells, refs=refs)
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.5], [0.0, 1.0, 0.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        refs = np.array([7, 8], dtype=np.int64)
+        mesh = Mesh(vertices, cells, refs=refs)
 
         assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
         _, retrieved_refs = mesh.get_triangles_with_refs()
         np.testing.assert_array_equal(retrieved_refs, refs)
+
+    def test_refs_length_mismatch_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that mismatched refs length raises error."""
+        refs = np.array([1, 2], dtype=np.int64)
+        with pytest.raises(ValueError, match="refs length"):
+            Mesh(tetra_vertices, tetra_cells, refs=refs)
+
+    def test_refs_with_file_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that refs with file source raises error."""
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.vtk"
+            meshio.Mesh(tetra_vertices, [("tetra", tetra_cells)]).write(filepath)
+
+            with pytest.raises(ValueError, match="refs parameter is only supported"):
+                Mesh(filepath, refs=np.array([1], dtype=np.int64))
+
+    def test_refs_with_pyvista_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that refs with PyVista source raises error."""
+        grid = pv.UnstructuredGrid({pv.CellType.TETRA: tetra_cells}, tetra_vertices)
+
+        with pytest.raises(ValueError, match="refs parameter is only supported"):
+            Mesh(grid, refs=np.array([1], dtype=np.int64))
 
     def test_missing_cells_raises(self, tetra_vertices: np.ndarray) -> None:
         """Test that missing cells parameter raises error."""
