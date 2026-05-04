@@ -173,6 +173,229 @@ class TestMeshConstructor:
         assert mesh.kind == MeshKind.TETRAHEDRAL
         assert len(mesh.get_vertices()) == 4
 
+    def test_tetrahedral_with_refs(self) -> None:
+        """Test creating tetrahedral mesh with cell refs."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [1.0, 1.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3], [1, 2, 3, 4]], dtype=np.int32)
+        refs = np.array([1, 2], dtype=np.int64)
+        mesh = Mesh(vertices, cells, refs=refs)
+
+        assert mesh.kind == MeshKind.TETRAHEDRAL
+        _, retrieved_refs = mesh.get_tetrahedra_with_refs()
+        np.testing.assert_array_equal(retrieved_refs, refs)
+
+    def test_2d_with_refs(self) -> None:
+        """Test creating 2D mesh with cell refs."""
+        vertices = np.array(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        refs = np.array([10, 20], dtype=np.int64)
+        mesh = Mesh(vertices, cells, refs=refs)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_2D
+        _, retrieved_refs = mesh.get_triangles_with_refs()
+        np.testing.assert_array_equal(retrieved_refs, refs)
+
+    def test_surface_with_refs(self) -> None:
+        """Test creating surface mesh with cell refs."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.5], [0.0, 1.0, 0.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        refs = np.array([7, 8], dtype=np.int64)
+        mesh = Mesh(vertices, cells, refs=refs)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
+        _, retrieved_refs = mesh.get_triangles_with_refs()
+        np.testing.assert_array_equal(retrieved_refs, refs)
+
+    def test_refs_length_mismatch_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that mismatched refs length raises error."""
+        refs = np.array([1, 2], dtype=np.int64)
+        with pytest.raises(ValueError, match="refs length"):
+            Mesh(tetra_vertices, tetra_cells, refs=refs)
+
+    def test_refs_with_file_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that refs with file source raises error."""
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.vtk"
+            meshio.Mesh(tetra_vertices, [("tetra", tetra_cells)]).write(filepath)
+
+            with pytest.raises(ValueError, match="only supported when source"):
+                Mesh(filepath, refs=np.array([1], dtype=np.int64))
+
+    def test_refs_with_pyvista_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that refs with PyVista source raises error."""
+        grid = pv.UnstructuredGrid({pv.CellType.TETRA: tetra_cells}, tetra_vertices)
+
+        with pytest.raises(ValueError, match="only supported when source"):
+            Mesh(grid, refs=np.array([1], dtype=np.int64))
+
+    def test_2d_with_edges(self) -> None:
+        """Test creating 2D mesh with edges and edge refs."""
+        vertices = np.array(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.5, 0.5]],
+            dtype=np.float64,
+        )
+        cells = np.array(
+            [[0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4]],
+            dtype=np.int32,
+        )
+        edges = np.array([[0, 1], [1, 2], [2, 3], [3, 0]], dtype=np.int32)
+        edge_refs = np.array([10, 20, 30, 40], dtype=np.int64)
+        mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_2D
+        retrieved_edges, retrieved_refs = mesh.get_edges_with_refs()
+        assert len(retrieved_edges) == len(edges)
+        assert set(retrieved_refs.tolist()) == {10, 20, 30, 40}
+
+    def test_surface_with_edges(self) -> None:
+        """Test creating surface mesh with edges and edge refs."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.5, 0.5, 0.5],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array(
+            [[0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4]],
+            dtype=np.int32,
+        )
+        edges = np.array([[0, 1], [2, 3]], dtype=np.int32)
+        edge_refs = np.array([100, 200], dtype=np.int64)
+        mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
+
+        assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
+        retrieved_edges, retrieved_refs = mesh.get_edges_with_refs()
+        assert len(retrieved_edges) == len(edges)
+        assert set(retrieved_refs.tolist()) == {100, 200}
+
+    def test_tetrahedral_with_edges(self) -> None:
+        """Test creating tetrahedral mesh with edges (ridge markers)."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        edges = np.array([[0, 1], [1, 2]], dtype=np.int32)
+        edge_refs = np.array([5, 6], dtype=np.int64)
+        mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
+
+        assert mesh.kind == MeshKind.TETRAHEDRAL
+        retrieved_edges, retrieved_refs = mesh.get_edges_with_refs()
+        assert len(retrieved_edges) == len(edges)
+        assert set(retrieved_refs.tolist()) == {5, 6}
+
+    def test_edges_without_refs(self) -> None:
+        """Test that edges can be passed without explicit edge_refs."""
+        vertices = np.array(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        edges = np.array([[0, 1], [2, 3]], dtype=np.int32)
+        mesh = Mesh(vertices, cells, edges=edges)
+
+        retrieved_edges, _ = mesh.get_edges_with_refs()
+        assert len(retrieved_edges) == len(edges)
+
+    def test_edges_invalid_shape_raises(
+        self,
+        triangle_2d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test that wrong edge shape raises a clear error."""
+        bad_edges = np.array([[0, 1, 2]], dtype=np.int32)
+        with pytest.raises(ValueError, match="edges must have shape"):
+            Mesh(triangle_2d_vertices, triangle_cells, edges=bad_edges)
+
+    def test_edge_refs_length_mismatch_raises(
+        self,
+        triangle_2d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test that mismatched edge_refs length raises error."""
+        edges = np.array([[0, 1], [1, 2]], dtype=np.int32)
+        edge_refs = np.array([1], dtype=np.int64)
+        with pytest.raises(ValueError, match="edge_refs length"):
+            Mesh(
+                triangle_2d_vertices,
+                triangle_cells,
+                edges=edges,
+                edge_refs=edge_refs,
+            )
+
+    def test_edge_refs_without_edges_raises(
+        self,
+        triangle_2d_vertices: np.ndarray,
+        triangle_cells: np.ndarray,
+    ) -> None:
+        """Test that edge_refs without edges raises error."""
+        with pytest.raises(ValueError, match="edge_refs provided without edges"):
+            Mesh(
+                triangle_2d_vertices,
+                triangle_cells,
+                edge_refs=np.array([1], dtype=np.int64),
+            )
+
+    def test_edges_with_file_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that edges with file source raises error."""
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.vtk"
+            meshio.Mesh(tetra_vertices, [("tetra", tetra_cells)]).write(filepath)
+
+            with pytest.raises(ValueError, match="only supported when source"):
+                Mesh(filepath, edges=np.array([[0, 1]], dtype=np.int32))
+
+    def test_edges_with_pyvista_raises(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+    ) -> None:
+        """Test that edges with PyVista source raises error."""
+        grid = pv.UnstructuredGrid({pv.CellType.TETRA: tetra_cells}, tetra_vertices)
+
+        with pytest.raises(ValueError, match="only supported when source"):
+            Mesh(grid, edges=np.array([[0, 1]], dtype=np.int32))
+
     def test_missing_cells_raises(self, tetra_vertices: np.ndarray) -> None:
         """Test that missing cells parameter raises error."""
         with pytest.raises(ValueError, match="cells parameter is required"):
@@ -890,6 +1113,114 @@ class TestReadFunction:
             assert isinstance(result, Mesh)
             # Should have 2 triangles from concatenated blocks
             assert len(result.get_triangles()) == 2
+
+
+class TestMeshEdgesRoundTrip:
+    """Round-trip tests for edge markers via PyVista and file formats."""
+
+    def test_pyvista_roundtrip_2d(self) -> None:
+        """Edges and edge refs survive Mesh -> to_pyvista -> Mesh."""
+        vertices = np.array(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.5, 0.5]],
+            dtype=np.float64,
+        )
+        cells = np.array(
+            [[0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4]],
+            dtype=np.int32,
+        )
+        edges = np.array([[0, 1], [1, 2], [2, 3], [3, 0]], dtype=np.int32)
+        edge_refs = np.array([10, 20, 30, 40], dtype=np.int64)
+
+        mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
+        polydata = mesh.to_pyvista(include_edges=True)
+        round_trip = Mesh(polydata)
+
+        rt_edges, rt_refs = round_trip.get_edges_with_refs()
+        assert len(rt_edges) == len(edges)
+        assert sorted(rt_refs.tolist()) == [10, 20, 30, 40]
+
+    def test_pyvista_roundtrip_surface(self) -> None:
+        """Edges survive surface mesh round-trip."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.5, 0.5, 0.5],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array(
+            [[0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4]],
+            dtype=np.int32,
+        )
+        edges = np.array([[0, 1], [2, 3]], dtype=np.int32)
+        edge_refs = np.array([100, 200], dtype=np.int64)
+
+        mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
+        polydata = mesh.to_pyvista(include_edges=True)
+        round_trip = Mesh(polydata)
+
+        rt_edges, rt_refs = round_trip.get_edges_with_refs()
+        assert len(rt_edges) == len(edges)
+        assert sorted(rt_refs.tolist()) == [100, 200]
+
+    def test_pyvista_roundtrip_tetrahedral(self) -> None:
+        """Ridge edges survive 3D mesh round-trip."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        cells = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        edges = np.array([[0, 1], [1, 2]], dtype=np.int32)
+        edge_refs = np.array([5, 6], dtype=np.int64)
+
+        mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
+        grid = mesh.to_pyvista(include_edges=True)
+        round_trip = Mesh(grid)
+
+        rt_edges, rt_refs = round_trip.get_edges_with_refs()
+        assert len(rt_edges) == len(edges)
+        assert sorted(rt_refs.tolist()) == [5, 6]
+
+    def test_msh_file_preserves_edges(self) -> None:
+        """Reading a .msh file preserves edges and triangles with gmsh:physical refs."""
+        vertices = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        lines = np.array([[0, 1], [1, 2], [2, 3], [3, 0]], dtype=np.int32)
+
+        msh_mesh = meshio.Mesh(
+            points=vertices,
+            cells=[("line", lines), ("triangle", triangles)],
+            cell_data={
+                "gmsh:physical": [
+                    np.array([11, 22, 33, 44], dtype=np.int32),
+                    np.array([1, 2], dtype=np.int32),
+                ],
+            },
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            filepath = Path(tmpdir) / "mesh.msh"
+            msh_mesh.write(filepath, file_format="gmsh22")
+
+            result = read(filepath)
+
+        edges, edge_refs = result.get_edges_with_refs()
+        assert len(edges) == len(lines)
+        assert sorted(edge_refs.tolist()) == [11, 22, 33, 44]
+
+        _, tri_refs = result.get_triangles_with_refs()
+        assert sorted(tri_refs.tolist()) == [1, 2]
 
 
 # Module exports test
