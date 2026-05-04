@@ -478,6 +478,7 @@ def to_pyvista(
     mesh: MmgMesh3D,
     *,
     include_refs: bool = True,
+    include_edges: bool = False,
 ) -> pv.UnstructuredGrid: ...
 
 
@@ -486,6 +487,7 @@ def to_pyvista(
     mesh: MmgMesh2D,
     *,
     include_refs: bool = True,
+    include_edges: bool = False,
 ) -> pv.PolyData: ...
 
 
@@ -494,6 +496,7 @@ def to_pyvista(
     mesh: MmgMeshS,
     *,
     include_refs: bool = True,
+    include_edges: bool = False,
 ) -> pv.PolyData: ...
 
 
@@ -501,12 +504,19 @@ def to_pyvista(
     mesh: MmgMesh3D | MmgMesh2D | MmgMeshS,
     *,
     include_refs: bool = True,
+    include_edges: bool = False,
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Convert an mmgpy mesh to a PyVista mesh.
 
     Args:
         mesh: mmgpy mesh instance (MmgMesh3D, MmgMesh2D, or MmgMeshS).
         include_refs: If True, include element references as cell_data.
+        include_edges: If True, include MMG edges (ridges, boundary edges)
+            as LINE cells in the output. Defaults to False so the returned
+            mesh contains only the primary cell type, matching common
+            downstream expectations (e.g. matplotlib tripcolor). Set True
+            for round-trip / file-save workflows that must preserve edge
+            markers.
 
     Returns:
         PyVista mesh:
@@ -527,11 +537,23 @@ def to_pyvista(
 
     """
     if isinstance(mesh, MmgMesh3D):
-        return _mmg3d_to_pyvista(mesh, include_refs=include_refs)
+        return _mmg3d_to_pyvista(
+            mesh,
+            include_refs=include_refs,
+            include_edges=include_edges,
+        )
     if isinstance(mesh, MmgMesh2D):
-        return _mmg2d_to_pyvista(mesh, include_refs=include_refs)
+        return _mmg2d_to_pyvista(
+            mesh,
+            include_refs=include_refs,
+            include_edges=include_edges,
+        )
     if isinstance(mesh, MmgMeshS):
-        return _mmgs_to_pyvista(mesh, include_refs=include_refs)
+        return _mmgs_to_pyvista(
+            mesh,
+            include_refs=include_refs,
+            include_edges=include_edges,
+        )
 
     msg = f"Unsupported mesh type: {type(mesh)}"
     raise TypeError(msg)
@@ -544,18 +566,27 @@ def _build_lines_array(edges: NDArray[np.int32]) -> NDArray[np.int32]:
     ).ravel()
 
 
-def _mmg3d_to_pyvista(mesh: MmgMesh3D, *, include_refs: bool) -> pv.UnstructuredGrid:
+def _mmg3d_to_pyvista(
+    mesh: MmgMesh3D,
+    *,
+    include_refs: bool,
+    include_edges: bool,
+) -> pv.UnstructuredGrid:
     """Convert MmgMesh3D to PyVista UnstructuredGrid."""
     vertices = mesh.get_vertices()
 
     if include_refs:
         elements, refs = mesh.get_elements_with_refs()
-        edges, edge_refs = mesh.get_edges_with_refs()
     else:
         elements = mesh.get_elements()
-        edges = mesh.get_edges()
         refs = None
-        edge_refs = None
+
+    edges, edge_refs = (np.empty((0, 2), dtype=np.int32), None)
+    if include_edges:
+        if include_refs:
+            edges, edge_refs = mesh.get_edges_with_refs()
+        else:
+            edges = mesh.get_edges()
 
     cells_dict: dict[int, NDArray[np.int32]] = {pv.CellType.TETRA: elements}
     if len(edges) > 0:
@@ -571,19 +602,28 @@ def _mmg3d_to_pyvista(mesh: MmgMesh3D, *, include_refs: bool) -> pv.Unstructured
     return grid
 
 
-def _mmg2d_to_pyvista(mesh: MmgMesh2D, *, include_refs: bool) -> pv.PolyData:
+def _mmg2d_to_pyvista(
+    mesh: MmgMesh2D,
+    *,
+    include_refs: bool,
+    include_edges: bool,
+) -> pv.PolyData:
     """Convert MmgMesh2D to PyVista PolyData."""
     vertices_2d = mesh.get_vertices()
     vertices_3d = np.column_stack([vertices_2d, np.zeros(len(vertices_2d))])
 
     if include_refs:
         triangles, refs = mesh.get_triangles_with_refs()
-        edges, edge_refs = mesh.get_edges_with_refs()
     else:
         triangles = mesh.get_triangles()
-        edges = mesh.get_edges()
         refs = None
-        edge_refs = None
+
+    edges, edge_refs = (np.empty((0, 2), dtype=np.int32), None)
+    if include_edges:
+        if include_refs:
+            edges, edge_refs = mesh.get_edges_with_refs()
+        else:
+            edges = mesh.get_edges()
 
     faces = np.hstack(
         [np.full((len(triangles), 1), _TRIANGLE_VERTS), triangles],
@@ -601,18 +641,27 @@ def _mmg2d_to_pyvista(mesh: MmgMesh2D, *, include_refs: bool) -> pv.PolyData:
     return polydata
 
 
-def _mmgs_to_pyvista(mesh: MmgMeshS, *, include_refs: bool) -> pv.PolyData:
+def _mmgs_to_pyvista(
+    mesh: MmgMeshS,
+    *,
+    include_refs: bool,
+    include_edges: bool,
+) -> pv.PolyData:
     """Convert MmgMeshS to PyVista PolyData."""
     vertices = mesh.get_vertices()
 
     if include_refs:
         triangles, refs = mesh.get_triangles_with_refs()
-        edges, edge_refs = mesh.get_edges_with_refs()
     else:
         triangles = mesh.get_triangles()
-        edges = mesh.get_edges()
         refs = None
-        edge_refs = None
+
+    edges, edge_refs = (np.empty((0, 2), dtype=np.int32), None)
+    if include_edges:
+        if include_refs:
+            edges, edge_refs = mesh.get_edges_with_refs()
+        else:
+            edges = mesh.get_edges()
 
     faces = np.hstack(
         [np.full((len(triangles), 1), _TRIANGLE_VERTS), triangles],

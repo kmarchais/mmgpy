@@ -1568,7 +1568,9 @@ class Mesh:
         if path.suffix.lower() in NATIVE_MESH_EXTENSIONS:
             self._impl.save(str(path))
         else:
-            pv_mesh = self.to_pyvista()
+            # include_edges=True so MMG edges (ridges, boundaries) survive
+            # the file round-trip when reading back via mmgpy.read.
+            pv_mesh = self.to_pyvista(include_edges=True)
             # Attach user fields as point data
             self._materialize_all_lazy_fields()
             for name, arr in self._user_fields.items():
@@ -2272,6 +2274,7 @@ class Mesh:
         self,
         *,
         include_refs: bool = True,
+        include_edges: bool = False,
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Convert to PyVista mesh.
 
@@ -2279,6 +2282,13 @@ class Mesh:
         ----------
         include_refs : bool
             Include reference markers as cell data.
+        include_edges : bool
+            Include MMG edges (ridges, boundary edges) as LINE cells in
+            the output. Defaults to False so the returned mesh contains
+            only the primary cell type (triangles or tetrahedra), which
+            matches typical downstream code (matplotlib tripcolor, area
+            computations, etc.). Set True for round-trip / file-save
+            workflows that need to preserve edge markers.
 
         Returns
         -------
@@ -2288,7 +2298,11 @@ class Mesh:
         """
         from mmgpy._pyvista import to_pyvista as _to_pyvista  # noqa: PLC0415
 
-        return _to_pyvista(self._impl, include_refs=include_refs)
+        return _to_pyvista(
+            self._impl,
+            include_refs=include_refs,
+            include_edges=include_edges,
+        )
 
     @property
     def vtk(self) -> pv.UnstructuredGrid | pv.PolyData:

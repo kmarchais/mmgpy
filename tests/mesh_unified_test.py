@@ -1132,7 +1132,7 @@ class TestMeshEdgesRoundTrip:
         edge_refs = np.array([10, 20, 30, 40], dtype=np.int64)
 
         mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
-        polydata = mesh.to_pyvista()
+        polydata = mesh.to_pyvista(include_edges=True)
         round_trip = Mesh(polydata)
 
         rt_edges, rt_refs = round_trip.get_edges_with_refs()
@@ -1159,7 +1159,7 @@ class TestMeshEdgesRoundTrip:
         edge_refs = np.array([100, 200], dtype=np.int64)
 
         mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
-        polydata = mesh.to_pyvista()
+        polydata = mesh.to_pyvista(include_edges=True)
         round_trip = Mesh(polydata)
 
         rt_edges, rt_refs = round_trip.get_edges_with_refs()
@@ -1182,7 +1182,7 @@ class TestMeshEdgesRoundTrip:
         edge_refs = np.array([5, 6], dtype=np.int64)
 
         mesh = Mesh(vertices, cells, edges=edges, edge_refs=edge_refs)
-        grid = mesh.to_pyvista()
+        grid = mesh.to_pyvista(include_edges=True)
         round_trip = Mesh(grid)
 
         rt_edges, rt_refs = round_trip.get_edges_with_refs()
