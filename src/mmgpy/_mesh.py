@@ -75,6 +75,7 @@ _DIMS_2D = 2
 _DIMS_3D = 3
 _TETRA_VERTS = 4
 _TRI_VERTS = 3
+_EDGE_VERTS = 2
 _2D_DETECTION_TOLERANCE = 1e-8
 
 
@@ -260,11 +261,53 @@ def _detect_mesh_kind(
     raise ValueError(msg)
 
 
-def _create_impl(
+def _validate_refs(
+    refs: NDArray[np.integer] | None,
+    cells: NDArray[np.int32],
+) -> NDArray[np.int64] | None:
+    """Coerce and validate cell reference markers."""
+    if refs is None:
+        return None
+    refs_arr = np.ascontiguousarray(refs, dtype=np.int64)
+    if len(refs_arr) != len(cells):
+        msg = f"refs length ({len(refs_arr)}) must match cells length ({len(cells)})"
+        raise ValueError(msg)
+    return refs_arr
+
+
+def _validate_edges(
+    edges: NDArray[np.integer] | None,
+    edge_refs: NDArray[np.integer] | None,
+) -> tuple[NDArray[np.int32] | None, NDArray[np.int64] | None]:
+    """Coerce and validate edge connectivity and reference markers."""
+    if edges is None:
+        if edge_refs is not None:
+            msg = "edge_refs provided without edges"
+            raise ValueError(msg)
+        return None, None
+    edges_arr = np.ascontiguousarray(edges, dtype=np.int32)
+    if edges_arr.ndim != _DIMS_2D or edges_arr.shape[1] != _EDGE_VERTS:
+        msg = f"edges must have shape (n_edges, 2), got {edges_arr.shape}"
+        raise ValueError(msg)
+    if edge_refs is None:
+        return edges_arr, None
+    e_refs = np.ascontiguousarray(edge_refs, dtype=np.int64)
+    if len(e_refs) != len(edges_arr):
+        msg = (
+            f"edge_refs length ({len(e_refs)}) must match "
+            f"edges length ({len(edges_arr)})"
+        )
+        raise ValueError(msg)
+    return edges_arr, e_refs
+
+
+def _create_impl(  # noqa: PLR0913, PLR0912, C901
     vertices: NDArray[np.floating],
     cells: NDArray[np.integer],
     kind: MeshKind,
     refs: NDArray[np.int64] | None = None,
+    edges: NDArray[np.int32] | None = None,
+    edge_refs: NDArray[np.int64] | None = None,
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Create the appropriate mesh implementation.
 
@@ -278,6 +321,10 @@ def _create_impl(
         Mesh kind to create.
     refs : ndarray, optional
         Reference markers for each cell.
+    edges : ndarray, optional
+        Edge connectivity, shape (n_edges, 2).
+    edge_refs : ndarray, optional
+        Reference markers for each edge.
 
     Returns
     -------
@@ -287,35 +334,58 @@ def _create_impl(
     """
     vertices = np.ascontiguousarray(vertices, dtype=np.float64)
     cells = np.ascontiguousarray(cells, dtype=np.int32)
-
-    if refs is not None:
-        refs = np.ascontiguousarray(refs, dtype=np.int64)
-        if len(refs) != len(cells):
-            msg = f"refs length ({len(refs)}) must match cells length ({len(cells)})"
-            raise ValueError(msg)
+    cell_refs = _validate_refs(refs, cells)
+    edges_arr, e_refs = _validate_edges(edges, edge_refs)
 
     if kind == MeshKind.TETRAHEDRAL:
-        impl = MmgMesh3D()
-        impl.set_mesh_size(vertices=len(vertices), tetrahedra=len(cells))
-        impl.set_vertices(vertices)
-        impl.set_tetrahedra(cells, refs)
-        return impl
+        impl_3d = MmgMesh3D()
+        if edges_arr is None:
+            impl_3d.set_mesh_size(vertices=len(vertices), tetrahedra=len(cells))
+        else:
+            impl_3d.set_mesh_size(
+                vertices=len(vertices),
+                tetrahedra=len(cells),
+                edges=len(edges_arr),
+            )
+        impl_3d.set_vertices(vertices)
+        impl_3d.set_tetrahedra(cells, cell_refs)
+        if edges_arr is not None:
+            impl_3d.set_edges(edges_arr, e_refs)
+        return impl_3d
 
     if kind == MeshKind.TRIANGULAR_2D:
         if vertices.shape[1] == _DIMS_3D:
             vertices = np.ascontiguousarray(vertices[:, :2])
-        impl = MmgMesh2D()
-        impl.set_mesh_size(vertices=len(vertices), triangles=len(cells))
-        impl.set_vertices(vertices)
-        impl.set_triangles(cells, refs)
-        return impl
+        impl_2d = MmgMesh2D()
+        if edges_arr is None:
+            impl_2d.set_mesh_size(vertices=len(vertices), triangles=len(cells))
+        else:
+            impl_2d.set_mesh_size(
+                vertices=len(vertices),
+                triangles=len(cells),
+                edges=len(edges_arr),
+            )
+        impl_2d.set_vertices(vertices)
+        impl_2d.set_triangles(cells, cell_refs)
+        if edges_arr is not None:
+            impl_2d.set_edges(edges_arr, e_refs)
+        return impl_2d
 
     if kind == MeshKind.TRIANGULAR_SURFACE:
-        impl = MmgMeshS()
-        impl.set_mesh_size(vertices=len(vertices), triangles=len(cells))
-        impl.set_vertices(vertices)
-        impl.set_triangles(cells, refs)
-        return impl
+        impl_s = MmgMeshS()
+        if edges_arr is None:
+            impl_s.set_mesh_size(vertices=len(vertices), triangles=len(cells))
+        else:
+            impl_s.set_mesh_size(
+                vertices=len(vertices),
+                triangles=len(cells),
+                edges=len(edges_arr),
+            )
+        impl_s.set_vertices(vertices)
+        impl_s.set_triangles(cells, cell_refs)
+        if edges_arr is not None:
+            impl_s.set_edges(edges_arr, e_refs)
+        return impl_s
 
     msg = f"Unknown mesh kind: {kind}"
     raise ValueError(msg)
@@ -512,6 +582,8 @@ class Mesh:
         source: NDArray[np.floating] | str | Path | pv.UnstructuredGrid | pv.PolyData,
         cells: NDArray[np.integer] | None = None,
         refs: NDArray[np.integer] | None = None,
+        edges: NDArray[np.integer] | None = None,
+        edge_refs: NDArray[np.integer] | None = None,
     ) -> None:
         """Initialize a Mesh from various sources."""
         # Import here to avoid circular imports
@@ -522,10 +594,17 @@ class Mesh:
         self._metric_is_tensor = False
         self._lazy_source = None
 
+        array_only_kwargs_provided = (
+            refs is not None or edges is not None or edge_refs is not None
+        )
+
         # Handle PyVista objects
         if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
-            if refs is not None:
-                msg = "refs parameter is only supported when source is a vertices array"
+            if array_only_kwargs_provided:
+                msg = (
+                    "refs/edges/edge_refs parameters are only supported "
+                    "when source is a vertices array"
+                )
                 raise ValueError(msg)
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
@@ -535,8 +614,11 @@ class Mesh:
 
         # Handle file paths
         if isinstance(source, str | Path):
-            if refs is not None:
-                msg = "refs parameter is only supported when source is a vertices array"
+            if array_only_kwargs_provided:
+                msg = (
+                    "refs/edges/edge_refs parameters are only supported "
+                    "when source is a vertices array"
+                )
                 raise ValueError(msg)
             result = _read_mesh(source)
             self._impl = result._impl  # noqa: SLF001
@@ -552,9 +634,18 @@ class Mesh:
         vertices = np.asarray(source)
         cells = np.asarray(cells)
         cell_refs = np.asarray(refs) if refs is not None else None
+        edges_arr = np.asarray(edges) if edges is not None else None
+        e_refs = np.asarray(edge_refs) if edge_refs is not None else None
 
         self._kind = _detect_mesh_kind(vertices, cells)
-        self._impl = _create_impl(vertices, cells, self._kind, refs=cell_refs)
+        self._impl = _create_impl(
+            vertices,
+            cells,
+            self._kind,
+            refs=cell_refs,
+            edges=edges_arr,
+            edge_refs=e_refs,
+        )
 
     @classmethod
     def _from_impl(

@@ -43,6 +43,34 @@ _TRIANGULATION_WARNING = (
     "as MMG only supports triangular elements."
 )
 
+_REF_FIELDS = ("refs", "gmsh:physical", "medit:ref")
+_LINE_VERTS = 2
+
+
+def _all_faces_are_triangles(mesh: pv.PolyData) -> bool:
+    """Return True if every polygonal face in the mesh has 3 vertices."""
+    faces = np.asarray(mesh.faces)
+    i = 0
+    while i < len(faces):
+        n_verts = int(faces[i])
+        if n_verts != _TRIANGLE_VERTS:
+            return False
+        i += n_verts + 1
+    return True
+
+
+def _strip_lines(mesh: pv.PolyData) -> pv.PolyData:
+    """Return a copy of `mesh` with line cells removed.
+
+    Used before `triangulate()` because PyVista's triangulate corrupts
+    cell_data alignment when both line and face cells are present.
+    """
+    if not hasattr(mesh, "lines") or len(np.asarray(mesh.lines)) == 0:
+        return mesh
+    stripped = mesh.copy()
+    stripped.lines = np.array([], dtype=np.int32)
+    return stripped
+
 
 def _triangulate_if_needed(mesh: pv.PolyData) -> tuple[pv.PolyData, bool]:
     """Triangulate mesh if it contains non-triangular faces.
@@ -57,6 +85,8 @@ def _triangulate_if_needed(mesh: pv.PolyData) -> tuple[pv.PolyData, bool]:
     tuple[pv.PolyData, bool]
         Tuple of (triangulated_mesh, was_triangulated).
         If mesh was already all triangles, returns (mesh, False).
+        Line cells are dropped before triangulation since the caller
+        is expected to have extracted them already.
 
     """
     if mesh.n_cells == 0:
@@ -65,7 +95,13 @@ def _triangulate_if_needed(mesh: pv.PolyData) -> tuple[pv.PolyData, bool]:
     if mesh.is_all_triangles:
         return mesh, False
 
-    triangulated = mesh.triangulate()
+    if _all_faces_are_triangles(mesh):
+        # All polygonal faces are already triangles, but the mesh has line
+        # cells too. Drop those (the caller has already extracted them via
+        # `_extract_edges`) so subsequent code only sees triangles.
+        return _strip_lines(mesh), False
+
+    triangulated = _strip_lines(mesh).triangulate()
     return triangulated, True
 
 
@@ -102,6 +138,109 @@ def _extract_triangles_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32]:
     return np.array(triangles, dtype=np.int32)
 
 
+def _extract_lines_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32] | None:
+    """Extract line connectivity from a PolyData.lines stream.
+
+    Returns None if the mesh has no line cells.
+    """
+    if not hasattr(mesh, "lines"):
+        return None
+    raw = np.asarray(mesh.lines)
+    if raw.size == 0:
+        return None
+    edges: list[NDArray[np.int32]] = []
+    i = 0
+    while i < len(raw):
+        n_verts = int(raw[i])
+        if n_verts != _LINE_VERTS:
+            # Polylines (n>2) are not supported by MMG; skip them.
+            i += n_verts + 1
+            continue
+        edges.append(raw[i + 1 : i + 3].astype(np.int32))
+        i += n_verts + 1
+    if not edges:
+        return None
+    return np.asarray(edges, dtype=np.int32)
+
+
+def _line_connectivity(
+    mesh: pv.UnstructuredGrid | pv.PolyData,
+) -> NDArray[np.int32] | None:
+    """Return LINE cell connectivity, or None if there are no lines."""
+    if hasattr(mesh, "cells_dict") and pv.CellType.LINE in mesh.cells_dict:
+        edges = mesh.cells_dict[pv.CellType.LINE].astype(np.int32)
+    elif isinstance(mesh, pv.PolyData):
+        edges = _extract_lines_from_polydata(mesh)
+    else:
+        edges = None
+    if edges is None or len(edges) == 0:
+        return None
+    return edges
+
+
+def _refs_for_unstructured_grid_lines(
+    mesh: pv.UnstructuredGrid,
+    n_edges: int,
+) -> NDArray[np.int64] | None:
+    """Slice cell_data refs to just the LINE cells of an UnstructuredGrid."""
+    celltypes = np.asarray(mesh.celltypes)
+    line_mask = celltypes == pv.CellType.LINE
+    for field in _REF_FIELDS:
+        if field not in mesh.cell_data:
+            continue
+        arr = np.asarray(mesh.cell_data[field])
+        if arr.ndim != 1:
+            continue
+        if len(arr) == len(celltypes):
+            return arr[line_mask].astype(np.int64)
+        if len(arr) == n_edges:
+            return arr.astype(np.int64)
+    return None
+
+
+def _refs_for_polydata_lines(
+    mesh: pv.PolyData,
+    n_edges: int,
+) -> NDArray[np.int64] | None:
+    """Slice cell_data refs to just the LINE cells of a PolyData.
+
+    PolyData stores cells in a fixed order: verts, lines, polys, strips.
+    """
+    n_verts = int(mesh.n_verts)
+    n_lines = int(mesh.n_lines)
+    for field in _REF_FIELDS:
+        if field not in mesh.cell_data:
+            continue
+        arr = np.asarray(mesh.cell_data[field])
+        if arr.ndim != 1:
+            continue
+        if len(arr) == n_edges:
+            return arr.astype(np.int64)
+        if len(arr) == mesh.n_cells and n_lines == n_edges:
+            return arr[n_verts : n_verts + n_lines].astype(np.int64)
+    return None
+
+
+def _extract_edges(
+    mesh: pv.UnstructuredGrid | pv.PolyData,
+) -> tuple[NDArray[np.int32] | None, NDArray[np.int64] | None]:
+    """Extract LINE cells and matching reference markers from a PyVista mesh.
+
+    Returns (edges, refs) where either may be None. Recognised cell_data
+    field aliases for refs include `"refs"`, `"gmsh:physical"` (used by
+    meshio when reading `.msh` files) and `"medit:ref"`.
+    """
+    edges = _line_connectivity(mesh)
+    if edges is None:
+        return None, None
+
+    if isinstance(mesh, pv.UnstructuredGrid):
+        return edges, _refs_for_unstructured_grid_lines(mesh, len(edges))
+    if isinstance(mesh, pv.PolyData):
+        return edges, _refs_for_polydata_lines(mesh, len(edges))
+    return edges, None
+
+
 def _from_pyvista_to_mmg3d(mesh: pv.UnstructuredGrid) -> MmgMesh3D:
     """Convert UnstructuredGrid with tetrahedra to MmgMesh3D."""
     if pv.CellType.TETRA not in mesh.cells_dict:
@@ -110,8 +249,19 @@ def _from_pyvista_to_mmg3d(mesh: pv.UnstructuredGrid) -> MmgMesh3D:
 
     vertices = np.array(mesh.points, dtype=np.float64)
     elements = mesh.cells_dict[pv.CellType.TETRA].astype(np.int32)
+    edges, edge_refs = _extract_edges(mesh)
 
-    mmg_mesh = MmgMesh3D(vertices, elements)
+    if edges is None:
+        mmg_mesh = MmgMesh3D(vertices, elements)
+    else:
+        mmg_mesh = MmgMesh3D()
+        mmg_mesh.set_mesh_size(
+            vertices=len(vertices),
+            tetrahedra=len(elements),
+            edges=len(edges),
+        )
+        mmg_mesh.set_vertices(vertices)
+        mmg_mesh.set_tetrahedra(elements)
 
     # Preserve element refs from cell_data if present
     if "refs" in mesh.cell_data:
@@ -119,11 +269,16 @@ def _from_pyvista_to_mmg3d(mesh: pv.UnstructuredGrid) -> MmgMesh3D:
         if len(refs) == len(elements):
             mmg_mesh.set_tetrahedra(elements, refs)
 
+    if edges is not None:
+        mmg_mesh.set_edges(edges, edge_refs)
+
     return mmg_mesh
 
 
 def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
     """Convert PolyData with 2D triangles to MmgMesh2D."""
+    edges, edge_refs = _extract_edges(mesh)
+
     mesh, was_triangulated = _triangulate_if_needed(mesh)
     if was_triangulated:
         logger.warning(_TRIANGULATION_WARNING)
@@ -135,7 +290,17 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
         vertices = points
     triangles = _extract_triangles_from_polydata(mesh)
 
-    mmg_mesh = MmgMesh2D(vertices, triangles)
+    if edges is None:
+        mmg_mesh = MmgMesh2D(vertices, triangles)
+    else:
+        mmg_mesh = MmgMesh2D()
+        mmg_mesh.set_mesh_size(
+            vertices=len(vertices),
+            triangles=len(triangles),
+            edges=len(edges),
+        )
+        mmg_mesh.set_vertices(vertices)
+        mmg_mesh.set_triangles(triangles)
 
     # Preserve triangle refs from cell_data if present
     if "refs" in mesh.cell_data:
@@ -143,11 +308,16 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
         if len(refs) == len(triangles):
             mmg_mesh.set_triangles(triangles, refs)
 
+    if edges is not None:
+        mmg_mesh.set_edges(edges, edge_refs)
+
     return mmg_mesh
 
 
 def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
     """Convert PolyData with 3D surface triangles to MmgMeshS."""
+    edges, edge_refs = _extract_edges(mesh)
+
     mesh, was_triangulated = _triangulate_if_needed(mesh)
     if was_triangulated:
         logger.warning(_TRIANGULATION_WARNING)
@@ -155,13 +325,26 @@ def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
     vertices = np.array(mesh.points, dtype=np.float64)
     triangles = _extract_triangles_from_polydata(mesh)
 
-    mmg_mesh = MmgMeshS(vertices, triangles)
+    if edges is None:
+        mmg_mesh = MmgMeshS(vertices, triangles)
+    else:
+        mmg_mesh = MmgMeshS()
+        mmg_mesh.set_mesh_size(
+            vertices=len(vertices),
+            triangles=len(triangles),
+            edges=len(edges),
+        )
+        mmg_mesh.set_vertices(vertices)
+        mmg_mesh.set_triangles(triangles)
 
     # Preserve triangle refs from cell_data if present
     if "refs" in mesh.cell_data:
         refs = np.asarray(mesh.cell_data["refs"], dtype=np.int32)
         if len(refs) == len(triangles):
             mmg_mesh.set_triangles(triangles, refs)
+
+    if edges is not None:
+        mmg_mesh.set_edges(edges, edge_refs)
 
     return mmg_mesh
 
@@ -354,20 +537,36 @@ def to_pyvista(
     raise TypeError(msg)
 
 
+def _build_lines_array(edges: NDArray[np.int32]) -> NDArray[np.int32]:
+    """Build a VTK-style flat lines array (each entry: [2, v0, v1])."""
+    return np.hstack(
+        [np.full((len(edges), 1), _LINE_VERTS), edges],
+    ).ravel()
+
+
 def _mmg3d_to_pyvista(mesh: MmgMesh3D, *, include_refs: bool) -> pv.UnstructuredGrid:
     """Convert MmgMesh3D to PyVista UnstructuredGrid."""
     vertices = mesh.get_vertices()
 
     if include_refs:
         elements, refs = mesh.get_elements_with_refs()
+        edges, edge_refs = mesh.get_edges_with_refs()
     else:
         elements = mesh.get_elements()
+        edges = mesh.get_edges()
         refs = None
+        edge_refs = None
 
-    grid = pv.UnstructuredGrid({pv.CellType.TETRA: elements}, vertices)
+    cells_dict: dict[int, NDArray[np.int32]] = {pv.CellType.TETRA: elements}
+    if len(edges) > 0:
+        cells_dict[pv.CellType.LINE] = edges
+    grid = pv.UnstructuredGrid(cells_dict, vertices)
 
     if refs is not None:
-        grid.cell_data["refs"] = refs
+        if len(edges) > 0 and edge_refs is not None:
+            grid.cell_data["refs"] = np.concatenate([refs, edge_refs])
+        else:
+            grid.cell_data["refs"] = refs
 
     return grid
 
@@ -379,17 +578,25 @@ def _mmg2d_to_pyvista(mesh: MmgMesh2D, *, include_refs: bool) -> pv.PolyData:
 
     if include_refs:
         triangles, refs = mesh.get_triangles_with_refs()
+        edges, edge_refs = mesh.get_edges_with_refs()
     else:
         triangles = mesh.get_triangles()
+        edges = mesh.get_edges()
         refs = None
+        edge_refs = None
 
     faces = np.hstack(
         [np.full((len(triangles), 1), _TRIANGLE_VERTS), triangles],
     ).ravel()
-    polydata = pv.PolyData(vertices_3d, faces=faces)
+    lines = _build_lines_array(edges) if len(edges) > 0 else None
+    polydata = pv.PolyData(vertices_3d, faces=faces, lines=lines)
 
     if refs is not None:
-        polydata.cell_data["refs"] = refs
+        # PolyData cell ordering: verts, lines, polys (faces), strips.
+        if len(edges) > 0 and edge_refs is not None:
+            polydata.cell_data["refs"] = np.concatenate([edge_refs, refs])
+        else:
+            polydata.cell_data["refs"] = refs
 
     return polydata
 
@@ -400,17 +607,25 @@ def _mmgs_to_pyvista(mesh: MmgMeshS, *, include_refs: bool) -> pv.PolyData:
 
     if include_refs:
         triangles, refs = mesh.get_triangles_with_refs()
+        edges, edge_refs = mesh.get_edges_with_refs()
     else:
         triangles = mesh.get_triangles()
+        edges = mesh.get_edges()
         refs = None
+        edge_refs = None
 
     faces = np.hstack(
         [np.full((len(triangles), 1), _TRIANGLE_VERTS), triangles],
     ).ravel()
-    polydata = pv.PolyData(vertices, faces=faces)
+    lines = _build_lines_array(edges) if len(edges) > 0 else None
+    polydata = pv.PolyData(vertices, faces=faces, lines=lines)
 
     if refs is not None:
-        polydata.cell_data["refs"] = refs
+        # PolyData cell ordering: verts, lines, polys (faces), strips.
+        if len(edges) > 0 and edge_refs is not None:
+            polydata.cell_data["refs"] = np.concatenate([edge_refs, refs])
+        else:
+            polydata.cell_data["refs"] = refs
 
     return polydata
 
