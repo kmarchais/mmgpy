@@ -7876,7 +7876,9 @@ constraints have been added.</p>
 
 
 <a href="#mmgpy.Mesh.to_pyvista" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_pyvista</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">include_refs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pv</span><span class="o">.</span><span class="n">UnstructuredGrid</span> <span class="o">|</span> <span class="n">pv</span><span class="o">.</span><span class="n">PolyData</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_pyvista</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">*</span><span class="p">,</span> <span class="n">include_refs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">include_edges</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pv</span><span class="o">.</span><span class="n">UnstructuredGrid</span> <span class="o">|</span> <span class="n">pv</span><span class="o">.</span><span class="n">PolyData</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -7884,7 +7886,14 @@ constraints have been added.</p>
         <p>Convert to PyVista mesh.</p>
 <h5 id="mmgpy.Mesh.to_pyvista--parameters">Parameters<a class="headerlink" href="#mmgpy.Mesh.to_pyvista--parameters" title="Permanent link">&para;</a></h5>
 <p>include_refs : bool
-    Include reference markers as cell data.</p>
+    Include reference markers as cell data.
+include_edges : bool
+    Include MMG edges (ridges, boundary edges) as LINE cells in
+    the output. Defaults to False so the returned mesh contains
+    only the primary cell type (triangles or tetrahedra), which
+    matches typical downstream code (matplotlib tripcolor, area
+    computations, etc.). Set True for round-trip / file-save
+    workflows that need to preserve edge markers.</p>
 <h5 id="mmgpy.Mesh.to_pyvista--returns">Returns<a class="headerlink" href="#mmgpy.Mesh.to_pyvista--returns" title="Permanent link">&para;</a></h5>
 <p>pv.UnstructuredGrid | pv.PolyData
     PyVista mesh object.</p>
