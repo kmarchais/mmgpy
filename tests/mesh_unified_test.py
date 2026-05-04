@@ -1190,7 +1190,7 @@ class TestMeshEdgesRoundTrip:
         assert sorted(rt_refs.tolist()) == [5, 6]
 
     def test_msh_file_preserves_edges(self) -> None:
-        """Reading a .msh file preserves edges with gmsh:physical refs."""
+        """Reading a .msh file preserves edges and triangles with gmsh:physical refs."""
         vertices = np.array(
             [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
             dtype=np.float64,
@@ -1218,6 +1218,9 @@ class TestMeshEdgesRoundTrip:
         edges, edge_refs = result.get_edges_with_refs()
         assert len(edges) == len(lines)
         assert sorted(edge_refs.tolist()) == [11, 22, 33, 44]
+
+        _, tri_refs = result.get_triangles_with_refs()
+        assert sorted(tri_refs.tolist()) == [1, 2]
 
 
 # Module exports test

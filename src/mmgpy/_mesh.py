@@ -301,7 +301,17 @@ def _validate_edges(
     return edges_arr, e_refs
 
 
-def _create_impl(  # noqa: PLR0913, PLR0912, C901
+_KIND_CONFIG: dict[
+    MeshKind,
+    tuple[type[MmgMesh3D | MmgMesh2D | MmgMeshS], str, str],
+] = {
+    MeshKind.TETRAHEDRAL: (MmgMesh3D, "tetrahedra", "set_tetrahedra"),
+    MeshKind.TRIANGULAR_2D: (MmgMesh2D, "triangles", "set_triangles"),
+    MeshKind.TRIANGULAR_SURFACE: (MmgMeshS, "triangles", "set_triangles"),
+}
+
+
+def _create_impl(  # noqa: PLR0913
     vertices: NDArray[np.floating],
     cells: NDArray[np.integer],
     kind: MeshKind,
@@ -332,63 +342,31 @@ def _create_impl(  # noqa: PLR0913, PLR0912, C901
         The mesh implementation.
 
     """
+    if kind not in _KIND_CONFIG:
+        msg = f"Unknown mesh kind: {kind}"
+        raise ValueError(msg)
+
     vertices = np.ascontiguousarray(vertices, dtype=np.float64)
     cells = np.ascontiguousarray(cells, dtype=np.int32)
     cell_refs = _validate_refs(refs, cells)
     edges_arr, e_refs = _validate_edges(edges, edge_refs)
 
-    if kind == MeshKind.TETRAHEDRAL:
-        impl_3d = MmgMesh3D()
-        if edges_arr is None:
-            impl_3d.set_mesh_size(vertices=len(vertices), tetrahedra=len(cells))
-        else:
-            impl_3d.set_mesh_size(
-                vertices=len(vertices),
-                tetrahedra=len(cells),
-                edges=len(edges_arr),
-            )
-        impl_3d.set_vertices(vertices)
-        impl_3d.set_tetrahedra(cells, cell_refs)
-        if edges_arr is not None:
-            impl_3d.set_edges(edges_arr, e_refs)
-        return impl_3d
+    if kind == MeshKind.TRIANGULAR_2D and vertices.shape[1] == _DIMS_3D:
+        vertices = np.ascontiguousarray(vertices[:, :2])
 
-    if kind == MeshKind.TRIANGULAR_2D:
-        if vertices.shape[1] == _DIMS_3D:
-            vertices = np.ascontiguousarray(vertices[:, :2])
-        impl_2d = MmgMesh2D()
-        if edges_arr is None:
-            impl_2d.set_mesh_size(vertices=len(vertices), triangles=len(cells))
-        else:
-            impl_2d.set_mesh_size(
-                vertices=len(vertices),
-                triangles=len(cells),
-                edges=len(edges_arr),
-            )
-        impl_2d.set_vertices(vertices)
-        impl_2d.set_triangles(cells, cell_refs)
-        if edges_arr is not None:
-            impl_2d.set_edges(edges_arr, e_refs)
-        return impl_2d
+    impl_cls, cell_kw, setter_name = _KIND_CONFIG[kind]
+    impl = impl_cls()
 
-    if kind == MeshKind.TRIANGULAR_SURFACE:
-        impl_s = MmgMeshS()
-        if edges_arr is None:
-            impl_s.set_mesh_size(vertices=len(vertices), triangles=len(cells))
-        else:
-            impl_s.set_mesh_size(
-                vertices=len(vertices),
-                triangles=len(cells),
-                edges=len(edges_arr),
-            )
-        impl_s.set_vertices(vertices)
-        impl_s.set_triangles(cells, cell_refs)
-        if edges_arr is not None:
-            impl_s.set_edges(edges_arr, e_refs)
-        return impl_s
+    size_kwargs: dict[str, int] = {"vertices": len(vertices), cell_kw: len(cells)}
+    if edges_arr is not None:
+        size_kwargs["edges"] = len(edges_arr)
+    impl.set_mesh_size(**size_kwargs)
 
-    msg = f"Unknown mesh kind: {kind}"
-    raise ValueError(msg)
+    impl.set_vertices(vertices)
+    getattr(impl, setter_name)(cells, cell_refs)
+    if edges_arr is not None:
+        impl.set_edges(edges_arr, e_refs)
+    return impl
 
 
 @dataclass
