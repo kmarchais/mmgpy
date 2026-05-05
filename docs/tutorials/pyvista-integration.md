@@ -139,11 +139,11 @@ mesh.remesh(hmax=0.1)
 pv_mesh = mesh.to_pyvista()
 
 # Compute quality (PyVista has built-in quality metrics)
-quality = pv_mesh.compute_cell_quality(quality_measure="scaled_jacobian")
+quality = pv_mesh.cell_quality("scaled_jacobian")
 
 # Plot with quality colormap
 quality.plot(
-    scalars="CellQuality",
+    scalars="scaled_jacobian",
     cmap="RdYlGn",
     show_edges=True,
     scalar_bar_args={"title": "Quality"},
