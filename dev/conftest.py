@@ -161,10 +161,10 @@ def _fake_read(
     name = str(source)
     kind = _classify_filename(name)
     if kind == "2d":
-        return Mesh(_VERTS_2D.copy(), _CELLS_2D.copy())
+        return Mesh._from_arrays(_VERTS_2D.copy(), _CELLS_2D.copy())  # noqa: SLF001
     if kind == "surface":
-        return Mesh(_VERTS_SURF.copy(), _CELLS_SURF.copy())
-    return Mesh(_VERTS_3D.copy(), _CELLS_3D.copy())
+        return Mesh._from_arrays(_VERTS_SURF.copy(), _CELLS_SURF.copy())  # noqa: SLF001
+    return Mesh._from_arrays(_VERTS_3D.copy(), _CELLS_3D.copy())  # noqa: SLF001
 
 
 def _patched_save(self: MeshType, filename: str | Path) -> None:
