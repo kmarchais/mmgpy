@@ -131,6 +131,35 @@ def _detect_medit_mesh_kind(path: Path) -> MeshKind:
     raise ValueError(msg)
 
 
+def _load_meshb_by_trial(
+    path: Path,
+) -> tuple[MmgMesh3D | MmgMesh2D | MmgMeshS, MeshKind]:
+    """Detect mesh kind for a binary .meshb file by trial loading.
+
+    The text header parser does not handle binary files, but every MMG
+    class accepts any .meshb input and silently returns an empty mesh
+    when the content does not match. The first class whose load yields
+    a non-empty vertex set is the right kind. Volumetric meshes win
+    ahead of surfaces ahead of 2D, mirroring the priority used for
+    auto-detection on PyVista inputs.
+    """
+    candidates: tuple[
+        tuple[type[MmgMesh3D | MmgMesh2D | MmgMeshS], MeshKind],
+        ...,
+    ] = (
+        (MmgMesh3D, MeshKind.TETRAHEDRAL),
+        (MmgMeshS, MeshKind.TRIANGULAR_SURFACE),
+        (MmgMesh2D, MeshKind.TRIANGULAR_2D),
+    )
+    path_str = str(path)
+    for cls, kind in candidates:
+        impl = cls(path_str)
+        if impl.get_vertices().shape[0] > 0:
+            return impl, kind
+    msg = f"Cannot determine mesh kind from binary file: {path}"
+    raise ValueError(msg)
+
+
 def _load_medit_native(
     path: Path,
     mesh_kind: MeshKind | None,
@@ -161,6 +190,9 @@ def _load_medit_native(
 
     """
     if mesh_kind is None:
+        if path.suffix.lower() == ".meshb":
+            impl, _ = _load_meshb_by_trial(path)
+            return impl
         mesh_kind = _detect_medit_mesh_kind(path)
 
     path_str = str(path)
