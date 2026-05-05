@@ -27,8 +27,14 @@ from typing import TYPE_CHECKING, Any
 import pyvista as pv
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import numpy as np
     from numpy.typing import NDArray
+
+    from mmgpy._mesh import Mesh as _Mesh
+    from mmgpy._mesh import MeshKind
+    from mmgpy._validation import ValidationReport
 
 logger = logging.getLogger("mmgpy")
 
@@ -103,6 +109,81 @@ def _attach_sol_fields(
                 n_points,
                 n_cells,
             )
+
+
+_LOCAL_SIZING_SHAPES = ("sphere", "box", "cylinder", "from_point")
+_MMG_FIELD_NAMES = ("metric", "displacement", "levelset", "tensor")
+
+
+def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _Mesh:
+    """Construct a ``Mesh`` from *dataset* with MMG fields pushed into the C++ impl.
+
+    ``mmgpy._io.read`` deliberately strips the four MMG-recognized point_data
+    keys (``metric``, ``displacement``, ``levelset``, ``tensor``) into a lazy
+    source instead of forwarding them to MMG. The accessor's contract is the
+    opposite: a user's ``dataset.point_data["metric"]`` is the source of truth
+    for any subsequent operation. This helper bridges the gap by re-applying
+    those fields through ``Mesh.__setitem__``, which routes them to the C++
+    layer.
+    """
+    import numpy as np  # noqa: PLC0415
+
+    from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+    mesh = Mesh(dataset)
+    for key in _MMG_FIELD_NAMES:
+        if key not in dataset.point_data:
+            continue
+        arr = np.asarray(dataset.point_data[key], dtype=np.float64)
+        # MMG's scalar metric / levelset bindings want an Nx1 array; PyVista
+        # users naturally store these as 1D, so reshape on the way through.
+        if arr.ndim == 1 and key in ("metric", "levelset"):
+            arr = arr.reshape(-1, 1)
+        mesh[key] = arr
+    return mesh
+
+
+def _apply_local_sizing_specs(
+    mesh: _Mesh,
+    specs: list[Mapping[str, Any]] | None,
+) -> None:
+    """Register sizing constraints from a list of dict specs and apply them.
+
+    Each spec is a dict with a ``"shape"`` key (one of ``"sphere"``, ``"box"``,
+    ``"cylinder"``, ``"from_point"``) plus the parameters that the matching
+    ``Mesh.set_size_*`` method expects. ``Mesh.remesh`` auto-applies sizing,
+    but the lagrangian/levelset/optimize/uniform variants do not, so we apply
+    explicitly here for uniform behavior across all accessor methods.
+    """
+    if not specs:
+        return
+    for spec in specs:
+        shape = spec.get("shape")
+        if shape == "sphere":
+            mesh.set_size_sphere(spec["center"], spec["radius"], spec["size"])
+        elif shape == "box":
+            mesh.set_size_box(spec["bounds"], spec["size"])
+        elif shape == "cylinder":
+            mesh.set_size_cylinder(
+                spec["point1"],
+                spec["point2"],
+                spec["radius"],
+                spec["size"],
+            )
+        elif shape == "from_point":
+            mesh.set_size_from_point(
+                spec["point"],
+                spec["near_size"],
+                spec["far_size"],
+                spec["influence_radius"],
+            )
+        else:
+            msg = (
+                f"Unknown local sizing shape {shape!r}; "
+                f"expected one of {_LOCAL_SIZING_SHAPES}."
+            )
+            raise ValueError(msg)
+    mesh.apply_local_sizing()
 
 
 def read_mesh(
@@ -192,14 +273,32 @@ class MmgAccessor:
     def __init__(self, dataset: pv.UnstructuredGrid | pv.PolyData) -> None:
         self._dataset = dataset
 
+    @property
+    def kind(self) -> MeshKind:
+        """Return the MMG mesh kind (TETRAHEDRAL, TRIANGULAR_2D, or TRIANGULAR_SURFACE).
+
+        Inferred from the dataset's cell types via the same auto-detection
+        path used by ``mesh.mmg.remesh``.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).kind
+
     def remesh(
         self,
+        *,
+        local_sizing: list[Mapping[str, Any]] | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Remesh the underlying dataset and return a new PyVista dataset.
 
         Parameters
         ----------
+        local_sizing : list of dict, optional
+            Sizing constraints applied before remeshing. Each dict has a
+            ``"shape"`` key (``"sphere"``, ``"box"``, ``"cylinder"``, or
+            ``"from_point"``) plus the parameters of the matching
+            ``Mesh.set_size_*`` method.
         **options : object
             Forwarded to :meth:`mmgpy.Mesh.remesh`. Common knobs include
             ``hmin``, ``hmax``, ``hsiz``, and ``hausd``.
@@ -213,10 +312,92 @@ class MmgAccessor:
             cells.
 
         """
-        from mmgpy._mesh import Mesh  # noqa: PLC0415
-
-        mesh = Mesh(self._dataset)
+        mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _apply_local_sizing_specs(mesh, local_sizing)
         mesh.remesh(**options)
+        return mesh.to_pyvista(include_refs=True, include_edges=True)
+
+    def remesh_lagrangian(
+        self,
+        displacement: NDArray[np.float64],
+        *,
+        local_sizing: list[Mapping[str, Any]] | None = None,
+        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_lagrangian
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Lagrangian (moving-mesh) remeshing.
+
+        Only available for TETRAHEDRAL and TRIANGULAR_2D datasets.
+
+        Parameters
+        ----------
+        displacement : ndarray
+            Per-vertex displacement field, shape ``(n_points, dim)``.
+        local_sizing : list of dict, optional
+            Sizing constraints; see :meth:`remesh`.
+        **options : object
+            Forwarded to :meth:`mmgpy.Mesh.remesh_lagrangian`.
+
+        """
+        mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _apply_local_sizing_specs(mesh, local_sizing)
+        mesh.remesh_lagrangian(displacement, **options)
+        return mesh.to_pyvista(include_refs=True, include_edges=True)
+
+    def remesh_levelset(
+        self,
+        levelset: NDArray[np.float64],
+        *,
+        local_sizing: list[Mapping[str, Any]] | None = None,
+        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_levelset
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Level-set discretization remeshing.
+
+        Parameters
+        ----------
+        levelset : ndarray
+            Per-vertex level-set field; the zero isosurface becomes an
+            explicit boundary in the output mesh.
+        local_sizing : list of dict, optional
+            Sizing constraints; see :meth:`remesh`.
+        **options : object
+            Forwarded to :meth:`mmgpy.Mesh.remesh_levelset`.
+
+        """
+        mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _apply_local_sizing_specs(mesh, local_sizing)
+        mesh.remesh_levelset(levelset, **options)
+        return mesh.to_pyvista(include_refs=True, include_edges=True)
+
+    def remesh_optimize(
+        self,
+        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_optimize
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Quality optimization without topology changes.
+
+        No vertices are inserted or removed; only positions move to improve
+        element quality. Equivalent to ``remesh(optim=1, noinsert=1)``.
+        """
+        mesh = _build_mesh_with_mmg_fields(self._dataset)
+        mesh.remesh_optimize(**options)
+        return mesh.to_pyvista(include_refs=True, include_edges=True)
+
+    def remesh_uniform(
+        self,
+        size: float,
+        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_uniform
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Remesh with a uniform target edge size.
+
+        Parameters
+        ----------
+        size : float
+            Target edge length applied uniformly across the mesh.
+        **options : object
+            Forwarded to :meth:`mmgpy.Mesh.remesh_uniform`.
+
+        """
+        mesh = _build_mesh_with_mmg_fields(self._dataset)
+        mesh.remesh_uniform(size, **options)
         return mesh.to_pyvista(include_refs=True, include_edges=True)
 
     def load_sol(self, path: str | Path) -> None:
@@ -236,6 +417,89 @@ class MmgAccessor:
             )
             raise NotImplementedError(msg)
         _attach_sol_fields(self._dataset, sol_path)
+
+    def save_sol(self, path: str | Path) -> None:
+        """Write the dataset's MMG fields to a Medit ``.sol``/``.solb`` file.
+
+        Reads ``point_data["metric"]``, ``["displacement"]``, ``["levelset"]``,
+        and ``["tensor"]`` (whichever are present) and writes them through the
+        MMG C library, which handles both text and binary formats.
+        """
+        _build_mesh_with_mmg_fields(self._dataset).save_sol(path)
+
+    def validate(  # noqa: PLR0913
+        self,
+        *,
+        detailed: bool = False,
+        strict: bool = False,
+        check_geometry: bool = True,
+        check_topology: bool = True,
+        check_quality: bool = True,
+        min_quality: float = 0.1,
+    ) -> bool | ValidationReport:
+        """Validate the mesh and return either a bool or a detailed report.
+
+        See :meth:`mmgpy.Mesh.validate` for parameter semantics.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).validate(
+            detailed=detailed,
+            strict=strict,
+            check_geometry=check_geometry,
+            check_topology=check_topology,
+            check_quality=check_quality,
+            min_quality=min_quality,
+        )
+
+    def element_quality(self, idx: int) -> float:
+        """Return MMG's in-radius-ratio quality for one element (1-indexed).
+
+        Distinct from :meth:`pyvista.DataSet.cell_quality`, which exposes
+        VTK's metrics (e.g. scaled jacobian, aspect ratio).
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_element_quality(idx)
+
+    def element_qualities(self) -> NDArray[np.float64]:
+        """Return MMG in-radius-ratio quality for every element."""
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_element_qualities()
+
+    def adjacent_elements(self, idx: int) -> NDArray[np.int32]:
+        """Return MMG-adjacency neighbors of element *idx* (1-indexed).
+
+        Distinct from :meth:`pyvista.DataSet.cell_neighbors`, which uses
+        VTK's 0-based topology. Useful when migrating code that relied on
+        ``Mesh.get_adjacent_elements``.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_adjacent_elements(idx)
+
+    def vertex_neighbors(self, idx: int) -> NDArray[np.int32]:
+        """Return MMG-adjacency neighbors of vertex *idx* (1-indexed).
+
+        Distinct from :meth:`pyvista.DataSet.point_neighbors`, which uses
+        VTK's 0-based topology. Useful when migrating code that relied on
+        ``Mesh.get_vertex_neighbors``.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_vertex_neighbors(idx)
+
+    def center_of_mass(self) -> NDArray[np.float64]:
+        """Return the volume-weighted (3D) or area-weighted (2D/surface) centroid.
+
+        Distinct from :attr:`pyvista.DataSet.center`, which is the
+        arithmetic mean of point coordinates without volume/area
+        weighting.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_center_of_mass()
 
 
 __all__ = ["MmgAccessor", "read_mesh", "write_mesh"]

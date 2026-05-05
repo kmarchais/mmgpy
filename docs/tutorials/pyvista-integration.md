@@ -316,6 +316,101 @@ pl.show()
 
 4. **Performance**: For real-time visualization, use `interactive_update=True` and batch updates.
 
+## The `.mmg` Dataset Accessor
+
+When mmgpy is installed, every PyVista `UnstructuredGrid` and `PolyData` instance gains a `.mmg` accessor exposing MMG operations directly. The accessor takes and returns PyVista datasets, so it composes with the rest of the PyVista API without manually constructing an `mmgpy.Mesh`.
+
+### Remeshing variants
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers the accessor
+
+mesh = pv.read("brain.mesh")
+
+# Standard adaptive remeshing
+remeshed = mesh.mmg.remesh(hsiz=0.1)
+
+# Quality optimization without topology changes
+optimized = mesh.mmg.remesh_optimize()
+
+# Uniform target edge size
+uniform = mesh.mmg.remesh_uniform(0.05)
+
+# Lagrangian (moving-mesh) — TET or 2D only
+moved = mesh.mmg.remesh_lagrangian(displacement)
+
+# Level-set discretization — extracts the zero isosurface as a boundary
+carved = mesh.mmg.remesh_levelset(levelset)
+```
+
+### Local sizing constraints
+
+Pass a `local_sizing` keyword to any remesh variant. Each constraint is a dict whose `"shape"` selects the geometry:
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+constrained = mesh.mmg.remesh(
+    nosizreq=True,  # respect the metric we built
+    hgrad=1.3,
+    local_sizing=[
+        {"shape": "sphere", "center": (0, 0, 0), "radius": 0.4, "size": 0.05},
+        {"shape": "box", "bounds": [[0, 0, 0], [1, 1, 1]], "size": 0.1},
+        {"shape": "cylinder", "point1": (0, 0, 0), "point2": (1, 0, 0), "radius": 0.2, "size": 0.05},
+        {"shape": "from_point", "point": (0.5, 0.5, 0.5), "near_size": 0.02, "far_size": 0.1, "influence_radius": 0.5},
+    ],
+)
+```
+
+### Solution I/O
+
+`.sol`/`.solb` files round-trip through the accessor; sibling `.sol` files are auto-loaded on `pv.read("foo.mesh")`:
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+mesh.point_data["metric"] = my_metric
+mesh.mmg.save_sol("out.sol")
+
+other = pv.read("foo.mesh")
+other.mmg.load_sol("foo.sol")
+```
+
+### Validation and quality
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+report = mesh.mmg.validate(detailed=True)  # ValidationReport
+print(report.quality.mean, report.is_valid)
+
+# MMG's in-radius ratio (distinct from PyVista's cell_quality)
+qualities = mesh.mmg.element_qualities()
+```
+
+### MMG-specific topology and centroid
+
+PyVista exposes 0-based VTK adjacency via `dataset.cell_neighbors(idx)` and `dataset.point_neighbors(idx)`. When you specifically need MMG's 1-based adjacency or its volume/area-weighted centroid (distinct from `dataset.center`, which is the unweighted arithmetic mean), use the accessor:
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+mesh.mmg.adjacent_elements(1)   # MMG-adjacent elements of element 1
+mesh.mmg.vertex_neighbors(1)    # MMG-adjacent vertices of vertex 1
+mesh.mmg.center_of_mass()       # volume-weighted (3D) or area-weighted (2D)
+```
+
+### Mesh kind
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+print(mesh.mmg.kind)  # MeshKind.TETRAHEDRAL / TRIANGULAR_2D / TRIANGULAR_SURFACE
+```
+
 ## Next Steps
 
 - [Level-Set Extraction](levelset-extraction.md) - Extract isosurfaces
