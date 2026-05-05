@@ -12,6 +12,16 @@ from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D
 from mmgpy._progress import _emit_event, remesh_mesh, rich_progress
 from mmgpy.progress import LoggingProgressReporter
 
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
+    ),
+    pytest.mark.filterwarnings(
+        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
+    ),
+]
+
+
 if TYPE_CHECKING:
     from mmgpy import Mesh
 
@@ -538,7 +548,10 @@ def _lagrangian_available() -> bool:
         dtype=np.float64,
     )
     triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
-    mesh = _Mesh(vertices, triangles)
+    # Use the silent _from_arrays path: this helper is invoked at
+    # collection-time evaluation of skipif(...) markers, before pytest's
+    # per-item filterwarnings can take effect.
+    mesh = _Mesh._from_arrays(vertices, triangles)
     displacement = np.zeros((4, 2), dtype=np.float64)
     try:
         mesh.remesh_lagrangian(displacement, progress=False, verbose=-1)

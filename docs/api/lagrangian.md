@@ -1,6 +1,6 @@
 # Lagrangian Motion
 
-This page documents the Lagrangian mesh motion functions in the `mmgpy.lagrangian` module.
+This page documents the Lagrangian mesh motion functions in the `mmgpy.lagrangian` module and the `dataset.mmg.move(...)` accessor method.
 
 ## Overview
 
@@ -17,37 +17,30 @@ This is useful for:
 - Fluid-structure interaction
 - Morphing between shapes
 
-## Supported Mesh Types
+## Two Code Paths
 
-| Mesh Type              | `remesh_lagrangian()` | Alternative       |
-| ---------------------- | --------------------- | ----------------- |
-| **Tetrahedral** (3D)   | ✅ Supported          | -                 |
-| **Triangular 2D**      | ✅ Supported          | -                 |
-| **Triangular Surface** | ❌ Not supported      | Use `move_mesh()` |
+| Path                              | Volume support | Surface support | ELAS required |
+| --------------------------------- | -------------- | --------------- | ------------- |
+| `dataset.mmg.remesh_lagrangian()` | TET, 2D        | ❌              | ✅            |
+| `dataset.mmg.move()`              | TET, 2D, S     | ✅              | ❌            |
 
-### Why Surface Meshes Don't Support Lagrangian Motion
+`remesh_lagrangian()` calls into MMG's ELAS path which propagates boundary displacements
+through an elasticity solve. ELAS only models volumetric (2D/3D) elasticity, so surface
+meshes cannot use it.
 
-Lagrangian motion in MMG requires the ELAS library to solve elasticity PDEs that propagate
-boundary displacements to interior vertices. Surface meshes have no volumetric
-interior—all vertices are on the surface. The ELAS library only supports 2D/3D volumetric
-elasticity, not shell/membrane elasticity needed for surfaces.
-
-For surface meshes, use `mmgpy.move_mesh()` instead, which directly moves vertices and
-remeshes to maintain quality:
+`dataset.mmg.move()` is a pure-Python alternative that applies the displacement and
+remeshes; it works for every mesh kind and does not require ELAS.
 
 ```python
-import mmgpy
-import pyvista as pv
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
 sphere = pv.Sphere(theta_resolution=10, phi_resolution=10)
-mesh = mmgpy.Mesh(sphere)  # Auto-detects surface mesh
-vertices = mesh.get_vertices()
-displacement = np.zeros((len(vertices), 3))
+displacement = np.zeros((sphere.n_points, 3))
 displacement[:, 0] = 0.1  # Move in x direction
 
-# Use move_mesh for surface meshes
-mmgpy.move_mesh(mesh, displacement, hausd=0.01)
+moved = sphere.mmg.move(displacement, hausd=0.01)
 ```
 
 ## Functions
@@ -67,27 +60,29 @@ show_root_heading: true
 !!! warning "ELAS Library Required"
 `remesh_lagrangian()` requires MMG to be built with ELAS support. The ELAS library solves
 elasticity PDEs to propagate boundary displacements to interior vertices. If MMG was built
-without ELAS, calls to `remesh_lagrangian()` will fail.
+without ELAS, calls to `remesh_lagrangian()` will fail. The pure-Python `dataset.mmg.move(...)`
+has no such dependency.
 
-## Mesh Method
-
-Meshes have a `remesh_lagrangian()` method for direct use:
+## Accessor Method
 
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("input.mesh")
+mesh = pv.read("input.mesh")
 
 # Define displacement field (3D vector at each vertex)
-n_vertices = len(mesh.get_vertices())
-displacement = np.zeros((n_vertices, 3))
-displacement[:, 0] = 0.1  # Move all vertices 0.1 in x
+displacement = np.zeros((mesh.n_points, 3))
+displacement[:, 0] = 0.1
 
-# Remesh with displacement (requires ELAS library)
-result = mesh.remesh_lagrangian(displacement)
+# ELAS-bound path
+moved_elas = mesh.mmg.remesh_lagrangian(displacement)
+
+# Pure-Python path (works without ELAS, supports surface meshes)
+moved = mesh.mmg.move(displacement)
 ```
 
 ## Usage Examples
@@ -97,26 +92,22 @@ result = mesh.remesh_lagrangian(displacement)
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
-vertices = mesh.get_vertices()
-n_vertices = len(vertices)
+mesh = pv.read("input.mesh")
+vertices = np.asarray(mesh.points)
 
 # Create displacement: radial expansion
 center = vertices.mean(axis=0)
 directions = vertices - center
 distances = np.linalg.norm(directions, axis=1, keepdims=True)
 directions = directions / (distances + 1e-10)
-
-# 10% radial expansion
 displacement = directions * 0.1 * distances
 
-# Apply and remesh (requires ELAS library)
-result = mesh.remesh_lagrangian(displacement)
-
-print(f"Quality: {result.quality_mean_after:.3f}")
+remeshed = mesh.mmg.remesh_lagrangian(displacement)
+print(f"Cells: {mesh.n_cells} -> {remeshed.n_cells}")
 ```
 
 ### Boundary-Only Displacement
@@ -126,92 +117,37 @@ Move only boundary vertices:
 <!-- pytest-codeblocks:skip -->
 
 ```python
-from mmgpy import detect_boundary_vertices
-
-mesh = mmgpy.read("input.mesh")
-vertices = mesh.get_vertices()
-
-# Find boundary vertices
-boundary_mask = detect_boundary_vertices(mesh)
-
-# Create displacement (only boundary moves)
-displacement = np.zeros((len(vertices), 3))
-displacement[boundary_mask, 2] = 0.05  # Move boundary up in z
-
-# Remesh
-result = mesh.remesh_lagrangian(displacement)
-```
-
-### Propagate Displacement to Interior
-
-Start with boundary displacement and propagate to interior:
-
-<!-- pytest-codeblocks:skip -->
-
-```python
-from mmgpy import detect_boundary_vertices, propagate_displacement
-
-mesh = mmgpy.read("input.mesh")
-vertices = mesh.get_vertices()
-
-# Boundary displacement
-boundary_mask = detect_boundary_vertices(mesh)
-boundary_disp = np.zeros((len(vertices), 3))
-boundary_disp[boundary_mask, 0] = 0.1
-
-# Propagate to interior (smooth interpolation)
-full_disp = propagate_displacement(mesh, boundary_disp, boundary_mask)
-
-# Remesh
-result = mesh.remesh_lagrangian(full_disp)
-```
-
-### Move Mesh Without Remeshing
-
-Apply displacement without topology changes:
-
-```python
-import mmgpy
 import numpy as np
-from mmgpy import move_mesh
+import pyvista as pv
+from mmgpy import detect_boundary_vertices
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("input.mesh")
+vertices = np.asarray(mesh.points)
 
-# Displacement
-displacement = np.zeros_like(vertices)
-displacement[:, 1] = 0.05  # Translate in y
+# detect_boundary_vertices accepts the underlying impl; fetch via _io.read
+from mmgpy import read as mmgpy_read
+boundary_mask = detect_boundary_vertices(mmgpy_read(mesh)._impl_unwrap)
 
-# Apply displacement (modifies mesh in-place)
-move_mesh(mesh, displacement)
+displacement = np.zeros((len(vertices), 3))
+displacement[boundary_mask, 2] = 0.05
 
-# Now mesh vertices are moved
-new_vertices = mesh.get_vertices()
+moved = mesh.mmg.move(
+    displacement,
+    boundary_mask=boundary_mask,
+    propagate=True,
+    hmax=0.1,
+)
 ```
 
 ### Iterative Motion
 
-For large deformations, use multiple small steps:
+For large deformations, use multiple sub-steps via the `n_steps` argument:
 
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy
-import numpy as np
-
-mesh = mmgpy.read("input.mesh")
-
-# Total displacement
-total_disp = compute_total_displacement(mesh)
-
-# Apply in 10 steps
-n_steps = 10
-for i in range(n_steps):
-    step_disp = total_disp / n_steps
-    result = mesh.remesh_lagrangian(step_disp, verbose=-1)
-    print(f"Step {i+1}: quality={result.quality_mean_after:.3f}")
-
-mesh.save("final.mesh")
+moved = mesh.mmg.move(total_displacement, n_steps=10, hmax=0.1, verbose=-1)
 ```
 
 ### With Quality Control
@@ -221,7 +157,7 @@ Combine with remeshing parameters:
 <!-- pytest-codeblocks:skip -->
 
 ```python
-result = mesh.remesh_lagrangian(
+remeshed = mesh.mmg.remesh_lagrangian(
     displacement,
     hmin=0.01,
     hmax=0.1,
@@ -237,43 +173,33 @@ Deform a sphere into an ellipsoid:
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Load sphere mesh
-mesh = mmgpy.Mesh("sphere.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("sphere.mesh")
+vertices = np.asarray(mesh.points)
 
 # Compute displacement: stretch in z, compress in x and y
 center = vertices.mean(axis=0)
 relative = vertices - center
-
-# Scale factors
 scale = np.array([0.7, 0.7, 1.5])  # Compress x,y, stretch z
+displacement = (center + relative * scale) - vertices
 
-# Displacement to achieve scaling
-new_positions = center + relative * scale
-displacement = new_positions - vertices
+# ELAS-bound path
+remeshed = mesh.mmg.remesh_lagrangian(displacement, hmax=0.1, verbose=1)
 
-# Apply with Lagrangian remeshing (requires ELAS library)
-result = mesh.remesh_lagrangian(
-    displacement,
-    hmax=0.1,
-    verbose=1,
-)
+q = remeshed.mmg.element_qualities()
+print(f"Vertices: {mesh.n_points} -> {remeshed.n_points}")
+print(f"Mean quality: {q.mean():.3f}")
 
-print(f"Remeshed ellipsoid:")
-print(f"  Vertices: {result.vertices_before} -> {result.vertices_after}")
-print(f"  Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:.3f}")
-
-# Save result
-mesh.save("ellipsoid.vtk")
+remeshed.save("ellipsoid.vtk")
 ```
 
 ## Tips
 
-1. **Small steps**: For large deformations, use multiple small steps
-2. **Quality monitoring**: Check quality after each step
-3. **Boundary handling**: Use `propagate_displacement` for interior smoothness
-4. **Remesh parameters**: Combine with `hmax`, `hausd` for size control
-5. **Validation**: Validate mesh after each Lagrangian step
+1. **Small steps**: For large deformations, pass `n_steps > 1` to `dataset.mmg.move(...)`.
+2. **Quality monitoring**: Check `dataset.mmg.element_qualities()` after each step.
+3. **Boundary handling**: Use `boundary_mask` + `propagate=True` for interior smoothness.
+4. **Remesh parameters**: Combine with `hmax`, `hausd` for size control.
+5. **Validation**: Validate the mesh between steps with `dataset.mmg.validate()`.

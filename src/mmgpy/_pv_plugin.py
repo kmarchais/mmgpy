@@ -146,6 +146,26 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
     return mesh
 
 
+def _to_pyvista_with_user_fields(
+    mesh: _Mesh,
+) -> pv.UnstructuredGrid | pv.PolyData:
+    """Convert *mesh* back to PyVista, restoring any non-MMG point_data.
+
+    ``Mesh.to_pyvista`` only ships the geometry plus reference markers; user
+    scalar/vector fields live in ``Mesh._user_fields``. The accessor exposes
+    the dataset as the unit of state, so we copy those fields back onto the
+    returned dataset (after a remesh-with-``transfer_fields`` they have been
+    interpolated to the new vertex set).
+    """
+    result = mesh.to_pyvista(include_refs=True, include_edges=True)
+    n_points = result.n_points
+    for name, arr in mesh.get_user_fields().items():
+        if arr.shape[0] != n_points:
+            continue
+        result.point_data[name] = arr
+    return result
+
+
 def _apply_local_sizing_specs(
     mesh: _Mesh,
     specs: list[Mapping[str, Any]] | None,
@@ -289,6 +309,7 @@ class MmgAccessor:
 
     def remesh(
         self,
+        opts: Any = None,  # noqa: ANN401  -- typed Options object or None
         *,
         local_sizing: list[Mapping[str, Any]] | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
@@ -297,6 +318,8 @@ class MmgAccessor:
 
         Parameters
         ----------
+        opts : Mmg2DOptions | Mmg3DOptions | MmgSOptions, optional
+            Typed options object. Mutually exclusive with ``**options``.
         local_sizing : list of dict, optional
             Sizing constraints applied before remeshing. Each dict has a
             ``"shape"`` key (``"sphere"``, ``"box"``, ``"cylinder"``, or
@@ -317,8 +340,14 @@ class MmgAccessor:
         """
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_local_sizing_specs(mesh, local_sizing)
-        mesh.remesh(**options)
-        return mesh.to_pyvista(include_refs=True, include_edges=True)
+        if opts is not None:
+            if options:
+                msg = "pass either an options object or kwargs, not both"
+                raise TypeError(msg)
+            mesh.remesh(opts)
+        else:
+            mesh.remesh(**options)
+        return _to_pyvista_with_user_fields(mesh)
 
     def remesh_lagrangian(
         self,
@@ -344,7 +373,7 @@ class MmgAccessor:
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_local_sizing_specs(mesh, local_sizing)
         mesh.remesh_lagrangian(displacement, **options)
-        return mesh.to_pyvista(include_refs=True, include_edges=True)
+        return _to_pyvista_with_user_fields(mesh)
 
     def remesh_levelset(
         self,
@@ -369,7 +398,7 @@ class MmgAccessor:
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_local_sizing_specs(mesh, local_sizing)
         mesh.remesh_levelset(levelset, **options)
-        return mesh.to_pyvista(include_refs=True, include_edges=True)
+        return _to_pyvista_with_user_fields(mesh)
 
     def remesh_optimize(
         self,
@@ -382,7 +411,7 @@ class MmgAccessor:
         """
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         mesh.remesh_optimize(**options)
-        return mesh.to_pyvista(include_refs=True, include_edges=True)
+        return _to_pyvista_with_user_fields(mesh)
 
     def remesh_uniform(
         self,
@@ -401,7 +430,59 @@ class MmgAccessor:
         """
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         mesh.remesh_uniform(size, **options)
-        return mesh.to_pyvista(include_refs=True, include_edges=True)
+        return _to_pyvista_with_user_fields(mesh)
+
+    def move(
+        self,
+        displacement: NDArray[np.float64],
+        *,
+        boundary_mask: NDArray[np.bool_] | None = None,
+        propagate: bool = True,
+        n_steps: int = 1,
+        **remesh_options: Any,  # noqa: ANN401  -- forwarded to mesh.remesh
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Apply a displacement field and remesh to maintain quality.
+
+        Pure-Python lagrangian motion (no ELAS dependency). Returns a fresh
+        dataset; the input is not modified.
+
+        Parameters
+        ----------
+        displacement : ndarray
+            Per-vertex displacement, shape ``(n_points, dim)``. When
+            ``boundary_mask`` is given and ``propagate`` is True, only
+            boundary entries need to be correct.
+        boundary_mask : ndarray of bool, optional
+            Marks vertices with prescribed displacement. ``None`` treats
+            every vertex as prescribed.
+        propagate : bool, default True
+            With ``boundary_mask``, propagate boundary values into the
+            interior via Laplacian smoothing.
+        n_steps : int, default 1
+            Number of incremental sub-steps. Use more steps for large
+            displacements to avoid mesh inversion.
+        **remesh_options : object
+            Forwarded to ``mesh.remesh()`` between sub-steps (``hmax``,
+            ``hmin``, ``hgrad``, ``verbose``, ...).
+
+        Returns
+        -------
+        pv.UnstructuredGrid or pv.PolyData
+            A new dataset of the same kind as the input.
+
+        """
+        from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
+
+        mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _move_mesh(
+            mesh,
+            displacement,
+            boundary_mask=boundary_mask,
+            propagate=propagate,
+            n_steps=n_steps,
+            **remesh_options,
+        )
+        return _to_pyvista_with_user_fields(mesh)
 
     def load_sol(self, path: str | Path) -> None:
         """Load a Medit ``.sol`` file and attach its fields to the dataset.

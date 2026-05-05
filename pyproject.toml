@@ -137,13 +137,10 @@ python_files = ["test_*.py", "*_test.py", "bench_*.py"]
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
-filterwarnings = [
-    # Mesh and Mesh.checkpoint are deprecated for removal in 0.13.
-    # tests/deprecation_test.py overrides this with pytest.warns when it
-    # actually wants to assert the warning fires.
-    "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
-    "ignore:Mesh.checkpoint\\(\\) is deprecated:DeprecationWarning",
-]
+# Mesh-deprecation filters live in tests/deprecated/conftest.py, scoped to
+# the legacy tests that target the Mesh class itself. Other suites that
+# incidentally still construct Mesh objects must port to the .mmg accessor
+# or use Mesh._from_arrays() (silent path) for fixture builders.
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -181,6 +178,7 @@ ignore = [
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
     "ANN",     # type annotations not required for tests
+    "INP001",  # tests/ subdirectories are intentional, not packages
 ]
 ".github/scripts/**/*.py" = [
     "INP001",  # CI scripts are not a package
@@ -204,8 +202,6 @@ ignore = [
     "PTH123",  # open() is fine for simple examples
     "PLR2004", # magic values allowed in examples
     "N806",    # uppercase variable names for matrices in examples
-    "FIX002",  # TODO comments are fine in examples
-    "TD003",   # TODO comments without issue links are fine in examples
 ]
 "scripts/**/*.py" = [
     "INP001",  # scripts are not a package

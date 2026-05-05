@@ -12,6 +12,16 @@ import pyvista as pv
 import mmgpy
 from mmgpy import Mesh, MeshKind
 
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
+    ),
+    pytest.mark.filterwarnings(
+        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
+    ),
+]
+
+
 if TYPE_CHECKING:
     from pathlib import Path
 

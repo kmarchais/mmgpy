@@ -27,55 +27,44 @@ Controls:
 - radius slider: controls the influence area of refinement
 """
 
-import warnings
-
 import numpy as np
 import pyvista as pv
 
-# TODO(0.13): port to the .mmg accessor. The current example caches a
-# Mesh between slider calls and mutates it in place; the stateless
-# accessor model wants a different design. Silence the deprecation
-# until that port lands.
-warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
-from mmgpy import Mesh  # noqa: E402
-
-# Cache for the base uniform mesh (created once)
-_BASE_MESH_CACHE: dict[str, Mesh] = {}
+# Cache for the uniformly remeshed base disc, keyed by ``hmax``. Sliders
+# fire many times per drag, so we only re-run the uniform pass when the
+# hmax knob changes.
+_BASE_MESH_CACHE: dict[str, pv.PolyData] = {}
 
 
-def create_base_mesh() -> Mesh:
-    """Create a simple circle mesh for initial remeshing."""
-    n = 32
-    vertices = [[0.0, 0.0]]
+def _circle_polydata(n: int = 32) -> pv.PolyData:
+    """Build a fan-triangulated unit disc as a PolyData."""
+    vertices = [[0.0, 0.0, 0.0]]
     for i in range(n):
         theta = 2 * np.pi * i / n
-        vertices.append([np.cos(theta), np.sin(theta)])
-    vertices = np.array(vertices, dtype=np.float64)
+        vertices.append([np.cos(theta), np.sin(theta), 0.0])
+    pts = np.array(vertices, dtype=np.float64)
 
-    triangles = [[0, 1 + i, 1 + (i + 1) % n] for i in range(n)]
-    return Mesh(vertices, np.array(triangles, dtype=np.int32))
+    triangles = np.array(
+        [[0, 1 + i, 1 + (i + 1) % n] for i in range(n)],
+        dtype=np.int32,
+    )
+    faces = np.column_stack([np.full(len(triangles), 3, dtype=np.int32), triangles])
+    return pv.PolyData(pts, faces=faces.ravel())
 
 
-def get_uniform_mesh(hmax: float = 0.15) -> Mesh:
-    """Get a uniformly meshed circle (cached for performance)."""
+def get_uniform_mesh(hmax: float = 0.15) -> pv.PolyData:
+    """Return a uniformly remeshed disc (cached per hmax)."""
     cache_key = f"{hmax:.4f}"
     if cache_key not in _BASE_MESH_CACHE:
-        mesh = create_base_mesh()
-        mesh.remesh(hmax=hmax, hausd=0.01, verbose=-1)
-        _BASE_MESH_CACHE[cache_key] = mesh
-    # Return a copy so we don't modify the cached mesh
-    cached = _BASE_MESH_CACHE[cache_key]
-    return Mesh(cached.get_vertices().copy(), cached.get_triangles().copy())
-
-
-def mesh_to_pyvista(mesh: Mesh) -> pv.PolyData:
-    """Convert Mesh to PyVista PolyData."""
-    verts = mesh.get_vertices()
-    verts_3d = np.column_stack([verts, np.zeros(len(verts))])
-    tris = mesh.get_triangles()
-    faces = np.column_stack([np.full(len(tris), 3), tris]).ravel()
-    return pv.PolyData(verts_3d, faces)
+        base = _circle_polydata()
+        _BASE_MESH_CACHE[cache_key] = base.mmg.remesh(
+            hmax=hmax,
+            hausd=0.01,
+            verbose=-1,
+        )
+    return _BASE_MESH_CACHE[cache_key].copy()
 
 
 class InteractiveRemeshPreview:
@@ -91,28 +80,25 @@ class InteractiveRemeshPreview:
 
     def update(self, _: float | None = None) -> None:
         """Remesh and update the display."""
-        # Start from a uniformly distributed mesh (cached)
-        mesh = get_uniform_mesh(hmax=self.hmax)
-        vertices = mesh.get_vertices()
+        base = get_uniform_mesh(hmax=self.hmax)
+        verts_xy = base.points[:, :2]
 
-        # Compute per-vertex size field based on distance from center
-        distances = np.linalg.norm(vertices - self.center[:2], axis=1)
+        distances = np.linalg.norm(verts_xy - self.center[:2], axis=1)
         t = np.clip(distances / self.radius, 0, 1)
         sizes = self.local_size + t * (self.hmax - self.local_size)
-        mesh["metric"] = sizes.reshape(-1, 1)
+        base.point_data["metric"] = sizes.reshape(-1, 1)
 
         try:
-            mesh.remesh(hausd=0.01, verbose=-1)
-            n_verts = len(mesh.get_vertices())
-            n_tris = len(mesh.get_triangles())
+            remeshed = base.mmg.remesh(hausd=0.01, verbose=-1)
+            n_verts = remeshed.n_points
+            n_tris = remeshed.n_faces
             status = f"{n_verts} verts | {n_tris} tris"
         except RuntimeError as e:
             status = f"remesh failed: {e}"
-            mesh = get_uniform_mesh(hmax=self.hmax)
+            remeshed = get_uniform_mesh(hmax=self.hmax)
 
-        pv_mesh = mesh_to_pyvista(mesh)
         self.plotter.add_mesh(
-            pv_mesh,
+            remeshed,
             show_edges=True,
             color="lightblue",
             edge_color="darkblue",

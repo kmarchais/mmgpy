@@ -28,17 +28,12 @@ After level-set discretization, MMG creates:
 For a surface-only mesh, see examples/mmgs/ellipsoid_sdf.py.
 """
 
-import warnings
 from pathlib import Path
 
 import numpy as np
 import pyvista as pv
 
-# TODO(0.13): port to the .mmg accessor's remesh_levelset path. Silence
-# the deprecation until then.
-warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
-
-from mmgpy import Mesh  # noqa: E402
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 
 def create_ellipsoid_sdf_grid(
@@ -109,27 +104,23 @@ def ellipsoid_sdf(
     return f.reshape(-1, 1)
 
 
-def extract_volume_surface(mesh: Mesh, element_ref: int = 3) -> pv.PolyData:
+def extract_volume_surface(
+    grid: pv.UnstructuredGrid,
+    element_ref: int = 3,
+) -> pv.PolyData:
     """Extract the surface of a volume region (tetrahedra with given ref).
 
     After level-set discretization, MMG assigns:
     - Element ref 2: exterior (where level-set > 0, void)
     - Element ref 3: interior (where level-set < 0, solid material)
     """
-    vertices = mesh.get_vertices()
-    elements, elem_refs = mesh.get_elements_with_refs()
-
-    target_tets = elements[elem_refs == element_ref]
-
-    if len(target_tets) == 0:
-        msg = (
-            f"No elements with ref {element_ref}. "
-            f"Available refs: {np.unique(elem_refs)}"
-        )
+    refs = np.asarray(grid.cell_data["refs"])
+    keep = refs == element_ref
+    if not keep.any():
+        msg = f"No elements with ref {element_ref}. Available refs: {np.unique(refs)}"
         raise ValueError(msg)
 
-    grid = pv.UnstructuredGrid({pv.CellType.TETRA: target_tets}, vertices)
-    return grid.extract_surface()
+    return grid.extract_cells(np.where(keep)[0]).extract_surface()
 
 
 def main() -> None:
@@ -161,8 +152,8 @@ def main() -> None:
 
     # Step 5: Level-set discretization with MMG3D
     print("\nRunning MMG3D level-set discretization...")
-    mesh = Mesh(vertices, tetrahedra)
-    result = mesh.remesh_levelset(
+    grid = pv.UnstructuredGrid({pv.CellType.TETRA: tetrahedra}, vertices)
+    result = grid.mmg.remesh_levelset(
         levelset,
         ls=0.0,
         hmax=0.08,
@@ -171,15 +162,14 @@ def main() -> None:
         verbose=False,
     )
 
+    n_tets_before = len(tetrahedra)
+    n_tets_after = result.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
     print("\nRemeshing result:")
-    print(f"  Tetrahedra: {result.elements_before} -> {result.elements_after}")
-    print(f"  Vertices: {result.vertices_before} -> {result.vertices_after}")
-    qb = result.quality_mean_before
-    qa = result.quality_mean_after
-    print(f"  Quality: {qb:.3f} -> {qa:.3f}")
+    print(f"  Tetrahedra: {n_tets_before} -> {n_tets_after}")
+    print(f"  Vertices: {len(vertices)} -> {result.n_points}")
 
     # Extract ellipsoid surface (interior region, ref=3)
-    ellipsoid_surface = extract_volume_surface(mesh, element_ref=3)
+    ellipsoid_surface = extract_volume_surface(result, element_ref=3)
     print(
         f"\nEllipsoid surface: {ellipsoid_surface.n_cells} triangles, "
         f"{ellipsoid_surface.n_points} vertices",
@@ -201,13 +191,8 @@ def main() -> None:
 
     # Right: Cut view showing interior tetrahedra
     pl.subplot(0, 1)
-    all_vertices = mesh.get_vertices()
-    all_elements, all_refs = mesh.get_elements_with_refs()
-    interior_tets = all_elements[all_refs == 3]
-    interior_grid = pv.UnstructuredGrid(
-        {pv.CellType.TETRA: interior_tets},
-        all_vertices,
-    )
+    interior_mask = np.asarray(result.cell_data["refs"]) == 3
+    interior_grid = result.extract_cells(np.where(interior_mask)[0])
     # Select cells with centers where x < 0 (half of the ellipsoid)
     cell_centers = interior_grid.cell_centers().points
     half_mesh = interior_grid.extract_cells(cell_centers[:, 0] < center[0])
@@ -218,7 +203,7 @@ def main() -> None:
         edge_color="darkred",
         line_width=0.5,
     )
-    pl.add_title(f"Interior Tetrahedra (cut)\n{len(interior_tets)} tetrahedra")
+    pl.add_title(f"Interior Tetrahedra (cut)\n{interior_grid.n_cells} tetrahedra")
 
     pl.link_views()
     pl.camera_position = [(3, 2, 1.5), center, (0, 0, 1)]

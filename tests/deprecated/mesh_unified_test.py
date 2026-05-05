@@ -13,6 +13,16 @@ from mmgpy import Mesh, MeshKind, read
 # Test fixtures
 
 
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
+    ),
+    pytest.mark.filterwarnings(
+        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
+    ),
+]
+
+
 @pytest.fixture
 def tetra_vertices() -> np.ndarray:
     """Vertices for a simple tetrahedral mesh."""
@@ -647,7 +657,7 @@ class TestMeshMethods:
         import mmgpy
 
         # Use a cube mesh that has tets, boundary triangles, and edges
-        mesh = mmgpy.read(Path(__file__).parent.parent / "assets" / "cube.mesh")
+        mesh = mmgpy.read(Path(__file__).parent.parent.parent / "assets" / "cube.mesh")
         mesh.set_user_field("temperature", np.ones(len(mesh.get_vertices())))
 
         with TemporaryDirectory() as tmpdir:
@@ -755,8 +765,8 @@ class TestNonNativeRemeshWithSol:
         """Test remeshing a VTU file with an input .sol file."""
         from mmgpy import mmg2d
 
-        input_mesh = Path(__file__).parent.parent / "assets" / "hole.mesh"
-        input_sol = Path(__file__).parent.parent / "assets" / "hole.sol"
+        input_mesh = Path(__file__).parent.parent.parent / "assets" / "hole.mesh"
+        input_sol = Path(__file__).parent.parent.parent / "assets" / "hole.sol"
 
         with TemporaryDirectory() as tmpdir:
             # Convert to VTU first via PyVista
@@ -780,7 +790,7 @@ class TestNonNativeRemeshWithSol:
         """Test remeshing a VTU file with output .sol saving."""
         from mmgpy import mmg3d
 
-        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+        input_mesh = Path(__file__).parent.parent.parent / "assets" / "cube.mesh"
 
         with TemporaryDirectory() as tmpdir:
             mesh = read(input_mesh)
@@ -805,8 +815,8 @@ class TestNonNativeRemeshWithSol:
         """Test that _load_sol correctly sets the metric field."""
         from mmgpy._remesh import _load_sol
 
-        input_mesh = Path(__file__).parent.parent / "assets" / "hole.mesh"
-        input_sol = Path(__file__).parent.parent / "assets" / "hole.sol"
+        input_mesh = Path(__file__).parent.parent.parent / "assets" / "hole.mesh"
+        input_sol = Path(__file__).parent.parent.parent / "assets" / "hole.sol"
 
         mesh = read(input_mesh)
         _load_sol(mesh, input_sol)
@@ -817,7 +827,7 @@ class TestNonNativeRemeshWithSol:
 
     def test_save_sol_roundtrip(self) -> None:
         """Test that save_sol produces a file loadable by load_sol."""
-        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+        input_mesh = Path(__file__).parent.parent.parent / "assets" / "cube.mesh"
         mesh = read(input_mesh)
         n_verts = len(mesh.get_vertices())
         mesh["metric"] = np.ones((n_verts, 1)) * 0.5
@@ -842,7 +852,7 @@ class TestLazyFieldLoading:
 
     def _make_vtk_with_field(self, tmpdir: Path) -> Path:
         """Create a VTK file with a temperature point_data field."""
-        input_mesh = Path(__file__).parent.parent / "assets" / "cube.mesh"
+        input_mesh = Path(__file__).parent.parent.parent / "assets" / "cube.mesh"
         mesh = read(input_mesh)
         n_verts = len(mesh.get_vertices())
         mesh.set_user_field("temperature", np.linspace(0, 100, n_verts))
@@ -934,7 +944,7 @@ class TestLazyFieldLoading:
 
     def test_save_surface_mesh_to_vtu(self) -> None:
         """PolyData meshes are cast to UnstructuredGrid for .vtu save."""
-        input_mesh = Path(__file__).parent.parent / "assets" / "rodin.mesh"
+        input_mesh = Path(__file__).parent.parent.parent / "assets" / "rodin.mesh"
         mesh = read(input_mesh)
 
         with TemporaryDirectory() as tmpdir:

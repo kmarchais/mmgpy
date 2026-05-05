@@ -4,19 +4,20 @@ This tutorial covers remeshing 3D surface meshes with mmgpy.
 
 ## Loading Surface Meshes
 
-Surface meshes can be loaded from various formats:
+Surface meshes can be loaded from various formats via PyVista:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
 # From STL (common CAD export format)
-mesh = mmgpy.read("model.stl")
+mesh = pv.read("model.stl")
 
 # From OBJ
-mesh = mmgpy.read("model.obj")
+mesh = pv.read("model.obj")
 
-# From MMG native format
-mesh = mmgpy.Mesh("surface.mesh")
+# From MMG native format (mmgpy registers a Medit reader)
+mesh = pv.read("surface.mesh")
 ```
 
 ## Basic Surface Remeshing
@@ -24,17 +25,18 @@ mesh = mmgpy.Mesh("surface.mesh")
 Remesh a surface with target edge lengths:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("surface.stl")
+mesh = pv.read("surface.stl")
 
-result = mesh.remesh(
-    hmin=0.01,    # Minimum edge length
-    hmax=0.1,     # Maximum edge length
+remeshed = mesh.mmg.remesh(
+    hmin=0.01,
+    hmax=0.1,
     verbose=1,
 )
 
-print(f"Triangles: {result.triangles_before} -> {result.triangles_after}")
+print(f"Triangles: {mesh.n_cells} -> {remeshed.n_cells}")
 ```
 
 ## Geometric Fidelity
@@ -45,10 +47,10 @@ The `hausd` parameter is crucial for surface meshes - it controls how closely th
 
 ```python
 # Tight approximation (more triangles, better geometry)
-result = mesh.remesh(hmax=0.1, hausd=0.0001)
+tight = mesh.mmg.remesh(hmax=0.1, hausd=0.0001)
 
 # Looser approximation (fewer triangles)
-result = mesh.remesh(hmax=0.1, hausd=0.01)
+loose = mesh.mmg.remesh(hmax=0.1, hausd=0.01)
 ```
 
 !!! warning "Hausdorff Distance"
@@ -61,7 +63,7 @@ MMG can detect and preserve sharp edges based on the angle between adjacent face
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
     hausd=0.001,
     ar=45,  # Edges sharper than 45° are preserved as ridges
@@ -75,9 +77,9 @@ To prevent vertex movement during remeshing (vertices stay in place, but edges m
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
-    nomove=1,  # Don't move existing vertices
+    nomove=1,
 )
 ```
 
@@ -94,10 +96,10 @@ opts = MmgSOptions(
     hmax=0.1,
     hausd=0.0001,  # Tight approximation
     hgrad=1.1,     # Gentle size gradation
-    ar=180,      # No ridge detection
+    ar=180,        # No ridge detection
 )
 
-result = mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 ```
 
 ## Mechanical Part Remeshing
@@ -113,31 +115,23 @@ opts = MmgSOptions(
     hmax=0.1,
     hausd=0.001,
     hgrad=1.3,
-    ar=30,       # Detect sharp edges
+    ar=30,
 )
 
-result = mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 ```
 
-## Converting from PyVista
+## From PyVista Primitives
 
-Create surface meshes from PyVista geometry:
+The accessor works on any PyVista geometry without an intermediate wrapper:
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Create a PyVista surface
 sphere = pv.Sphere(radius=1.0, theta_resolution=20, phi_resolution=20)
-
-# Convert to mmgpy surface mesh
-mesh = mmgpy.Mesh(sphere)
-
-# Remesh
-mesh.remesh(hmax=0.1)
-
-# Visualize
-mesh.to_pyvista().plot(show_edges=True)
+remeshed = sphere.mmg.remesh(hmax=0.1)
+remeshed.plot(show_edges=True)
 ```
 
 ## Visualization
@@ -145,26 +139,20 @@ mesh.to_pyvista().plot(show_edges=True)
 Visualize before and after:
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Load and convert to PyVista
-mesh = mmgpy.read("surface.stl")
-before = mesh.to_pyvista()
+mesh = pv.read("surface.stl")
+remeshed = mesh.mmg.remesh(hmax=0.1, hausd=0.001)
 
-# Remesh
-mesh.remesh(hmax=0.1, hausd=0.001)
-after = mesh.to_pyvista()
-
-# Side-by-side comparison
 pl = pv.Plotter(shape=(1, 2))
 
 pl.subplot(0, 0)
-pl.add_mesh(before, show_edges=True)
+pl.add_mesh(mesh, show_edges=True)
 pl.add_text("Before", font_size=12)
 
 pl.subplot(0, 1)
-pl.add_mesh(after, show_edges=True)
+pl.add_mesh(remeshed, show_edges=True)
 pl.add_text("After", font_size=12)
 
 pl.link_views()
@@ -174,17 +162,16 @@ pl.show()
 ## Complete Example
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 from mmgpy import MmgSOptions
 
-# Load a mechanical part
-mesh = mmgpy.read("mechanical_part.stl")
+mesh = pv.read("mechanical_part.stl")
 
 # Check initial state
-report = mesh.validate(detailed=True)
+report = mesh.mmg.validate(detailed=True)
 print(f"Initial quality: {report.quality.mean:.3f}")
 
-# Configure remeshing
 opts = MmgSOptions(
     hmin=0.005,
     hmax=0.05,
@@ -194,22 +181,20 @@ opts = MmgSOptions(
     verbose=1,
 )
 
-# Remesh
-result = mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 
-print(f"\nRemeshed in {result.duration_seconds:.2f}s")
-print(f"Triangles: {result.triangles_before} -> {result.triangles_after}")
-print(f"Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:.3f}")
+q_after = remeshed.mmg.element_qualities()
+print(f"Triangles: {mesh.n_cells} -> {remeshed.n_cells}")
+print(f"Mean quality (after): {q_after.mean():.3f}")
 
-# Save result
-mesh.save("output_surface.vtk")
+remeshed.save("output_surface.vtk")
 ```
 
 ## Tips for Surface Remeshing
 
 1. **Start conservative**: Use small `hausd` values first to preserve geometry
-2. **Check quality**: Use `mesh.validate(detailed=True)` to inspect results
-3. **Ridge preservation**: Lower `angle` values preserve more sharp edges
+2. **Check quality**: Use `dataset.mmg.validate(detailed=True)` to inspect results
+3. **Ridge preservation**: Lower `ar` values preserve more sharp edges
 4. **Gradation**: Use `hgrad` close to 1.0 for smoother size transitions
 5. **Visualization**: Always visualize results with PyVista to verify
 

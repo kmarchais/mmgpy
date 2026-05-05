@@ -20,18 +20,12 @@ displacements to interior nodes, then applies the motion and remeshes.
 This works on all platforms without requiring the ELAS library.
 """
 
-import warnings
-
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
+import pyvista as pv
 
-# TODO(0.13): port to the .mmg accessor once mmgpy.move_mesh accepts a
-# PyVista dataset. mmgpy.Mesh is deprecated; the warning is silenced here
-# only for the example's existing pure-Python lagrangian path.
-warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
-
-from mmgpy import Mesh, move_mesh  # noqa: E402
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 
 def create_unit_square_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -53,12 +47,17 @@ def main() -> None:
     vertices, triangles = create_unit_square_mesh()
     print(f"Initial mesh: {len(vertices)} vertices, {len(triangles)} triangles")
 
-    mesh = Mesh(vertices, triangles)
+    # Embed the planar mesh as a PolyData (z=0); the accessor auto-detects
+    # TRIANGULAR_2D from the planar coordinate.
+    verts_3d = np.column_stack([vertices, np.zeros(len(vertices))])
+    faces = np.column_stack(
+        [np.full(len(triangles), 3, dtype=np.int32), triangles.astype(np.int32)],
+    ).ravel()
+    pv_mesh = pv.PolyData(verts_3d, faces=faces)
 
-    # Create radial expansion displacement field
+    # Create radial expansion displacement field (2D)
     n_vertices = vertices.shape[0]
     displacement = np.zeros((n_vertices, 2), dtype=np.float64)
-
     center = np.array([0.5, 0.5])
     for i in range(n_vertices):
         r = np.linalg.norm(vertices[i] - center)
@@ -67,10 +66,10 @@ def main() -> None:
             displacement[i] = direction * 0.05
 
     print("Applying Lagrangian motion (pure Python implementation)...")
-    move_mesh(mesh, displacement, hmax=0.15, verbose=False)
+    moved = pv_mesh.mmg.move(displacement, hmax=0.15, verbose=False)
 
-    output_vertices = mesh.get_vertices()
-    output_triangles = mesh.get_triangles()
+    output_vertices = np.asarray(moved.points[:, :2])
+    output_triangles = moved.regular_faces
     print(
         f"Output mesh: {len(output_vertices)} vertices, "
         f"{len(output_triangles)} triangles",

@@ -13,6 +13,15 @@ from mmgpy.lagrangian import (
     propagate_displacement,
 )
 
+pytestmark = [
+    pytest.mark.filterwarnings(
+        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
+    ),
+    pytest.mark.filterwarnings(
+        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
+    ),
+]
+
 
 def create_2d_test_mesh() -> tuple[np.ndarray, np.ndarray]:
     """Create a simple 2D square mesh for testing."""

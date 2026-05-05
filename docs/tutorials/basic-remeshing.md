@@ -2,69 +2,55 @@
 
 This tutorial covers the fundamentals of mesh remeshing with mmgpy.
 
+mmgpy operates on PyVista datasets through the `.mmg` accessor. Importing `mmgpy` registers a Medit reader/writer for `.mesh`/`.meshb` files plus a `.mmg` accessor on every `pv.UnstructuredGrid` and `pv.PolyData`.
+
 ## Loading a Mesh
 
-mmgpy can load meshes from 40+ file formats:
+PyVista handles 40+ file formats out of the box. mmgpy adds Medit `.mesh`/`.meshb`:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
-# Using the unified read function (recommended)
-mesh = mmgpy.read("input.mesh")
-
-# Or use specific mesh classes directly
-mesh_3d = mmgpy.Mesh("volume.mesh")
-mesh_2d = mmgpy.Mesh("planar.mesh")
-mesh_s = mmgpy.Mesh("surface.stl")
+# Same call works for tetrahedral, planar, and surface inputs
+mesh_3d = pv.read("volume.mesh")
+mesh_2d = pv.read("planar.mesh")
+mesh_s = pv.read("surface.stl")
 ```
 
-The `read()` function automatically detects the mesh type and returns the appropriate class wrapped in a unified `Mesh` interface.
+The accessor auto-detects the kind from cell types and coordinate dimensions; access via `dataset.mmg.kind`.
 
 ## Simple Remeshing
 
 The simplest remeshing operation specifies only the maximum edge length:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 
 # Remesh with maximum edge length of 0.1
-result = mesh.remesh(hmax=0.1)
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
-print(f"Vertices: {result.vertices_before} -> {result.vertices_after}")
-print(f"Elements: {result.elements_before} -> {result.elements_after}")
+print(f"Vertices: {mesh.n_points} -> {remeshed.n_points}")
+print(f"Cells:    {mesh.n_cells} -> {remeshed.n_cells}")
 ```
 
-## Understanding RemeshResult
+## Inspecting the Result
 
-Every remeshing operation returns a `RemeshResult` object with statistics:
+`dataset.mmg.remesh(...)` returns a fresh PyVista dataset. Stats come from the dataset itself plus the accessor's quality helpers:
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(hmax=0.1)
+qualities_before = mesh.mmg.element_qualities()
+qualities_after = remeshed.mmg.element_qualities()
 
-# Vertex counts
-print(f"Vertices before: {result.vertices_before}")
-print(f"Vertices after: {result.vertices_after}")
-
-# Element counts
-print(f"Elements before: {result.elements_before}")
-print(f"Elements after: {result.elements_after}")
-
-# Quality metrics
-print(f"Min quality before: {result.quality_min_before:.3f}")
-print(f"Min quality after: {result.quality_min_after:.3f}")
-print(f"Mean quality before: {result.quality_mean_before:.3f}")
-print(f"Mean quality after: {result.quality_mean_after:.3f}")
-
-# Timing
-print(f"Duration: {result.duration_seconds:.2f} seconds")
-
-# Warnings from MMG
-for warning in result.warnings:
-    print(f"Warning: {warning}")
+print(f"Vertices: {mesh.n_points} -> {remeshed.n_points}")
+print(f"Cells:    {mesh.n_cells} -> {remeshed.n_cells}")
+print(f"Min quality:  {qualities_before.min():.3f} -> {qualities_after.min():.3f}")
+print(f"Mean quality: {qualities_before.mean():.3f} -> {qualities_after.mean():.3f}")
 ```
 
 ## Edge Length Control
@@ -74,7 +60,7 @@ Control the range of edge lengths in the output mesh:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmin=0.01,  # Minimum edge length (prevents over-refinement)
     hmax=0.1,   # Maximum edge length
 )
@@ -85,14 +71,13 @@ For a uniform mesh with a single target size:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Using hsiz parameter (reload: hsiz conflicts with prior metric)
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh(hsiz=0.05)
+# Using hsiz parameter
+mesh = pv.read("input.mesh")
+uniform = mesh.mmg.remesh(hsiz=0.05)
 
 # Or using the convenience method
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh_uniform(size=0.05)
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
+uniform = mesh.mmg.remesh_uniform(size=0.05)
 ```
 
 ## Geometric Approximation
@@ -102,7 +87,7 @@ The `hausd` parameter controls how closely the output mesh approximates the inpu
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
     hausd=0.001,  # Maximum Hausdorff distance to input surface
 )
@@ -119,7 +104,6 @@ For complex configurations, use typed options objects:
 ```python
 from mmgpy import Mmg3DOptions
 
-# Create options with all parameters
 opts = Mmg3DOptions(
     hmin=0.01,
     hmax=0.1,
@@ -129,15 +113,15 @@ opts = Mmg3DOptions(
     verbose=1,
 )
 
-result = mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 ```
 
-Options can be unpacked directly into `remesh()`:
+Options can also be unpacked as kwargs:
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(**opts.to_dict())
+remeshed = mesh.mmg.remesh(**opts.to_dict())
 ```
 
 ## Optimization Without Topology Changes
@@ -147,14 +131,12 @@ To improve quality without inserting/removing vertices:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Reload: optim conflicts with prior metric
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh_optimize()
+mesh = pv.read("input.mesh")
+optimized = mesh.mmg.remesh_optimize()
 
 # Equivalent to
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh(optim=1, noinsert=1)
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
+optimized = mesh.mmg.remesh(optim=1, noinsert=1)
 ```
 
 This only moves existing vertices to improve element quality.
@@ -168,21 +150,17 @@ Options classes provide factory methods for common scenarios:
 ```python
 from mmgpy import Mmg3DOptions
 
-# Fine mesh preset
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 fine_opts = Mmg3DOptions.fine(hmax=0.05)
-result = mesh.remesh(fine_opts)
+fine = mesh.mmg.remesh(fine_opts)
 
-# Coarse mesh preset
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 coarse_opts = Mmg3DOptions.coarse(hmax=1.0)
-result = mesh.remesh(coarse_opts)
+coarse = mesh.mmg.remesh(coarse_opts)
 
-# Optimization-only preset
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 opt_opts = Mmg3DOptions.optimize_only()
-result = mesh.remesh(opt_opts)
-mesh = mmgpy.read("input.mesh")
+optimized = mesh.mmg.remesh(opt_opts)
 ```
 
 ## Saving Results
@@ -193,26 +171,25 @@ Save the remeshed output to any supported format:
 
 ```python
 # Save to MMG native format
-mesh.save("output.mesh")
+remeshed.save("output.mesh")
 
 # Save to VTK for ParaView
-mesh.save("output.vtk")
+remeshed.save("output.vtk")
 ```
 
 ## Complete Example
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 from mmgpy import Mmg3DOptions
 
-# Load mesh
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 
 # Check initial quality
-report = mesh.validate(detailed=True)
+report = mesh.mmg.validate(detailed=True)
 print(f"Initial quality: {report.quality.mean:.3f}")
 
-# Create options
 opts = Mmg3DOptions(
     hmin=0.01,
     hmax=0.1,
@@ -220,19 +197,18 @@ opts = Mmg3DOptions(
     verbose=1,
 )
 
-# Remesh
-result = mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 
 # Report results
-print(f"\nRemeshing complete in {result.duration_seconds:.2f}s")
-print(f"Vertices: {result.vertices_before} -> {result.vertices_after}")
-print(f"Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:.3f}")
+print(f"Vertices: {mesh.n_points} -> {remeshed.n_points}")
+qualities_after = remeshed.mmg.element_qualities()
+print(f"Mean quality (after): {qualities_after.mean():.3f}")
 
 # Validate final mesh
-assert mesh.validate(), "Mesh validation failed"
+assert remeshed.mmg.validate(), "Mesh validation failed"
 
 # Save result
-mesh.save("output.vtk")
+remeshed.save("output.vtk")
 ```
 
 ## Next Steps

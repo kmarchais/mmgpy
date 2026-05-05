@@ -53,6 +53,8 @@ Every MMG-specific operation that used to live on `Mesh` now lives on the access
 
 ### 1. Read, remesh, save
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 # Before
 import mmgpy

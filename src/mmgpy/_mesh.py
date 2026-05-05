@@ -667,6 +667,40 @@ class Mesh:
         mesh._metric_is_tensor = False  # noqa: SLF001
         return mesh
 
+    @classmethod
+    def _from_arrays(
+        cls,
+        vertices: NDArray[np.floating],
+        cells: NDArray[np.integer],
+        *,
+        refs: NDArray[np.integer] | None = None,
+        edges: NDArray[np.integer] | None = None,
+        edge_refs: NDArray[np.integer] | None = None,
+    ) -> Mesh:
+        """Build a Mesh from raw arrays without firing the deprecation warning.
+
+        Internal entry point for code paths that genuinely need raw-array
+        construction (e.g. ``mmgpy.repair`` rebuilding meshes after vertex
+        deduplication). External callers must go through
+        ``mmgpy.read`` / the ``.mmg`` accessor.
+        """
+        verts = np.asarray(vertices)
+        cells_arr = np.asarray(cells)
+        cell_refs = np.asarray(refs) if refs is not None else None
+        edges_arr = np.asarray(edges) if edges is not None else None
+        e_refs = np.asarray(edge_refs) if edge_refs is not None else None
+
+        kind = _detect_mesh_kind(verts, cells_arr)
+        impl = _create_impl(
+            verts,
+            cells_arr,
+            kind,
+            refs=cell_refs,
+            edges=edges_arr,
+            edge_refs=e_refs,
+        )
+        return cls._from_impl(impl, kind)
+
     @property
     def _impl_unwrap(self) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
         """Get the underlying C++ mesh implementation.

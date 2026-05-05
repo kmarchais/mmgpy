@@ -9,6 +9,15 @@ import pyvista as pv
 
 from mmgpy import Mesh, MeshKind
 
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
+    ),
+    pytest.mark.filterwarnings(
+        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
+    ),
+]
+
 
 class TestEmptyMesh:
     """Tests for edge cases with empty meshes using mocking."""

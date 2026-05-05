@@ -1,76 +1,57 @@
 # PyVista Integration
 
-This tutorial covers the integration between mmgpy and PyVista for visualization and mesh interoperability.
+This tutorial covers how mmgpy plugs into PyVista for visualization and mesh interoperability.
 
 ## Overview
 
-PyVista is a powerful 3D visualization library for Python. mmgpy provides seamless conversion to and from PyVista meshes, enabling:
+PyVista is a powerful 3D visualization library for Python. mmgpy registers itself with PyVista on import:
 
-- Interactive visualization of meshes
-- Loading meshes from PyVista geometric primitives
-- Quality inspection and comparison
-- Integration with PyVista workflows
+- A Medit reader/writer plugin so `pv.read("foo.mesh")` and `dataset.save("foo.mesh")` work end-to-end.
+- A `.mmg` dataset accessor so `dataset.mmg.remesh(...)` operates directly on `pv.UnstructuredGrid` / `pv.PolyData`.
+
+This means the rest of mmgpy's API composes with PyVista without an intermediate wrapper.
 
 ## Quick Visualization
 
-The simplest way to visualize a mesh is using the built-in `plot()` method:
+PyVista's built-in `plot()` works on the dataset directly:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
-mesh = mmgpy.read("input.mesh")
-mesh.remesh(hmax=0.1)
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
-# One-liner visualization with edges shown by default
-mesh.plot()
+# One-liner visualization
+remeshed.plot(show_edges=True)
 
 # Customize with any PyVista plot options
-mesh.plot(color="lightblue", opacity=0.8, show_edges=False)
+remeshed.plot(color="lightblue", opacity=0.8, show_edges=False)
 ```
 
 ## Custom Plotter Integration
 
-For more complex visualizations, use the `vtk` property to access the PyVista mesh:
+For more complex visualizations, use any standard PyVista plotter:
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
-mesh.remesh(hmax=0.1)
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
-# Use mesh.vtk with any PyVista plotter
 plotter = pv.Plotter()
-plotter.add_mesh(mesh.vtk, show_edges=True, color="lightblue")
+plotter.add_mesh(remeshed, show_edges=True, color="lightblue")
 plotter.show()
-```
-
-## Converting to PyVista
-
-For full control, convert to a PyVista object with `to_pyvista()`:
-
-```python
-import mmgpy
-import pyvista as pv
-
-# Load and remesh
-mesh = mmgpy.read("input.mesh")
-mesh.remesh(hmax=0.1)
-
-# Convert to PyVista (same as mesh.vtk)
-pv_mesh = mesh.to_pyvista()
-
-# Visualize
-pv_mesh.plot(show_edges=True)
 ```
 
 ## Working with PyVista datasets directly
 
-The `.mmg` accessor (registered automatically when you `import mmgpy`) lets you operate on PyVista datasets without ever wrapping them in `mmgpy.Mesh`:
+The `.mmg` accessor lets you operate on PyVista datasets without ever wrapping them:
 
 ```python
-import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
+import mmgpy  # noqa: F401
 
 # Surface mesh — accessor returns PolyData
 sphere = pv.Sphere(radius=1.0)
@@ -85,37 +66,25 @@ The accessor auto-detects the mesh kind (`mesh.mmg.kind` returns the matching `M
 
 ## Visualization Examples
 
-### Basic Visualization
-
-```python
-import mmgpy
-
-mesh = mmgpy.read("input.mesh")
-mesh.plot()  # Simple one-liner with edges
-```
-
 ### Side-by-Side Comparison
 
 Compare before and after remeshing:
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
-before = mesh.to_pyvista()
-
-mesh.remesh(hmax=0.1)
-after = mesh.to_pyvista()
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
 pl = pv.Plotter(shape=(1, 2))
 
 pl.subplot(0, 0)
-pl.add_mesh(before, show_edges=True, color="lightblue")
+pl.add_mesh(mesh, show_edges=True, color="lightblue")
 pl.add_text("Before", font_size=12)
 
 pl.subplot(0, 1)
-pl.add_mesh(after, show_edges=True, color="lightgreen")
+pl.add_mesh(remeshed, show_edges=True, color="lightgreen")
 pl.add_text("After", font_size=12)
 
 pl.link_views()
@@ -124,22 +93,16 @@ pl.show()
 
 ### Quality Visualization
 
-Visualize element quality:
+Visualize element quality with PyVista's built-in cell metrics:
 
 ```python
-import mmgpy
 import pyvista as pv
-import numpy as np
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
-mesh.remesh(hmax=0.1)
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
-pv_mesh = mesh.to_pyvista()
-
-# Compute quality (PyVista has built-in quality metrics)
-quality = pv_mesh.cell_quality("scaled_jacobian")
-
-# Plot with quality colormap
+quality = remeshed.cell_quality("scaled_jacobian")
 quality.plot(
     scalars="scaled_jacobian",
     cmap="RdYlGn",
@@ -153,18 +116,19 @@ quality.plot(
 Animate a remeshing sequence:
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.5, verbose=-1)
 
 pl = pv.Plotter()
-actor = pl.add_mesh(mesh.to_pyvista(), show_edges=True)
+actor = pl.add_mesh(remeshed, show_edges=True)
 pl.show(interactive_update=True, auto_close=False)
 
 for hmax in [0.5, 0.3, 0.2, 0.15, 0.1]:
-    mesh.remesh(hmax=hmax, verbose=-1)
-    actor.mapper.SetInputData(mesh.to_pyvista())
+    remeshed = mesh.mmg.remesh(hmax=hmax, verbose=-1)
+    actor.mapper.SetInputData(remeshed)
     pl.update()
 
 pl.close()
@@ -172,39 +136,30 @@ pl.close()
 
 ## Working with Mesh Data
 
-### Transferring Scalar Fields
+### Per-Vertex Scalar Fields
+
+User-defined `point_data` survives on the dataset; `transfer_fields=True` interpolates non-MMG scalars onto the remeshed dataset:
 
 ```python
-import mmgpy
-import pyvista as pv
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 
-# Add a scalar field to the mesh
-vertices = mesh.get_vertices()
-scalar_field = np.sin(vertices[:, 0] * 2 * np.pi)
-mesh["temperature"] = scalar_field
+vertices = np.asarray(mesh.points)
+mesh.point_data["temperature"] = np.sin(vertices[:, 0] * 2 * np.pi)
 
-# Convert to PyVista and add user fields manually
-pv_mesh = mesh.to_pyvista()
-pv_mesh["temperature"] = mesh["temperature"]
-
-# Plot with scalar field
-pv_mesh.plot(scalars="temperature", show_edges=True, cmap="coolwarm")
+remeshed = mesh.mmg.remesh(hmax=0.1, transfer_fields=True)
+remeshed.plot(scalars="temperature", show_edges=True, cmap="coolwarm")
 ```
 
-### From PyVista with Data
-
-<!-- pytest-codeblocks:skip -->
+### From PyVista Primitives with Data
 
 ```python
-import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-# User-defined point_data survives on the dataset; for interpolation onto
-# a remeshed dataset, pass transfer_fields=True (requires the underlying
-# Mesh path; full accessor support lands in a follow-up PR).
 sphere = pv.Sphere()
 sphere.point_data["elevation"] = sphere.points[:, 2]
 
@@ -220,16 +175,18 @@ print(f"Elevation range: {elevation.min():.2f} to {elevation.max():.2f}")
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
+import mmgpy  # noqa: F401
 from pyvista import examples
 
 bunny = examples.download_bunny()
+
 
 def remesh_callback(value):
     remeshed = bunny.mmg.remesh(hmax=value, verbose=-1)
     actor.mapper.SetInputData(remeshed)
     pl.render()
+
 
 pl = pv.Plotter()
 actor = pl.add_mesh(bunny, show_edges=True)
@@ -248,11 +205,12 @@ pl.show()
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy  # noqa: F401  -- registers reader plugin + accessor
 import pyvista as pv
+import mmgpy  # noqa: F401
 
 mesh = pv.read("input.mesh")
 pinned_sizing = []
+
 
 def add_refinement(point):
     pinned_sizing.append(
@@ -261,6 +219,7 @@ def add_refinement(point):
     remeshed = mesh.mmg.remesh(hmax=0.1, local_sizing=pinned_sizing, verbose=-1)
     actor.mapper.SetInputData(remeshed)
     pl.render()
+
 
 pl = pv.Plotter()
 actor = pl.add_mesh(mesh, show_edges=True, pickable=True)
@@ -273,13 +232,12 @@ pl.show()
 Full workflow from PyVista primitive to remeshed output:
 
 ```python
-import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
+import mmgpy  # noqa: F401
 
 torus = pv.ParametricTorus(ringradius=1.0, crosssectionradius=0.3)
 print(f"Original: {torus.n_faces} triangles")
 
-# Remesh with adaptive sizing — sphere constraint near (1, 0, 0)
 remeshed = torus.mmg.remesh(
     hmax=0.1,
     hausd=0.001,
@@ -301,17 +259,14 @@ pl.show()
 
 ## Tips
 
-1. **Memory**: Large meshes may use significant memory when converted. Consider saving to file for very large meshes.
-
+1. **Memory**: Large meshes may use significant memory. Consider streaming through files for very large meshes.
 2. **Cell types**: PyVista supports many cell types, but mmgpy requires triangles (surface/2D) or tetrahedra (3D). Use `triangulate()` if needed.
-
-3. **Coordinates**: mmgpy uses 0-indexed arrays. PyVista point/cell IDs match directly.
-
+3. **Coordinates**: PyVista uses 0-indexed arrays throughout. MMG-specific accessor methods (`adjacent_elements`, `vertex_neighbors`) use 1-based indexing for parity with the underlying library.
 4. **Performance**: For real-time visualization, use `interactive_update=True` and batch updates.
 
 ## The `.mmg` Dataset Accessor
 
-When mmgpy is installed, every PyVista `UnstructuredGrid` and `PolyData` instance gains a `.mmg` accessor exposing MMG operations directly. The accessor takes and returns PyVista datasets, so it composes with the rest of the PyVista API without manually constructing an `mmgpy.Mesh`.
+When mmgpy is installed, every PyVista `UnstructuredGrid` and `PolyData` instance gains a `.mmg` accessor exposing MMG operations directly. The accessor takes and returns PyVista datasets.
 
 ### Remeshing variants
 
@@ -319,7 +274,7 @@ When mmgpy is installed, every PyVista `UnstructuredGrid` and `PolyData` instanc
 
 ```python
 import pyvista as pv
-import mmgpy  # noqa: F401  -- registers the accessor
+import mmgpy  # noqa: F401
 
 mesh = pv.read("brain.mesh")
 
@@ -332,8 +287,11 @@ optimized = mesh.mmg.remesh_optimize()
 # Uniform target edge size
 uniform = mesh.mmg.remesh_uniform(0.05)
 
-# Lagrangian (moving-mesh) — TET or 2D only
-moved = mesh.mmg.remesh_lagrangian(displacement)
+# Lagrangian (moving-mesh) — TET or 2D only, requires ELAS
+moved_elas = mesh.mmg.remesh_lagrangian(displacement)
+
+# Pure-Python lagrangian — no ELAS dependency
+moved = mesh.mmg.move(displacement, hmax=0.1)
 
 # Level-set discretization — extracts the zero isosurface as a boundary
 carved = mesh.mmg.remesh_levelset(levelset)
@@ -347,7 +305,7 @@ Pass a `local_sizing` keyword to any remesh variant. Each constraint is a dict w
 
 ```python
 constrained = mesh.mmg.remesh(
-    nosizreq=True,  # respect the metric we built
+    nosizreq=True,
     hgrad=1.3,
     local_sizing=[
         {"shape": "sphere", "center": (0, 0, 0), "radius": 0.4, "size": 0.05},
