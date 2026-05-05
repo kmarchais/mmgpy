@@ -316,6 +316,79 @@ pl.show()
 
 4. **Performance**: For real-time visualization, use `interactive_update=True` and batch updates.
 
+## The `.mmg` Dataset Accessor
+
+When mmgpy is installed, every PyVista `UnstructuredGrid` and `PolyData` instance gains a `.mmg` accessor exposing MMG operations directly. The accessor takes and returns PyVista datasets, so it composes with the rest of the PyVista API without manually constructing an `mmgpy.Mesh`.
+
+### Remeshing variants
+
+```python
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers the accessor
+
+mesh = pv.read("brain.mesh")
+
+# Standard adaptive remeshing
+remeshed = mesh.mmg.remesh(hsiz=0.1)
+
+# Quality optimization without topology changes
+optimized = mesh.mmg.remesh_optimize()
+
+# Uniform target edge size
+uniform = mesh.mmg.remesh_uniform(0.05)
+
+# Lagrangian (moving-mesh) — TET or 2D only
+moved = mesh.mmg.remesh_lagrangian(displacement)
+
+# Level-set discretization — extracts the zero isosurface as a boundary
+carved = mesh.mmg.remesh_levelset(levelset)
+```
+
+### Local sizing constraints
+
+Pass a `local_sizing` keyword to any remesh variant. Each constraint is a dict whose `"shape"` selects the geometry:
+
+```python
+constrained = mesh.mmg.remesh(
+    nosizreq=True,  # respect the metric we built
+    hgrad=1.3,
+    local_sizing=[
+        {"shape": "sphere", "center": (0, 0, 0), "radius": 0.4, "size": 0.05},
+        {"shape": "box", "bounds": [[0, 0, 0], [1, 1, 1]], "size": 0.1},
+        {"shape": "cylinder", "point1": (0, 0, 0), "point2": (1, 0, 0), "radius": 0.2, "size": 0.05},
+        {"shape": "from_point", "point": (0.5, 0.5, 0.5), "near_size": 0.02, "far_size": 0.1, "influence_radius": 0.5},
+    ],
+)
+```
+
+### Solution I/O
+
+`.sol`/`.solb` files round-trip through the accessor; sibling `.sol` files are auto-loaded on `pv.read("foo.mesh")`:
+
+```python
+mesh.point_data["metric"] = my_metric
+mesh.mmg.save_sol("out.sol")
+
+other = pv.read("foo.mesh")
+other.mmg.load_sol("foo.sol")
+```
+
+### Validation and quality
+
+```python
+report = mesh.mmg.validate(detailed=True)  # ValidationReport
+print(report.quality.mean, report.is_valid)
+
+# MMG's in-radius ratio (distinct from PyVista's cell_quality)
+qualities = mesh.mmg.element_qualities()
+```
+
+### Mesh kind
+
+```python
+print(mesh.mmg.kind)  # MeshKind.TETRAHEDRAL / TRIANGULAR_2D / TRIANGULAR_SURFACE
+```
+
 ## Next Steps
 
 - [Level-Set Extraction](levelset-extraction.md) - Extract isosurfaces

@@ -199,6 +199,168 @@ def test_accessor_caches_per_dataset_instance() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Accessor: metadata, remesh variants, sol I/O, validation, quality
+# ---------------------------------------------------------------------------
+
+
+def _dense_tets() -> pv.UnstructuredGrid:
+    """Build a denser tet mesh that survives the remesh variants robustly."""
+    pytest.importorskip("scipy")
+    pts = pv.ImageData(
+        dimensions=(5, 5, 5),
+        spacing=(0.25, 0.25, 0.25),
+    ).cast_to_unstructured_grid()
+    return pts.delaunay_3d()
+
+
+def _lagrangian_available() -> bool:
+    """Check whether the bundled MMG was built with lagrangian motion (-lag) support."""
+    grid = _dense_tets()
+    displacement = np.zeros((grid.n_points, 3), dtype=np.float64)
+    try:
+        grid.mmg.remesh_lagrangian(displacement)
+    except RuntimeError as exc:
+        if "lag" in str(exc).lower():
+            return False
+        raise
+    return True
+
+
+def test_accessor_kind_returns_meshkind_enum() -> None:
+    """`.mmg.kind` returns the right MeshKind for each input topology."""
+    assert _make_tet_mesh().mmg.kind == mmgpy.MeshKind.TETRAHEDRAL
+    assert _make_surface_mesh().mmg.kind == mmgpy.MeshKind.TRIANGULAR_SURFACE
+
+
+def test_accessor_remesh_optimize_preserves_topology() -> None:
+    """remesh_optimize keeps the triangle count (no inserts/removes)."""
+    surf = _make_surface_mesh()
+    optimized = surf.mmg.remesh_optimize()
+
+    assert isinstance(optimized, pv.PolyData)
+    assert optimized.n_points == surf.n_points
+    # MMG ridges round-trip as LINE cells, so compare polygon counts only.
+    assert optimized.n_faces == surf.n_faces
+
+
+def test_accessor_remesh_uniform_returns_dense_mesh() -> None:
+    """remesh_uniform returns a fresh dataset with the requested density."""
+    surf = _make_surface_mesh()
+    coarse = surf.mmg.remesh_uniform(0.5)
+    fine = surf.mmg.remesh_uniform(0.1)
+
+    assert isinstance(fine, pv.PolyData)
+    assert fine.n_cells > coarse.n_cells
+
+
+@pytest.mark.skipif(
+    not _lagrangian_available(),
+    reason="MMG built without lagrangian motion (-lag) support",
+)
+def test_accessor_remesh_lagrangian_with_zero_displacement() -> None:
+    """Zero displacement is a no-op-ish lagrangian remesh; just exercise the path."""
+    tets = _dense_tets()
+    displacement = np.zeros((tets.n_points, 3), dtype=np.float64)
+
+    moved = tets.mmg.remesh_lagrangian(displacement)
+
+    assert isinstance(moved, pv.UnstructuredGrid)
+    assert moved.n_cells > 0
+
+
+def test_accessor_remesh_levelset_carves_isosurface() -> None:
+    """A spherical level-set produces a non-empty mesh."""
+    tets = _dense_tets()
+    coords = tets.points - tets.center
+    # MMG expects an Nx1 levelset array.
+    levelset = (np.linalg.norm(coords, axis=1) - 0.4).reshape(-1, 1).astype(np.float64)
+
+    carved = tets.mmg.remesh_levelset(levelset)
+
+    assert isinstance(carved, pv.UnstructuredGrid)
+    assert carved.n_cells > 0
+
+
+def test_accessor_save_sol_round_trip(tmp_path: Path) -> None:
+    """save_sol followed by load_sol produces a matching scalar field."""
+    grid = _make_tet_mesh()
+    metric = np.linspace(0.1, 0.5, grid.n_points, dtype=np.float64)
+    grid.point_data["metric"] = metric
+
+    sol_path = tmp_path / "out.sol"
+    grid.mmg.save_sol(sol_path)
+
+    assert sol_path.exists()
+
+    fresh = _make_tet_mesh()
+    fresh.mmg.load_sol(sol_path)
+
+    np.testing.assert_allclose(fresh.point_data["solution@vertices"], metric)
+
+
+def test_accessor_validate_returns_bool_by_default() -> None:
+    """validate() with detailed=False returns a plain bool."""
+    surf = _make_surface_mesh()
+    result = surf.mmg.validate()
+
+    assert isinstance(result, bool)
+
+
+def test_accessor_validate_detailed_returns_report() -> None:
+    """validate(detailed=True) returns the same ValidationReport type as Mesh."""
+    surf = _make_surface_mesh()
+    report = surf.mmg.validate(detailed=True)
+
+    assert isinstance(report, mmgpy.ValidationReport)
+    assert hasattr(report, "is_valid")
+
+
+def test_accessor_element_quality_and_qualities_agree() -> None:
+    """Single-element quality is one of the values in the qualities array."""
+    tets = _make_tet_mesh()
+    qualities = tets.mmg.element_qualities()
+
+    assert qualities.shape == (tets.n_cells,)
+    assert qualities.dtype == np.float64
+    # MMG indexing is 1-based; depending on storage layout, idx=1 may map to
+    # qualities[0] or qualities[1]. Either way the value must be a member.
+    single = tets.mmg.element_quality(1)
+    assert any(single == pytest.approx(q) for q in qualities)
+
+
+def test_accessor_remesh_local_sizing_densifies_region() -> None:
+    """A sphere-shaped sizing constraint produces denser cells overall."""
+    tets = _dense_tets()
+    baseline = tets.mmg.remesh(hgrad=1.3, verbose=-1)
+    constrained = tets.mmg.remesh(
+        nosizreq=True,
+        hgrad=1.3,
+        verbose=-1,
+        local_sizing=[
+            {
+                "shape": "sphere",
+                "center": (0.5, 0.5, 0.5),
+                "radius": 0.4,
+                "size": 0.05,
+            },
+        ],
+    )
+
+    assert isinstance(constrained, pv.UnstructuredGrid)
+    assert constrained.n_cells > baseline.n_cells
+
+
+def test_accessor_remesh_unknown_local_sizing_shape_raises() -> None:
+    """An unrecognized 'shape' key in a sizing spec raises ValueError."""
+    surf = _make_surface_mesh()
+    with pytest.raises(ValueError, match="Unknown local sizing shape"):
+        surf.mmg.remesh(
+            hsiz=0.5,
+            local_sizing=[{"shape": "tetrahedron", "size": 0.1}],
+        )
+
+
+# ---------------------------------------------------------------------------
 # Sanity check that mmgpy is the source of these registrations
 # ---------------------------------------------------------------------------
 
