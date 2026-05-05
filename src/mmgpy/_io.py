@@ -136,27 +136,45 @@ def _load_meshb_by_trial(
 ) -> tuple[MmgMesh3D | MmgMesh2D | MmgMeshS, MeshKind]:
     """Detect mesh kind for a binary .meshb file by trial loading.
 
-    The text header parser does not handle binary files, but every MMG
-    class accepts any .meshb input and silently returns an empty mesh
-    when the content does not match. The first class whose load yields
-    a non-empty vertex set is the right kind. Volumetric meshes win
-    ahead of surfaces ahead of 2D, mirroring the priority used for
-    auto-detection on PyVista inputs.
+    The text header parser does not handle binary files, so we trial-load
+    the file with each MMG class in priority order. A class is considered
+    a match when it yields a non-empty population of its primary element
+    type (tetrahedra for 3D, triangles for surface and 2D). Vertex count
+    alone is insufficient: a surface ``.meshb`` will load non-empty under
+    ``MmgMesh3D`` with zero tetrahedra, so falling back to triangle/vertex
+    counts on later candidates is required to route it to ``MmgMeshS``.
+
+    Construction errors from a candidate class (corrupt or unsupported
+    binary content) are caught so the next candidate gets a chance; if
+    every candidate either errors or returns empty, a ``ValueError`` is
+    raised describing the file.
     """
+    path_str = str(path)
     candidates: tuple[
-        tuple[type[MmgMesh3D | MmgMesh2D | MmgMeshS], MeshKind],
+        tuple[
+            type[MmgMesh3D | MmgMesh2D | MmgMeshS],
+            MeshKind,
+            str,
+        ],
         ...,
     ] = (
-        (MmgMesh3D, MeshKind.TETRAHEDRAL),
-        (MmgMeshS, MeshKind.TRIANGULAR_SURFACE),
-        (MmgMesh2D, MeshKind.TRIANGULAR_2D),
+        (MmgMesh3D, MeshKind.TETRAHEDRAL, "get_tetrahedra"),
+        (MmgMeshS, MeshKind.TRIANGULAR_SURFACE, "get_triangles"),
+        (MmgMesh2D, MeshKind.TRIANGULAR_2D, "get_vertices"),
     )
-    path_str = str(path)
-    for cls, kind in candidates:
-        impl = cls(path_str)
-        if impl.get_vertices().shape[0] > 0:
+    last_error: Exception | None = None
+    for cls, kind, probe_attr in candidates:
+        try:
+            impl = cls(path_str)
+        except (RuntimeError, OSError, ValueError) as exc:
+            last_error = exc
+            continue
+        if getattr(impl, probe_attr)().shape[0] > 0:
             return impl, kind
+
     msg = f"Cannot determine mesh kind from binary file: {path}"
+    if last_error is not None:
+        raise ValueError(msg) from last_error
     raise ValueError(msg)
 
 

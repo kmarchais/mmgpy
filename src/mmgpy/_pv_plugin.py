@@ -57,7 +57,7 @@ def _attach_sol_fields(
     via the accessor (``mesh.mmg.load_sol(...)``) instead of auto-pairing.
     """
     if sol_path.suffix.lower() == ".solb":
-        logger.debug(
+        logger.info(
             "Skipping auto-pair of binary .solb %s; use mesh.mmg.load_sol()",
             sol_path,
         )
@@ -65,8 +65,25 @@ def _attach_sol_fields(
 
     from mmgpy._sol import parse_sol_file  # noqa: PLC0415
 
-    content = sol_path.read_text(encoding="utf-8", errors="replace")
-    fields = parse_sol_file(content)
+    try:
+        content = sol_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        logger.warning(
+            "Could not read companion .sol file %s: %s; skipping auto-pair.",
+            sol_path,
+            exc,
+        )
+        return
+
+    try:
+        fields = parse_sol_file(content)
+    except (ValueError, KeyError, IndexError) as exc:
+        logger.warning(
+            "Could not parse companion .sol file %s: %s; skipping auto-pair.",
+            sol_path,
+            exc,
+        )
+        return
 
     n_points = dataset.n_points
     n_cells = dataset.n_cells
