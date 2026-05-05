@@ -34,11 +34,12 @@ The script writes ``elasticity_propagation.gif`` next to itself.
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.animation import FuncAnimation, PillowWriter
+from PIL import Image
 from scipy.spatial import Delaunay
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
@@ -125,7 +126,7 @@ def lift_displacement(
     return disp, boundary
 
 
-def main() -> None:
+def main() -> None:  # noqa: C901
     """Compute both propagated displacement fields and save an animated GIF."""
     vertices, triangles, fixed_mask, loaded_mask = make_l_bracket()
     print(f"Mesh: {len(vertices)} vertices, {len(triangles)} triangles")
@@ -161,14 +162,20 @@ def main() -> None:
     ts = 0.5 * (1.0 - np.cos(phase))
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 5.5))
+    # Transparent figure + axes so the GIF reads on light or dark themes
+    # once it's quantised below.
+    fig.patch.set_alpha(0.0)
     titles = ["Laplacian propagation", "Elasticity propagation (fedoo)"]
     for ax, title in zip(axes, titles, strict=True):
+        ax.patch.set_alpha(0.0)
         ax.set_aspect("equal")
         ax.set_xlim(-0.1, FOOT_LEN + 0.1)
         ax.set_ylim(-0.05, POST_LEN + LIFT + 0.1)
         ax.set_title(title)
         ax.set_xticks([])
         ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
     if not ela_available:
         axes[1].text(
             0.5,
@@ -209,22 +216,62 @@ def main() -> None:
             alpha=0.6,
         )
 
-    def update(frame_idx: int) -> None:
-        t = ts[frame_idx]
-        render_panel(axes[0], vertices + t * full_lap, t * mag_lap, vmax, "viridis")
-        if ela_available:
-            render_panel(
-                axes[1],
-                vertices + t * full_ela,
-                t * mag_ela,
-                vmax,
-                "viridis",
+    out_path = Path(__file__).with_suffix(".gif")
+    # Render each frame to a transparent PNG, then assemble into a GIF
+    # whose palette reserves one slot for fully transparent pixels. Goes
+    # through PIL because matplotlib's own PillowWriter bakes in the
+    # figure facecolour and ignores per-frame alpha.
+    with tempfile.TemporaryDirectory(prefix="mmg2d_anim_") as tmp:
+        tmp_dir = Path(tmp)
+        for i, t in enumerate(ts):
+            render_panel(axes[0], vertices + t * full_lap, t * mag_lap, vmax, "viridis")
+            if ela_available:
+                render_panel(
+                    axes[1],
+                    vertices + t * full_ela,
+                    t * mag_ela,
+                    vmax,
+                    "viridis",
+                )
+            fig.savefig(
+                tmp_dir / f"frame_{i:03d}.png",
+                dpi=110,
+                transparent=True,
+                bbox_inches="tight",
             )
 
-    anim = FuncAnimation(fig, update, frames=len(ts), interval=40)
-
-    out_path = Path(__file__).with_suffix(".gif")
-    anim.save(out_path, writer=PillowWriter(fps=25))
+        paths = sorted(tmp_dir.glob("frame_*.png"))
+        ref = (
+            Image.open(paths[len(paths) // 2])
+            .convert("RGBA")
+            .convert("RGB")
+            .quantize(
+                colors=255,
+                method=Image.Quantize.MEDIANCUT,
+                dither=Image.Dither.NONE,
+            )
+        )
+        gif_frames: list[Image.Image] = []
+        for p in paths:
+            rgba = Image.open(p).convert("RGBA")
+            alpha = rgba.split()[-1]
+            quant = rgba.convert("RGB").quantize(
+                palette=ref,
+                dither=Image.Dither.NONE,
+            )
+            quant.paste(255, mask=alpha.point(lambda v: 255 if v < 128 else 0))
+            quant.info["transparency"] = 255
+            gif_frames.append(quant)
+        gif_frames[0].save(
+            out_path,
+            save_all=True,
+            append_images=gif_frames[1:],
+            duration=40,
+            loop=0,
+            disposal=2,
+            transparency=255,
+            optimize=True,
+        )
     print(f"Wrote {out_path}")
 
     plt.show()

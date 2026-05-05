@@ -113,7 +113,11 @@ def main() -> None:
 
     fig.tight_layout()
     out_path = Path(__file__).with_suffix(".png")
-    fig.savefig(out_path, dpi=130, bbox_inches="tight")
+    # Transparent figure + axes so the panel reads on light or dark themes.
+    fig.patch.set_alpha(0.0)
+    for ax in axes:
+        ax.patch.set_alpha(0.0)
+    fig.savefig(out_path, dpi=130, bbox_inches="tight", transparent=True)
     print(f"Wrote {out_path}")
     plt.show()
 
