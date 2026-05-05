@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777978305039,
+  "lastUpdate": 1778007554587,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -2246,6 +2246,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00022927177815781766",
             "extra": "mean: 69.93836600000805 msec\nrounds: 15"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevinmarchais@gmail.com",
+            "name": "Kevin Marchais",
+            "username": "kmarchais"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "892af5976f4e2194d4057c2512e698035d58d725",
+          "message": "feat: deprecate mmgpy.Mesh in favor of the .mmg PyVista accessor (#232)\n\n* feat: deprecate mmgpy.Mesh in favor of the .mmg PyVista accessor\n\nMesh is scheduled for removal in 0.13. This PR adds the deprecation\nrunway:\n\n- DeprecationWarning on Mesh.__init__ and Mesh.checkpoint(). Internal\n  paths through Mesh._from_impl (used by mmgpy.read and the .mmg\n  accessor) stay silent so users only see the warning when they\n  actually instantiate Mesh themselves.\n- src/mmgpy/_pv_plugin.py: every accessor method now builds Mesh via\n  mmgpy._io.read instead of Mesh(...), bypassing the warning.\n- src/mmgpy/repair/_vertices.py: wraps the raw-array Mesh construction\n  with warnings.catch_warnings since _io.read doesn't accept that\n  shape; revisit when Mesh is removed.\n- pyproject.toml: filterwarnings rule so the existing 48+ Mesh-based\n  tests don't blow up. tests/deprecation_test.py overrides this with\n  pytest.warns when it actually wants to assert the warning fires.\n\nExamples:\n- 3 trivial migrations to dataset.mmg.<method>: mmg2d/local_sizing,\n  mmg2d/anisotropic_mesh_adaptation, mmgs/ellipsoid_sdf.\n- 6 examples that depend on Mesh-only patterns (move_mesh in-place\n  mutation, ELAS-bound lagrangian, slider-callback caching) get a\n  module-level warning filter and a TODO(0.13) comment until those\n  patterns have an accessor equivalent.\n\nDocs:\n- New docs/migrating-from-mesh.md: method-by-method mapping plus three\n  worked migrations (read+remesh+save, local sizing, checkpoint).\n- docs/tutorials/pyvista-integration.md: rewrites the four code blocks\n  that used to call mmgpy.Mesh(sphere)/Mesh(torus) etc. to use the\n  accessor. Field-transfer block marked skip pending follow-up.\n- docs/conftest.py: filter the deprecation so doc-block tests stay\n  green while the rest of the tutorial pages migrate.\n- CHANGELOG.md: Unreleased \"Deprecated\" entry.\n\nVerification: 938 tests pass, 91 doc-blocks pass, ruff/format clean,\nmypy clean on touched files.\n\n* Drop Mesh-deprecation suppression scaffolding\n\nRemoves the warning suppressions added alongside the initial deprecation:\n\n- Examples: port the six examples that still used Mesh to the .mmg\n  accessor. levelset_discretization (2D + 3D) and ellipsoid_levelset use\n  dataset.mmg.remesh_levelset(); lagrangian_motion (2D + 3D) use a new\n  dataset.mmg.move() accessor method that wraps the pure-Python\n  lagrangian path. interactive_remesh_preview rewritten to cache a\n  PolyData and rebuild the metric per slider tick.\n- Docs: port every tutorial and API page (concepts, quickstart,\n  installation, basic-remeshing, surface-remeshing, adaptive-sizing,\n  levelset-extraction, pyvista-integration, options, io, lagrangian,\n  api/index, examples/index). mesh-classes.md kept as the legacy\n  reference with a deprecation banner. docs/conftest.py filter dropped;\n  the doc-block harness uses Mesh._from_arrays for fixture meshes.\n- Tests: move the 16 test files that exercise Mesh behavior into\n  tests/deprecated/, each with a per-file pytestmark + an import-time\n  conftest filter so collection-time skipif predicates also stay quiet.\n  Drop the global pyproject.toml filter.\n- Internal: add Mesh._from_arrays as the silent array-construction path\n  used by repair/_vertices.py and the doc-test harness; switch\n  src/mmgpy/ui/app.py to mmgpy.read so the UI itself stays silent.\n- Accessor: extend MmgAccessor.remesh to accept a positional Options\n  object and copy non-MMG point_data through to the returned dataset\n  so transfer_fields=True survives the round-trip.\n\nFull suite (938 tests, 27 skipped) and doc-blocks (84 passed, 42\nskipped) both pass under -W error::DeprecationWarning for the Mesh\nfilters. Only suppressions left are scoped to tests/deprecated/ and\ntests/deprecation_test.py; both die in 0.13 with Mesh itself.\n\n* Address PR review: add helper, tighten conftest, log dropped fields\n\n- Add mmgpy.polydata_from_2d_triangles helper and port the four 2D\n  examples (lagrangian_motion, local_sizing, anisotropic_mesh_adaptation,\n  levelset_discretization, interactive_remesh_preview) to use it instead\n  of inlining the embed-with-z=0 PolyData construction.\n- Log a debug message in MmgAccessor's user-field round-trip when an\n  array shape no longer matches the remeshed vertex count, pointing at\n  transfer_fields=True as the fix.\n- Add a deprecation_test for dataset.mmg.move() to cover the new\n  accessor method's silent-path guarantee alongside the existing\n  remesh() check.\n- Tighten tests/deprecated/conftest.py: drop the module-level\n  warnings.filterwarnings calls now that the only collection-time Mesh\n  use (_lagrangian_available) goes through the silent _from_arrays\n  path. Filters now attach per-item and stay scoped to the directory.\n- Add a shared _ASSETS constant in tests/deprecated/mesh_unified_test.py\n  in place of nine repeated parent.parent.parent expressions.\n- CHANGELOG: document the new public API surface (accessor move(),\n  positional opts on remesh(), user-field round-trip preservation,\n  polydata_from_2d_triangles).\n\n* Address review: typed remesh opts, dedupe deprecation filters, rename ndim constant\n\n- _pv_plugin.MmgAccessor.remesh: type opts as Mmg2DOptions | Mmg3DOptions\n  | MmgSOptions | None instead of Any, drop the ANN401 noqa.\n- tests/deprecated: drop the per-file pytestmark blocks. The conftest\n  pytest_collection_modifyitems hook is now the single source of truth\n  for the Mesh-deprecation filter.\n- _pyvista.polydata_from_2d_triangles: stop reusing _DIMS_2D for both\n  ndarray rank and 2D coordinate count; introduce _NDIM_2D_ARRAY for the\n  rank check.",
+          "timestamp": "2026-05-05T20:51:49+02:00",
+          "tree_id": "d43a17b4d20e9919504fd7af1148a365144a9db8",
+          "url": "https://github.com/kmarchais/mmgpy/commit/892af5976f4e2194d4057c2512e698035d58d725"
+        },
+        "date": 1778007553175,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 38.86278464309174,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00037928643287475893",
+            "extra": "mean: 25.731558075001715 msec\nrounds: 40"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 20.30658385206087,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00020611567400770925",
+            "extra": "mean: 49.24511219047374 msec\nrounds: 21"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 33.79044532871958,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00018409688488282448",
+            "extra": "mean: 29.594164571428955 msec\nrounds: 35"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3407.325500340894,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009146899566077109",
+            "extra": "mean: 293.4853156529814 usec\nrounds: 3469"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 71.63840605096671,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00015945672125965583",
+            "extra": "mean: 13.958992880000096 msec\nrounds: 75"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 8435.72639531728,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000014288648686282129",
+            "extra": "mean: 118.54343694161366 usec\nrounds: 16453"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.1115460077196682,
+            "unit": "iter/sec",
+            "range": "stddev: 0.13147013975828797",
+            "extra": "mean: 8.964910716600002 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.09198695801417853,
+            "unit": "iter/sec",
+            "range": "stddev: 0.050812705568685654",
+            "extra": "mean: 10.871106313200006 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.3966290273364104,
+            "unit": "iter/sec",
+            "range": "stddev: 0.011536721161265867",
+            "extra": "mean: 2.5212476421999894 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.08155082375969,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0013378405783992001",
+            "extra": "mean: 196.790317499989 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.081129970340315,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0019679843983538294",
+            "extra": "mean: 196.80661700000238 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.118404136732077,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0013786897639412959",
+            "extra": "mean: 195.3733963333472 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.026891014165072,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0016250106565036874",
+            "extra": "mean: 198.93011350000242 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 1.8425221298138912,
+            "unit": "iter/sec",
+            "range": "stddev: 0.011484246644520376",
+            "extra": "mean: 542.7343225999721 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 1.8940896842161463,
+            "unit": "iter/sec",
+            "range": "stddev: 0.01128696733052011",
+            "extra": "mean: 527.9581048000068 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.6621758897225534,
+            "unit": "iter/sec",
+            "range": "stddev: 0.008671875221193778",
+            "extra": "mean: 375.63258079999287 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 159.63684625993682,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005031374141122924",
+            "extra": "mean: 6.264217963637913 msec\nrounds: 165"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 13.349237347723019,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005349332068046307",
+            "extra": "mean: 74.91064650000924 msec\nrounds: 14"
           }
         ]
       }
