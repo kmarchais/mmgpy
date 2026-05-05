@@ -35,7 +35,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libosmesa6-dev libgl1-mesa-dev
 
-      - run: uv sync -v
+      - run: uv sync --extra fem -v
       - run: uv run python -c "import mmgpy"
       - name: Run tests with coverage
         run: uv run pytest --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
