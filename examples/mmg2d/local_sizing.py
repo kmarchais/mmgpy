@@ -30,8 +30,9 @@ import matplotlib.tri as mtri
 mpl.use("Agg")  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
+import pyvista as pv
 
-from mmgpy import Mesh
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy.sizing import (
     PointSize,
     SphereSize,
@@ -51,33 +52,28 @@ triangles = []
 for i in range(n - 1):
     for j in range(n - 1):
         idx = i * n + j
-        # Two triangles per cell
         triangles.append([idx, idx + 1, idx + n])
         triangles.append([idx + 1, idx + n + 1, idx + n])
 
 vertices = np.array(points, dtype=np.float64)
 triangles_arr = np.array(triangles, dtype=np.int32)
 
-# Create MMG mesh
-mesh = Mesh(vertices, triangles_arr)
+# Build a PyVista PolyData (with z=0); the .mmg accessor auto-detects
+# TRIANGULAR_2D from the planar coordinate.
+verts_3d = np.column_stack([vertices, np.zeros(len(vertices))])
+faces = np.column_stack(
+    [np.full(len(triangles_arr), 3), triangles_arr],
+).ravel()
+pv_mesh = pv.PolyData(verts_3d, faces=faces)
 
 # Define sizing constraints
-constraints = []
-
-# Fine mesh in corners using SphereSize (circle in 2D)
 corner_size = 0.015
 corner_radius = 0.15
 corners = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]
-for corner in corners:
-    constraints.append(
-        SphereSize(
-            center=np.array(corner),
-            radius=corner_radius,
-            size=corner_size,
-        ),
-    )
-
-# Gradual refinement from center using PointSize
+constraints = [
+    SphereSize(center=np.array(corner), radius=corner_radius, size=corner_size)
+    for corner in corners
+]
 constraints.append(
     PointSize(
         point=np.array([0.5, 0.5]),
@@ -89,41 +85,32 @@ constraints.append(
 
 print(f"Number of sizing constraints: {len(constraints)}")
 
-# Compute the sizing field manually using low-level API
-verts = mesh.get_vertices()
+# Compute the sizing field for visualization, then convert it to a scalar
+# metric on the dataset's point_data. The accessor picks it up on remesh.
+verts = vertices
 sizes = compute_sizes_from_constraints(verts, constraints)
-
-# Handle infinite values (vertices outside all region constraints)
 finite_mask = np.isfinite(sizes)
 if not np.all(finite_mask):
-    max_finite = np.max(sizes[finite_mask])
-    sizes[~finite_mask] = max_finite * 10
-
+    sizes[~finite_mask] = sizes[finite_mask].max() * 10
 print(f"Size range: {sizes.min():.4f} - {sizes.max():.4f}")
 
-# Convert to metric and set on mesh
-metric = sizes_to_metric(sizes)
-mesh["metric"] = metric
+pv_mesh.point_data["metric"] = sizes_to_metric(sizes)
 
-# Remesh with the metric field
-# nosizreq=True tells MMG to use our metric as-is
-# hgrad controls the gradation (size ratio between neighbors)
-mesh.remesh(nosizreq=True, hgrad=1.3, verbose=-1)
+# Remesh: nosizreq=True respects the metric we built, hgrad bounds gradation.
+pv_mesh_output = pv_mesh.mmg.remesh(nosizreq=True, hgrad=1.3, verbose=-1)
+print(
+    f"Remeshed: {pv_mesh_output.n_points} vertices, {pv_mesh_output.n_faces} triangles",
+)
 
-n_verts = len(mesh.get_vertices())
-n_tris = len(mesh.get_triangles())
-print(f"Remeshed: {n_verts} vertices, {n_tris} triangles")
-
-# Convert to PyVista for visualization
-pv_mesh_output = mesh.to_pyvista()
-
-# Compute triangle areas for coloring
+# Compute triangle areas for coloring. The accessor's remesh keeps MMG
+# ridges as LINE cells alongside the triangles, so slice the cell-size
+# array to the polygon prefix (PolyData stores faces before lines).
 pv_mesh_output = pv_mesh_output.compute_cell_sizes(
     area=True,
     length=False,
     volume=False,
 )
-output_areas = pv_mesh_output["Area"]
+output_areas = pv_mesh_output["Area"][: pv_mesh_output.n_faces]
 
 # Plot side by side: sizing field (left) and output mesh (right)
 fig, axes = plt.subplots(1, 2, figsize=(16, 8), constrained_layout=True)
@@ -184,7 +171,10 @@ fig.colorbar(tripcolor, ax=axes[1], label="Triangle area", shrink=0.8)
 axes[1].set_xlim(-0.05, 1.05)
 axes[1].set_ylim(-0.05, 1.05)
 axes[1].set_aspect("equal")
-axes[1].set_title(f"Output: Remeshed ({n_verts} vertices, {n_tris} triangles)")
+axes[1].set_title(
+    f"Output: Remeshed ({pv_mesh_output.n_points} vertices, "
+    f"{pv_mesh_output.n_faces} triangles)",
+)
 axes[1].set_xlabel("x")
 axes[1].set_ylabel("y")
 

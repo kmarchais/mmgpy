@@ -564,6 +564,15 @@ class Mesh:
         edge_refs: NDArray[np.integer] | None = None,
     ) -> None:
         """Initialize a Mesh from various sources."""
+        warnings.warn(
+            "mmgpy.Mesh is deprecated and will be removed in 0.13. "
+            "Use the .mmg PyVista accessor instead, e.g. "
+            "pv.read('foo.mesh').mmg.remesh(hsiz=0.1). "
+            "See docs/migrating-from-mesh.md for the full migration guide.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         # Import here to avoid circular imports
         from mmgpy._io import read as _read_mesh  # noqa: PLC0415
 
@@ -2552,6 +2561,15 @@ class Mesh:
         >>> # mesh is restored to original state
 
         """
+        warnings.warn(
+            "Mesh.checkpoint() is deprecated and will be removed in 0.13 "
+            "alongside the Mesh class. The .mmg accessor's stateless model "
+            "makes this idiom unnecessary: keep a snapshot via "
+            "snap = dataset.copy() and reassign on success. "
+            "See docs/migrating-from-mesh.md.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         vertices, vertex_refs = self._impl.get_vertices_with_refs()
         triangles, triangle_refs = self._impl.get_triangles_with_refs()
         edges, edge_refs = self._impl.get_edges_with_refs()

@@ -15,6 +15,7 @@ import atexit
 import os
 import shutil
 import tempfile
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -25,6 +26,12 @@ from scipy.spatial import Delaunay
 if TYPE_CHECKING:
     from mmgpy._mesh import Mesh as MeshType
     from mmgpy._mesh import MeshKind
+
+# Mesh is deprecated for removal in 0.13. The doc-block harness still
+# constructs Mesh objects (the tutorial pages haven't all been migrated
+# to the .mmg accessor yet), so silence the warning to keep
+# pytest-codeblocks output clean.
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
 
 os.environ["PYVISTA_OFF_SCREEN"] = "true"
 pv.OFF_SCREEN = True

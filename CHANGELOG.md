@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+
+- `mmgpy.Mesh` and `mmgpy.MeshCheckpoint` are deprecated and will be removed in 0.13. Use the `.mmg` PyVista accessor instead, e.g. `pv.read("foo.mesh").mmg.remesh(hsiz=0.1)`. See the [migration guide](docs/migrating-from-mesh.md) for a method-by-method mapping.
+- `Mesh.checkpoint()` is deprecated alongside the class. The accessor's stateless model makes the rollback idiom unnecessary: keep a snapshot via `snap = dataset.copy()` and reassign on success.
+
 ## [0.8.0] - 2026-03-18
 
 ### Added

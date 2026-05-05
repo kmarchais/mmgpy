@@ -27,13 +27,18 @@ This is essential for:
 - Fluid-structure interaction
 """
 
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pyvista as pv
 from scipy.spatial import Delaunay
 
-from mmgpy import Mesh
+# TODO(0.13): port to dataset.mmg.remesh_levelset(...) once the accessor
+# fully covers this example's setup. Until then, silence the deprecation.
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
+
+from mmgpy import Mesh  # noqa: E402
 
 
 def create_square_mesh(

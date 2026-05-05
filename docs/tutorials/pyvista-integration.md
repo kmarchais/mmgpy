@@ -64,26 +64,24 @@ pv_mesh = mesh.to_pyvista()
 pv_mesh.plot(show_edges=True)
 ```
 
-## Converting from PyVista
+## Working with PyVista datasets directly
 
-Create mmgpy meshes from PyVista geometry:
+The `.mmg` accessor (registered automatically when you `import mmgpy`) lets you operate on PyVista datasets without ever wrapping them in `mmgpy.Mesh`:
 
 ```python
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
 
-# Create PyVista geometry
+# Surface mesh — accessor returns PolyData
 sphere = pv.Sphere(radius=1.0)
+remeshed_surface = sphere.mmg.remesh(hsiz=0.1)
 
-# Convert to mmgpy mesh (auto-detects mesh type)
-mesh = mmgpy.Mesh(sphere)
-
-# Works for volumetric meshes too (requires tetrahedral cells)
+# Volume mesh — accessor returns UnstructuredGrid
 cube = pv.Box().triangulate().delaunay_3d()
-mesh_3d = mmgpy.Mesh(cube)
+remeshed_volume = cube.mmg.remesh(hsiz=0.2)
 ```
 
-The `Mesh` constructor auto-detects the mesh type from the PyVista object's cell types and vertex dimensions.
+The accessor auto-detects the mesh kind (`mesh.mmg.kind` returns the matching `MeshKind` enum). For Medit `.mesh`/`.meshb` files, `pv.read("foo.mesh")` works directly via mmgpy's reader plugin.
 
 ## Visualization Examples
 
@@ -198,21 +196,20 @@ pv_mesh.plot(scalars="temperature", show_edges=True, cmap="coolwarm")
 
 ### From PyVista with Data
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
-import numpy as np
 
-# Create PyVista mesh with data
+# User-defined point_data survives on the dataset; for interpolation onto
+# a remeshed dataset, pass transfer_fields=True (requires the underlying
+# Mesh path; full accessor support lands in a follow-up PR).
 sphere = pv.Sphere()
-sphere["elevation"] = sphere.points[:, 2]
+sphere.point_data["elevation"] = sphere.points[:, 2]
 
-# Convert to mmgpy and store the field as a user field
-mesh = mmgpy.Mesh(sphere)
-mesh["elevation"] = sphere["elevation"]
-
-# Access the field
-elevation = mesh["elevation"]
+remeshed = sphere.mmg.remesh(hsiz=0.1, transfer_fields=True)
+elevation = remeshed.point_data["elevation"]
 print(f"Elevation range: {elevation.min():.2f} to {elevation.max():.2f}")
 ```
 
@@ -223,23 +220,19 @@ print(f"Elevation range: {elevation.min():.2f} to {elevation.max():.2f}")
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
 from pyvista import examples
 
-# Load example mesh
 bunny = examples.download_bunny()
 
-# Convert to mmgpy surface mesh
-mesh = mmgpy.Mesh(bunny)
-
 def remesh_callback(value):
-    mesh.remesh(hmax=value, verbose=-1)
-    actor.mapper.SetInputData(mesh.to_pyvista())
+    remeshed = bunny.mmg.remesh(hmax=value, verbose=-1)
+    actor.mapper.SetInputData(remeshed)
     pl.render()
 
 pl = pv.Plotter()
-actor = pl.add_mesh(mesh.to_pyvista(), show_edges=True)
+actor = pl.add_mesh(bunny, show_edges=True)
 pl.add_slider_widget(
     remesh_callback,
     rng=[0.01, 0.1],
@@ -255,20 +248,22 @@ pl.show()
 <!-- pytest-codeblocks:skip -->
 
 ```python
-import mmgpy
+import mmgpy  # noqa: F401  -- registers reader plugin + accessor
 import pyvista as pv
 
-mesh = mmgpy.read("input.mesh")
-pv_mesh = mesh.to_pyvista()
+mesh = pv.read("input.mesh")
+pinned_sizing = []
 
 def add_refinement(point):
-    mesh.set_size_sphere(center=point, radius=0.1, size=0.01)
-    mesh.remesh(hmax=0.1, verbose=-1)
-    actor.mapper.SetInputData(mesh.to_pyvista())
+    pinned_sizing.append(
+        {"shape": "sphere", "center": point, "radius": 0.1, "size": 0.01},
+    )
+    remeshed = mesh.mmg.remesh(hmax=0.1, local_sizing=pinned_sizing, verbose=-1)
+    actor.mapper.SetInputData(remeshed)
     pl.render()
 
 pl = pv.Plotter()
-actor = pl.add_mesh(pv_mesh, show_edges=True, pickable=True)
+actor = pl.add_mesh(mesh, show_edges=True, pickable=True)
 pl.enable_point_picking(callback=add_refinement, show_message="Click to add refinement")
 pl.show()
 ```
@@ -278,31 +273,29 @@ pl.show()
 Full workflow from PyVista primitive to remeshed output:
 
 ```python
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the accessor
 import pyvista as pv
-import numpy as np
 
-# Create a complex geometry in PyVista
 torus = pv.ParametricTorus(ringradius=1.0, crosssectionradius=0.3)
+print(f"Original: {torus.n_faces} triangles")
 
-# Convert to mmgpy surface mesh
-mesh = mmgpy.Mesh(torus)
+# Remesh with adaptive sizing — sphere constraint near (1, 0, 0)
+remeshed = torus.mmg.remesh(
+    hmax=0.1,
+    hausd=0.001,
+    verbose=1,
+    local_sizing=[
+        {"shape": "sphere", "center": (1.0, 0, 0), "radius": 0.3, "size": 0.02},
+    ],
+)
+print(f"Remeshed: {remeshed.n_faces} triangles")
 
-print(f"Original: {len(mesh.get_triangles())} triangles")
-
-# Remesh with adaptive sizing
-mesh.set_size_sphere(center=[1.0, 0, 0], radius=0.3, size=0.02)
-result = mesh.remesh(hmax=0.1, hausd=0.001, verbose=1)
-
-print(f"Remeshed: {result.triangles_after} triangles")
-print(f"Quality: {result.quality_mean_after:.3f}")
-
-# Visualize result
-pv_result = mesh.to_pyvista()
+quality_mean = remeshed.mmg.element_qualities().mean()
+print(f"Quality: {quality_mean:.3f}")
 
 pl = pv.Plotter()
-pl.add_mesh(pv_result, show_edges=True, edge_color="gray")
-pl.add_text(f"Quality: {result.quality_mean_after:.3f}", font_size=10)
+pl.add_mesh(remeshed, show_edges=True, edge_color="gray")
+pl.add_text(f"Quality: {quality_mean:.3f}", font_size=10)
 pl.show()
 ```
 

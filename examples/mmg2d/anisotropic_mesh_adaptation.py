@@ -31,10 +31,12 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pyvista as pv
 from matplotlib.patches import Ellipse
 from matplotlib.tri import Triangulation
 
-from mmgpy import Mesh, metrics
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import metrics
 
 
 def create_unit_square_mesh(n: int = 8) -> tuple[np.ndarray, np.ndarray]:
@@ -71,10 +73,17 @@ def remesh_with_metric(
     metric_tensor: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Remesh a 2D domain with given anisotropic metric tensor field."""
-    mesh = Mesh(vertices, triangles)
-    mesh["metric"] = metric_tensor
-    mesh.remesh(hgrad=2.0, verbose=-1)
-    return mesh.get_vertices(), mesh.get_triangles()
+    # Embed the 2D mesh as a PolyData (z=0). The accessor auto-detects
+    # TRIANGULAR_2D from the planar coordinate.
+    verts_3d = np.column_stack([vertices, np.zeros(len(vertices))])
+    faces = np.column_stack(
+        [np.full(len(triangles), 3, dtype=np.int32), triangles.astype(np.int32)],
+    ).ravel()
+    pv_mesh = pv.PolyData(verts_3d, faces=faces)
+    pv_mesh.point_data["metric"] = metric_tensor
+
+    remeshed = pv_mesh.mmg.remesh(hgrad=2.0, verbose=-1)
+    return np.asarray(remeshed.points[:, :2]), np.asarray(remeshed.regular_faces)
 
 
 def plot_mesh(

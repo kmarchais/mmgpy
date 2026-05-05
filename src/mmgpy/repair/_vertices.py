@@ -23,6 +23,7 @@ Note:
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -119,7 +120,11 @@ def remove_duplicate_vertices(
         elements = mesh.get_triangles()
         new_elements = final_mapping[elements]
 
-    new_mesh = Mesh(new_vertices, new_elements)
+    # Silence the Mesh-class deprecation warning while we still depend on
+    # raw-array construction internally. Revisit when Mesh is removed in 0.13.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        new_mesh = Mesh(new_vertices, new_elements)
     removed_count = n_vertices - len(new_vertices)
 
     return new_mesh, removed_count
@@ -172,7 +177,11 @@ def remove_orphan_vertices(mesh: Mesh) -> tuple[Mesh, int]:
 
     new_elements = old_to_new[elements]
 
-    new_mesh = Mesh(new_vertices, new_elements)
+    # Silence the Mesh-class deprecation warning while we still depend on
+    # raw-array construction internally. Revisit when Mesh is removed in 0.13.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        new_mesh = Mesh(new_vertices, new_elements)
     removed_count = n_vertices - len(new_vertices)
 
     return new_mesh, removed_count

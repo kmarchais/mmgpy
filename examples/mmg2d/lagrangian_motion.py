@@ -20,11 +20,18 @@ displacements to interior nodes, then applies the motion and remeshes.
 This works on all platforms without requiring the ELAS library.
 """
 
+import warnings
+
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 
-from mmgpy import Mesh, move_mesh
+# TODO(0.13): port to the .mmg accessor once mmgpy.move_mesh accepts a
+# PyVista dataset. mmgpy.Mesh is deprecated; the warning is silenced here
+# only for the example's existing pure-Python lagrangian path.
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
+
+from mmgpy import Mesh, move_mesh  # noqa: E402
 
 
 def create_unit_square_mesh() -> tuple[np.ndarray, np.ndarray]:

@@ -27,10 +27,18 @@ Controls:
 - radius slider: controls the influence area of refinement
 """
 
+import warnings
+
 import numpy as np
 import pyvista as pv
 
-from mmgpy import Mesh
+# TODO(0.13): port to the .mmg accessor. The current example caches a
+# Mesh between slider calls and mutates it in place; the stateless
+# accessor model wants a different design. Silence the deprecation
+# until that port lands.
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
+
+from mmgpy import Mesh  # noqa: E402
 
 # Cache for the base uniform mesh (created once)
 _BASE_MESH_CACHE: dict[str, Mesh] = {}

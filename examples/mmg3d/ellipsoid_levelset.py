@@ -28,12 +28,17 @@ After level-set discretization, MMG creates:
 For a surface-only mesh, see examples/mmgs/ellipsoid_sdf.py.
 """
 
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pyvista as pv
 
-from mmgpy import Mesh
+# TODO(0.13): port to the .mmg accessor's remesh_levelset path. Silence
+# the deprecation until then.
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
+
+from mmgpy import Mesh  # noqa: E402
 
 
 def create_ellipsoid_sdf_grid(

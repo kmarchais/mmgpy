@@ -20,10 +20,16 @@ displacements to interior nodes, then applies the motion and remeshes.
 This works on all platforms without requiring the ELAS library.
 """
 
+import warnings
+
 import numpy as np
 import pyvista as pv
 
-from mmgpy import Mesh, move_mesh
+# TODO(0.13): port to the .mmg accessor once mmgpy.move_mesh accepts a
+# PyVista dataset. Silence the deprecation until then.
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
+
+from mmgpy import Mesh, move_mesh  # noqa: E402
 
 
 def create_unit_cube_mesh() -> tuple[np.ndarray, np.ndarray]:

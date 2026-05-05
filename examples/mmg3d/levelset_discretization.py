@@ -26,12 +26,17 @@ Key insight: After level-set discretization, MMG creates:
 To visualize the solid gyroid, extract the surface of ref=3 tetrahedra.
 """
 
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pyvista as pv
 
-from mmgpy import Mesh
+# TODO(0.13): port to dataset.mmg.remesh_levelset(...) once the accessor
+# covers this example's setup. Silence the deprecation until then.
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
+
+from mmgpy import Mesh  # noqa: E402
 
 
 def create_volumetric_cube_mesh(resolution: int = 10) -> tuple[np.ndarray, np.ndarray]:
