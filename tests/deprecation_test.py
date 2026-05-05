@@ -84,3 +84,17 @@ def test_accessor_remesh_does_not_warn() -> None:
         remeshed = grid.mmg.remesh(hsiz=0.5, verbose=-1)
 
     assert remeshed.n_cells > 0
+
+
+def test_accessor_move_does_not_warn() -> None:
+    """The .mmg accessor's move() builds Mesh internally but must stay silent."""
+    vertices, tets = _tiny_tet_arrays()
+    grid = pv.UnstructuredGrid({pv.CellType.TETRA: tets}, vertices)
+    displacement = np.zeros_like(vertices)
+    displacement[:, 0] = 0.01
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        moved = grid.mmg.move(displacement, hmax=0.5, verbose=False)
+
+    assert moved.n_points > 0

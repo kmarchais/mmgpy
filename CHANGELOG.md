@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `dataset.mmg.move(displacement, ...)`: pure-Python lagrangian motion accessor that returns a fresh dataset, mirroring the standalone `mmgpy.move_mesh` helper without requiring a `Mesh` wrapper.
+- `dataset.mmg.remesh(opts)` now accepts a typed options object (`Mmg2DOptions` / `Mmg3DOptions` / `MmgSOptions`) as the first positional argument; mutually exclusive with `**options` kwargs.
+- The accessor's remesh round-trip now copies user `point_data` back onto the returned dataset whenever array shape matches the new vertex count (previously only geometry + refs survived). Mismatched fields are dropped with a debug log; pass `transfer_fields=True` to interpolate them.
+- `mmgpy.polydata_from_2d_triangles(vertices, triangles)`: helper that embeds 2D triangulations as a planar `pv.PolyData` so they can flow through the `.mmg` accessor.
+
 ### Deprecated
 
 - `mmgpy.Mesh` and `mmgpy.MeshCheckpoint` are deprecated and will be removed in 0.13. Use the `.mmg` PyVista accessor instead, e.g. `pv.read("foo.mesh").mmg.remesh(hsiz=0.1)`. See the [migration guide](docs/migrating-from-mesh.md) for a method-by-method mapping.

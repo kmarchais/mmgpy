@@ -23,9 +23,9 @@ This works on all platforms without requiring the ELAS library.
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
-import pyvista as pv
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import polydata_from_2d_triangles
 
 
 def create_unit_square_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -47,13 +47,7 @@ def main() -> None:
     vertices, triangles = create_unit_square_mesh()
     print(f"Initial mesh: {len(vertices)} vertices, {len(triangles)} triangles")
 
-    # Embed the planar mesh as a PolyData (z=0); the accessor auto-detects
-    # TRIANGULAR_2D from the planar coordinate.
-    verts_3d = np.column_stack([vertices, np.zeros(len(vertices))])
-    faces = np.column_stack(
-        [np.full(len(triangles), 3, dtype=np.int32), triangles.astype(np.int32)],
-    ).ravel()
-    pv_mesh = pv.PolyData(verts_3d, faces=faces)
+    pv_mesh = polydata_from_2d_triangles(vertices, triangles)
 
     # Create radial expansion displacement field (2D)
     n_vertices = vertices.shape[0]

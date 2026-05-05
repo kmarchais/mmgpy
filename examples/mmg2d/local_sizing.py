@@ -30,9 +30,9 @@ import matplotlib.tri as mtri
 mpl.use("Agg")  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
-import pyvista as pv
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import polydata_from_2d_triangles
 from mmgpy.sizing import (
     PointSize,
     SphereSize,
@@ -58,13 +58,7 @@ for i in range(n - 1):
 vertices = np.array(points, dtype=np.float64)
 triangles_arr = np.array(triangles, dtype=np.int32)
 
-# Build a PyVista PolyData (with z=0); the .mmg accessor auto-detects
-# TRIANGULAR_2D from the planar coordinate.
-verts_3d = np.column_stack([vertices, np.zeros(len(vertices))])
-faces = np.column_stack(
-    [np.full(len(triangles_arr), 3), triangles_arr],
-).ravel()
-pv_mesh = pv.PolyData(verts_3d, faces=faces)
+pv_mesh = polydata_from_2d_triangles(vertices, triangles_arr)
 
 # Define sizing constraints
 corner_size = 0.015

@@ -4,19 +4,15 @@ These tests will be removed in 0.13 along with ``mmgpy.Mesh``. Until then,
 they assert behavior of the legacy class itself; the ``DeprecationWarning``
 is the *subject under test*'s emitted warning, not a real signal.
 
-We register the filter both:
-
-* at module-import time via ``warnings.filterwarnings`` so that test-file
-  collection (and any module-scope ``Mesh(...)`` calls in
-  ``pytest.mark.skipif(...)`` predicates) doesn't blow up under ``-W error``;
-* per-test via ``pytest.mark.filterwarnings`` so that pytest's CLI
-  ``-W error`` flag composes correctly with the per-item filters once tests
-  start running.
+Filters are attached per-item in ``pytest_collection_modifyitems`` so the
+suppression is scoped to tests under ``tests/deprecated/`` and does not
+leak into the rest of the suite. Module-scope code paths that need the
+silent ``Mesh`` constructor (e.g. the ``_lagrangian_available()`` helper
+used by ``skipif`` markers) must call ``Mesh._from_arrays(...)`` directly.
 """
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING
 
 import pytest
@@ -27,20 +23,6 @@ if TYPE_CHECKING:
 _FILTERS = (
     r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
     r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-)
-
-# Suppress at import time: collection of test modules (and any module-scope
-# evaluation like ``pytest.mark.skipif(_lagrangian_available(), ...)``)
-# would otherwise hit Mesh() before pytest_collection_modifyitems runs.
-warnings.filterwarnings(
-    "ignore",
-    message=r"mmgpy\.Mesh is deprecated.*",
-    category=DeprecationWarning,
-)
-warnings.filterwarnings(
-    "ignore",
-    message=r"Mesh\.checkpoint\(\) is deprecated.*",
-    category=DeprecationWarning,
 )
 
 

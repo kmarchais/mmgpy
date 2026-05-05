@@ -161,6 +161,14 @@ def _to_pyvista_with_user_fields(
     n_points = result.n_points
     for name, arr in mesh.get_user_fields().items():
         if arr.shape[0] != n_points:
+            logger.debug(
+                "Dropping user field %r: length %d does not match remeshed "
+                "vertex count %d. Pass transfer_fields=True to remesh() to "
+                "interpolate user fields onto the new vertex set.",
+                name,
+                arr.shape[0],
+                n_points,
+            )
             continue
         result.point_data[name] = arr
     return result

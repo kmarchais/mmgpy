@@ -34,6 +34,7 @@ import pyvista as pv
 from scipy.spatial import Delaunay
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import polydata_from_2d_triangles
 
 
 def create_square_mesh(
@@ -70,9 +71,7 @@ def to_pyvista_mesh(
     levelset: np.ndarray | None = None,
 ) -> pv.PolyData:
     """Build a PyVista PolyData from 2D arrays with an optional level-set scalar."""
-    vertices_3d = np.column_stack([vertices, np.zeros(len(vertices))])
-    faces = np.hstack([np.full((len(triangles), 1), 3), triangles]).ravel()
-    mesh = pv.PolyData(vertices_3d, faces=faces)
+    mesh = polydata_from_2d_triangles(vertices, triangles)
     if levelset is not None:
         mesh.point_data["levelset"] = levelset.ravel()
     return mesh

@@ -31,6 +31,7 @@ import numpy as np
 import pyvista as pv
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import polydata_from_2d_triangles
 
 # Cache for the uniformly remeshed base disc, keyed by ``hmax``. Sliders
 # fire many times per drag, so we only re-run the uniform pass when the
@@ -40,18 +41,17 @@ _BASE_MESH_CACHE: dict[str, pv.PolyData] = {}
 
 def _circle_polydata(n: int = 32) -> pv.PolyData:
     """Build a fan-triangulated unit disc as a PolyData."""
-    vertices = [[0.0, 0.0, 0.0]]
+    vertices = [[0.0, 0.0]]
     for i in range(n):
         theta = 2 * np.pi * i / n
-        vertices.append([np.cos(theta), np.sin(theta), 0.0])
+        vertices.append([np.cos(theta), np.sin(theta)])
     pts = np.array(vertices, dtype=np.float64)
 
     triangles = np.array(
         [[0, 1 + i, 1 + (i + 1) % n] for i in range(n)],
         dtype=np.int32,
     )
-    faces = np.column_stack([np.full(len(triangles), 3, dtype=np.int32), triangles])
-    return pv.PolyData(pts, faces=faces.ravel())
+    return polydata_from_2d_triangles(pts, triangles)
 
 
 def get_uniform_mesh(hmax: float = 0.15) -> pv.PolyData:
