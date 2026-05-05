@@ -57,7 +57,7 @@ def _attach_sol_fields(
     via the accessor (``mesh.mmg.load_sol(...)``) instead of auto-pairing.
     """
     if sol_path.suffix.lower() == ".solb":
-        logger.info(
+        logger.debug(
             "Skipping auto-pair of binary .solb %s; use mesh.mmg.load_sol()",
             sol_path,
         )
@@ -183,7 +183,7 @@ class MmgAccessor:
     >>> import pyvista as pv
     >>> import mmgpy  # noqa: F401  -- registers the accessor
     >>> mesh = pv.read("brain.mesh")
-    >>> remeshed = mesh.mmg.remesh(hmax=0.1)
+    >>> remeshed = mesh.mmg.remesh(hsiz=0.1)
     >>> remeshed.n_cells > 0
     True
 

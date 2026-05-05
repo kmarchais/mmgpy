@@ -146,7 +146,7 @@ def test_accessor_remesh_returns_new_dataset() -> None:
     assert remeshed is not surf
 
 
-def test_accessor_remesh_on_tetrahedral_mesh(tmp_path: Path) -> None:
+def test_accessor_remesh_on_tetrahedral_mesh() -> None:
     """The accessor handles tet inputs and returns UnstructuredGrid."""
     pytest.importorskip("scipy")
     cube_pts = pv.ImageData(
@@ -154,8 +154,6 @@ def test_accessor_remesh_on_tetrahedral_mesh(tmp_path: Path) -> None:
         spacing=(0.25, 0.25, 0.25),
     ).cast_to_unstructured_grid()
     tets = cube_pts.delaunay_3d()
-    out = tmp_path / "dense.vtu"
-    tets.save(str(out))
 
     remeshed = tets.mmg.remesh(hsiz=0.2)
     assert isinstance(remeshed, pv.UnstructuredGrid)
