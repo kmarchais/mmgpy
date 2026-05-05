@@ -23,7 +23,7 @@ This works on all platforms without requiring the ELAS library.
 import numpy as np
 import pyvista as pv
 
-from mmgpy import Mesh, move_mesh
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 
 def create_unit_cube_mesh() -> tuple[np.ndarray, np.ndarray]:
@@ -40,12 +40,10 @@ def main() -> None:
     vertices, elements = create_unit_cube_mesh()
     print(f"Initial mesh: {len(vertices)} vertices, {len(elements)} tetrahedra")
 
-    mesh = Mesh(vertices, elements)
+    original = pv.UnstructuredGrid({pv.CellType.TETRA: elements}, vertices)
 
-    # Create radial expansion displacement field
     n_vertices = vertices.shape[0]
     displacement = np.zeros((n_vertices, 3), dtype=np.float64)
-
     center = np.array([0.0, 0.0, 0.0])
     for i in range(n_vertices):
         r = np.linalg.norm(vertices[i] - center)
@@ -54,23 +52,10 @@ def main() -> None:
             displacement[i] = direction * 0.1 * (1.0 - r)
 
     print("Applying Lagrangian motion (pure Python implementation)...")
-    move_mesh(mesh, displacement, hmax=0.2, verbose=False)
+    deformed = original.mmg.move(displacement, hmax=0.2, verbose=False)
 
-    output_vertices = mesh.get_vertices()
-    output_elements = mesh.get_elements()
-    print(
-        f"Output mesh: {len(output_vertices)} vertices, "
-        f"{len(output_elements)} tetrahedra",
-    )
-
-    original = pv.UnstructuredGrid(
-        {pv.CellType.TETRA: elements},
-        vertices,
-    )
-    deformed = pv.UnstructuredGrid(
-        {pv.CellType.TETRA: output_elements},
-        output_vertices,
-    )
+    n_tets = deformed.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
+    print(f"Output mesh: {deformed.n_points} vertices, {n_tets} tetrahedra")
 
     pl = pv.Plotter(shape=(1, 2))
 

@@ -19,7 +19,7 @@ dependencies = [
     "meshio>=5.3.5,<6",
     "numpy>=2.0.2,<3",
     "patchelf>=0.17.2.4,<1; sys_platform == 'linux'",
-    "pyvista>=0.47,<1",
+    "pyvista>=0.48,<1",
     "rich>=13.0.0,<15",
     "scipy>=1.11.0,<2",
     "typing-extensions>=4.0.0,<5; python_version < '3.11'",
@@ -88,6 +88,19 @@ mmg = "mmgpy._cli:_run_mmg"
 [project.entry-points."mmgpy.ui"]
 ui = "mmgpy.ui:run_ui"
 
+# PyVista 0.48 plugin registries: Medit reader/writer + .mmg accessor.
+# These activate on first use (lazy) so users who never touch MMG pay nothing.
+[project.entry-points."pyvista.readers"]
+mesh = "mmgpy._pv_plugin:read_mesh"
+meshb = "mmgpy._pv_plugin:read_mesh"
+
+[project.entry-points."pyvista.writers"]
+mesh = "mmgpy._pv_plugin:write_mesh"
+meshb = "mmgpy._pv_plugin:write_mesh"
+
+[project.entry-points."pyvista.accessors"]
+mmg = "mmgpy._pv_plugin"
+
 [project.gui-scripts]
 mmgpy-ui = "mmgpy.ui.__main__:main"
 
@@ -127,6 +140,10 @@ python_files = ["test_*.py", "*_test.py", "bench_*.py"]
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
+# Mesh-deprecation filters live in tests/deprecated/conftest.py, scoped to
+# the legacy tests that target the Mesh class itself. Other suites that
+# incidentally still construct Mesh objects must port to the .mmg accessor
+# or use Mesh._from_arrays() (silent path) for fixture builders.
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -164,6 +181,7 @@ ignore = [
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
     "ANN",     # type annotations not required for tests
+    "INP001",  # tests/ subdirectories are intentional, not packages
 ]
 ".github/scripts/**/*.py" = [
     "INP001",  # CI scripts are not a package

@@ -192,7 +192,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
     def _handle_file_upload(self, file_upload) -> None:
         """Handle uploaded mesh file."""
-        from mmgpy import Mesh
+        from mmgpy import read as _read_mesh
 
         client_file = ClientFile(file_upload)
 
@@ -213,8 +213,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 tmp.write(client_file.content)
                 tmp_path = tmp.name
 
-            self._mesh = Mesh(tmp_path)
-            self._original_mesh = Mesh(tmp_path)
+            self._mesh = _read_mesh(tmp_path)
+            self._original_mesh = _read_mesh(tmp_path)
             self.state.has_original_mesh = True
             self.state.show_original_mesh = False
             self._update_mesh_state_after_load(client_file.name)
@@ -479,15 +479,15 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
     def _load_sample_mesh(self, sample_name: str) -> None:
         """Load a sample mesh."""
-        from mmgpy import Mesh
+        from mmgpy import read as _read_mesh
 
         pv_mesh = get_sample_mesh(sample_name)
         if pv_mesh is None:
             logger.warning("Unknown sample mesh: %s", sample_name)
             return
 
-        self._mesh = Mesh(pv_mesh)
-        self._original_mesh = Mesh(pv_mesh)
+        self._mesh = _read_mesh(pv_mesh)
+        self._original_mesh = _read_mesh(pv_mesh)
         self.state.has_original_mesh = True
         self.state.show_original_mesh = False
         self._update_mesh_state_after_load(f"sample:{sample_name}")

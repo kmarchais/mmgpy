@@ -6,10 +6,11 @@ This section provides detailed API documentation for all public classes and func
 
 ### Core Classes
 
-| Class                                        | Description                            |
-| -------------------------------------------- | -------------------------------------- |
-| [`Mesh`](mesh-classes.md#mmgpy.Mesh)         | Unified mesh class with auto-detection |
-| [`MeshKind`](mesh-classes.md#mmgpy.MeshKind) | Enumeration of mesh types              |
+| Class                                        | Description                                                  |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| `MmgAccessor` (`dataset.mmg`)                | PyVista accessor exposing all MMG operations on `pv.DataSet` |
+| [`MeshKind`](mesh-classes.md#mmgpy.MeshKind) | Enumeration of mesh types                                    |
+| [`Mesh`](mesh-classes.md#mmgpy.Mesh)         | Unified mesh class — **deprecated in 0.12, removed in 0.13** |
 
 ### Options Classes
 
@@ -95,22 +96,16 @@ mmgpy
 ## Basic Usage Pattern
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
-# Load mesh
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 
-# Configure options
 opts = mmgpy.Mmg3DOptions(hmax=0.1)
+remeshed = mesh.mmg.remesh(opts)
 
-# Remesh
-result = mesh.remesh(opts)
-
-# Validate
-report = mesh.validate(detailed=True)
-
-# Save
-mesh.save("output.vtk")
+report = remeshed.mmg.validate(detailed=True)
+remeshed.save("output.vtk")
 ```
 
 ## Type Hints
@@ -118,11 +113,13 @@ mesh.save("output.vtk")
 All public APIs are fully typed. Use with a type-aware IDE for autocomplete:
 
 ```python
-from mmgpy import Mesh, Mmg3DOptions, RemeshResult
+import pyvista as pv
+import mmgpy  # noqa: F401
+from mmgpy import Mmg3DOptions
 
-mesh: Mesh = Mesh("input.mesh")
+mesh: pv.UnstructuredGrid = pv.read("input.mesh")
 opts: Mmg3DOptions = Mmg3DOptions(hmax=0.1)
-result: RemeshResult = mesh.remesh(opts)
+remeshed: pv.UnstructuredGrid = mesh.mmg.remesh(opts)
 ```
 
 ## Version Information

@@ -28,7 +28,7 @@ from ._mesh import Mesh, MeshCheckpoint, MeshKind
 from ._mmgpy import MMG_VERSION  # type: ignore[attr-defined]
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import CancellationError, ProgressEvent, rich_progress
-from ._pyvista import from_pyvista, to_pyvista
+from ._pyvista import from_pyvista, polydata_from_2d_triangles, to_pyvista
 from ._remesh import mmg2d, mmg3d, mmgs  # noqa: F401
 from ._result import RemeshResult
 from ._transfer import interpolate_field, transfer_fields
@@ -89,6 +89,7 @@ __all__ = [
     "lagrangian",
     "metrics",
     "move_mesh",
+    "polydata_from_2d_triangles",
     "progress",
     "propagate_displacement",
     "propagate_displacement_elasticity",

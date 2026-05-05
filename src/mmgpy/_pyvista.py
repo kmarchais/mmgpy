@@ -30,11 +30,17 @@ from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 logger = logging.getLogger("mmgpy")
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from typing import Any
+
     from numpy.typing import NDArray
+
+    CellsDict = Mapping[Any, Any]
 
 _DIMS_2D = 2
 _DIMS_3D = 3
 _TRIANGLE_VERTS = 3
+_NDIM_2D_ARRAY = 2
 _2D_DETECTION_TOLERANCE = 1e-8
 
 _TRIANGULATION_WARNING = (
@@ -180,10 +186,19 @@ def _extract_lines_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32] | None:
 
 def _line_connectivity(
     mesh: pv.UnstructuredGrid | pv.PolyData,
+    cells_dict: CellsDict | None = None,
 ) -> NDArray[np.int32] | None:
-    """Return LINE cell connectivity, or None if there are no lines."""
-    if hasattr(mesh, "cells_dict") and pv.CellType.LINE in mesh.cells_dict:
-        edges = mesh.cells_dict[pv.CellType.LINE].astype(np.int32)
+    """Return LINE cell connectivity, or None if there are no lines.
+
+    ``cells_dict`` may be supplied to avoid recomputing ``mesh.cells_dict``;
+    in PyVista 0.48 this property is O(n_cells) per access (per-cell
+    ``CellType`` enum lookup), so callers in a hot path should pass a
+    pre-computed dict.
+    """
+    if cells_dict is None and hasattr(mesh, "cells_dict"):
+        cells_dict = mesh.cells_dict
+    if cells_dict is not None and pv.CellType.LINE in cells_dict:
+        edges = cells_dict[pv.CellType.LINE].astype(np.int32)
     elif isinstance(mesh, pv.PolyData):
         edges = _extract_lines_from_polydata(mesh)
     else:
@@ -270,14 +285,18 @@ def _refs_for_polydata_polys(
 
 def _extract_edges(
     mesh: pv.UnstructuredGrid | pv.PolyData,
+    cells_dict: CellsDict | None = None,
 ) -> tuple[NDArray[np.int32] | None, NDArray[np.int64] | None]:
     """Extract LINE cells and matching reference markers from a PyVista mesh.
 
     Returns (edges, refs) where either may be None. Recognised cell_data
     field aliases for refs include `"refs"`, `"gmsh:physical"` (used by
     meshio when reading `.msh` files) and `"medit:ref"`.
+
+    ``cells_dict`` may be supplied to skip recomputing ``mesh.cells_dict``
+    in callers that already hold one.
     """
-    edges = _line_connectivity(mesh)
+    edges = _line_connectivity(mesh, cells_dict=cells_dict)
     if edges is None:
         return None, None
 
@@ -314,15 +333,37 @@ def _extract_element_refs(
     return None
 
 
-def _from_pyvista_to_mmg3d(mesh: pv.UnstructuredGrid) -> MmgMesh3D:
-    """Convert UnstructuredGrid with tetrahedra to MmgMesh3D."""
-    if pv.CellType.TETRA not in mesh.cells_dict:
-        msg = "UnstructuredGrid must contain tetrahedra (CellType.TETRA)"
-        raise ValueError(msg)
+def _from_pyvista_to_mmg3d(
+    mesh: pv.UnstructuredGrid,
+    cells_dict: CellsDict | None = None,
+) -> MmgMesh3D:
+    """Convert UnstructuredGrid with tetrahedra to MmgMesh3D.
+
+    PyVista 0.48 made ``mesh.cells_dict`` O(n_cells) per access (it
+    instantiates a ``CellType`` enum value per cell). For the common
+    all-tetrahedra case we bypass it entirely by reshaping
+    ``cell_connectivity``, falling back to ``cells_dict`` only for mixed
+    cell types (e.g. a tet mesh with LINE ridges). Callers that already
+    hold a ``cells_dict`` may pass it via the keyword to skip the
+    rebuild on the mixed path.
+    """
+    celltypes = np.asarray(mesh.celltypes)
+    tetra_type = int(pv.CellType.TETRA)
+    is_all_tetra = celltypes.size > 0 and bool((celltypes == tetra_type).all())
+
+    if is_all_tetra:
+        elements = np.asarray(mesh.cell_connectivity).reshape(-1, 4).astype(np.int32)
+        edges, edge_refs = None, None
+    else:
+        if cells_dict is None:
+            cells_dict = mesh.cells_dict
+        if pv.CellType.TETRA not in cells_dict:
+            msg = "UnstructuredGrid must contain tetrahedra (CellType.TETRA)"
+            raise ValueError(msg)
+        elements = cells_dict[pv.CellType.TETRA].astype(np.int32)
+        edges, edge_refs = _extract_edges(mesh, cells_dict=cells_dict)
 
     vertices = np.array(mesh.points, dtype=np.float64)
-    elements = mesh.cells_dict[pv.CellType.TETRA].astype(np.int32)
-    edges, edge_refs = _extract_edges(mesh)
     elem_refs = _extract_element_refs(
         mesh,
         len(elements),
@@ -450,9 +491,12 @@ def _from_pyvista_auto_detect(
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Convert PyVista mesh to mmgpy mesh with auto-detection."""
     if isinstance(mesh, pv.UnstructuredGrid):
-        if pv.CellType.TETRA in mesh.cells_dict:
+        celltypes = np.asarray(mesh.celltypes)
+        tetra_type = int(pv.CellType.TETRA)
+        has_tetra = bool((celltypes == tetra_type).any())
+        if has_tetra:
             return _from_pyvista_to_mmg3d(mesh)
-        # UnstructuredGrid with no tets — extract surface and treat as 2D/surface
+        # UnstructuredGrid with no tets, extract surface and treat as 2D/surface
         polydata = mesh.extract_surface(algorithm=None)
         if polydata.n_cells > 0:
             logger.warning(
@@ -750,4 +794,50 @@ def _mmgs_to_pyvista(
     return polydata
 
 
-__all__ = ["from_pyvista", "to_pyvista"]
+def polydata_from_2d_triangles(
+    vertices: NDArray[np.floating],
+    triangles: NDArray[np.integer],
+    *,
+    z: float = 0.0,
+) -> pv.PolyData:
+    """Build a ``pv.PolyData`` from 2D vertices and triangle connectivity.
+
+    Embeds the planar mesh in 3D at ``z=z`` so the result can flow through
+    the ``.mmg`` accessor, which auto-detects ``TRIANGULAR_2D`` from the
+    constant-z coordinate.
+
+    Parameters
+    ----------
+    vertices : ndarray, shape ``(n, 2)`` or ``(n, 3)``
+        Vertex coordinates. 2D arrays are extended with the constant ``z``;
+        3D arrays are used as-is.
+    triangles : ndarray, shape ``(m, 3)``
+        Triangle connectivity (zero-indexed).
+    z : float, default ``0.0``
+        Plane height used when embedding 2D vertices.
+
+    Returns
+    -------
+    pv.PolyData
+        Planar PolyData carrying ``triangles`` as its faces.
+
+    """
+    verts = np.asarray(vertices, dtype=np.float64)
+    if verts.ndim != _NDIM_2D_ARRAY or verts.shape[1] not in (_DIMS_2D, _DIMS_3D):
+        msg = f"vertices must have shape (n, 2) or (n, 3); got {verts.shape}"
+        raise ValueError(msg)
+    if verts.shape[1] == _DIMS_2D:
+        verts = np.column_stack([verts, np.full(len(verts), z, dtype=np.float64)])
+
+    tris = np.asarray(triangles, dtype=np.int32)
+    if tris.ndim != _NDIM_2D_ARRAY or tris.shape[1] != _TRIANGLE_VERTS:
+        msg = f"triangles must have shape (m, 3); got {tris.shape}"
+        raise ValueError(msg)
+
+    faces = np.column_stack(
+        [np.full(len(tris), _TRIANGLE_VERTS, dtype=np.int32), tris],
+    ).ravel()
+    return pv.PolyData(verts, faces=faces)
+
+
+__all__ = ["from_pyvista", "polydata_from_2d_triangles", "to_pyvista"]

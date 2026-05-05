@@ -33,7 +33,8 @@ import numpy as np
 import pyvista as pv
 from scipy.spatial import Delaunay
 
-from mmgpy import Mesh
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import polydata_from_2d_triangles
 
 
 def create_square_mesh(
@@ -69,47 +70,42 @@ def to_pyvista_mesh(
     triangles: np.ndarray,
     levelset: np.ndarray | None = None,
 ) -> pv.PolyData:
-    """Convert 2D mesh to PyVista PolyData with optional level-set scalars."""
-    vertices_3d = np.column_stack([vertices, np.zeros(len(vertices))])
-    faces = np.hstack([np.full((len(triangles), 1), 3), triangles]).ravel()
-    mesh = pv.PolyData(vertices_3d, faces=faces)
+    """Build a PyVista PolyData from 2D arrays with an optional level-set scalar."""
+    mesh = polydata_from_2d_triangles(vertices, triangles)
     if levelset is not None:
         mesh.point_data["levelset"] = levelset.ravel()
     return mesh
 
 
-def extract_interface(mesh: Mesh) -> pv.PolyData:
-    """Extract the interface edges (boundary between ref=2 and ref=3 regions).
+def extract_interface(result: pv.PolyData) -> pv.PolyData:
+    """Extract interface edges (boundary between ref=2 and ref=3 regions).
 
-    After level-set discretization, edges on the interface separate elements
-    with ref=2 (exterior) from elements with ref=3 (interior).
+    The accessor's ``remesh_levelset`` returns a PolyData containing both
+    triangles and the MMG-tagged ridge edges. Ridge edges between triangles
+    of differing material refs are exactly the interface; everything else
+    is mesh boundary or interior.
     """
-    vertices = mesh.get_vertices()
-    triangles, refs = mesh.get_triangles_with_refs()
-    vertices_3d = np.column_stack([vertices, np.zeros(len(vertices))])
+    triangles = result.regular_faces
+    triangle_refs = result.cell_data["refs"][result.n_lines :]
+    vertices_3d = result.points
 
-    # Build edge-to-triangle mapping
     edge_triangles: dict[tuple[int, int], list[int]] = {}
     for tri_idx, tri in enumerate(triangles):
         for i in range(3):
             v1, v2 = tri[i], tri[(i + 1) % 3]
             edge = (min(v1, v2), max(v1, v2))
-            if edge not in edge_triangles:
-                edge_triangles[edge] = []
-            edge_triangles[edge].append(tri_idx)
+            edge_triangles.setdefault(edge, []).append(tri_idx)
 
-    # Find edges where adjacent triangles have different refs (interface edges)
-    interface_edges = []
-    for edge, tri_indices in edge_triangles.items():
-        if len(tri_indices) == 2:
-            ref1, ref2 = refs[tri_indices[0]], refs[tri_indices[1]]
-            if ref1 != ref2:
-                interface_edges.append(edge)
+    interface_edges = [
+        edge
+        for edge, tri_indices in edge_triangles.items()
+        if len(tri_indices) == 2
+        and triangle_refs[tri_indices[0]] != triangle_refs[tri_indices[1]]
+    ]
 
     if not interface_edges:
         return pv.PolyData()
 
-    # Create lines for interface
     lines = []
     for v1, v2 in interface_edges:
         lines.extend([2, v1, v2])
@@ -127,20 +123,18 @@ def main() -> None:
     levelset = circle_levelset(vertices, center=center, radius=radius)
     print(f"Initial mesh: {len(vertices)} vertices, {len(triangles)} triangles")
 
-    # Create mesh and apply level-set discretization
-    mesh = Mesh(vertices.copy(), triangles.copy())
-    print("\nApplying level-set discretization...")
-    mesh.remesh_levelset(levelset, hmax=0.08, verbose=False)
+    initial_mesh = to_pyvista_mesh(vertices, triangles, levelset)
 
-    new_vertices = mesh.get_vertices()
-    new_triangles, _refs = mesh.get_triangles_with_refs()
+    print("\nApplying level-set discretization...")
+    result = initial_mesh.mmg.remesh_levelset(levelset, hmax=0.08, verbose=False)
+
+    new_vertices = np.asarray(result.points[:, :2])
+    new_triangles = result.regular_faces
     new_levelset = circle_levelset(new_vertices, center=center, radius=radius)
     print(f"Result mesh: {len(new_vertices)} vertices, {len(new_triangles)} triangles")
 
-    # Extract interface from result mesh
-    interface = extract_interface(mesh)
+    interface = extract_interface(result)
 
-    # Create reference circle for comparison
     theta = np.linspace(0, 2 * np.pi, 100)
     circle_points = np.column_stack(
         [
@@ -151,12 +145,9 @@ def main() -> None:
     )
     circle = pv.Spline(circle_points, 100)
 
-    # Visualization
     pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700), off_screen=True)
 
-    # Left: Initial mesh with level-set values
     pl.subplot(0, 0)
-    initial_mesh = to_pyvista_mesh(vertices, triangles, levelset)
     pl.add_mesh(
         initial_mesh,
         scalars="levelset",
@@ -170,7 +161,6 @@ def main() -> None:
     pl.add_title("Before: Mesh edges cross interface")
     pl.view_xy()
 
-    # Right: Result mesh with interface highlighted
     pl.subplot(0, 1)
     result_mesh = to_pyvista_mesh(new_vertices, new_triangles, new_levelset)
     pl.add_mesh(
@@ -192,7 +182,6 @@ def main() -> None:
     pl.add_title("After: Mesh edges conform to interface")
     pl.view_xy()
 
-    # Save image
     output_path = Path(__file__).parent / "levelset_discretization.png"
     pl.screenshot(output_path)
     print(f"\nImage saved to: {output_path}")
