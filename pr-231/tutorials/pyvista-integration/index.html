@@ -1026,6 +1026,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmg-specific-topology-and-centroid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MMG-specific topology and centroid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mesh-kind" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2017,6 +2028,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmg-specific-topology-and-centroid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MMG-specific topology and centroid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mesh-kind" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2429,8 +2451,14 @@
 </span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># MMG&#39;s in-radius ratio (distinct from PyVista&#39;s cell_quality)</span>
 </span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="n">qualities</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">element_qualities</span><span class="p">()</span>
 </span></code></pre></div>
+<h3 id="mmg-specific-topology-and-centroid">MMG-specific topology and centroid<a class="headerlink" href="#mmg-specific-topology-and-centroid" title="Permanent link">&para;</a></h3>
+<p>PyVista exposes 0-based VTK adjacency via <code>dataset.cell_neighbors(idx)</code> and <code>dataset.point_neighbors(idx)</code>. When you specifically need MMG's 1-based adjacency or its volume/area-weighted centroid (distinct from <code>dataset.center</code>, which is the unweighted arithmetic mean), use the accessor:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">adjacent_elements</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># MMG-adjacent elements of element 1</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">vertex_neighbors</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># MMG-adjacent vertices of vertex 1</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">()</span>       <span class="c1"># volume-weighted (3D) or area-weighted (2D)</span>
+</span></code></pre></div>
 <h3 id="mesh-kind">Mesh kind<a class="headerlink" href="#mesh-kind" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>  <span class="c1"># MeshKind.TETRAHEDRAL / TRIANGULAR_2D / TRIANGULAR_SURFACE</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>  <span class="c1"># MeshKind.TETRAHEDRAL / TRIANGULAR_2D / TRIANGULAR_SURFACE</span>
 </span></code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
