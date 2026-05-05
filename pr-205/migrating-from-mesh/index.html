@@ -10,36 +10,32 @@
       
       
       
-        <link rel="canonical" href="https://kmarchais.github.io/latest/getting-started/installation/">
+        <link rel="canonical" href="https://kmarchais.github.io/latest/migrating-from-mesh/">
       
       
-        <link rel="prev" href="../..">
-      
-      
-        <link rel="next" href="../quickstart/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="zensical-0.0.31">
     
     
       
-        <title>Installation - mmgpy</title>
+        <title>Migrating from mmgpy.Mesh to the .mmg accessor - mmgpy</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.53a7feaf.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.53a7feaf.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -58,7 +54,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -83,7 +79,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#migrating-from-mmgpymesh-to-the-mmg-accessor" class="md-skip">
           Skip to content
         </a>
       
@@ -101,7 +97,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mmgpy" class="md-header__button md-logo" aria-label="mmgpy" data-md-component="logo">
+    <a href="./.." title="mmgpy" class="md-header__button md-logo" aria-label="mmgpy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -121,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installation
+              Migrating from mmgpy.Mesh to the .mmg accessor
             
           </span>
         </div>
@@ -205,7 +201,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="./.." class="md-tabs__link">
         
   
   Home
@@ -219,13 +215,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="././" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../getting-started/installation/" class="md-tabs__link">
           
   
   Getting Started
@@ -244,7 +238,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../tutorials/basic-remeshing/" class="md-tabs__link">
+        <a href="../tutorials/basic-remeshing/" class="md-tabs__link">
           
   
   Tutorials
@@ -263,7 +257,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/" class="md-tabs__link">
+        <a href="../examples/" class="md-tabs__link">
           
   
   Examples
@@ -282,7 +276,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../api/" class="md-tabs__link">
+        <a href="../api/" class="md-tabs__link">
           
   
   API Reference
@@ -301,7 +295,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/cli/" class="md-tabs__link">
+        <a href="../reference/cli/" class="md-tabs__link">
           
   
   Reference
@@ -318,7 +312,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../changelog/" class="md-tabs__link">
+      <a href="../changelog/" class="md-tabs__link">
         
   
   Changelog
@@ -350,7 +344,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mmgpy" class="md-nav__button md-logo" aria-label="mmgpy" data-md-component="logo">
+    <a href="./.." title="mmgpy" class="md-nav__button md-logo" aria-label="mmgpy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -380,7 +374,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="./.." class="md-nav__link">
         
   
   
@@ -404,31 +398,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -446,7 +437,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -461,37 +452,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Installation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -507,166 +471,6 @@
   
 
       </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Requirements
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installing-from-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installing from PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installing-from-conda-forge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installing from conda-forge
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Installing from conda-forge">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pypi-vs-conda-forge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PyPI vs conda-forge
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installing-from-source" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installing from Source
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Installing from Source">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#build-requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Build Requirements
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verifying-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verifying Installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#optional-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Optional Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#import-errors-on-windows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Import Errors on Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debug-logging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debug Logging
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -679,7 +483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -707,7 +511,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../concepts/" class="md-nav__link">
+      <a href="../getting-started/concepts/" class="md-nav__link">
         
   
   
@@ -796,7 +600,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/basic-remeshing/" class="md-nav__link">
+      <a href="../tutorials/basic-remeshing/" class="md-nav__link">
         
   
   
@@ -824,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/surface-remeshing/" class="md-nav__link">
+      <a href="../tutorials/surface-remeshing/" class="md-nav__link">
         
   
   
@@ -852,7 +656,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/adaptive-sizing/" class="md-nav__link">
+      <a href="../tutorials/adaptive-sizing/" class="md-nav__link">
         
   
   
@@ -880,7 +684,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/pyvista-integration/" class="md-nav__link">
+      <a href="../tutorials/pyvista-integration/" class="md-nav__link">
         
   
   
@@ -908,7 +712,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/levelset-extraction/" class="md-nav__link">
+      <a href="../tutorials/levelset-extraction/" class="md-nav__link">
         
   
   
@@ -997,7 +801,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/" class="md-nav__link">
+      <a href="../examples/" class="md-nav__link">
         
   
   
@@ -1086,7 +890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -1114,7 +918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mesh-classes/" class="md-nav__link">
+      <a href="../api/mesh-classes/" class="md-nav__link">
         
   
   
@@ -1142,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/options/" class="md-nav__link">
+      <a href="../api/options/" class="md-nav__link">
         
   
   
@@ -1170,7 +974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/results-validation/" class="md-nav__link">
+      <a href="../api/results-validation/" class="md-nav__link">
         
   
   
@@ -1198,7 +1002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/sizing/" class="md-nav__link">
+      <a href="../api/sizing/" class="md-nav__link">
         
   
   
@@ -1226,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/metrics/" class="md-nav__link">
+      <a href="../api/metrics/" class="md-nav__link">
         
   
   
@@ -1254,7 +1058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/io/" class="md-nav__link">
+      <a href="../api/io/" class="md-nav__link">
         
   
   
@@ -1282,7 +1086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/lagrangian/" class="md-nav__link">
+      <a href="../api/lagrangian/" class="md-nav__link">
         
   
   
@@ -1371,7 +1175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/" class="md-nav__link">
+      <a href="../reference/cli/" class="md-nav__link">
         
   
   
@@ -1399,7 +1203,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/file-formats/" class="md-nav__link">
+      <a href="../reference/file-formats/" class="md-nav__link">
         
   
   
@@ -1427,7 +1231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/mmg-parameters/" class="md-nav__link">
+      <a href="../reference/mmg-parameters/" class="md-nav__link">
         
   
   
@@ -1455,7 +1259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/mmg-api-coverage/" class="md-nav__link">
+      <a href="../reference/mmg-api-coverage/" class="md-nav__link">
         
   
   
@@ -1485,7 +1289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/benchmarks/" class="md-nav__link">
+      <a href="../reference/benchmarks/" class="md-nav__link">
         
   
   
@@ -1522,7 +1326,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -1585,10 +1389,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#quick-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requirements
+        Quick reference
       
     </span>
   </a>
@@ -1596,33 +1400,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installing-from-pypi" class="md-nav__link">
+  <a href="#three-concrete-migrations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installing from PyPI
+        Three concrete migrations
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installing-from-conda-forge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installing from conda-forge
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Installing from conda-forge">
+    <nav class="md-nav" aria-label="Three concrete migrations">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pypi-vs-conda-forge" class="md-nav__link">
+  <a href="#1-read-remesh-save" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PyPI vs conda-forge
+        1. Read, remesh, save
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-local-sizing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Local sizing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-checkpoint-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Checkpoint / rollback
       
     </span>
   </a>
@@ -1635,38 +1450,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installing-from-source" class="md-nav__link">
+  <a href="#subtle-differences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installing from Source
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Installing from Source">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#build-requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Build Requirements
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verifying-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verifying Installation
+        Subtle differences
       
     </span>
   </a>
@@ -1674,52 +1461,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#optional-dependencies" class="md-nav__link">
+  <a href="#removal-timeline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optional Dependencies
+        Removal timeline
       
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#import-errors-on-windows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Import Errors on Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debug-logging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debug Logging
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1741,46 +1489,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="././" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Getting Started
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -1789,186 +1497,223 @@
   
 
 
-<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<h1 id="migrating-from-mmgpymesh-to-the-mmg-accessor">Migrating from <code>mmgpy.Mesh</code> to the <code>.mmg</code> accessor<a class="headerlink" href="#migrating-from-mmgpymesh-to-the-mmg-accessor" title="Permanent link">&para;</a></h1>
+<p><code>mmgpy.Mesh</code> is deprecated in 0.12 and will be removed in 0.13. The replacement is the PyVista 0.48 dataset accessor that ships with mmgpy:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401  -- registers the accessor</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;brain.mesh&quot;</span><span class="p">)</span>          <span class="c1"># uses mmgpy&#39;s Medit reader plugin</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>  <span class="c1"># accessor-driven remeshing</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">mesh</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;out.mesh&quot;</span><span class="p">)</span>                 <span class="c1"># uses mmgpy&#39;s Medit writer plugin</span>
+</span></code></pre></div>
+<p>Every MMG-specific operation that used to live on <code>Mesh</code> now lives on the accessor; everything else (vertex coordinates, cell connectivity, geometry queries, <code>.save()</code>, <code>.plot()</code>, scalar field storage) is available through PyVista's native API.</p>
+<h2 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th><code>Mesh</code> method</th>
+<th>Replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Mesh(pv_dataset)</code></td>
+<td><code>pv_dataset</code> directly — no wrapper needed</td>
+</tr>
+<tr>
+<td><code>mesh.kind</code></td>
+<td><code>dataset.mmg.kind</code></td>
+</tr>
+<tr>
+<td><code>mesh.remesh(**opts)</code></td>
+<td><code>new = dataset.mmg.remesh(**opts)</code></td>
+</tr>
+<tr>
+<td><code>mesh.remesh_lagrangian(displacement, **opts)</code></td>
+<td><code>new = dataset.mmg.remesh_lagrangian(displacement, **opts)</code></td>
+</tr>
+<tr>
+<td><code>mesh.remesh_levelset(levelset, **opts)</code></td>
+<td><code>new = dataset.mmg.remesh_levelset(levelset, **opts)</code></td>
+</tr>
+<tr>
+<td><code>mesh.remesh_optimize(**opts)</code></td>
+<td><code>new = dataset.mmg.remesh_optimize(**opts)</code></td>
+</tr>
+<tr>
+<td><code>mesh.remesh_uniform(size, **opts)</code></td>
+<td><code>new = dataset.mmg.remesh_uniform(size, **opts)</code></td>
+</tr>
+<tr>
+<td><code>mesh.set_size_sphere(...)</code> etc. + <code>mesh.remesh()</code></td>
+<td><code>dataset.mmg.remesh(local_sizing=[{"shape": "sphere", ...}])</code></td>
+</tr>
+<tr>
+<td><code>mesh.load_sol(path)</code></td>
+<td><code>dataset.mmg.load_sol(path)</code></td>
+</tr>
+<tr>
+<td><code>mesh.save_sol(path)</code></td>
+<td><code>dataset.mmg.save_sol(path)</code></td>
+</tr>
+<tr>
+<td><code>mesh.validate(detailed=True)</code></td>
+<td><code>dataset.mmg.validate(detailed=True)</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_element_quality(idx)</code></td>
+<td><code>dataset.mmg.element_quality(idx)</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_element_qualities()</code></td>
+<td><code>dataset.mmg.element_qualities()</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_adjacent_elements(idx)</code></td>
+<td><code>dataset.mmg.adjacent_elements(idx)</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_vertex_neighbors(idx)</code></td>
+<td><code>dataset.mmg.vertex_neighbors(idx)</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_center_of_mass()</code></td>
+<td><code>dataset.mmg.center_of_mass()</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_vertices()</code> / <code>mesh.set_vertices(v)</code></td>
+<td><code>dataset.points</code> (read/write)</td>
+</tr>
+<tr>
+<td><code>mesh.get_triangles()</code> / <code>mesh.get_tetrahedra()</code></td>
+<td><code>dataset.cells_dict[pv.CellType.TRIANGLE]</code> / <code>[pv.CellType.TETRA]</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_edges()</code></td>
+<td><code>dataset.cells_dict[pv.CellType.LINE]</code> (when <code>include_edges=True</code>)</td>
+</tr>
+<tr>
+<td><code>mesh.compute_volume()</code></td>
+<td><code>dataset.volume</code> (tet meshes)</td>
+</tr>
+<tr>
+<td><code>mesh.compute_surface_area()</code></td>
+<td><code>dataset.area</code></td>
+</tr>
+<tr>
+<td><code>mesh.get_bounds()</code></td>
+<td><code>dataset.bounds</code> (note: returns <code>(xmin, xmax, ymin, ymax, zmin, zmax)</code>)</td>
+</tr>
+<tr>
+<td><code>mesh.get_diagonal()</code></td>
+<td><code>np.linalg.norm(np.array(dataset.bounds[1::2]) - np.array(dataset.bounds[0::2]))</code></td>
+</tr>
+<tr>
+<td><code>mesh["metric"] = arr</code></td>
+<td><code>dataset.point_data["metric"] = arr</code></td>
+</tr>
+<tr>
+<td><code>mesh["temperature"] = arr</code></td>
+<td><code>dataset.point_data["temperature"] = arr</code></td>
+</tr>
+<tr>
+<td><code>mesh.set_user_field(name, arr)</code> / <code>mesh.get_user_field(name)</code></td>
+<td><code>dataset.point_data[name]</code></td>
+</tr>
+<tr>
+<td><code>mesh.to_pyvista()</code> / <code>mesh.vtk</code></td>
+<td><code>dataset</code> (already PyVista)</td>
+</tr>
+<tr>
+<td><code>mesh.plot(**kwargs)</code></td>
+<td><code>dataset.plot(**kwargs)</code></td>
+</tr>
+<tr>
+<td><code>mesh.save(path)</code></td>
+<td><code>dataset.save(path)</code> (mmgpy's writer plugin handles <code>.mesh</code>/<code>.meshb</code>)</td>
+</tr>
+<tr>
+<td><code>mesh.copy()</code></td>
+<td><code>dataset.copy()</code></td>
+</tr>
+<tr>
+<td><code>mesh.checkpoint()</code></td>
+<td>snapshot via <code>snap = dataset.copy()</code>, reassign on success (see below)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="three-concrete-migrations">Three concrete migrations<a class="headerlink" href="#three-concrete-migrations" title="Permanent link">&para;</a></h2>
+<h3 id="1-read-remesh-save">1. Read, remesh, save<a class="headerlink" href="#1-read-remesh-save" title="Permanent link">&para;</a></h3>
+<!-- pytest-codeblocks:skip -->
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Before</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;brain.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">mesh</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">mesh</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;brain_fine.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># After</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401  -- registers reader/writer plugins + accessor</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;brain.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">remeshed</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;brain_fine.mesh&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="2-local-sizing">2. Local sizing<a class="headerlink" href="#2-local-sizing" title="Permanent link">&para;</a></h3>
+<!-- pytest-codeblocks:skip -->
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Before</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">triangles</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">mesh</span><span class="o">.</span><span class="n">set_size_sphere</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">mesh</span><span class="o">.</span><span class="n">set_size_box</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">[[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">size</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">mesh</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># After</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">UnstructuredGrid</span><span class="p">({</span><span class="n">pv</span><span class="o">.</span><span class="n">CellType</span><span class="o">.</span><span class="n">TETRA</span><span class="p">:</span> <span class="n">triangles</span><span class="p">},</span> <span class="n">vertices</span><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">hsiz</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">local_sizing</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="p">{</span><span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="s2">&quot;sphere&quot;</span><span class="p">,</span> <span class="s2">&quot;center&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;radius&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">},</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>        <span class="p">{</span><span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="s2">&quot;box&quot;</span><span class="p">,</span> <span class="s2">&quot;bounds&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">},</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="p">],</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="3-checkpoint-rollback">3. Checkpoint / rollback<a class="headerlink" href="#3-checkpoint-rollback" title="Permanent link">&para;</a></h3>
+<!-- pytest-codeblocks:skip -->
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Before — Mesh.checkpoint with auto-rollback on exception</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">mmgpy</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="s2">&quot;brain.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">with</span> <span class="n">mesh</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">()</span> <span class="k">as</span> <span class="n">snap</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">mesh</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">mesh</span><span class="o">.</span><span class="n">validate</span><span class="p">():</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="k">raise</span> <span class="ne">RuntimeError</span>  <span class="c1"># auto-rollback</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">snap</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>  <span class="c1"># keep the result</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># After — explicit snapshot, reassign on success</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;brain.mesh&quot;</span><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">snap</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="n">candidate</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">candidate</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">validate</span><span class="p">():</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="k">raise</span> <span class="ne">RuntimeError</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">mesh</span> <span class="o">=</span> <span class="n">candidate</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="n">mesh</span> <span class="o">=</span> <span class="n">snap</span>  <span class="c1"># roll back</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="k">raise</span>
+</span></code></pre></div>
+<p>The accessor returns a fresh dataset on every call, so you never need to undo anything: just don't reassign on failure.</p>
+<h2 id="subtle-differences">Subtle differences<a class="headerlink" href="#subtle-differences" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Python 3.10 or higher</li>
-<li>A supported operating system: Windows, macOS, or Linux</li>
+<li><strong><code>mesh.get_center_of_mass()</code> was volume- (3D) or area-weighted (2D/surface). PyVista's <code>dataset.center</code> is the unweighted arithmetic mean of point coordinates.</strong> Use <code>dataset.mmg.center_of_mass()</code> to get the same number you had before.</li>
+<li><strong><code>mesh.get_*_neighbors(idx)</code> and <code>mesh.get_adjacent_elements(idx)</code> use 1-based indexing (MMG convention).</strong> PyVista's <code>dataset.point_neighbors(idx)</code> and <code>dataset.cell_neighbors(idx)</code> use 0-based indexing (VTK convention) and may use a different adjacency rule. If you need MMG's exact behavior, use the accessor methods (<code>dataset.mmg.vertex_neighbors</code>, <code>dataset.mmg.adjacent_elements</code>).</li>
+<li><strong>MMG-specific point_data fields (<code>metric</code>, <code>displacement</code>, <code>levelset</code>, <code>tensor</code>)</strong> survive on the dataset's <code>point_data</code> and are picked up automatically by <code>dataset.mmg.remesh*</code>. Set them with <code>dataset.point_data["metric"] = my_array</code>. Scalar fields can be 1D <code>(n,)</code>; the accessor reshapes to <code>(n, 1)</code> internally.</li>
 </ul>
-<h2 id="installing-from-pypi">Installing from PyPI<a class="headerlink" href="#installing-from-pypi" title="Permanent link">&para;</a></h2>
-<p>The fastest way to install mmgpy:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">uv (recommended)</label><label for="__tabbed_1_2">pip</label><label for="__tabbed_1_3">pipx (CLI only)</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>mmgpy
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<!-- pytest-codeblocks:skip -->
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>mmgpy
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pipx<span class="w"> </span>install<span class="w"> </span>mmgpy
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<p>Pre-built wheels are available for:</p>
-<table>
-<thead>
-<tr>
-<th>Platform</th>
-<th>Architectures</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Windows</td>
-<td>x86_64</td>
-</tr>
-<tr>
-<td>macOS</td>
-<td>arm64, x86_64</td>
-</tr>
-<tr>
-<td>Linux</td>
-<td>x86_64, aarch64</td>
-</tr>
-</tbody>
-</table>
-<p>PyPI wheels bundle all native libraries (MMG, VTK), so no compiler or system packages are needed.</p>
-<h2 id="installing-from-conda-forge">Installing from conda-forge<a class="headerlink" href="#installing-from-conda-forge" title="Permanent link">&para;</a></h2>
-<p>If you use conda or mamba for scientific computing:</p>
-<!-- pytest-codeblocks:skip -->
-
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>mmgpy
-</span></code></pre></div>
-<p>or with <a href="https://pixi.sh/">pixi</a>:</p>
-<!-- pytest-codeblocks:skip -->
-
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pixi<span class="w"> </span>add<span class="w"> </span>mmgpy
-</span></code></pre></div>
-<h3 id="pypi-vs-conda-forge">PyPI vs conda-forge<a class="headerlink" href="#pypi-vs-conda-forge" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>PyPI (pip/uv)</th>
-<th>conda-forge (Linux/macOS)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Install speed</strong></td>
-<td>Fast (pre-built wheels)</td>
-<td>Slower (solver + download)</td>
-</tr>
-<tr>
-<td><strong>Dependencies</strong></td>
-<td>Bundled (self-contained)</td>
-<td>Shared across packages</td>
-</tr>
-<tr>
-<td><strong>Disk usage</strong></td>
-<td>Larger (duplicate VTK/libs)</td>
-<td>Smaller in conda environments</td>
-</tr>
-<tr>
-<td><strong>Lagrangian motion</strong></td>
-<td>No (ELAS library not bundled)</td>
-<td>Yes (includes iscd-linearelasticity on Linux/macOS)</td>
-</tr>
-<tr>
-<td><strong>Best for</strong></td>
-<td>Quick setup, isolated use, CI</td>
-<td>Scientific stacks sharing VTK/NumPy</td>
-</tr>
-</tbody>
-</table>
-<p>Use <strong>PyPI</strong> for the fastest, most portable setup. Use <strong>conda-forge</strong> when you already have a conda environment with VTK, PyVista, or other scientific packages — it also includes the <a href="https://github.com/ISCDtoolbox/LinearElasticity">ELAS</a> library (via iscd-linearelasticity) for Lagrangian motion on Linux and macOS.</p>
-<h2 id="installing-from-source">Installing from Source<a class="headerlink" href="#installing-from-source" title="Permanent link">&para;</a></h2>
-<p>To install the latest development version:</p>
-<!-- pytest-codeblocks:skip -->
-
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/kmarchais/mmgpy.git
-</span></code></pre></div>
-<h3 id="build-requirements">Build Requirements<a class="headerlink" href="#build-requirements" title="Permanent link">&para;</a></h3>
-<p>Building from source requires:</p>
+<h2 id="removal-timeline">Removal timeline<a class="headerlink" href="#removal-timeline" title="Permanent link">&para;</a></h2>
 <ul>
-<li>CMake &gt;= 3.15</li>
-<li>C++ compiler with C++17 support</li>
-<li>pybind11 &gt;= 3.0.0</li>
-<li>scikit-build-core &gt;= 0.11.5</li>
+<li><strong>0.12 (now)</strong>: <code>DeprecationWarning</code> on <code>Mesh</code> instantiation and <code>Mesh.checkpoint()</code>. Internal mmgpy code paths are silent.</li>
+<li><strong>0.13</strong>: <code>Mesh</code> and <code>MeshCheckpoint</code> removed. <code>MeshKind</code> survives (still returned by <code>dataset.mmg.kind</code>).</li>
 </ul>
-<h2 id="verifying-installation">Verifying Installation<a class="headerlink" href="#verifying-installation" title="Permanent link">&para;</a></h2>
-<p>After installation, verify that mmgpy is working correctly:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;mmgpy version: </span><span class="si">{</span><span class="n">mmgpy</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MMG version: </span><span class="si">{</span><span class="n">mmgpy</span><span class="o">.</span><span class="n">MMG_VERSION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div>
-<p>Test basic functionality:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401  -- registers the .mmg accessor</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Create a simple tetrahedral mesh</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">tetrahedra</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">UnstructuredGrid</span><span class="p">({</span><span class="n">pv</span><span class="o">.</span><span class="n">CellType</span><span class="o">.</span><span class="n">TETRA</span><span class="p">:</span> <span class="n">tetrahedra</span><span class="p">},</span> <span class="n">vertices</span><span class="p">)</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created mesh with </span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">n_points</span><span class="si">}</span><span class="s2"> vertices (</span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">kind</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-</span></code></pre></div>
-<h2 id="optional-dependencies">Optional Dependencies<a class="headerlink" href="#optional-dependencies" title="Permanent link">&para;</a></h2>
-<p>mmgpy works with several visualization and mesh I/O libraries:</p>
-<table>
-<thead>
-<tr>
-<th>Package</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>pyvista</td>
-<td>3D visualization and mesh conversion</td>
-</tr>
-<tr>
-<td>meshio</td>
-<td>Extended file format support</td>
-</tr>
-<tr>
-<td>rich</td>
-<td>Progress bars and formatted output</td>
-</tr>
-</tbody>
-</table>
-<p>These are installed automatically with mmgpy.</p>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="import-errors-on-windows">Import Errors on Windows<a class="headerlink" href="#import-errors-on-windows" title="Permanent link">&para;</a></h3>
-<p>If you encounter DLL loading errors on Windows:</p>
-<ol>
-<li>Ensure Visual C++ Redistributable is installed</li>
-<li>Try enabling debug mode to see DLL search paths:</li>
-</ol>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">enable_debug</span><span class="p">()</span>
-</span></code></pre></div>
-<h3 id="debug-logging">Debug Logging<a class="headerlink" href="#debug-logging" title="Permanent link">&para;</a></h3>
-<p>Enable detailed logging to diagnose issues:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">enable_debug</span><span class="p">()</span>  <span class="c1"># Show all debug messages</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># or</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">mmgpy</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>  <span class="c1"># Equivalent</span>
-</span></code></pre></div>
 
 
 
@@ -2059,14 +1804,14 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.instant.prefetch","navigation.tracking","navigation.tabs","navigation.sections","navigation.expand","navigation.path","navigation.top","search.suggest","search.highlight","content.code.copy","content.code.select","content.tabs.link","content.tooltips"],"search":"../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"latest","provider":"mike"}}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant","navigation.instant.prefetch","navigation.tracking","navigation.tabs","navigation.sections","navigation.expand","navigation.path","navigation.top","search.suggest","search.highlight","content.code.copy","content.code.select","content.tabs.link","content.tooltips"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"latest","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.91a19a9e.min.js"></script>
+      <script src="../assets/javascripts/bundle.91a19a9e.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
       
-        <script src="../../assets/js/benchmarks.js"></script>
+        <script src="../assets/js/benchmarks.js"></script>
       
     
   </body>
