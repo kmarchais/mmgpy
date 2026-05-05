@@ -15,7 +15,6 @@ import atexit
 import os
 import shutil
 import tempfile
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -26,12 +25,6 @@ from scipy.spatial import Delaunay
 if TYPE_CHECKING:
     from mmgpy._mesh import Mesh as MeshType
     from mmgpy._mesh import MeshKind
-
-# Mesh is deprecated for removal in 0.13. The doc-block harness still
-# constructs Mesh objects (the tutorial pages haven't all been migrated
-# to the .mmg accessor yet), so silence the warning to keep
-# pytest-codeblocks output clean.
-warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"mmgpy\..*")
 
 os.environ["PYVISTA_OFF_SCREEN"] = "true"
 pv.OFF_SCREEN = True
@@ -168,10 +161,10 @@ def _fake_read(
     name = str(source)
     kind = _classify_filename(name)
     if kind == "2d":
-        return Mesh(_VERTS_2D.copy(), _CELLS_2D.copy())
+        return Mesh._from_arrays(_VERTS_2D.copy(), _CELLS_2D.copy())  # noqa: SLF001
     if kind == "surface":
-        return Mesh(_VERTS_SURF.copy(), _CELLS_SURF.copy())
-    return Mesh(_VERTS_3D.copy(), _CELLS_3D.copy())
+        return Mesh._from_arrays(_VERTS_SURF.copy(), _CELLS_SURF.copy())  # noqa: SLF001
+    return Mesh._from_arrays(_VERTS_3D.copy(), _CELLS_3D.copy())  # noqa: SLF001
 
 
 def _patched_save(self: MeshType, filename: str | Path) -> None:
