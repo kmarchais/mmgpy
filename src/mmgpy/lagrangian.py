@@ -50,7 +50,7 @@ def propagate_displacement_elasticity(
     elements: NDArray[np.int32],
     boundary_mask: NDArray[np.bool_],
     boundary_displacement: NDArray[np.float64],
-    E: float = 1e6,  # noqa: N803
+    E: float = 1e6,
     nu: float = 0.3,
 ) -> NDArray[np.float64]:
     """Propagate displacement from boundary to interior using linear elasticity.
@@ -119,7 +119,9 @@ def propagate_displacement_elasticity(
             msg = f"Unsupported 2D element with {n_nodes_per_elm} nodes"
             raise ValueError(msg)
         elm_type = elm_type_map_2d[n_nodes_per_elm]
-        fd.ModelingSpace("2Dstrain")
+        # "2Dplane" enables plane-strain elasticity, which is the standard
+        # assumption for fictitious-mesh deformation in 2D.
+        fd.ModelingSpace("2Dplane")
     else:
         if n_nodes_per_elm not in elm_type_map_3d:
             msg = f"Unsupported 3D element with {n_nodes_per_elm} nodes"
@@ -138,8 +140,7 @@ def propagate_displacement_elasticity(
     bb = mesh.bounding_box
     tol = 1e-10 * max(bb.size)
     outer_nodes: set[int] = set()
-    for coord, val in [("X", bb.xmin), ("X", bb.xmax),
-                       ("Y", bb.ymin), ("Y", bb.ymax)]:
+    for coord, val in [("X", bb.xmin), ("X", bb.xmax), ("Y", bb.ymin), ("Y", bb.ymax)]:
         outer_nodes.update(mesh.find_nodes(coord, val, tol=tol))
     if n_dims == 3:
         for val in [bb.zmin, bb.zmax]:
@@ -155,8 +156,12 @@ def propagate_displacement_elasticity(
     # Prescribed displacement on moving boundary
     disp_components = ["DispX", "DispY"] if n_dims == 2 else ["DispX", "DispY", "DispZ"]
     for i, comp in enumerate(disp_components):
-        pb.bc.add("Dirichlet", moving_indices, comp,
-                  boundary_displacement[moving_indices, i])
+        pb.bc.add(
+            "Dirichlet",
+            moving_indices,
+            comp,
+            boundary_displacement[moving_indices, i],
+        )
 
     pb.solve()
 

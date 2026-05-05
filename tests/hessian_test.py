@@ -99,7 +99,9 @@ class TestComputeHessian:
         )
         if np.any(interior):
             npt.assert_array_almost_equal(
-                hessian[interior, 0], 2.0, decimal=0,
+                hessian[interior, 0],
+                2.0,
+                decimal=0,
             )  # H11
 
     def test_output_shape(self):

@@ -643,44 +643,74 @@ def compute_hessian(
     else:
         hessian = np.zeros((n_vertices, 6), dtype=np.float64)
 
+    # Quadratic fit has 5 monomials in 2D and 9 in 3D. The 1-ring around a
+    # boundary vertex on a structured grid often spans only 2 distinct values
+    # along an axis, which makes the linear and quadratic columns colinear and
+    # the LSQ rank-deficient. Always use the 2-ring; it is well-conditioned
+    # everywhere and only modestly larger than the 1-ring.
     for i in range(n_vertices):
-        # Collect patch: vertex i + its neighbors
-        patch = [i, *adjacency[i]]
-        if len(patch) < (6 if n_dims == 3 else 3):
-            # Extend to 2-ring if patch is too small
-            ring2: set[int] = set()
-            for nb in adjacency[i]:
-                ring2.update(adjacency[nb])
-            patch = list({i, *adjacency[i], *ring2})
+        ring1 = adjacency[i]
+        ring2: set[int] = set()
+        for nb in ring1:
+            ring2.update(adjacency[nb])
+        patch = list({i, *ring1, *ring2})
 
         coords = vertices[patch] - vertices[i]  # center at vertex i
         vals = field[patch] - field[i]
 
+        # Rescale coords by patch size so linear and quadratic monomial columns
+        # share comparable magnitudes; otherwise the LSQ is ill-conditioned and
+        # the small singular values that carry the second-derivative signal get
+        # truncated by lstsq's default rcond.
+        scale = float(np.linalg.norm(coords, axis=1).max())
+        if scale == 0.0:
+            continue
+        coords_n = coords / scale
+        scale2 = scale * scale
+
         # Fit quadratic polynomial via least-squares
         if n_dims == 2:
-            # Monomials: [x, y, x^2, xy, y^2]
-            x, y = coords[:, 0], coords[:, 1]
-            A = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])  # noqa: N806
+            # Monomial basis: x, y, x^2/2, xy, y^2/2
+            x, y = coords_n[:, 0], coords_n[:, 1]
+            A = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])
             try:
                 coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
             except np.linalg.LinAlgError:
                 continue
             # H11 = d2f/dx2, H12 = d2f/dxdy, H22 = d2f/dy2
-            hessian[i] = [coeffs[2], coeffs[3], coeffs[4]]
+            hessian[i] = [
+                coeffs[2] / scale2,
+                coeffs[3] / scale2,
+                coeffs[4] / scale2,
+            ]
         else:
-            # Monomials: [x, y, z, x^2, xy, xz, y^2, yz, z^2]
-            x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
-            A = np.column_stack([  # noqa: N806
-                x, y, z,
-                0.5 * x * x, x * y, x * z,
-                0.5 * y * y, y * z, 0.5 * z * z,
-            ])
+            # Monomial basis: x, y, z, x^2/2, xy, xz, y^2/2, yz, z^2/2
+            x, y, z = coords_n[:, 0], coords_n[:, 1], coords_n[:, 2]
+            A = np.column_stack(
+                [
+                    x,
+                    y,
+                    z,
+                    0.5 * x * x,
+                    x * y,
+                    x * z,
+                    0.5 * y * y,
+                    y * z,
+                    0.5 * z * z,
+                ],
+            )
             try:
                 coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
             except np.linalg.LinAlgError:
                 continue
-            # [H11, H12, H13, H22, H23, H33]
-            hessian[i] = [coeffs[3], coeffs[4], coeffs[5],
-                          coeffs[6], coeffs[7], coeffs[8]]
+            # Returned ordering: H11, H12, H13, H22, H23, H33
+            hessian[i] = [
+                coeffs[3] / scale2,
+                coeffs[4] / scale2,
+                coeffs[5] / scale2,
+                coeffs[6] / scale2,
+                coeffs[7] / scale2,
+                coeffs[8] / scale2,
+            ]
 
     return hessian

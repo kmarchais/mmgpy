@@ -6,8 +6,8 @@ import pytest
 
 fedoo = pytest.importorskip("fedoo", reason="fedoo not installed")
 
-from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D
-from mmgpy.lagrangian import (
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D  # noqa: E402
+from mmgpy.lagrangian import (  # noqa: E402
     move_mesh,
     propagate_displacement_elasticity,
 )
@@ -85,7 +85,10 @@ class TestPropagateDisplacementElasticity:
         displacement = np.full((n, 2), [0.1, 0.0], dtype=np.float64)
 
         result = propagate_displacement_elasticity(
-            vertices, triangles, boundary_mask, displacement,
+            vertices,
+            triangles,
+            boundary_mask,
+            displacement,
         )
         npt.assert_array_almost_equal(result, displacement)
 
@@ -98,7 +101,10 @@ class TestPropagateDisplacementElasticity:
         displacement = np.full((n, 2), [0.1, 0.0], dtype=np.float64)
 
         result = propagate_displacement_elasticity(
-            vertices, triangles, boundary_mask, displacement,
+            vertices,
+            triangles,
+            boundary_mask,
+            displacement,
         )
         npt.assert_array_almost_equal(result, np.zeros_like(vertices))
 
@@ -112,7 +118,10 @@ class TestPropagateDisplacementElasticity:
         displacement[:4] = [0.1, 0.0]
 
         result = propagate_displacement_elasticity(
-            vertices, triangles, boundary_mask, displacement,
+            vertices,
+            triangles,
+            boundary_mask,
+            displacement,
         )
 
         # Boundary keeps original values
@@ -132,7 +141,10 @@ class TestPropagateDisplacementElasticity:
         displacement[3] = [0.1, 0.0]  # top-left
 
         result = propagate_displacement_elasticity(
-            vertices, triangles, boundary_mask, displacement,
+            vertices,
+            triangles,
+            boundary_mask,
+            displacement,
         )
 
         # Interior point should be between 0 and 0.1
@@ -150,7 +162,10 @@ class TestPropagateDisplacementElasticity:
         displacement[:8] = [0.05, 0.0, 0.0]
 
         result = propagate_displacement_elasticity(
-            vertices, elements, boundary_mask, displacement,
+            vertices,
+            elements,
+            boundary_mask,
+            displacement,
         )
 
         npt.assert_array_almost_equal(result[:8], displacement[:8])
@@ -166,17 +181,26 @@ class TestPropagateDisplacementElasticity:
 
         with pytest.raises(ValueError, match="boundary_mask length"):
             propagate_displacement_elasticity(
-                vertices, triangles, np.ones(n + 1, dtype=bool), disp,
+                vertices,
+                triangles,
+                np.ones(n + 1, dtype=bool),
+                disp,
             )
 
         with pytest.raises(ValueError, match="boundary_displacement rows"):
             propagate_displacement_elasticity(
-                vertices, triangles, mask, np.zeros((n + 1, 2)),
+                vertices,
+                triangles,
+                mask,
+                np.zeros((n + 1, 2)),
             )
 
         with pytest.raises(ValueError, match="boundary_displacement columns"):
             propagate_displacement_elasticity(
-                vertices, triangles, mask, np.zeros((n, 3)),
+                vertices,
+                triangles,
+                mask,
+                np.zeros((n, 3)),
             )
 
 
