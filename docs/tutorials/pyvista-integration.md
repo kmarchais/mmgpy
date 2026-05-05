@@ -322,6 +322,8 @@ When mmgpy is installed, every PyVista `UnstructuredGrid` and `PolyData` instanc
 
 ### Remeshing variants
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers the accessor
@@ -348,6 +350,8 @@ carved = mesh.mmg.remesh_levelset(levelset)
 
 Pass a `local_sizing` keyword to any remesh variant. Each constraint is a dict whose `"shape"` selects the geometry:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 constrained = mesh.mmg.remesh(
     nosizreq=True,  # respect the metric we built
@@ -365,6 +369,8 @@ constrained = mesh.mmg.remesh(
 
 `.sol`/`.solb` files round-trip through the accessor; sibling `.sol` files are auto-loaded on `pv.read("foo.mesh")`:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 mesh.point_data["metric"] = my_metric
 mesh.mmg.save_sol("out.sol")
@@ -374,6 +380,8 @@ other.mmg.load_sol("foo.sol")
 ```
 
 ### Validation and quality
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 report = mesh.mmg.validate(detailed=True)  # ValidationReport
@@ -387,6 +395,8 @@ qualities = mesh.mmg.element_qualities()
 
 PyVista exposes 0-based VTK adjacency via `dataset.cell_neighbors(idx)` and `dataset.point_neighbors(idx)`. When you specifically need MMG's 1-based adjacency or its volume/area-weighted centroid (distinct from `dataset.center`, which is the unweighted arithmetic mean), use the accessor:
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 mesh.mmg.adjacent_elements(1)   # MMG-adjacent elements of element 1
 mesh.mmg.vertex_neighbors(1)    # MMG-adjacent vertices of vertex 1
@@ -394,6 +404,8 @@ mesh.mmg.center_of_mass()       # volume-weighted (3D) or area-weighted (2D)
 ```
 
 ### Mesh kind
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 print(mesh.mmg.kind)  # MeshKind.TETRAHEDRAL / TRIANGULAR_2D / TRIANGULAR_SURFACE
