@@ -2403,6 +2403,8 @@
 <h2 id="the-mmg-dataset-accessor">The <code>.mmg</code> Dataset Accessor<a class="headerlink" href="#the-mmg-dataset-accessor" title="Permanent link">&para;</a></h2>
 <p>When mmgpy is installed, every PyVista <code>UnstructuredGrid</code> and <code>PolyData</code> instance gains a <code>.mmg</code> accessor exposing MMG operations directly. The accessor takes and returns PyVista datasets, so it composes with the rest of the PyVista API without manually constructing an <code>mmgpy.Mesh</code>.</p>
 <h3 id="remeshing-variants">Remeshing variants<a class="headerlink" href="#remeshing-variants" title="Permanent link">&para;</a></h3>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401  -- registers the accessor</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
@@ -2425,6 +2427,8 @@
 </span></code></pre></div>
 <h3 id="local-sizing-constraints">Local sizing constraints<a class="headerlink" href="#local-sizing-constraints" title="Permanent link">&para;</a></h3>
 <p>Pass a <code>local_sizing</code> keyword to any remesh variant. Each constraint is a dict whose <code>"shape"</code> selects the geometry:</p>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">constrained</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">nosizreq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># respect the metric we built</span>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span>
@@ -2438,6 +2442,8 @@
 </span></code></pre></div>
 <h3 id="solution-io">Solution I/O<a class="headerlink" href="#solution-io" title="Permanent link">&para;</a></h3>
 <p><code>.sol</code>/<code>.solb</code> files round-trip through the accessor; sibling <code>.sol</code> files are auto-loaded on <code>pv.read("foo.mesh")</code>:</p>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">mesh</span><span class="o">.</span><span class="n">point_data</span><span class="p">[</span><span class="s2">&quot;metric&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">my_metric</span>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">save_sol</span><span class="p">(</span><span class="s2">&quot;out.sol&quot;</span><span class="p">)</span>
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
@@ -2445,6 +2451,8 @@
 </span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">other</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">load_sol</span><span class="p">(</span><span class="s2">&quot;foo.sol&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="validation-and-quality">Validation and quality<a class="headerlink" href="#validation-and-quality" title="Permanent link">&para;</a></h3>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">report</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">detailed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># ValidationReport</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="o">.</span><span class="n">quality</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">report</span><span class="o">.</span><span class="n">is_valid</span><span class="p">)</span>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
@@ -2453,11 +2461,15 @@
 </span></code></pre></div>
 <h3 id="mmg-specific-topology-and-centroid">MMG-specific topology and centroid<a class="headerlink" href="#mmg-specific-topology-and-centroid" title="Permanent link">&para;</a></h3>
 <p>PyVista exposes 0-based VTK adjacency via <code>dataset.cell_neighbors(idx)</code> and <code>dataset.point_neighbors(idx)</code>. When you specifically need MMG's 1-based adjacency or its volume/area-weighted centroid (distinct from <code>dataset.center</code>, which is the unweighted arithmetic mean), use the accessor:</p>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">adjacent_elements</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># MMG-adjacent elements of element 1</span>
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">vertex_neighbors</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># MMG-adjacent vertices of vertex 1</span>
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">()</span>       <span class="c1"># volume-weighted (3D) or area-weighted (2D)</span>
 </span></code></pre></div>
 <h3 id="mesh-kind">Mesh kind<a class="headerlink" href="#mesh-kind" title="Permanent link">&para;</a></h3>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>  <span class="c1"># MeshKind.TETRAHEDRAL / TRIANGULAR_2D / TRIANGULAR_SURFACE</span>
 </span></code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
