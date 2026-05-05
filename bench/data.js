@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777906907725,
+  "lastUpdate": 1777972395156,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -1946,6 +1946,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00015754383319598023",
             "extra": "mean: 75.43189550000307 msec\nrounds: 14"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevinmarchais@gmail.com",
+            "name": "Kevin Marchais",
+            "username": "kmarchais"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "59fa90a203924925ada4dbb9d3299a73a319e49b",
+          "message": "feat: adopt PyVista 0.48 reader/writer/accessor registries (#230)\n\n* feat: adopt PyVista 0.48 reader/writer/accessor registries\n\nRegister a Medit reader and writer for .mesh/.meshb plus an `mmg` dataset\naccessor via PyVista 0.48's plugin registries. Once mmgpy is installed,\n`pv.read(\"foo.mesh\")`, `mesh.save(\"out.mesh\")`, and `mesh.mmg.remesh(...)`\nwork transparently for any PyVista user, with no explicit `import mmgpy`\nrequired.\n\nReading a .mesh/.meshb auto-loads a sibling .sol into point_data /\ncell_data. Binary .solb auto-pair is intentionally skipped for now.\n\nThe Mesh class is unchanged in this PR; deprecation lands separately\nonce the accessor has had time to stabilize.\n\nAlso fixes pre-existing inability to auto-detect mesh kind from binary\n.meshb files: when the text header parser doesn't apply, fall through\nto a trial-load across MmgMesh3D/MmgMeshS/MmgMesh2D and pick the one\nthat yields a non-empty mesh.\n\n* fix: address review feedback and CI failures for pyvista 0.48 plugin\n\n- _load_meshb_by_trial: catch construction errors per candidate so\n  corrupt .meshb produces a friendly ValueError; discriminate\n  tetrahedral vs surface by element count rather than vertex count\n  so a surface .meshb no longer routes to MmgMesh3D.\n- _attach_sol_fields: strict UTF-8 decode wrapped in try/except,\n  parse errors caught and logged so a malformed .sol does not abort\n  pv.read; promote .solb skip log from debug to info.\n- docs/tutorials/pyvista-integration.md: replace deprecated\n  compute_cell_quality with cell_quality and update plot scalar key\n  (fixes ubuntu 3.14 docs codeblock CI failure).\n- _pyvista.py from_pyvista: bypass mesh.cells_dict for the\n  all-tetrahedra fast path (PyVista 0.48 made cells_dict O(n_cells)\n  due to per-cell CellType enum lookup); cache cells_dict for the\n  mixed-cell-type fallback. Fixes the test_pyvista_roundtrip_3d\n  benchmark regression.\n\n* fix(examples): use 1D mask for extract_cells in open_boundary_remeshing\n\nPyVista 0.48 rejects 2D boolean masks in extract_cells(). The\n`points[:, :] < 0` expression produced a (n_cells, 3) mask, matching\nthe buggy pattern that 0.47 silently tolerated. Switch to\n`points[:, 0] < 0` to match the slicing pattern used in\nmesh_quality_improvement.py and ellipsoid_levelset.py.\n\n* chore: minor cleanups in pyvista plugin\n\n- Demote .solb auto-pair skip from info to debug\n- Align accessor docstring example with hsiz parameter\n- Drop unused tmp_path/out in tetrahedral remesh test",
+          "timestamp": "2026-05-05T11:06:11+02:00",
+          "tree_id": "5fc1dde64d24e1822f712eeaa78e40d561760e49",
+          "url": "https://github.com/kmarchais/mmgpy/commit/59fa90a203924925ada4dbb9d3299a73a319e49b"
+        },
+        "date": 1777972394178,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 35.414219068659186,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00024971162481447285",
+            "extra": "mean: 28.237245555556473 msec\nrounds: 36"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 18.17517509444744,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00027061979837696067",
+            "extra": "mean: 55.020102684210315 msec\nrounds: 19"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 30.903273062415696,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00020023993197524495",
+            "extra": "mean: 32.35903193750023 msec\nrounds: 32"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3194.735076592982,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000005985423428628668",
+            "extra": "mean: 313.0150000000776 usec\nrounds: 3246"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 75.34985679616193,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005500303796758215",
+            "extra": "mean: 13.27142535526274 msec\nrounds: 76"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 9233.299622829772,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000061590483293011246",
+            "extra": "mean: 108.30364450942893 usec\nrounds: 20189"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.1306382681365247,
+            "unit": "iter/sec",
+            "range": "stddev: 0.23624147073352178",
+            "extra": "mean: 7.65472486939999 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.10067292315776122,
+            "unit": "iter/sec",
+            "range": "stddev: 0.04902107608969861",
+            "extra": "mean: 9.933157483000002 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.3427902800733951,
+            "unit": "iter/sec",
+            "range": "stddev: 0.006493485890821353",
+            "extra": "mean: 2.9172355756000115 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.339660570058449,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00021423991221500443",
+            "extra": "mean: 187.2778216666783 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.339939778668976,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00019734645597166046",
+            "extra": "mean: 187.26802949999902 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.334067092343817,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00027752986848218335",
+            "extra": "mean: 187.47420733333797 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.208808741126779,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0017765622958996969",
+            "extra": "mean: 191.98247616664807 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 2.098345847277708,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0015136739566826824",
+            "extra": "mean: 476.5658631999827 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 2.1085050043142313,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0026930917410894423",
+            "extra": "mean: 474.2696829999886 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.857650454244844,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002008130050454062",
+            "extra": "mean: 349.9378303999947 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 172.1266238306077,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000032543185869869114",
+            "extra": "mean: 5.8096764913260275 msec\nrounds: 173"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 14.209131128681182,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004576669988858044",
+            "extra": "mean: 70.37728000000622 msec\nrounds: 15"
           }
         ]
       }
