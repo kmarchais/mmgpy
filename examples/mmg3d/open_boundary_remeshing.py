@@ -28,7 +28,7 @@ for open_boundary in [False, True]:
 
     pv_mesh = mesh.to_pyvista()
     pl.add_mesh(
-        pv_mesh.extract_cells(pv_mesh.cell_centers().points[:, :] < 0),
+        pv_mesh.extract_cells(pv_mesh.cell_centers().points[:, 0] < 0),
         show_edges=True,
     )
     pl.add_text(f"Open boundary: {open_boundary}")
