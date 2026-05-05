@@ -1,6 +1,8 @@
-# I/O Functions
+# I/O
 
-This page documents the input/output functions for loading and saving meshes.
+This page documents how to load and save meshes with mmgpy.
+
+mmgpy registers a Medit reader/writer plugin with PyVista on import, so `pv.read("foo.mesh")` and `dataset.save("foo.mesh")` both go through MMG's native I/O. Other formats are handled by PyVista directly (which uses meshio under the hood).
 
 ## Reading Meshes
 
@@ -8,9 +10,9 @@ This page documents the input/output functions for loading and saving meshes.
 options:
 show_root_heading: true
 
-### Supported Formats
+`mmgpy.read` returns a `Mesh` (deprecated). For new code, use `pv.read(...)` and the `.mmg` accessor.
 
-mmgpy supports 40+ file formats via meshio:
+### Supported Formats
 
 | Format           | Extensions        | Notes                          |
 | ---------------- | ----------------- | ------------------------------ |
@@ -31,133 +33,84 @@ mmgpy supports 40+ file formats via meshio:
 ### Usage
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
 # Auto-detect format from extension
-mesh = mmgpy.read("input.mesh")
-mesh = mmgpy.read("input.vtk")
-mesh = mmgpy.read("input.stl")
+mesh = pv.read("input.mesh")
+mesh = pv.read("input.vtk")
+mesh = pv.read("input.stl")
 
-# Returns unified Mesh object
-print(f"Type: {mesh.kind}")  # MeshKind.TETRAHEDRAL, etc.
+print(f"Kind: {mesh.mmg.kind}")  # MeshKind.TETRAHEDRAL, etc.
 ```
 
-## PyVista Conversion
+## From PyVista Primitives
 
-::: mmgpy.from_pyvista
-options:
-show_root_heading: true
-
-::: mmgpy.to_pyvista
-options:
-show_root_heading: true
-
-### From PyVista
+The accessor works on any `pv.UnstructuredGrid` or `pv.PolyData`, so you don't need an explicit conversion:
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Create PyVista geometry
+# Surface
 sphere = pv.Sphere(radius=1.0)
+remeshed_surface = sphere.mmg.remesh(hsiz=0.1)
 
-# Convert to surface mesh
-mesh = mmgpy.Mesh(sphere)
-
-# For volumetric meshes (needs tetrahedral cells)
+# Volume (needs tetrahedral cells)
 volume = pv.Box().triangulate().delaunay_3d()
-mesh_3d = mmgpy.Mesh(volume)
+remeshed_volume = volume.mmg.remesh(hsiz=0.2)
 
-# For 2D meshes
+# 2D plane
 plane = pv.Plane()
-mesh_2d = mmgpy.Mesh(plane)
-```
-
-### To PyVista
-
-```python
-import mmgpy
-
-mesh = mmgpy.read("input.mesh")
-
-# Convert to PyVista
-pv_mesh = mesh.to_pyvista()
-
-# Or using method
-pv_mesh = mesh.to_pyvista()
-
-# Visualize
-pv_mesh.plot(show_edges=True)
+remeshed_plane = plane.mmg.remesh(hsiz=0.1)
 ```
 
 ## Saving Meshes
 
-Meshes are saved using the `save()` method:
+Use PyVista's `save()`:
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Volume meshes: .mesh, .vtk, .vtu
-mesh.save("output.mesh")  # MMG native
-mesh.save("output.vtk")   # VTK format
+# MMG native (registered reader/writer)
+remeshed_volume.save("output.mesh")
 
-# Surface meshes: also support .stl
-surface = mmgpy.read("model.stl")
-surface.save("output.stl")
+# VTK formats (handled by PyVista)
+remeshed_volume.save("output.vtk")
+remeshed_volume.save("output.vtu")
+
+# Surface meshes also support .stl
+remeshed_surface.save("output.stl")
 ```
 
 Format is inferred from the file extension.
 
-## Direct Class Loading
-
-Each mesh class can also load from files directly:
-
-```python
-import mmgpy
-
-# 3D mesh
-mesh_3d = mmgpy.Mesh("volume.mesh")
-
-# 2D mesh
-mesh_2d = mmgpy.Mesh("planar.mesh")
-
-# Surface mesh
-mesh_s = mmgpy.Mesh("surface.stl")
-```
-
 ## Complete Example
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Load from file
-mesh = mmgpy.read("input.mesh")
-print(f"Loaded {mesh.kind} mesh")
+mesh = pv.read("input.mesh")
+print(f"Loaded {mesh.mmg.kind} mesh")
 
-# Remesh
-mesh.remesh(hmax=0.1)
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
 # Save to different formats
-mesh.save("output.mesh")   # MMG native (fast)
-mesh.save("output.vtk")    # For ParaView
-mesh.save("output.vtu")    # VTK XML format
+remeshed.save("output.mesh")   # MMG native (fast)
+remeshed.save("output.vtk")    # For ParaView
+remeshed.save("output.vtu")    # VTK XML format
 
-# Convert to PyVista for visualization
-pv_mesh = mesh.to_pyvista()
-pv_mesh.save("output_pv.vtk")
-
-# Or create from PyVista
+# Or build from a PyVista primitive
 torus = pv.ParametricTorus()
-torus_mesh = mmgpy.Mesh(torus)
-torus_mesh.remesh(hmax=0.1)
-torus_mesh.save("torus.mesh")
+remeshed_torus = torus.mmg.remesh(hmax=0.1)
+remeshed_torus.save("torus.mesh")
 ```
 
 ## Tips
 
-1. **MMG native format**: Use `.mesh` for fastest I/O with MMG
-2. **VTK for visualization**: Use `.vtk` or `.vtu` for ParaView
-3. **Surface formats**: STL and OBJ are surface-only
-4. **Binary formats**: Some formats support binary (faster, smaller)
-5. **Field data**: Most formats preserve scalar/vector fields
+1. **MMG native format**: Use `.mesh` for fastest I/O with MMG (mmgpy's reader plugin handles ridges and reference markers natively).
+2. **VTK for visualization**: Use `.vtk` or `.vtu` for ParaView.
+3. **Surface formats**: STL and OBJ are surface-only.
+4. **Binary formats**: Some formats support binary (faster, smaller).
+5. **Field data**: Most formats preserve scalar/vector fields via `point_data`/`cell_data`.

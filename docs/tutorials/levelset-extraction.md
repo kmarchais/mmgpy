@@ -16,14 +16,15 @@ Level-set remeshing extracts an isosurface from a scalar field defined on a mesh
 Define a level-set function and extract the zero isosurface:
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
 # Load or create a background mesh
-mesh = mmgpy.Mesh("background.mesh")
+mesh = pv.read("background.mesh")
 
 # Get vertex coordinates
-vertices = mesh.get_vertices()
+vertices = np.asarray(mesh.points)
 
 # Define level-set: signed distance to a sphere
 center = np.array([0.5, 0.5, 0.5])
@@ -31,9 +32,9 @@ radius = 0.3
 levelset = (np.linalg.norm(vertices - center, axis=1) - radius).reshape(-1, 1)
 
 # Remesh with level-set discretization
-result = mesh.remesh_levelset(levelset)
+discretized = mesh.mmg.remesh_levelset(levelset)
 
-print(f"Extracted surface with {result.triangles_after} triangles")
+print(f"Extracted dataset has {discretized.n_cells} cells")
 ```
 
 ## Creating Background Meshes
@@ -41,21 +42,13 @@ print(f"Extracted surface with {result.triangles_after} triangles")
 The background mesh should encompass the region where the level-set is defined:
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Create a simple cubic mesh
-# (In practice, load from file or create with another tool)
-
-# For a unit cube background
-n = 10  # Resolution per edge
-x = np.linspace(0, 1, n)
-y = np.linspace(0, 1, n)
-z = np.linspace(0, 1, n)
-
-# Create tetrahedral mesh from grid
-# (Simplified - real implementation would need proper tetrahedralization)
-mesh = mmgpy.Mesh("unit_cube.mesh")
+# In practice, load from file or build with another tool. PyVista has
+# helpers like delaunay_3d, voxelize, etc. for quick prototyping.
+mesh = pv.read("unit_cube.mesh")
 ```
 
 ## Implicit Function Examples
@@ -68,7 +61,8 @@ mesh = mmgpy.Mesh("unit_cube.mesh")
 def sphere_levelset(coords, center=(0.5, 0.5, 0.5), radius=0.3):
     return (np.linalg.norm(coords - np.array(center), axis=1) - radius).reshape(-1, 1)
 
-levelset = sphere_levelset(mesh.get_vertices())
+
+levelset = sphere_levelset(np.asarray(mesh.points))
 ```
 
 ### Torus
@@ -78,12 +72,12 @@ levelset = sphere_levelset(mesh.get_vertices())
 ```python
 def torus_levelset(coords, R=0.5, r=0.15):
     x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
-    # Translate to center at (0.5, 0.5, 0.5)
     x, y, z = x - 0.5, y - 0.5, z - 0.5
     q = np.sqrt(x**2 + y**2) - R
     return (np.sqrt(q**2 + z**2) - r).reshape(-1, 1)
 
-levelset = torus_levelset(mesh.get_vertices())
+
+levelset = torus_levelset(np.asarray(mesh.points))
 ```
 
 ### Gyroid
@@ -91,13 +85,16 @@ levelset = torus_levelset(mesh.get_vertices())
 <!-- pytest-codeblocks:cont -->
 
 ```python
-def gyroid_levelset(coords, scale=2*np.pi):
+def gyroid_levelset(coords, scale=2 * np.pi):
     x = coords[:, 0] * scale
     y = coords[:, 1] * scale
     z = coords[:, 2] * scale
-    return (np.sin(x)*np.cos(y) + np.sin(y)*np.cos(z) + np.sin(z)*np.cos(x)).reshape(-1, 1)
+    return (
+        np.sin(x) * np.cos(y) + np.sin(y) * np.cos(z) + np.sin(z) * np.cos(x)
+    ).reshape(-1, 1)
 
-levelset = gyroid_levelset(mesh.get_vertices())
+
+levelset = gyroid_levelset(np.asarray(mesh.points))
 ```
 
 ### Boolean Operations
@@ -107,19 +104,18 @@ Combine shapes using min/max operations:
 <!-- pytest-codeblocks:skip -->
 
 ```python
-# Union: min of level-sets
 def union(ls1, ls2):
     return np.minimum(ls1, ls2)
 
-# Intersection: max of level-sets
+
 def intersection(ls1, ls2):
     return np.maximum(ls1, ls2)
 
-# Subtraction: max of ls1 and negated ls2
+
 def subtract(ls1, ls2):
     return np.maximum(ls1, -ls2)
 
-# Example: sphere with cylindrical hole
+
 sphere = sphere_levelset(vertices, center=(0.5, 0.5, 0.5), radius=0.4)
 cylinder = cylinder_levelset(vertices)  # Define appropriately
 result_ls = subtract(sphere, cylinder)
@@ -130,18 +126,19 @@ result_ls = subtract(sphere, cylinder)
 Level-set extraction also works with 2D meshes:
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("background_2d.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("background_2d.mesh")
+vertices = np.asarray(mesh.points)
 
-# Circle level-set
+# Circle level-set (uses x,y; z is 0 for the planar embedding)
 center = np.array([0.5, 0.5])
 radius = 0.3
 levelset = (np.linalg.norm(vertices[:, :2] - center, axis=1) - radius).reshape(-1, 1)
 
-result = mesh.remesh_levelset(levelset)
+discretized = mesh.mmg.remesh_levelset(levelset)
 ```
 
 ## Surface Level-Set Remeshing
@@ -149,16 +146,17 @@ result = mesh.remesh_levelset(levelset)
 For surface meshes, level-set can extract curves:
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("surface.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("surface.mesh")
+vertices = np.asarray(mesh.points)
 
 # Level-set based on z-coordinate (extracts z=0 curve)
 levelset = vertices[:, 2].reshape(-1, 1)
 
-result = mesh.remesh_levelset(levelset)
+discretized = mesh.mmg.remesh_levelset(levelset)
 ```
 
 ## Controlling Output Quality
@@ -168,11 +166,11 @@ Combine level-set extraction with size parameters:
 <!-- pytest-codeblocks:skip -->
 
 ```python
-result = mesh.remesh_levelset(
+discretized = mesh.mmg.remesh_levelset(
     levelset,
     hmin=0.005,
     hmax=0.05,
-    hausd=0.0001,  # Tight approximation
+    hausd=0.0001,
     verbose=1,
 )
 ```
@@ -182,39 +180,35 @@ result = mesh.remesh_levelset(
 <!--pytest-codeblocks:skip-->
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Load background mesh
-mesh = mmgpy.Mesh("domain.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("domain.mesh")
+vertices = np.asarray(mesh.points)
 
-# Define a complex implicit function: two intersecting spheres
+
 def double_sphere(coords):
     center1 = np.array([0.35, 0.5, 0.5])
     center2 = np.array([0.65, 0.5, 0.5])
     radius = 0.25
-
     d1 = np.linalg.norm(coords - center1, axis=1) - radius
     d2 = np.linalg.norm(coords - center2, axis=1) - radius
+    return np.minimum(d1, d2)
 
-    return np.minimum(d1, d2)  # Union
 
 levelset = double_sphere(vertices).reshape(-1, 1)
 
-# Extract the isosurface
-result = mesh.remesh_levelset(
+discretized = mesh.mmg.remesh_levelset(
     levelset,
     hmax=0.03,
     hausd=0.001,
     verbose=1,
 )
 
-print(f"Extracted {result.triangles_after} triangles")
-print(f"Quality: {result.quality_mean_after:.3f}")
-
-# Save result
-mesh.save("double_sphere.vtk")
+q = discretized.mmg.element_qualities()
+print(f"Cells: {discretized.n_cells}, mean quality: {q.mean():.3f}")
+discretized.save("double_sphere.vtk")
 ```
 
 ## Visualization
@@ -222,27 +216,20 @@ mesh.save("double_sphere.vtk")
 <!-- pytest-codeblocks:cont -->
 
 ```python
-import pyvista as pv
-
-# Visualize the extracted surface
-pv_mesh = mesh.to_pyvista()
-pv_mesh.plot(show_edges=True)
+discretized.plot(show_edges=True)
 ```
 
 ## Tips
 
 1. **Background mesh quality**: Use a sufficiently fine background mesh for accurate level-set discretization
-
 2. **Signed distance**: For best results, use signed distance functions (negative inside, positive outside)
-
 3. **Narrow band**: If your level-set is only valid near the surface, ensure the background mesh is refined in that region
-
 4. **Validation**: After extraction, validate the mesh to ensure quality:
 
    <!-- pytest-codeblocks:skip -->
 
    ```python
-   assert mesh.validate(), "Extracted mesh has quality issues"
+   assert discretized.mmg.validate(), "Extracted mesh has quality issues"
    ```
 
 5. **Multiple materials**: For multi-material interfaces, use multiple level-set operations

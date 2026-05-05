@@ -2,9 +2,11 @@
 
 This page explains the fundamental concepts behind mmgpy and mesh remeshing.
 
+mmgpy operates on PyVista datasets via the `.mmg` accessor. Importing `mmgpy` registers the accessor on every `pv.UnstructuredGrid` and `pv.PolyData`, plus a Medit reader/writer for `.mesh` / `.meshb` files.
+
 ## Mesh Types
 
-mmgpy supports three types of meshes through the unified `Mesh` class:
+The accessor automatically detects three mesh kinds. Inspect via `dataset.mmg.kind`:
 
 ### 3D Volumetric Meshes (`MeshKind.TETRAHEDRAL`)
 
@@ -15,11 +17,11 @@ Tetrahedral meshes representing 3D volumes. Used for:
 - Structural simulations
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Load a volumetric mesh
-mesh = mmgpy.Mesh("volume.mesh")
-print(mesh.kind)  # MeshKind.TETRAHEDRAL
+mesh = pv.read("volume.mesh")
+print(mesh.mmg.kind)  # MeshKind.TETRAHEDRAL
 ```
 
 ### 2D Planar Meshes (`MeshKind.TRIANGULAR_2D`)
@@ -31,10 +33,11 @@ Triangular meshes in 2D. Used for:
 - Height field representations
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("planar.mesh")
-print(mesh.kind)  # MeshKind.TRIANGULAR_2D
+mesh = pv.read("planar.mesh")
+print(mesh.mmg.kind)  # MeshKind.TRIANGULAR_2D
 ```
 
 ### 3D Surface Meshes (`MeshKind.TRIANGULAR_SURFACE`)
@@ -46,35 +49,37 @@ Triangular meshes representing 3D surfaces. Used for:
 - Graphics and visualization
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("surface.stl")
-print(mesh.kind)  # MeshKind.TRIANGULAR_SURFACE
+mesh = pv.read("surface.stl")
+print(mesh.mmg.kind)  # MeshKind.TRIANGULAR_SURFACE
 ```
 
-## The Unified Mesh Class
+## Building Datasets
 
-The `Mesh` class is the primary public API for mmgpy. It auto-detects the mesh type based on input data:
+You can use any PyVista construction path. The accessor detects the kind from cell types and coordinate dimensions:
 
 ```python
-import mmgpy
-
-# Auto-detect mesh type from file
-mesh = mmgpy.Mesh("input.mesh")
-print(f"Mesh type: {mesh.kind}")  # MeshKind.TETRAHEDRAL, TRIANGULAR_2D, or TRIANGULAR_SURFACE
-
-# From arrays - type is detected from vertex dimensions and cell type
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
 # 3D vertices + tetrahedra → TETRAHEDRAL
 vertices_3d = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
 tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
-mesh_3d = mmgpy.Mesh(vertices_3d, tetrahedra)
+mesh_3d = pv.UnstructuredGrid({pv.CellType.TETRA: tetrahedra}, vertices_3d)
+print(mesh_3d.mmg.kind)  # MeshKind.TETRAHEDRAL
 
-# 2D vertices + triangles → TRIANGULAR_2D
-vertices_2d = np.array([[0, 0], [1, 0], [0.5, 1]], dtype=np.float64)
+# 2D vertices + triangles → TRIANGULAR_2D (embed at z=0 in PolyData)
+vertices_2d = np.array(
+    [[0, 0, 0], [1, 0, 0], [0.5, 1, 0]],
+    dtype=np.float64,
+)
 triangles = np.array([[0, 1, 2]], dtype=np.int32)
-mesh_2d = mmgpy.Mesh(vertices_2d, triangles)
+faces = np.column_stack([np.full(len(triangles), 3), triangles]).ravel()
+mesh_2d = pv.PolyData(vertices_2d, faces=faces)
+print(mesh_2d.mmg.kind)  # MeshKind.TRIANGULAR_2D
 ```
 
 ## Remeshing Operations
@@ -86,9 +91,9 @@ The default `remesh()` operation modifies the mesh topology to achieve target el
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
-    hmin=0.01,   # Minimum edge length
-    hmax=0.1,    # Maximum edge length
+remeshed = mesh_3d.mmg.remesh(
+    hmin=0.01,
+    hmax=0.1,
 )
 ```
 
@@ -104,19 +109,21 @@ This may:
 To improve quality without changing topology:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("input.mesh")
-result = mesh.remesh_optimize()
+mesh = pv.read("input.mesh")
+optimized = mesh.mmg.remesh_optimize()
 ```
 
 Or equivalently:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("input.mesh")
-result = mesh.remesh(optim=1, noinsert=1)
+mesh = pv.read("input.mesh")
+optimized = mesh.mmg.remesh(optim=1, noinsert=1)
 ```
 
 ### Uniform Remeshing
@@ -124,10 +131,11 @@ result = mesh.remesh(optim=1, noinsert=1)
 To remesh with a single target size everywhere:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("input.mesh")
-result = mesh.remesh_uniform(size=0.05)
+mesh = pv.read("input.mesh")
+uniform = mesh.mmg.remesh_uniform(size=0.05)
 ```
 
 ### Level-Set Remeshing
@@ -135,33 +143,37 @@ result = mesh.remesh_uniform(size=0.05)
 Extract and remesh an isosurface:
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Define a level-set function (distance to sphere)
-def levelset_func(coords):
+
+def levelset_func(coords: np.ndarray) -> np.ndarray:
     return (np.linalg.norm(coords - [0.5, 0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
 
-mesh = mmgpy.Mesh("background.mesh")
-levelset = levelset_func(mesh.get_vertices())
 
-result = mesh.remesh_levelset(levelset)
+mesh = pv.read("background.mesh")
+levelset = levelset_func(np.asarray(mesh.points))
+discretized = mesh.mmg.remesh_levelset(levelset)
 ```
 
 ### Lagrangian Remeshing
 
 Remesh while preserving a displacement field (useful for moving meshes):
 
-!!! warning "Requires ELAS library"
+!!! warning "Requires ELAS library for the bound path; the pure-Python `dataset.mmg.move(...)` works without ELAS"
 
 <!-- pytest-codeblocks:skip -->
 
 ```python
-# Displacement field at each vertex
-displacement = np.zeros((n_vertices, 3))
+displacement = np.zeros((mesh.n_points, 3))
 displacement[:, 0] = 0.1  # Move all vertices in x
 
-result = mesh.remesh_lagrangian(displacement)
+# ELAS-bound lagrangian
+remeshed = mesh.mmg.remesh_lagrangian(displacement)
+
+# Pure-Python alternative (no ELAS required)
+moved = mesh.mmg.move(displacement, hmax=0.1)
 ```
 
 ## Mesh Size Control
@@ -179,47 +191,59 @@ Control edge lengths globally:
 
 ### Local Sizing
 
-Refine specific regions with sizing constraints:
+Refine specific regions with sizing constraints passed to `remesh()`:
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Spherical refinement region
-mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
-
-# Box refinement region
-mesh.set_size_box(bounds=[[0, 0, 0], [0.3, 0.3, 0.3]], size=0.02)
-
-# Cylindrical refinement region (3D only)
-mesh.set_size_cylinder(point1=[0, 0, 0], point2=[1, 0, 0], radius=0.1, size=0.01)
-
-# Distance-based sizing from a point
-mesh.set_size_from_point(
-    point=[0.5, 0.5, 0.5],
-    near_size=0.01,
-    far_size=0.1,
-    influence_radius=0.5,
+remeshed = mesh.mmg.remesh(
+    hmax=0.1,
+    local_sizing=[
+        {
+            "shape": "sphere",
+            "center": (0.5, 0.5, 0.5),
+            "radius": 0.2,
+            "size": 0.01,
+        },
+        {
+            "shape": "box",
+            "bounds": [[0, 0, 0], [0.3, 0.3, 0.3]],
+            "size": 0.02,
+        },
+        {
+            "shape": "cylinder",
+            "point1": (0, 0, 0),
+            "point2": (1, 0, 0),
+            "radius": 0.1,
+            "size": 0.01,
+        },
+        {
+            "shape": "from_point",
+            "point": (0.5, 0.5, 0.5),
+            "near_size": 0.01,
+            "far_size": 0.1,
+            "influence_radius": 0.5,
+        },
+    ],
 )
 ```
 
 ### Metric Fields
 
-For anisotropic remeshing, define a metric tensor at each vertex:
+For anisotropic remeshing, define a metric tensor at each vertex via `point_data`:
 
 ```python
-import mmgpy
-import mmgpy.metrics as metrics
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
+import mmgpy.metrics as metrics
 
-mesh = mmgpy.Mesh("input.mesh")
-n_vertices = len(mesh.get_vertices())
+mesh = pv.read("input.mesh")
 
-# Create isotropic metric from sizes
-sizes = np.ones(n_vertices) * 0.1
-metric = metrics.create_isotropic_metric(sizes)
-mesh["metric"] = metric
+sizes = np.ones(mesh.n_points) * 0.1
+mesh.point_data["metric"] = metrics.create_isotropic_metric(sizes)
 
-result = mesh.remesh()
+remeshed = mesh.mmg.remesh()
 ```
 
 ## Quality Metrics
@@ -229,36 +253,36 @@ mmgpy uses normalized quality measures:
 - **Quality = 1.0** - Perfect element (equilateral tetrahedron/triangle)
 - **Quality = 0.0** - Degenerate element (collapsed)
 
-The `RemeshResult` class provides quality statistics:
+Per-element quality is available via the accessor:
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(hmax=0.1)
+qualities = remeshed.mmg.element_qualities()
 
-print(f"Min quality: {result.quality_min_after:.3f}")
-print(f"Mean quality: {result.quality_mean_after:.3f}")
+print(f"Min quality:  {qualities.min():.3f}")
+print(f"Mean quality: {qualities.mean():.3f}")
 ```
 
 ## File Formats
 
-mmgpy supports 40+ file formats via meshio:
+mmgpy supports 40+ file formats through PyVista (which uses meshio under the hood):
 
-| Format     | Extension      | Notes               |
-| ---------- | -------------- | ------------------- |
-| MMG native | `.mesh`        | Recommended for MMG |
-| VTK        | `.vtk`, `.vtu` | Good for ParaView   |
-| STL        | `.stl`         | Surface meshes only |
-| OBJ        | `.obj`         | Surface meshes only |
-| GMSH       | `.msh`         | Popular for FEM     |
-| PLY        | `.ply`         | Point cloud/mesh    |
+| Format     | Extension      | Notes                                          |
+| ---------- | -------------- | ---------------------------------------------- |
+| MMG native | `.mesh`        | Recommended for MMG (mmgpy registers a reader) |
+| VTK        | `.vtk`, `.vtu` | Good for ParaView                              |
+| STL        | `.stl`         | Surface meshes only                            |
+| OBJ        | `.obj`         | Surface meshes only                            |
+| GMSH       | `.msh`         | Popular for FEM                                |
+| PLY        | `.ply`         | Point cloud/mesh                               |
 
-Load any format with `mmgpy.Mesh()` or `mmgpy.read()`:
+Use `pv.read` and `dataset.save` for everything:
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.Mesh("model.stl")
+mesh = pv.read("model.stl")
 mesh.save("output.vtk")
 ```
 
@@ -276,6 +300,6 @@ Control output verbosity:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(hmax=0.1, verbose=-1)  # Silent
-result = mesh.remesh(hmax=0.1, verbose=1)   # Standard
+silent = mesh.mmg.remesh(hmax=0.1, verbose=-1)
+loud = mesh.mmg.remesh(hmax=0.1, verbose=1)
 ```

@@ -79,11 +79,12 @@ members: - **init** - fine - coarse - optimize_only - to_dict
 ### Basic Usage
 
 ```python
-from mmgpy import Mesh, Mmg3DOptions
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
+from mmgpy import Mmg3DOptions
 
-mesh = Mesh("input.mesh")
+mesh = pv.read("input.mesh")
 
-# Create options
 opts = Mmg3DOptions(
     hmin=0.01,
     hmax=0.1,
@@ -91,8 +92,7 @@ opts = Mmg3DOptions(
     verbose=1,
 )
 
-# Use with remesh
-result = mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 ```
 
 ### Factory Methods
@@ -122,7 +122,7 @@ params = opts.to_dict()
 print(params)  # {'hmax': 0.1, 'hausd': 0.001}
 
 # Unpack into remesh
-result = mesh.remesh(**opts.to_dict())
+remeshed = mesh.mmg.remesh(**opts.to_dict())
 ```
 
 ### Customizing Presets
@@ -142,13 +142,13 @@ Options objects and keyword arguments cannot be mixed:
 
 ```python
 # Correct: use options object
-result = mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 
 # Correct: use keyword arguments
-result = mesh.remesh(hmax=0.1, hausd=0.001)
+remeshed = mesh.mmg.remesh(hmax=0.1, hausd=0.001)
 
 # Error: mixing both
-result = mesh.remesh(opts, verbose=1)  # TypeError!
+remeshed = mesh.mmg.remesh(opts, verbose=1)  # TypeError!
 ```
 
 ## Recommended Values

@@ -1,6 +1,6 @@
 # Examples Gallery
 
-This page showcases complete examples from the mmgpy repository.
+This page showcases complete examples from the mmgpy repository. Every snippet here uses the `.mmg` PyVista accessor; importing `mmgpy` registers the accessor plus the Medit reader/writer plugins.
 
 ## 3D Volume Meshing (mmg3d)
 
@@ -10,15 +10,17 @@ Improve mesh quality without changing topology.
 
 ```python
 """Mesh quality improvement with mean edge length preservation."""
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Load mesh
-mesh = mmgpy.Mesh("input.mesh")
+mesh = pv.read("input.mesh")
 
 # Optimize quality only (no vertex insertion/removal)
-result = mesh.remesh_optimize()
+optimized = mesh.mmg.remesh_optimize()
 
-print(f"Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:.3f}")
+q_before = mesh.mmg.element_qualities()
+q_after = optimized.mmg.element_qualities()
+print(f"Mean quality: {q_before.mean():.3f} -> {q_after.mean():.3f}")
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/mesh_quality_improvement.py)
@@ -31,11 +33,12 @@ Remesh volumetric mesh with open boundaries.
 
 ```python
 """Remeshing with open boundary handling."""
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("domain_with_holes.mesh")
+mesh = pv.read("domain_with_holes.mesh")
 
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
     hausd=0.001,
 )
@@ -49,24 +52,29 @@ result = mesh.remesh(
 
 Remesh while applying mesh displacement.
 
-!!! warning "Requires ELAS library"
+!!! info "ELAS-bound vs pure-Python"
+`mesh.mmg.remesh_lagrangian(...)` requires MMG to be built with ELAS.
+`mesh.mmg.move(...)` is a pure-Python alternative that works without ELAS.
 
 <!-- pytest-codeblocks:skip -->
 
 ```python
 """Lagrangian mesh motion remeshing."""
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("input.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("input.mesh")
+vertices = np.asarray(mesh.points)
 
-# Define displacement field
 displacement = np.zeros_like(vertices)
 displacement[:, 0] = 0.1 * np.sin(vertices[:, 1] * np.pi)
 
-# Remesh with motion
-result = mesh.remesh_lagrangian(displacement)
+# ELAS-bound
+remeshed = mesh.mmg.remesh_lagrangian(displacement)
+
+# Pure-Python alternative
+moved = mesh.mmg.move(displacement, hmax=0.1)
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/lagrangian_motion.py)
@@ -79,16 +87,18 @@ Extract isosurface from implicit function.
 
 ```python
 """Level-set based surface extraction."""
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("background.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("background.mesh")
+vertices = np.asarray(mesh.points)
 
-# Sphere level-set
-levelset = (np.linalg.norm(vertices - [0.5, 0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
+levelset = (
+    np.linalg.norm(vertices - [0.5, 0.5, 0.5], axis=1) - 0.3
+).reshape(-1, 1)
 
-result = mesh.remesh_levelset(levelset)
+discretized = mesh.mmg.remesh_levelset(levelset)
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/levelset_discretization.py)
@@ -99,19 +109,26 @@ result = mesh.remesh_levelset(levelset)
 
 ### Local Sizing Control
 
-Apply regional mesh refinement.
+Apply regional mesh refinement via the `local_sizing` argument.
 
 ```python
 """Per-region mesh density control."""
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("domain_2d.mesh")
+mesh = pv.read("domain_2d.mesh")
 
-# Fine mesh in center
-mesh.set_size_sphere(center=[0.5, 0.5], radius=0.2, size=0.01)
-
-# Coarser mesh elsewhere
-result = mesh.remesh(hmax=0.1)
+remeshed = mesh.mmg.remesh(
+    hmax=0.1,
+    local_sizing=[
+        {
+            "shape": "sphere",
+            "center": (0.5, 0.5),
+            "radius": 0.2,
+            "size": 0.01,
+        },
+    ],
+)
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/local_sizing.py)
@@ -120,27 +137,26 @@ result = mesh.remesh(hmax=0.1)
 
 ### Solution-Based Adaptation
 
-Adapt mesh to solution field.
+Adapt mesh to a solution field via a custom metric on `point_data`.
 
 ```python
 """Mesh adaptation to solution gradients."""
-import mmgpy
-import mmgpy.metrics as metrics
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
+import mmgpy.metrics as metrics
 
-mesh = mmgpy.Mesh("domain_2d.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("domain_2d.mesh")
+vertices = np.asarray(mesh.points)
 
 # Solution field
 solution = np.sin(vertices[:, 0] * 4 * np.pi) * np.cos(vertices[:, 1] * 4 * np.pi)
 
-# Create metric from solution gradients
-# (simplified - full implementation computes Hessian)
+# Simplified sizing: tighten where |solution| is large
 sizes = 0.01 + 0.1 * np.abs(solution)
-metric = metrics.create_isotropic_metric(sizes, dim=2)
-mesh["metric"] = metric
+mesh.point_data["metric"] = metrics.create_isotropic_metric(sizes, dim=2)
 
-result = mesh.remesh()
+remeshed = mesh.mmg.remesh()
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/mesh_adaptation_to_a_solution.py)
@@ -153,20 +169,19 @@ Directional mesh refinement.
 
 ```python
 """Anisotropic mesh adaptation."""
-import mmgpy
-import mmgpy.metrics as metrics
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
+import mmgpy.metrics as metrics
 
-mesh = mmgpy.Mesh("domain_2d.mesh")
-n_vertices = len(mesh.get_vertices())
+mesh = pv.read("domain_2d.mesh")
 
 # Create anisotropic metric (stretch in x direction)
 sizes = np.array([0.1, 0.02])  # Larger in x, smaller in y
 single_tensor = metrics.create_anisotropic_metric(sizes)
-metric = np.tile(single_tensor, (n_vertices, 1))
+mesh.point_data["metric"] = np.tile(single_tensor, (mesh.n_points, 1))
 
-mesh["metric"] = metric
-result = mesh.remesh()
+remeshed = mesh.mmg.remesh()
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/anisotropic_mesh_adaptation.py)
@@ -179,17 +194,17 @@ Generate mesh from implicit function.
 
 ```python
 """Generate 2D mesh from implicit domain definition."""
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("background_2d.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("background_2d.mesh")
+vertices = np.asarray(mesh.points)
 
-# Circle level-set
 center = np.array([0.5, 0.5])
 levelset = (np.linalg.norm(vertices[:, :2] - center, axis=1) - 0.3).reshape(-1, 1)
 
-result = mesh.remesh_levelset(levelset)
+discretized = mesh.mmg.remesh_levelset(levelset)
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/implicit_2d_domain_meshing.py)
@@ -204,11 +219,12 @@ Industrial part surface remeshing.
 
 ```python
 """Mechanical part surface optimization."""
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("part.stl")
+mesh = pv.read("part.stl")
 
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.05,
     hausd=0.001,
     ar=30,     # Preserve sharp edges
@@ -227,11 +243,12 @@ Surface smoothing and refinement.
 
 ```python
 """Smooth surface mesh optimization."""
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("surface.mesh")
+mesh = pv.read("surface.mesh")
 
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
     hausd=0.0001,  # Tight approximation
     hgrad=1.1,     # Smooth gradation
@@ -246,23 +263,23 @@ result = mesh.remesh(
 
 ### Implicit Surface Meshing
 
-Generate surface from implicit function.
+Generate a surface from an implicit function.
 
 ```python
 """Generate surface mesh from implicit function."""
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.Mesh("background_surface.mesh")
-vertices = mesh.get_vertices()
+mesh = pv.read("background_surface.mesh")
+vertices = np.asarray(mesh.points)
 
-# Torus level-set
 R, r = 0.5, 0.15
 x, y, z = vertices[:, 0] - 0.5, vertices[:, 1] - 0.5, vertices[:, 2] - 0.5
 q = np.sqrt(x**2 + y**2) - R
 levelset = (np.sqrt(q**2 + z**2) - r).reshape(-1, 1)
 
-result = mesh.remesh_levelset(levelset)
+discretized = mesh.mmg.remesh_levelset(levelset)
 ```
 
 [View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/implicit_surface_domain_meshing.py)

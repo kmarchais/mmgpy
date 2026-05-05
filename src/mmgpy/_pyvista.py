@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 _DIMS_2D = 2
 _DIMS_3D = 3
 _TRIANGLE_VERTS = 3
+_NDIM_2D_ARRAY = 2
 _2D_DETECTION_TOLERANCE = 1e-8
 
 _TRIANGULATION_WARNING = (
@@ -793,4 +794,50 @@ def _mmgs_to_pyvista(
     return polydata
 
 
-__all__ = ["from_pyvista", "to_pyvista"]
+def polydata_from_2d_triangles(
+    vertices: NDArray[np.floating],
+    triangles: NDArray[np.integer],
+    *,
+    z: float = 0.0,
+) -> pv.PolyData:
+    """Build a ``pv.PolyData`` from 2D vertices and triangle connectivity.
+
+    Embeds the planar mesh in 3D at ``z=z`` so the result can flow through
+    the ``.mmg`` accessor, which auto-detects ``TRIANGULAR_2D`` from the
+    constant-z coordinate.
+
+    Parameters
+    ----------
+    vertices : ndarray, shape ``(n, 2)`` or ``(n, 3)``
+        Vertex coordinates. 2D arrays are extended with the constant ``z``;
+        3D arrays are used as-is.
+    triangles : ndarray, shape ``(m, 3)``
+        Triangle connectivity (zero-indexed).
+    z : float, default ``0.0``
+        Plane height used when embedding 2D vertices.
+
+    Returns
+    -------
+    pv.PolyData
+        Planar PolyData carrying ``triangles`` as its faces.
+
+    """
+    verts = np.asarray(vertices, dtype=np.float64)
+    if verts.ndim != _NDIM_2D_ARRAY or verts.shape[1] not in (_DIMS_2D, _DIMS_3D):
+        msg = f"vertices must have shape (n, 2) or (n, 3); got {verts.shape}"
+        raise ValueError(msg)
+    if verts.shape[1] == _DIMS_2D:
+        verts = np.column_stack([verts, np.full(len(verts), z, dtype=np.float64)])
+
+    tris = np.asarray(triangles, dtype=np.int32)
+    if tris.ndim != _NDIM_2D_ARRAY or tris.shape[1] != _TRIANGLE_VERTS:
+        msg = f"triangles must have shape (m, 3); got {tris.shape}"
+        raise ValueError(msg)
+
+    faces = np.column_stack(
+        [np.full(len(tris), _TRIANGLE_VERTS, dtype=np.int32), tris],
+    ).ravel()
+    return pv.PolyData(verts, faces=faces)
+
+
+__all__ = ["from_pyvista", "polydata_from_2d_triangles", "to_pyvista"]

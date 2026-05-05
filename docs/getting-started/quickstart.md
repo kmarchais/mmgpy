@@ -7,20 +7,20 @@ Get started with mmgpy in 5 minutes.
 The simplest way to use mmgpy is to load a mesh, remesh it, and save the result:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers the .mmg accessor + Medit reader/writer
 
 # Load a mesh from any supported format
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 
 # Remesh with a target edge size
-result = mesh.remesh(hmax=0.1)
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
-# Check the results
-print(f"Vertices: {result.vertices_before} -> {result.vertices_after}")
-print(f"Quality: {result.quality_mean_before:.3f} -> {result.quality_mean_after:.3f}")
+print(f"Vertices: {mesh.n_points} -> {remeshed.n_points}")
+print(f"Cells:    {mesh.n_cells} -> {remeshed.n_cells}")
 
 # Save to any supported format
-mesh.save("output.vtk")
+remeshed.save("output.vtk")
 ```
 
 ## Using Options Objects
@@ -30,9 +30,10 @@ For more control, use typed options objects with IDE autocomplete:
 === "3D Mesh"
 
     ```python
-    from mmgpy import Mmg3DOptions, read
+    import pyvista as pv
+    from mmgpy import Mmg3DOptions
 
-    mesh = read("volume.mesh")
+    mesh = pv.read("volume.mesh")
 
     opts = Mmg3DOptions(
         hmin=0.01,       # Minimum edge size
@@ -41,15 +42,16 @@ For more control, use typed options objects with IDE autocomplete:
         verbose=1,       # Show progress
     )
 
-    result = mesh.remesh(opts)
+    remeshed = mesh.mmg.remesh(opts)
     ```
 
 === "2D Mesh"
 
     ```python
-    from mmgpy import Mmg2DOptions, read
+    import pyvista as pv
+    from mmgpy import Mmg2DOptions
 
-    mesh = read("planar.mesh")
+    mesh = pv.read("planar.mesh")
 
     opts = Mmg2DOptions(
         hmin=0.01,
@@ -57,15 +59,16 @@ For more control, use typed options objects with IDE autocomplete:
         verbose=1,
     )
 
-    result = mesh.remesh(opts)
+    remeshed = mesh.mmg.remesh(opts)
     ```
 
 === "Surface Mesh"
 
     ```python
-    from mmgpy import MmgSOptions, read
+    import pyvista as pv
+    from mmgpy import MmgSOptions
 
-    mesh = read("surface.stl")
+    mesh = pv.read("surface.stl")
 
     opts = MmgSOptions(
         hmin=0.01,
@@ -74,7 +77,7 @@ For more control, use typed options objects with IDE autocomplete:
         verbose=1,
     )
 
-    result = mesh.remesh(opts)
+    remeshed = mesh.mmg.remesh(opts)
     ```
 
 ## Factory Presets
@@ -99,72 +102,71 @@ opt_opts = Mmg3DOptions.optimize_only()
 Refine the mesh in specific regions:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 
-# Fine mesh in a spherical region
-mesh.set_size_sphere(
-    center=[0.5, 0.5, 0.5],
-    radius=0.2,
-    size=0.01,
+remeshed = mesh.mmg.remesh(
+    hmax=0.1,
+    verbose=-1,
+    local_sizing=[
+        {
+            "shape": "sphere",
+            "center": (0.5, 0.5, 0.5),
+            "radius": 0.2,
+            "size": 0.01,
+        },
+        {
+            "shape": "box",
+            "bounds": [[0, 0, 0], [0.3, 0.3, 0.3]],
+            "size": 0.02,
+        },
+    ],
 )
-
-# Fine mesh in a box region
-mesh.set_size_box(
-    bounds=[[0, 0, 0], [0.3, 0.3, 0.3]],
-    size=0.02,
-)
-
-# Remesh with global hmax, local sizing takes precedence
-result = mesh.remesh(hmax=0.1, verbose=-1)
 ```
 
 ## PyVista Visualization
 
-Visualize meshes with the built-in `plot()` method:
+Visualize meshes with PyVista's `plot()` method:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
 # Load and remesh
-mesh = mmgpy.read("input.mesh")
-mesh.remesh(hmax=0.1)
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
 # Quick visualization with edges
-mesh.plot()
+remeshed.plot(show_edges=True)
 
 # Or customize with PyVista options
-mesh.plot(color="lightblue", opacity=0.8)
+remeshed.plot(color="lightblue", opacity=0.8)
 ```
 
-For custom plotters, use the `vtk` property:
+For custom plotters, use the dataset directly:
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-import pyvista as pv
-
 plotter = pv.Plotter()
-plotter.add_mesh(mesh.vtk, show_edges=True)
+plotter.add_mesh(remeshed, show_edges=True)
 plotter.show()
 ```
 
-Load from PyVista:
+Remesh from PyVista geometry:
 
 ```python
-import mmgpy
 import pyvista as pv
+import mmgpy  # noqa: F401
 
 # Create a PyVista mesh
 sphere = pv.Sphere(radius=1.0)
 
-# Convert to mmgpy mesh
-mesh = mmgpy.Mesh(sphere)
-
-# Remesh and visualize
-mesh.remesh(hmax=0.1)
-mesh.plot()
+# Remesh and visualize directly via the accessor
+remeshed = sphere.mmg.remesh(hmax=0.1)
+remeshed.plot(show_edges=True)
 ```
 
 ## Mesh Validation
@@ -172,18 +174,19 @@ mesh.plot()
 Check mesh quality before and after remeshing:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 
 # Quick validation (returns bool)
-if mesh.validate():
+if mesh.mmg.validate():
     print("Mesh is valid")
 else:
     print("Mesh has issues")
 
 # Detailed validation report
-report = mesh.validate(detailed=True)
+report = mesh.mmg.validate(detailed=True)
 print(f"Valid: {report.is_valid}")
 print(f"Mean quality: {report.quality.mean:.3f}")
 print(f"Min quality: {report.quality.min:.3f}")

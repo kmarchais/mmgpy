@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 import pyvista as pv
 
-from mmgpy import Mesh
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 
 def create_volumetric_cube_mesh(resolution: int = 10) -> tuple[np.ndarray, np.ndarray]:
@@ -87,7 +87,10 @@ def gyroid_levelset(
     return (np.abs(f) - thickness / 2).reshape(-1, 1)
 
 
-def extract_volume_surface(mesh: Mesh, element_ref: int = 3) -> pv.PolyData:
+def extract_volume_surface(
+    grid: pv.UnstructuredGrid,
+    element_ref: int = 3,
+) -> pv.PolyData:
     """Extract the surface of a volume region (tetrahedra with given ref).
 
     After level-set discretization, MMG assigns:
@@ -96,19 +99,13 @@ def extract_volume_surface(mesh: Mesh, element_ref: int = 3) -> pv.PolyData:
 
     This extracts the boundary surface of the solid material.
     """
-    vertices = mesh.get_vertices()
-    elements, elem_refs = mesh.get_elements_with_refs()
-
-    # Get only tetrahedra with the target ref
-    target_tets = elements[elem_refs == element_ref]
-
-    if len(target_tets) == 0:
-        msg = f"No elements with ref {element_ref}. Refs: {np.unique(elem_refs)}"
+    refs = np.asarray(grid.cell_data["refs"])
+    keep = refs == element_ref
+    if not keep.any():
+        msg = f"No elements with ref {element_ref}. Refs: {np.unique(refs)}"
         raise ValueError(msg)
 
-    # Create unstructured grid and extract surface
-    grid = pv.UnstructuredGrid({pv.CellType.TETRA: target_tets}, vertices)
-    return grid.extract_surface()
+    return grid.extract_cells(np.where(keep)[0]).extract_surface()
 
 
 def create_thick_gyroid(
@@ -122,11 +119,10 @@ def create_thick_gyroid(
 
     Returns the surface of the solid gyroid volume as a PyVista PolyData.
     """
-    mesh = Mesh(vertices.copy(), elements.copy())
+    grid = pv.UnstructuredGrid({pv.CellType.TETRA: elements}, vertices)
     levelset = gyroid_levelset(vertices, thickness=thickness, periods=periods)
-    mesh.remesh_levelset(levelset, ls=0.0, hmax=hmax, verbose=True)
-    # Extract the solid material (interior, ref=3)
-    return extract_volume_surface(mesh, element_ref=3)
+    result = grid.mmg.remesh_levelset(levelset, ls=0.0, hmax=hmax, verbose=True)
+    return extract_volume_surface(result, element_ref=3)
 
 
 def main() -> None:

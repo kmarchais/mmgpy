@@ -102,8 +102,9 @@ print(f"MMG version: {mmgpy.MMG_VERSION}")
 Test basic functionality:
 
 ```python
-import mmgpy
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 # Create a simple tetrahedral mesh
 vertices = np.array([
@@ -115,8 +116,8 @@ vertices = np.array([
 
 tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
-mesh = mmgpy.Mesh(vertices, tetrahedra)
-print(f"Created mesh with {len(mesh.get_vertices())} vertices")
+mesh = pv.UnstructuredGrid({pv.CellType.TETRA: tetrahedra}, vertices)
+print(f"Created mesh with {mesh.n_points} vertices ({mesh.mmg.kind.name})")
 ```
 
 ## Optional Dependencies
