@@ -34,7 +34,8 @@ import numpy as np
 from matplotlib.patches import Ellipse
 from matplotlib.tri import Triangulation
 
-from mmgpy import Mesh, metrics
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import metrics, polydata_from_2d_triangles
 
 
 def create_unit_square_mesh(n: int = 8) -> tuple[np.ndarray, np.ndarray]:
@@ -71,10 +72,11 @@ def remesh_with_metric(
     metric_tensor: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Remesh a 2D domain with given anisotropic metric tensor field."""
-    mesh = Mesh(vertices, triangles)
-    mesh["metric"] = metric_tensor
-    mesh.remesh(hgrad=2.0, verbose=-1)
-    return mesh.get_vertices(), mesh.get_triangles()
+    pv_mesh = polydata_from_2d_triangles(vertices, triangles)
+    pv_mesh.point_data["metric"] = metric_tensor
+
+    remeshed = pv_mesh.mmg.remesh(hgrad=2.0, verbose=-1)
+    return np.asarray(remeshed.points[:, :2]), np.asarray(remeshed.regular_faces)
 
 
 def plot_mesh(

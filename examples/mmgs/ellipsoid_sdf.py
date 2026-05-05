@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 import pyvista as pv
 
-from mmgpy import Mesh
+import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 
 @dataclass
@@ -87,16 +87,12 @@ def extract_and_remesh(
     surface = grid.contour([0.0], scalars="sdf", method=method)
     extraction_time = time.perf_counter() - t0
 
-    # Convert to mmgpy format
-    faces = surface.faces.reshape(-1, 4)[:, 1:].astype(np.int32)
-    mesh = Mesh(np.asarray(surface.points, dtype=np.float64), faces)
-
-    # Remesh with optimized parameters for uniform sizing
+    # Remesh via the .mmg accessor — returns a fresh PolyData.
     # - hmin/hmax: tight bounds for uniform element sizes
     # - hgrad=1.1: slow gradation (sizes change by max 10% between neighbors)
     # - hausd: geometric approximation tolerance
     t0 = time.perf_counter()
-    mesh.remesh(
+    remeshed = surface.mmg.remesh(
         hmin=0.03,
         hmax=0.06,
         hausd=0.002,
@@ -104,11 +100,6 @@ def extract_and_remesh(
         verbose=False,
     )
     remesh_time = time.perf_counter() - t0
-
-    # Get remeshed surface
-    final_vertices = mesh.get_vertices()
-    final_triangles, _ = mesh.get_triangles_with_refs()
-    remeshed = pv.PolyData.from_regular_faces(final_vertices, final_triangles)
 
     return ExtractionResult(
         method=method,
