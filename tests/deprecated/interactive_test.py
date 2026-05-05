@@ -8,15 +8,6 @@ from mmgpy.interactive import SizingEditor
 from mmgpy.interactive.sizing_editor import ConstraintMode
 from mmgpy.sizing import BoxSize, CylinderSize, PointSize, SphereSize
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
 
 def create_simple_3d_mesh() -> Mesh:
     """Create a simple 3D mesh (unit cube with one tetrahedron)."""

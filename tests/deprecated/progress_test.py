@@ -12,16 +12,6 @@ from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D
 from mmgpy._progress import _emit_event, remesh_mesh, rich_progress
 from mmgpy.progress import LoggingProgressReporter
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
-
 if TYPE_CHECKING:
     from mmgpy import Mesh
 

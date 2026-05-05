@@ -15,16 +15,6 @@ _ASSETS = Path(__file__).resolve().parents[2] / "assets"
 # Test fixtures
 
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
-
 @pytest.fixture
 def tetra_vertices() -> np.ndarray:
     """Vertices for a simple tetrahedral mesh."""

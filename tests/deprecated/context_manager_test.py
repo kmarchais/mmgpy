@@ -6,15 +6,6 @@ import pytest
 
 from mmgpy import Mesh, MeshKind
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        "ignore:mmgpy.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
 
 def create_3d_mesh() -> Mesh:
     """Create a simple 3D tetrahedral mesh for testing."""

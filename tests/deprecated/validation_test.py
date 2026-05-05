@@ -14,15 +14,6 @@ from mmgpy import (
 )
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
 
 def create_test_mesh_3d() -> tuple[np.ndarray, np.ndarray]:
     """Create a simple 3D test mesh (cube)."""

@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 _DIMS_2D = 2
 _DIMS_3D = 3
 _TRIANGLE_VERTS = 3
+_NDIM_2D_ARRAY = 2
 _2D_DETECTION_TOLERANCE = 1e-8
 
 _TRIANGULATION_WARNING = (
@@ -822,14 +823,14 @@ def polydata_from_2d_triangles(
 
     """
     verts = np.asarray(vertices, dtype=np.float64)
-    if verts.ndim != _DIMS_2D or verts.shape[1] not in (_DIMS_2D, _DIMS_3D):
+    if verts.ndim != _NDIM_2D_ARRAY or verts.shape[1] not in (_DIMS_2D, _DIMS_3D):
         msg = f"vertices must have shape (n, 2) or (n, 3); got {verts.shape}"
         raise ValueError(msg)
     if verts.shape[1] == _DIMS_2D:
         verts = np.column_stack([verts, np.full(len(verts), z, dtype=np.float64)])
 
     tris = np.asarray(triangles, dtype=np.int32)
-    if tris.ndim != _DIMS_2D or tris.shape[1] != _TRIANGLE_VERTS:
+    if tris.ndim != _NDIM_2D_ARRAY or tris.shape[1] != _TRIANGLE_VERTS:
         msg = f"triangles must have shape (m, 3); got {tris.shape}"
         raise ValueError(msg)
 

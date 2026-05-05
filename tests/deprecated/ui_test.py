@@ -25,15 +25,6 @@ from mmgpy.ui.utils import (
     to_float,
 )
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
 
 class TestParseSolFile:
     """Tests for parse_sol_file function."""

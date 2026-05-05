@@ -13,16 +13,6 @@ from mmgpy import Mesh, MeshKind, read
 # Test fixtures
 
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
-
 @pytest.fixture
 def tetra_vertices() -> np.ndarray:
     """Vertices for a simple tetrahedral mesh."""

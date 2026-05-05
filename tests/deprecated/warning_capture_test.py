@@ -5,15 +5,6 @@ import pytest
 
 from mmgpy import Mesh
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
 
 def create_test_cube() -> tuple[np.ndarray, np.ndarray]:
     """Create a simple cube mesh for testing."""

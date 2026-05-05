@@ -12,15 +12,6 @@ from mmgpy.sizing import (
     compute_sizes_from_constraints,
 )
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
 # ===========================================================================
 # Unit tests for sizing constraint dataclasses
 # ===========================================================================

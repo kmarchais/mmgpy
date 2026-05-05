@@ -6,15 +6,6 @@ import pytest
 from mmgpy import Mesh, Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
-
 
 class TestMmg3DOptions:
     """Tests for Mmg3DOptions dataclass."""

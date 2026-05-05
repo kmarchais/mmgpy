@@ -1,18 +1,8 @@
 """Tests for the repair module."""
 
 import numpy as np
-import pytest
 
 from mmgpy import Mesh, MeshKind
-
-pytestmark = [
-    pytest.mark.filterwarnings(
-        r"ignore:mmgpy\.Mesh is deprecated:DeprecationWarning",
-    ),
-    pytest.mark.filterwarnings(
-        r"ignore:Mesh\.checkpoint\(\) is deprecated:DeprecationWarning",
-    ),
-]
 
 
 class TestRemoveDuplicateVertices:

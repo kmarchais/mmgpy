@@ -34,7 +34,10 @@ if TYPE_CHECKING:
 
     from mmgpy._mesh import Mesh as _Mesh
     from mmgpy._mesh import MeshKind
+    from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
     from mmgpy._validation import ValidationReport
+
+    MmgOptions = Mmg2DOptions | Mmg3DOptions | MmgSOptions
 
 logger = logging.getLogger("mmgpy")
 
@@ -317,7 +320,7 @@ class MmgAccessor:
 
     def remesh(
         self,
-        opts: Any = None,  # noqa: ANN401  -- typed Options object or None
+        opts: MmgOptions | None = None,
         *,
         local_sizing: list[Mapping[str, Any]] | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
