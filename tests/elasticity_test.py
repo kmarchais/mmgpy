@@ -279,3 +279,97 @@ class TestMoveMeshPropagationMethod:
         move_mesh(mesh, displacement, hmax=0.5, verbose=False)
 
         assert len(mesh.get_vertices()) > 0
+
+
+class TestFedooMissing:
+    """Cover the import-error branch of the elasticity propagator."""
+
+    def test_helpful_error_when_fedoo_absent(self, monkeypatch):
+        """Without fedoo on sys.path, the helper raises an actionable ImportError."""
+        import builtins
+
+        original_import = builtins.__import__
+
+        def shim(name, *args, **kwargs):
+            if name == "fedoo":
+                msg = "No module named 'fedoo'"
+                raise ImportError(msg)
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", shim)
+
+        vertices, triangles = create_2d_test_mesh()
+        n = len(vertices)
+        mask = np.ones(n, dtype=bool)
+        disp = np.zeros_like(vertices)
+
+        with pytest.raises(ImportError, match="fedoo is required"):
+            propagate_displacement_elasticity(vertices, triangles, mask, disp)
+
+
+class TestUnsupportedElementType:
+    """Reject element shapes that fedoo's mapping doesn't recognize."""
+
+    def test_unsupported_2d_element(self):
+        """5-node 2D element triggers a clear ValueError."""
+        vertices = np.array(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.5, 1.5], [0.0, 1.0]],
+            dtype=np.float64,
+        )
+        elements = np.array([[0, 1, 2, 3, 4]], dtype=np.int32)
+        # Leave at least one vertex outside the mask so the element-type
+        # check is reached (the all-boundary fast path returns early).
+        mask = np.array([True, True, True, True, False], dtype=bool)
+        disp = np.zeros_like(vertices)
+        disp[:4] = [0.01, 0.0]
+
+        with pytest.raises(ValueError, match="Unsupported 2D element"):
+            propagate_displacement_elasticity(vertices, elements, mask, disp)
+
+    def test_unsupported_3d_element(self):
+        """5-node 3D element triggers a clear ValueError."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [0.5, 0.5, 0.5],
+            ],
+            dtype=np.float64,
+        )
+        elements = np.array([[0, 1, 2, 3, 4]], dtype=np.int32)
+        mask = np.array([True, True, True, True, False], dtype=bool)
+        disp = np.zeros_like(vertices)
+        disp[:4] = [0.01, 0.0, 0.0]
+
+        with pytest.raises(ValueError, match="Unsupported 3D element"):
+            propagate_displacement_elasticity(vertices, elements, mask, disp)
+
+
+class TestPvAccessorMove:
+    """Cover the propagation_method forwarding through the .mmg accessor."""
+
+    def test_accessor_elasticity_forwards(self):
+        """``propagation_method='elasticity'`` runs through dataset.mmg.move."""
+        import pyvista as pv
+
+        vertices, elements = create_3d_test_mesh()
+        dataset = pv.UnstructuredGrid({pv.CellType.TETRA: elements}, vertices)
+
+        n = len(vertices)
+        boundary_mask = np.ones(n, dtype=bool)
+        boundary_mask[8] = False
+        displacement = np.zeros_like(vertices)
+        displacement[:8, 0] = 0.05
+
+        moved = dataset.mmg.move(
+            displacement,
+            boundary_mask=boundary_mask,
+            propagation_method="elasticity",
+            hmax=0.5,
+            verbose=False,
+        )
+
+        assert isinstance(moved, pv.PolyData | pv.UnstructuredGrid)
+        assert moved.n_points > 0

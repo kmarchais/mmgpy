@@ -19,10 +19,13 @@ metric that MMG can use for adaptive remeshing.
 This example uses an analytic field with a sharp circular front,
 ``f(x, y) = tanh(40 * (sqrt((x-0.5)^2 + (y-0.5)^2) - 0.3))``, computes the
 Hessian on the initial mesh, and runs anisotropic remeshing so the new
-mesh refines along the front and stays coarse elsewhere.
+mesh refines along the front and stays coarse elsewhere. The script
+writes ``hessian_adaptation.png`` next to itself.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
@@ -109,6 +112,9 @@ def main() -> None:
     axes[1].set_aspect("equal")
 
     fig.tight_layout()
+    out_path = Path(__file__).with_suffix(".png")
+    fig.savefig(out_path, dpi=130, bbox_inches="tight")
+    print(f"Wrote {out_path}")
     plt.show()
 
 

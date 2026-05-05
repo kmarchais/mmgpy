@@ -4,136 +4,229 @@
 #     "mmgpy[fem]",
 #     "matplotlib",
 #     "numpy",
+#     "scipy",
 # ]
 #
 # [tool.uv.sources]
 # mmgpy = { path = "../.." }
 # ///
-"""Compare Laplacian vs elasticity propagation for 2D Lagrangian motion.
+"""Animate Laplacian vs elasticity propagation on an L-bracket.
 
-This example moves the right edge of a unit square to the right while
-holding the left edge fixed, then propagates the prescribed boundary
-displacement to the interior using two methods:
+The geometry is a classic cantilever L-bracket: a vertical post sharing
+its base with a horizontal foot. The free tip of the foot is pinned and
+the top of the post is pulled upward. The prescribed boundary
+displacement is propagated to the interior using two methods:
 
 * ``"laplacian"``: solves a Laplace equation on the mesh graph (default,
   no extra dependency).
-* ``"elasticity"``: solves a fictitious linear elasticity problem on the
-  mesh via the optional ``fedoo`` backend. It tends to produce smoother,
-  physically meaningful interior displacements for large deformations.
+* ``"elasticity"``: solves a linear elasticity problem on the mesh via
+  the optional ``fedoo`` backend.
 
-Run with ``uv run examples/mmg2d/elasticity_propagation.py``. ``fedoo``
-is required for the elasticity panel, hence the ``mmgpy[fem]`` extra.
+For a cantilever, Laplacian smoothing has no notion of bending: it
+linearly interpolates the prescribed-displacement values along graph
+distances. Linear elasticity, in contrast, captures the bending
+kinematics and the stress concentration at the re-entrant corner.
+
+The script writes ``elasticity_propagation.gif`` next to itself.
+``fedoo`` is required for the elasticity panel, hence the
+``mmgpy[fem]`` extra.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
 import numpy as np
+from matplotlib.animation import FuncAnimation, PillowWriter
+from scipy.spatial import Delaunay
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
+from mmgpy.lagrangian import (
+    propagate_displacement,
+    propagate_displacement_elasticity,
+)
+
+# L geometry: foot is [0, FOOT_LEN] x [0, ARM_W], post is [0, ARM_W] x [0, POST_LEN].
+FOOT_LEN = 1.4
+POST_LEN = 1.0
+ARM_W = 0.3
+LIFT = 0.45  # vertical displacement applied to the free tip of the foot.
 
 
-def make_unit_square(n: int = 9) -> tuple[np.ndarray, np.ndarray]:
-    """Structured triangulation of [0, 1]^2 with n x n vertices."""
-    grid = np.linspace(0.0, 1.0, n)
-    xx, yy = np.meshgrid(grid, grid)
-    vertices = np.column_stack([xx.ravel(), yy.ravel()]).astype(np.float64)
-    triangles = mtri.Triangulation(vertices[:, 0], vertices[:, 1]).triangles
-    return vertices, triangles.astype(np.int32)
+def _interp(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
+    return np.column_stack(
+        [
+            np.linspace(a[0], b[0], n, endpoint=False),
+            np.linspace(a[1], b[1], n, endpoint=False),
+        ],
+    )
 
 
-def shear_displacement(
-    vertices: np.ndarray,
-    *,
-    shear: float = 0.4,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Build a boundary-only displacement and matching boundary_mask.
+def make_l_bracket(
+    target_h: float = 0.045,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Triangulated L-bracket, remeshed by MMG.
 
-    The left edge is pinned (zero displacement), the right edge is sheared
-    upward, and the top/bottom edges are translated proportionally.
-    Interior values are left as zeros and will be filled by the propagator.
+    Returns ``(vertices, triangles, fixed_mask, loaded_mask)``.
+    ``fixed_mask`` flags vertices on the post's left edge (clamp);
+    ``loaded_mask`` flags vertices on the foot's free tip (loaded face).
     """
-    x = vertices[:, 0]
-    y = vertices[:, 1]
+    corners = [
+        np.array([0.0, 0.0]),
+        np.array([FOOT_LEN, 0.0]),
+        np.array([FOOT_LEN, ARM_W]),
+        np.array([ARM_W, ARM_W]),
+        np.array([ARM_W, POST_LEN]),
+        np.array([0.0, POST_LEN]),
+    ]
 
-    on_left = np.isclose(x, 0.0)
-    on_right = np.isclose(x, 1.0)
-    on_bottom = np.isclose(y, 0.0)
-    on_top = np.isclose(y, 1.0)
-    boundary = on_left | on_right | on_top | on_bottom
+    edges = []
+    for a, b in zip(corners, [*corners[1:], corners[0]], strict=True):
+        n_seg = max(2, round(np.linalg.norm(b - a) / target_h))
+        edges.append(_interp(a, b, n_seg))
+    seed = np.vstack(edges).astype(np.float64)
 
-    disp = np.zeros_like(vertices)
-    disp[on_right, 1] = shear
-    disp[on_top, 1] = shear * x[on_top]
-    disp[on_bottom, 1] = shear * x[on_bottom]
-    return disp, boundary
+    tri = Delaunay(seed)
+    cx, cy = seed[tri.simplices].mean(axis=1).T
+    in_foot = (cx >= 0.0) & (cx <= FOOT_LEN) & (cy >= 0.0) & (cy <= ARM_W)
+    in_post = (cx >= 0.0) & (cx <= ARM_W) & (cy >= 0.0) & (cy <= POST_LEN)
+    triangles = tri.simplices[in_foot | in_post].astype(np.int32)
 
-
-def plot_mesh(ax: plt.Axes, points: np.ndarray, tris: np.ndarray, title: str) -> None:
-    """Render a triangulation onto the given axes with a labelled title."""
-    ax.triplot(points[:, 0], points[:, 1], tris, color="0.3", linewidth=0.4)
-    ax.plot(points[:, 0], points[:, 1], ".", color="C0", markersize=2)
-    ax.set_title(title)
-    ax.set_aspect("equal")
-    ax.set_xlim(-0.05, 1.15)
-    ax.set_ylim(-0.05, 1.55)
-
-
-def main() -> None:
-    """Run both propagation methods on the same boundary problem and plot."""
-    vertices, triangles = make_unit_square(n=9)
-    displacement, boundary = shear_displacement(vertices)
-    pv_mesh = polydata_from_2d_triangles(vertices, triangles)
-
-    moved_lap = pv_mesh.mmg.move(
-        displacement,
-        boundary_mask=boundary,
-        propagation_method="laplacian",
-        hmax=0.18,
+    pv_mesh = polydata_from_2d_triangles(seed, triangles)
+    remeshed = pv_mesh.mmg.remesh(
+        hmax=target_h,
+        hmin=target_h * 0.4,
         verbose=False,
     )
 
-    try:
-        moved_ela = pv_mesh.mmg.move(
-            displacement,
-            boundary_mask=boundary,
-            propagation_method="elasticity",
-            hmax=0.18,
-            verbose=False,
-        )
-    except ImportError as exc:
-        print(f"Elasticity propagation unavailable ({exc}); skipping that panel.")
-        moved_ela = None
+    vertices = np.asarray(remeshed.points[:, :2], dtype=np.float64)
+    triangles = np.asarray(remeshed.regular_faces, dtype=np.int32)
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    plot_mesh(axes[0], vertices, triangles, "Initial mesh")
-    plot_mesh(
-        axes[1],
-        np.asarray(moved_lap.points[:, :2]),
-        moved_lap.regular_faces,
-        "Laplacian propagation",
+    fixed_mask = np.isclose(vertices[:, 0], FOOT_LEN)
+    loaded_mask = np.isclose(vertices[:, 1], POST_LEN) & (
+        vertices[:, 0] <= ARM_W + 1e-9
     )
-    if moved_ela is None:
-        axes[2].text(
+    return vertices, triangles, fixed_mask, loaded_mask
+
+
+def lift_displacement(
+    vertices: np.ndarray,
+    *,
+    fixed_mask: np.ndarray,
+    loaded_mask: np.ndarray,
+    lift: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Pin the foot's free tip, push the post's top up by ``lift``."""
+    boundary = fixed_mask | loaded_mask
+    disp = np.zeros_like(vertices)
+    disp[loaded_mask, 1] = lift
+    return disp, boundary
+
+
+def main() -> None:
+    """Compute both propagated displacement fields and save an animated GIF."""
+    vertices, triangles, fixed_mask, loaded_mask = make_l_bracket()
+    print(f"Mesh: {len(vertices)} vertices, {len(triangles)} triangles")
+
+    bdy_disp, boundary = lift_displacement(
+        vertices,
+        fixed_mask=fixed_mask,
+        loaded_mask=loaded_mask,
+        lift=LIFT,
+    )
+
+    full_lap = propagate_displacement(vertices, triangles, boundary, bdy_disp)
+    try:
+        full_ela = propagate_displacement_elasticity(
+            vertices,
+            triangles,
+            boundary,
+            bdy_disp,
+            nu=0.3,
+        )
+        ela_available = True
+    except ImportError as exc:
+        print(f"Elasticity propagation unavailable ({exc}); right panels will skip.")
+        full_ela = np.zeros_like(full_lap)
+        ela_available = False
+
+    mag_lap = np.linalg.norm(full_lap, axis=1)
+    mag_ela = np.linalg.norm(full_ela, axis=1) if ela_available else mag_lap
+    vmax = float(max(mag_lap.max(), mag_ela.max()))
+
+    n_frames = 60
+    phase = np.linspace(0.0, 2.0 * np.pi, n_frames, endpoint=False)
+    ts = 0.5 * (1.0 - np.cos(phase))
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.5))
+    titles = ["Laplacian propagation", "Elasticity propagation (fedoo)"]
+    for ax, title in zip(axes, titles, strict=True):
+        ax.set_aspect("equal")
+        ax.set_xlim(-0.1, FOOT_LEN + 0.1)
+        ax.set_ylim(-0.05, POST_LEN + LIFT + 0.1)
+        ax.set_title(title)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    if not ela_available:
+        axes[1].text(
             0.5,
             0.5,
-            "fedoo not installed\nrun:  uv add fedoo",
+            "fedoo not installed\n(uv add fedoo)",
             ha="center",
             va="center",
-            transform=axes[2].transAxes,
-        )
-        axes[2].set_axis_off()
-    else:
-        plot_mesh(
-            axes[2],
-            np.asarray(moved_ela.points[:, :2]),
-            moved_ela.regular_faces,
-            "Elasticity propagation (fedoo)",
+            transform=axes[1].transAxes,
         )
 
-    fig.tight_layout()
+    def render_panel(
+        ax: plt.Axes,
+        points: np.ndarray,
+        magnitude: np.ndarray,
+        max_mag: float,
+        cmap: str,
+    ) -> None:
+        for coll in list(ax.collections):
+            coll.remove()
+        for line in list(ax.lines):
+            line.remove()
+        ax.tripcolor(
+            points[:, 0],
+            points[:, 1],
+            triangles,
+            magnitude,
+            cmap=cmap,
+            shading="gouraud",
+            vmin=0.0,
+            vmax=max_mag,
+        )
+        ax.triplot(
+            points[:, 0],
+            points[:, 1],
+            triangles,
+            color="0.15",
+            linewidth=0.25,
+            alpha=0.6,
+        )
+
+    def update(frame_idx: int) -> None:
+        t = ts[frame_idx]
+        render_panel(axes[0], vertices + t * full_lap, t * mag_lap, vmax, "viridis")
+        if ela_available:
+            render_panel(
+                axes[1],
+                vertices + t * full_ela,
+                t * mag_ela,
+                vmax,
+                "viridis",
+            )
+
+    anim = FuncAnimation(fig, update, frames=len(ts), interval=40)
+
+    out_path = Path(__file__).with_suffix(".gif")
+    anim.save(out_path, writer=PillowWriter(fps=25))
+    print(f"Wrote {out_path}")
+
     plt.show()
 
 

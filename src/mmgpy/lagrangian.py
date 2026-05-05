@@ -136,24 +136,12 @@ def propagate_displacement_elasticity(
     assembly = fd.Assembly.create(wf, mesh)
     pb = fd.problem.Linear(assembly)
 
-    # Identify outer boundary (bounding box nodes not in moving boundary)
-    bb = mesh.bounding_box
-    tol = 1e-10 * max(bb.size)
-    outer_nodes: set[int] = set()
-    for coord, val in [("X", bb.xmin), ("X", bb.xmax), ("Y", bb.ymin), ("Y", bb.ymax)]:
-        outer_nodes.update(mesh.find_nodes(coord, val, tol=tol))
-    if n_dims == 3:
-        for val in [bb.zmin, bb.zmax]:
-            outer_nodes.update(mesh.find_nodes("Z", val, tol=tol))
-
+    # Prescribed displacement on every vertex flagged in boundary_mask. Vertices
+    # outside the mask remain free; the elasticity solve then propagates the
+    # prescribed values into the interior. The caller is responsible for making
+    # the mask cover enough non-collinear nodes to remove rigid body modes,
+    # otherwise the linear system is singular.
     moving_indices = np.where(boundary_mask)[0]
-    outer_indices = np.array(list(outer_nodes - set(moving_indices)))
-
-    # Zero displacement on outer boundary
-    if len(outer_indices) > 0:
-        pb.bc.add("Dirichlet", outer_indices, "Disp", 0)
-
-    # Prescribed displacement on moving boundary
     disp_components = ["DispX", "DispY"] if n_dims == 2 else ["DispX", "DispY", "DispZ"]
     for i, comp in enumerate(disp_components):
         pb.bc.add(

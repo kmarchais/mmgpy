@@ -20,10 +20,16 @@ adaptive remeshing.
 This example uses an analytic field with a sharp spherical front,
 ``f(p) = tanh(40 * (||p - 0.5|| - 0.3))``, computes the Hessian on the
 initial uniform mesh, and runs anisotropic remeshing so the new mesh
-refines on the front and stays coarse elsewhere.
+refines along the front and stays coarse elsewhere.
+
+A corner of the cube is clipped away so the interior refinement around
+the spherical front is visible. The script writes
+``hessian_adaptation.png`` next to itself.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import numpy as np
 import pyvista as pv
@@ -47,6 +53,15 @@ def front_field(vertices: np.ndarray) -> np.ndarray:
     return np.tanh(40.0 * (r - 0.3))
 
 
+def clip_corner(grid: pv.UnstructuredGrid) -> pv.UnstructuredGrid:
+    """Carve away the +x +y +z corner so the interior is visible."""
+    return grid.clip_box(
+        bounds=(0.5, 1.05, 0.5, 1.05, 0.5, 1.05),
+        invert=True,
+        crinkle=True,
+    )
+
+
 def main() -> None:
     """Build a uniform mesh, recover the Hessian, and remesh adaptively."""
     vertices, elements = make_unit_cube()
@@ -65,6 +80,8 @@ def main() -> None:
     original.point_data["metric"] = metric
 
     adapted = original.mmg.remesh(hgrad=2.0, verbose=False)
+    adapted.point_data["solution"] = front_field(np.asarray(adapted.points))
+
     n_tets_in = elements.shape[0]
     n_tets_out = adapted.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
     print(
@@ -72,28 +89,51 @@ def main() -> None:
         f"Adapted: {adapted.n_points} vertices, {n_tets_out} tetrahedra",
     )
 
-    # Slice both meshes through the centre to expose interior refinement.
-    plane = (np.array([1.0, 0.0, 0.0]), np.array([0.5, 0.5, 0.5]))
-    original_slice = original.slice(normal=plane[0], origin=plane[1])
-    adapted_slice = adapted.slice(normal=plane[0], origin=plane[1])
+    pl = pv.Plotter(shape=(1, 2), off_screen=True, window_size=(1300, 650))
+    sphere = pv.Sphere(radius=0.3, center=(0.5, 0.5, 0.5)).clip_box(
+        bounds=(0.5, 1.05, 0.5, 1.05, 0.5, 1.05),
+        invert=True,
+    )
 
-    pl = pv.Plotter(shape=(1, 2))
     pl.subplot(0, 0)
     pl.add_mesh(
-        original_slice,
+        clip_corner(original),
         scalars="solution",
         cmap="RdBu_r",
         show_edges=True,
-        line_width=0.5,
+        edge_color="black",
+        line_width=0.4,
+        scalar_bar_args={"title": "f(p)"},
     )
-    pl.add_title(f"Uniform mesh slice ({len(vertices)} verts)", font_size=10)
+    pl.add_mesh(sphere, color="white", opacity=0.25, show_edges=False)
+    pl.add_text(
+        f"Uniform mesh ({len(vertices)} verts, {n_tets_in} tets)",
+        font_size=10,
+    )
+    pl.show_axes()
 
     pl.subplot(0, 1)
-    pl.add_mesh(adapted_slice, color="white", show_edges=True, line_width=0.5)
-    pl.add_title(f"Adapted mesh slice ({adapted.n_points} verts)", font_size=10)
-
+    pl.add_mesh(
+        clip_corner(adapted),
+        scalars="solution",
+        cmap="RdBu_r",
+        show_edges=True,
+        edge_color="black",
+        line_width=0.4,
+        show_scalar_bar=False,
+    )
+    pl.add_mesh(sphere, color="white", opacity=0.25, show_edges=False)
+    pl.add_text(
+        f"Hessian-adapted mesh ({adapted.n_points} verts, {n_tets_out} tets)",
+        font_size=10,
+    )
+    pl.show_axes()
     pl.link_views()
-    pl.show()
+    pl.camera_position = [(2.6, 2.4, 2.6), (0.5, 0.5, 0.5), (0, 0, 1)]
+
+    out_path = Path(__file__).with_suffix(".png")
+    pl.show(screenshot=str(out_path))
+    print(f"Wrote {out_path}")
 
 
 if __name__ == "__main__":
