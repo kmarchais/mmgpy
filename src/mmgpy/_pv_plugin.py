@@ -468,5 +468,38 @@ class MmgAccessor:
 
         return Mesh(self._dataset).get_element_qualities()
 
+    def adjacent_elements(self, idx: int) -> NDArray[np.int32]:
+        """Return MMG-adjacency neighbors of element *idx* (1-indexed).
+
+        Distinct from :meth:`pyvista.DataSet.cell_neighbors`, which uses
+        VTK's 0-based topology. Useful when migrating code that relied on
+        ``Mesh.get_adjacent_elements``.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_adjacent_elements(idx)
+
+    def vertex_neighbors(self, idx: int) -> NDArray[np.int32]:
+        """Return MMG-adjacency neighbors of vertex *idx* (1-indexed).
+
+        Distinct from :meth:`pyvista.DataSet.point_neighbors`, which uses
+        VTK's 0-based topology. Useful when migrating code that relied on
+        ``Mesh.get_vertex_neighbors``.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_vertex_neighbors(idx)
+
+    def center_of_mass(self) -> NDArray[np.float64]:
+        """Return the volume-weighted (3D) or area-weighted (2D/surface) centroid.
+
+        Distinct from :attr:`pyvista.DataSet.center`, which is the
+        arithmetic mean of point coordinates without volume/area
+        weighting.
+        """
+        from mmgpy._mesh import Mesh  # noqa: PLC0415
+
+        return Mesh(self._dataset).get_center_of_mass()
+
 
 __all__ = ["MmgAccessor", "read_mesh", "write_mesh"]

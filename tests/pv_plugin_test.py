@@ -350,6 +350,36 @@ def test_accessor_remesh_local_sizing_densifies_region() -> None:
     assert constrained.n_cells > baseline.n_cells
 
 
+def test_accessor_adjacent_elements_returns_neighbors() -> None:
+    """adjacent_elements returns MMG's 1-based element-to-element adjacency."""
+    tets = _make_tet_mesh()
+    neighbors = tets.mmg.adjacent_elements(1)
+
+    assert isinstance(neighbors, np.ndarray)
+    assert neighbors.dtype == np.int32
+
+
+def test_accessor_vertex_neighbors_returns_neighbors() -> None:
+    """vertex_neighbors returns MMG's 1-based vertex-to-vertex adjacency."""
+    tets = _make_tet_mesh()
+    neighbors = tets.mmg.vertex_neighbors(1)
+
+    assert isinstance(neighbors, np.ndarray)
+    assert neighbors.dtype == np.int32
+    assert len(neighbors) > 0
+
+
+def test_accessor_center_of_mass_is_weighted() -> None:
+    """center_of_mass returns the volume-weighted centroid for tet meshes."""
+    tets = _dense_tets()
+    weighted = tets.mmg.center_of_mass()
+
+    assert weighted.shape == (3,)
+    # Cube centered at (0.5, 0.5, 0.5) — both arithmetic and weighted means
+    # should be near the center, but the weighted variant should not crash.
+    np.testing.assert_allclose(weighted, np.array([0.5, 0.5, 0.5]), atol=0.05)
+
+
 def test_accessor_remesh_unknown_local_sizing_shape_raises() -> None:
     """An unrecognized 'shape' key in a sizing spec raises ValueError."""
     surf = _make_surface_mesh()

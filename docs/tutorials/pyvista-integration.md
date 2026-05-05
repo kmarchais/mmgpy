@@ -383,6 +383,16 @@ print(report.quality.mean, report.is_valid)
 qualities = mesh.mmg.element_qualities()
 ```
 
+### MMG-specific topology and centroid
+
+PyVista exposes 0-based VTK adjacency via `dataset.cell_neighbors(idx)` and `dataset.point_neighbors(idx)`. When you specifically need MMG's 1-based adjacency or its volume/area-weighted centroid (distinct from `dataset.center`, which is the unweighted arithmetic mean), use the accessor:
+
+```python
+mesh.mmg.adjacent_elements(1)   # MMG-adjacent elements of element 1
+mesh.mmg.vertex_neighbors(1)    # MMG-adjacent vertices of vertex 1
+mesh.mmg.center_of_mass()       # volume-weighted (3D) or area-weighted (2D)
+```
+
 ### Mesh kind
 
 ```python
