@@ -2109,6 +2109,8 @@ vertex budget, elements concentrate around fronts and stay coarse
 elsewhere. See the <a href="../tutorials/hessian-adaptation/">tutorial</a> for a
 walkthrough.</p>
 <p><img alt="2D Hessian adaptation" src="../assets/hessian_adaptation_2d.png" /></p>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_hessian</span><span class="p">,</span> <span class="n">create_metric_from_hessian</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">hessian</span> <span class="o">=</span> <span class="n">compute_hessian</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">triangles</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
@@ -2128,6 +2130,8 @@ displacements through the mesh. See the
 <a href="../tutorials/elasticity-propagation/">tutorial</a> for a side-by-side
 demo on an L-bracket cantilever.</p>
 <p><img alt="Laplacian vs elasticity on a 2D L-bracket" src="../assets/elasticity_propagation_2d.gif" /></p>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy.lagrangian</span><span class="w"> </span><span class="kn">import</span> <span class="n">propagate_displacement_elasticity</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">field</span> <span class="o">=</span> <span class="n">propagate_displacement_elasticity</span><span class="p">(</span>

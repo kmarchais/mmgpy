@@ -3039,6 +3039,11 @@ then use :func:<code>create_metric_from_hessian</code> to build an adaptation me
 
 </div><p>options:
 show_root_heading: true</p>
+<p>Pairing <code>compute_hessian</code> with <code>create_metric_from_hessian</code> enables
+solution-adaptive remeshing: the same vertex budget concentrates
+elements where the field has high curvature.</p>
+<p><img alt="2D uniform vs Hessian-adapted mesh" src="../../assets/hessian_adaptation_2d.png" />
+<img alt="3D uniform vs Hessian-adapted mesh" src="../../assets/hessian_adaptation_3d.png" /></p>
 <p>For an end-to-end walk-through of the solve → recover → adapt loop, see
 the <a href="../../tutorials/hessian-adaptation/">Hessian-Based Adaptation tutorial</a>.</p>
 <h2 id="metric-operations">Metric Operations<a class="headerlink" href="#metric-operations" title="Permanent link">&para;</a></h2>

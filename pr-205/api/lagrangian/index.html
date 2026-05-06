@@ -2384,8 +2384,12 @@ For 2D/surface meshes, these are vertices on boundary edges.</p>
 show_root_heading: true</p>
 <p><code>propagate_displacement_elasticity</code> requires the optional
 <a href="https://github.com/3MAH/fedoo"><code>fedoo</code></a> backend (<code>pip install "mmgpy[fem]"</code>).
-See the <a href="../../tutorials/elasticity-propagation/">Elasticity Propagation tutorial</a>
-for a head-to-head with the Laplacian path on a cantilever bracket.</p>
+On a cantilever bracket the Laplacian solver pivots the geometry rigidly
+while the elasticity solver captures the bending kinematics:</p>
+<p><img alt="Laplacian vs elasticity on a 2D L-bracket" src="../../assets/elasticity_propagation_2d.gif" />
+<img alt="Laplacian vs elasticity on a 3D L-bracket" src="../../assets/elasticity_propagation_3d.gif" /></p>
+<p>See the <a href="../../tutorials/elasticity-propagation/">Elasticity Propagation tutorial</a>
+for a full walkthrough.</p>
 <div class="admonition warning">
 <p class="admonition-title">ELAS Library Required</p>
 </div>
