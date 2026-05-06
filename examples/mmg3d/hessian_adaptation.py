@@ -38,7 +38,7 @@ import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
 
-def make_unit_cube(n: int = 13) -> tuple[np.ndarray, np.ndarray]:
+def make_unit_cube(n: int = 19) -> tuple[np.ndarray, np.ndarray]:
     """Tetrahedralized unit cube on [0, 1]^3 with a regular n^3 grid."""
     rg = pv.RectilinearGrid(
         np.linspace(0.0, 1.0, n),
