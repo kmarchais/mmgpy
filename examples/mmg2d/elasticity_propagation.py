@@ -39,7 +39,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from scipy.spatial import Delaunay
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
@@ -163,15 +163,15 @@ def main() -> None:  # noqa: C901
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 5.5))
     # Transparent figure + axes so the GIF reads on light or dark themes
-    # once it's quantised below.
+    # once it's quantised below. Labels are added by PIL post-render so
+    # they're readable on either background.
     fig.patch.set_alpha(0.0)
-    titles = ["Laplacian propagation", "Elasticity propagation (fedoo)"]
-    for ax, title in zip(axes, titles, strict=True):
+    panel_labels = ["Laplacian propagation", "Elasticity propagation (fedoo)"]
+    for ax in axes:
         ax.patch.set_alpha(0.0)
         ax.set_aspect("equal")
         ax.set_xlim(-0.1, FOOT_LEN + 0.1)
         ax.set_ylim(-0.05, POST_LEN + LIFT + 0.1)
-        ax.set_title(title)
         ax.set_xticks([])
         ax.set_yticks([])
         for spine in ax.spines.values():
@@ -185,6 +185,40 @@ def main() -> None:  # noqa: C901
             va="center",
             transform=axes[1].transAxes,
         )
+
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        size=20,
+    )
+
+    def add_pill_labels(rendered: Image.Image) -> Image.Image:
+        """Composite translucent pill labels at the top of each panel."""
+        header_h = 56
+        width, height = rendered.size
+        canvas = Image.new("RGBA", (width, height + header_h), (0, 0, 0, 0))
+        canvas.paste(rendered, (0, header_h), rendered)
+        draw = ImageDraw.Draw(canvas, "RGBA")
+        for i, text in enumerate(panel_labels):
+            cx = width * (i + 0.5) / len(panel_labels)
+            cy = header_h / 2
+            bbox = draw.textbbox((cx, cy), text, font=font, anchor="mm")
+            pad_x, pad_y = 16, 8
+            pill = (
+                bbox[0] - pad_x,
+                bbox[1] - pad_y,
+                bbox[2] + pad_x,
+                bbox[3] + pad_y,
+            )
+            radius = (pill[3] - pill[1]) // 2
+            draw.rounded_rectangle(pill, radius=radius, fill=(22, 28, 34, 220))
+            draw.text(
+                (cx, cy),
+                text,
+                fill=(244, 246, 248, 255),
+                font=font,
+                anchor="mm",
+            )
+        return canvas
 
     def render_panel(
         ax: plt.Axes,
@@ -241,9 +275,9 @@ def main() -> None:  # noqa: C901
             )
 
         paths = sorted(tmp_dir.glob("frame_*.png"))
+        labelled = [add_pill_labels(Image.open(p).convert("RGBA")) for p in paths]
         ref = (
-            Image.open(paths[len(paths) // 2])
-            .convert("RGBA")
+            labelled[len(labelled) // 2]
             .convert("RGB")
             .quantize(
                 colors=255,
@@ -252,8 +286,7 @@ def main() -> None:  # noqa: C901
             )
         )
         gif_frames: list[Image.Image] = []
-        for p in paths:
-            rgba = Image.open(p).convert("RGBA")
+        for rgba in labelled:
             alpha = rgba.split()[-1]
             quant = rgba.convert("RGB").quantize(
                 palette=ref,

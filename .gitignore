@@ -31,3 +31,9 @@ htmlcov/
 # Allow images in examples for documentation
 !examples/**/*.png
 wheelhouse/
+
+# Example artifacts whose canonical copies live in docs/assets/
+examples/mmg2d/elasticity_propagation.gif
+examples/mmg2d/hessian_adaptation.png
+examples/mmg3d/elasticity_propagation.gif
+examples/mmg3d/hessian_adaptation.png

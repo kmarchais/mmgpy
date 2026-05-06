@@ -38,11 +38,15 @@ import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
 
-def make_unit_cube() -> tuple[np.ndarray, np.ndarray]:
-    """Tetrahedralized unit cube on [0, 1]^3 with a structured initial seeding."""
-    cube = pv.Cube().triangulate().subdivide(3)
-    tetra = cube.delaunay_3d()
-    vertices = np.asarray(tetra.points, dtype=np.float64) + 0.5
+def make_unit_cube(n: int = 13) -> tuple[np.ndarray, np.ndarray]:
+    """Tetrahedralized unit cube on [0, 1]^3 with a regular n^3 grid."""
+    rg = pv.RectilinearGrid(
+        np.linspace(0.0, 1.0, n),
+        np.linspace(0.0, 1.0, n),
+        np.linspace(0.0, 1.0, n),
+    )
+    tetra = rg.cast_to_unstructured_grid().triangulate()
+    vertices = np.asarray(tetra.points, dtype=np.float64)
     elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
     return vertices, elements
 

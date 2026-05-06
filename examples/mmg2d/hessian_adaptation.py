@@ -4,6 +4,7 @@
 #     "mmgpy",
 #     "matplotlib",
 #     "numpy",
+#     "pillow",
 # ]
 #
 # [tool.uv.sources]
@@ -25,11 +26,14 @@ writes ``hessian_adaptation.png`` next to itself.
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
+from matplotlib.collections import LineCollection
+from PIL import Image, ImageDraw, ImageFont
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
@@ -53,6 +57,72 @@ def front_field(vertices: np.ndarray) -> np.ndarray:
     return np.tanh(40.0 * (r - 0.3))
 
 
+def _unique_edges(triangles: np.ndarray) -> np.ndarray:
+    pairs = np.concatenate(
+        [triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]],
+    )
+    pairs.sort(axis=1)
+    return np.unique(pairs, axis=0)
+
+
+def _colored_edges(
+    vertices: np.ndarray,
+    triangles: np.ndarray,
+    field: np.ndarray,
+    *,
+    cmap: str,
+    vmin: float,
+    vmax: float,
+    linewidth: float = 0.9,
+) -> LineCollection:
+    """Edge segments coloured by the average of their endpoints' field values."""
+    edges = _unique_edges(triangles)
+    segments = vertices[edges]
+    values = 0.5 * (field[edges[:, 0]] + field[edges[:, 1]])
+    return LineCollection(
+        segments,
+        array=values,
+        cmap=cmap,
+        norm=plt.Normalize(vmin=vmin, vmax=vmax),
+        linewidth=linewidth,
+    )
+
+
+def _add_pill_labels(
+    rendered: Image.Image,
+    labels: list[str],
+    *,
+    header_h: int = 56,
+    font_size: int = 20,
+) -> Image.Image:
+    """Composite translucent pill labels above ``rendered`` (one per panel)."""
+    n = len(labels)
+    width, height = rendered.size
+    canvas = Image.new("RGBA", (width, height + header_h), (0, 0, 0, 0))
+    canvas.paste(rendered, (0, header_h), rendered)
+
+    draw = ImageDraw.Draw(canvas, "RGBA")
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        size=font_size,
+    )
+    for i, text in enumerate(labels):
+        cx = width * (i + 0.5) / n
+        cy = header_h / 2
+        bbox = draw.textbbox((cx, cy), text, font=font, anchor="mm")
+        pad_x, pad_y = 16, 8
+        pill = (
+            bbox[0] - pad_x,
+            bbox[1] - pad_y,
+            bbox[2] + pad_x,
+            bbox[3] + pad_y,
+        )
+        radius = (pill[3] - pill[1]) // 2
+        draw.rounded_rectangle(pill, radius=radius, fill=(22, 28, 34, 220))
+        draw.text((cx, cy), text, fill=(244, 246, 248, 255), font=font, anchor="mm")
+    return canvas
+
+
 def main() -> None:
     """Build a uniform mesh, recover the Hessian, and remesh adaptively."""
     vertices, triangles = make_unit_square(n=30)
@@ -71,55 +141,60 @@ def main() -> None:
     pv_mesh.point_data["metric"] = metric
 
     adapted = pv_mesh.mmg.remesh(hgrad=2.0, verbose=False)
+    adapted_pts = np.asarray(adapted.points[:, :2])
+    adapted_tris = adapted.regular_faces
+    adapted_field = front_field(adapted_pts)
 
     print(
         f"Initial: {len(vertices)} vertices, {len(triangles)} triangles\n"
-        f"Adapted: {adapted.n_points} vertices, {len(adapted.regular_faces)} triangles",
+        f"Adapted: {adapted.n_points} vertices, {len(adapted_tris)} triangles",
     )
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    vmin, vmax = float(field.min()), float(field.max())
+    cmap = "RdBu_r"
 
-    axes[0].tricontourf(
-        vertices[:, 0],
-        vertices[:, 1],
-        triangles,
-        field,
-        levels=20,
-        cmap="RdBu_r",
-    )
-    axes[0].triplot(
-        vertices[:, 0],
-        vertices[:, 1],
-        triangles,
-        color="0.2",
-        linewidth=0.3,
-    )
-    axes[0].set_title(f"Initial uniform mesh ({len(vertices)} vertices)")
-    axes[0].set_aspect("equal")
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.2))
+    fig.patch.set_alpha(0.0)
+    for ax in axes:
+        ax.set_aspect("equal")
+        ax.set_xlim(0.0, 1.0)
+        ax.set_ylim(0.0, 1.0)
+        ax.set_axis_off()
+        ax.patch.set_alpha(0.0)
 
-    adapted_pts = np.asarray(adapted.points[:, :2])
-    adapted_tris = adapted.regular_faces
-    axes[1].triplot(
-        adapted_pts[:, 0],
-        adapted_pts[:, 1],
-        adapted_tris,
-        color="0.2",
-        linewidth=0.3,
+    axes[0].add_collection(
+        _colored_edges(vertices, triangles, field, cmap=cmap, vmin=vmin, vmax=vmax),
     )
-    axes[1].set_title(
-        f"Hessian-based adapted mesh ({adapted.n_points} vertices)",
+    axes[1].add_collection(
+        _colored_edges(
+            adapted_pts,
+            adapted_tris,
+            adapted_field,
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            linewidth=0.7,
+        ),
     )
-    axes[1].set_aspect("equal")
 
     fig.tight_layout()
     out_path = Path(__file__).with_suffix(".png")
-    # Transparent figure + axes so the panel reads on light or dark themes.
-    fig.patch.set_alpha(0.0)
-    for ax in axes:
-        ax.patch.set_alpha(0.0)
-    fig.savefig(out_path, dpi=130, bbox_inches="tight", transparent=True)
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format="png", dpi=140, bbox_inches="tight", transparent=True)
+    plt.close(fig)
+    buffer.seek(0)
+    rendered = Image.open(buffer).convert("RGBA")
+
+    labelled = _add_pill_labels(
+        rendered,
+        labels=[
+            f"Uniform mesh ({len(vertices)} vertices)",
+            f"Hessian-adapted mesh ({adapted.n_points} vertices)",
+        ],
+    )
+    labelled.save(out_path, format="PNG")
     print(f"Wrote {out_path}")
-    plt.show()
 
 
 if __name__ == "__main__":

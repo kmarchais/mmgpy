@@ -23,6 +23,15 @@ show_root_heading: true
 options:
 show_root_heading: true
 
+## Hessian Recovery
+
+::: mmgpy.metrics.compute_hessian
+options:
+show_root_heading: true
+
+For an end-to-end walk-through of the solve → recover → adapt loop, see
+the [Hessian-Based Adaptation tutorial](../tutorials/hessian-adaptation.md).
+
 ## Metric Operations
 
 ::: mmgpy.metrics.intersect_metrics

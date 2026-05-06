@@ -53,9 +53,18 @@ show_root_heading: true
 options:
 show_root_heading: true
 
+::: mmgpy.lagrangian.propagate_displacement_elasticity
+options:
+show_root_heading: true
+
 ::: mmgpy.detect_boundary_vertices
 options:
 show_root_heading: true
+
+`propagate_displacement_elasticity` requires the optional
+[`fedoo`](https://github.com/3MAH/fedoo) backend (`pip install "mmgpy[fem]"`).
+See the [Elasticity Propagation tutorial](../tutorials/elasticity-propagation.md)
+for a head-to-head with the Laplacian path on a cantilever bracket.
 
 !!! warning "ELAS Library Required"
 `remesh_lagrangian()` requires MMG to be built with ELAS support. The ELAS library solves
