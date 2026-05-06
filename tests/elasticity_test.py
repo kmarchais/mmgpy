@@ -6,6 +6,7 @@ import pytest
 
 fedoo = pytest.importorskip("fedoo", reason="fedoo not installed")
 import fedoo as fd  # noqa: E402
+import pyvista as pv  # noqa: E402
 
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D  # noqa: E402
 from mmgpy.lagrangian import (  # noqa: E402
@@ -50,43 +51,31 @@ def create_3d_hex_mesh():
 
 
 def create_3d_test_mesh():
-    """Hand-rolled tet4 mesh on the unit cube.
+    """Unit-cube tet4 mesh built from a fedoo hex8 box via pv.triangulate.
 
-    Used by tests that round-trip through MMG3D or pv.CellType.TETRA.
-    fedoo's mesh module ships no tetrahedral generator (box_mesh is hex-only,
-    and there is no hex2tet helper), so we keep the explicit connectivity here.
+    fedoo ships no tetrahedral generator, but ``pv.triangulate`` runs VTK's
+    vtkDataSetTriangleFilter, which performs a face-conforming 6-tet split
+    of each hex without inserting Steiner points.
     """
-    vertices = np.array(
-        [
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [1.0, 0.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [0.0, 1.0, 1.0],
-            [0.5, 0.5, 0.5],  # interior point
-        ],
-        dtype=np.float64,
+    hex_mesh = fd.mesh.box_mesh(
+        nx=3,
+        ny=3,
+        nz=3,
+        x_min=0,
+        x_max=1,
+        y_min=0,
+        y_max=1,
+        z_min=0,
+        z_max=1,
+        elm_type="hex8",
     )
-    elements = np.array(
-        [
-            [0, 1, 3, 8],
-            [1, 2, 3, 8],
-            [0, 1, 4, 8],
-            [1, 5, 4, 8],
-            [1, 2, 5, 8],
-            [2, 6, 5, 8],
-            [2, 3, 6, 8],
-            [3, 7, 6, 8],
-            [0, 3, 4, 8],
-            [3, 7, 4, 8],
-            [4, 5, 6, 8],
-            [4, 6, 7, 8],
-        ],
-        dtype=np.int32,
+    hex_grid = pv.UnstructuredGrid(
+        {pv.CellType.HEXAHEDRON: np.asarray(hex_mesh.elements, dtype=np.int64)},
+        np.asarray(hex_mesh.nodes),
     )
+    tet_grid = hex_grid.triangulate()
+    vertices = np.asarray(tet_grid.points, dtype=np.float64)
+    elements = np.asarray(tet_grid.cells_dict[pv.CellType.TETRA], dtype=np.int32)
     return vertices, elements
 
 
@@ -281,12 +270,9 @@ class TestMoveMeshPropagationMethod:
         vertices, elements = create_3d_test_mesh()
         mesh = MmgMesh3D(vertices, elements)
 
-        n = len(vertices)
-        boundary_mask = np.ones(n, dtype=bool)
-        boundary_mask[8] = False
-
-        displacement = np.zeros((n, 3), dtype=np.float64)
-        displacement[:8] = [0.05, 0.0, 0.0]
+        boundary_mask = box_boundary_mask(vertices)
+        displacement = np.zeros_like(vertices)
+        displacement[boundary_mask] = [0.05, 0.0, 0.0]
 
         move_mesh(
             mesh,
@@ -383,16 +369,12 @@ class TestPvAccessorMove:
 
     def test_accessor_elasticity_forwards(self):
         """``propagation_method='elasticity'`` runs through dataset.mmg.move."""
-        import pyvista as pv
-
         vertices, elements = create_3d_test_mesh()
         dataset = pv.UnstructuredGrid({pv.CellType.TETRA: elements}, vertices)
 
-        n = len(vertices)
-        boundary_mask = np.ones(n, dtype=bool)
-        boundary_mask[8] = False
+        boundary_mask = box_boundary_mask(vertices)
         displacement = np.zeros_like(vertices)
-        displacement[:8, 0] = 0.05
+        displacement[boundary_mask] = [0.05, 0.0, 0.0]
 
         moved = dataset.mmg.move(
             displacement,
