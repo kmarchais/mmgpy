@@ -34,6 +34,8 @@ re-entrant corner and the foot bows visibly.
 
 ![Laplacian vs elasticity on a 2D L-bracket](../assets/elasticity_propagation_2d.gif)
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 from mmgpy.lagrangian import (
     propagate_displacement,

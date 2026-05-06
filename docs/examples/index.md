@@ -172,6 +172,8 @@ walkthrough.
 
 ![2D Hessian adaptation](../assets/hessian_adaptation_2d.png)
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
@@ -197,6 +199,8 @@ displacements through the mesh. See the
 demo on an L-bracket cantilever.
 
 ![Laplacian vs elasticity on a 2D L-bracket](../assets/elasticity_propagation_2d.gif)
+
+<!-- pytest-codeblocks:skip -->
 
 ```python
 from mmgpy.lagrangian import propagate_displacement_elasticity

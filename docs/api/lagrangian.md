@@ -63,8 +63,14 @@ show_root_heading: true
 
 `propagate_displacement_elasticity` requires the optional
 [`fedoo`](https://github.com/3MAH/fedoo) backend (`pip install "mmgpy[fem]"`).
+On a cantilever bracket the Laplacian solver pivots the geometry rigidly
+while the elasticity solver captures the bending kinematics:
+
+![Laplacian vs elasticity on a 2D L-bracket](../assets/elasticity_propagation_2d.gif)
+![Laplacian vs elasticity on a 3D L-bracket](../assets/elasticity_propagation_3d.gif)
+
 See the [Elasticity Propagation tutorial](../tutorials/elasticity-propagation.md)
-for a head-to-head with the Laplacian path on a cantilever bracket.
+for a full walkthrough.
 
 !!! warning "ELAS Library Required"
 `remesh_lagrangian()` requires MMG to be built with ELAS support. The ELAS library solves

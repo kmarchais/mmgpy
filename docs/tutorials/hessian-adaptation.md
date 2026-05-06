@@ -36,6 +36,8 @@ in a thin ring around the front and stay coarse elsewhere.
 
 ![Uniform vs Hessian-adapted 2D mesh](../assets/hessian_adaptation_2d.png)
 
+<!-- pytest-codeblocks:skip -->
+
 ```python
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
