@@ -690,6 +690,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorials/hessian-adaptation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hessian-Based Adaptation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/elasticity-propagation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elasticity Propagation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorials/pyvista-integration/" class="md-nav__link">
         
   
@@ -1268,6 +1324,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hessian-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hessian Recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;compute_hessian
+      
+    </span>
+  </a>
   
 </li>
       
@@ -2206,6 +2284,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hessian-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hessian Recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;compute_hessian
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metric-operations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2860,6 +2960,87 @@ hmax : float, optional
 
 </div><p>options:
 show_root_heading: true</p>
+<h2 id="hessian-recovery">Hessian Recovery<a class="headerlink" href="#hessian-recovery" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="mmgpy.metrics.compute_hessian" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">mmgpy.metrics.compute_hessian</span>
+
+
+<a href="#mmgpy.metrics.compute_hessian" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_hessian</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">vertices</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span> <span class="n">elements</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">int32</span><span class="p">],</span> <span class="n">field</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">]</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Compute the Hessian of a scalar field on a mesh via least-squares recovery.</p>
+<p>Uses a patch-based least-squares approach: for each vertex, a quadratic
+polynomial is fitted to the field values at neighboring vertices, and the
+second-order coefficients give the Hessian components.</p>
+<p>This is the missing piece for solution-adaptive remeshing: compute a
+solution field with your FE solver, pass it here to get the Hessian,
+then use :func:<code>create_metric_from_hessian</code> to build an adaptation metric.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>vertices</code></b>
+              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Nx2 or Nx3 array of vertex coordinates.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>elements</code></b>
+              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.int32">int32</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Mx(nodes_per_element) array of element connectivity.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>field</code></b>
+              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>N array of scalar field values at vertices.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>Hessian tensor array. Shape (N, 3) for 2D [H11, H12, H22]</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>or (N, 6) for 3D [H11, H12, H13, H22, H23, H33].</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div><p>options:
+show_root_heading: true</p>
+<p>For an end-to-end walk-through of the solve → recover → adapt loop, see
+the <a href="../../tutorials/hessian-adaptation/">Hessian-Based Adaptation tutorial</a>.</p>
 <h2 id="metric-operations">Metric Operations<a class="headerlink" href="#metric-operations" title="Permanent link">&para;</a></h2>
 
 

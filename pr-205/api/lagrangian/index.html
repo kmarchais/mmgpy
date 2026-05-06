@@ -690,6 +690,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorials/hessian-adaptation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hessian-Based Adaptation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/elasticity-propagation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elasticity Propagation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorials/pyvista-integration/" class="md-nav__link">
         
   
@@ -1211,6 +1267,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#mmgpy.lagrangian.propagate_displacement_elasticity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;propagate_displacement_elasticity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mmgpy.detect_boundary_vertices" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1654,6 +1721,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;propagate_displacement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mmgpy.lagrangian.propagate_displacement_elasticity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;propagate_displacement_elasticity
       
     </span>
   </a>
@@ -2134,6 +2212,129 @@ show_root_heading: true</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="mmgpy.lagrangian.propagate_displacement_elasticity" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">mmgpy.lagrangian.propagate_displacement_elasticity</span>
+
+
+<a href="#mmgpy.lagrangian.propagate_displacement_elasticity" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">propagate_displacement_elasticity</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">vertices</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">elements</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">int32</span><span class="p">],</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">boundary_mask</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">bool_</span><span class="p">],</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">boundary_displacement</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">E</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1000000.0</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">nu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Propagate displacement from boundary to interior using linear elasticity.</p>
+<p>Solves a fictitious linear elasticity problem with prescribed displacements
+on boundary nodes and zero displacement on the mesh exterior. This produces
+a physically meaningful smooth displacement field, superior to Laplacian
+smoothing for large deformations and complex geometries.</p>
+<p>Requires the <code>fedoo</code> package (optional dependency).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>vertices</code></b>
+              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Nx2 or Nx3 array of vertex coordinates.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>elements</code></b>
+              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.int32">int32</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Mx(nodes_per_element) array of element connectivity.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>boundary_mask</code></b>
+              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.bool_">bool_</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>N boolean array, True for vertices with prescribed displacement.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>boundary_displacement</code></b>
+              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Nxdim array of displacement vectors.
+Only values at boundary vertices (where boundary_mask is True) are used.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>E</code></b>
+              (<code><span title="float">float</span></code>, default:
+                  <code>1000000.0</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Young's modulus for the fictitious elastic material. Default is 1e6.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>nu</code></b>
+              (<code><span title="float">float</span></code>, default:
+                  <code>0.3</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Poisson's ratio. Default is 0.3.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>Nxdim array of displacement for all vertices.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="ImportError">ImportError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If fedoo is not installed.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="ValueError">ValueError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If array dimensions don't match.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div><p>options:
+show_root_heading: true</p>
+
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="mmgpy.detect_boundary_vertices" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">mmgpy.detect_boundary_vertices</span>
 
@@ -2181,6 +2382,10 @@ For 2D/surface meshes, these are vertices on boundary edges.</p>
 
 </div><p>options:
 show_root_heading: true</p>
+<p><code>propagate_displacement_elasticity</code> requires the optional
+<a href="https://github.com/3MAH/fedoo"><code>fedoo</code></a> backend (<code>pip install "mmgpy[fem]"</code>).
+See the <a href="../../tutorials/elasticity-propagation/">Elasticity Propagation tutorial</a>
+for a head-to-head with the Laplacian path on a cantilever bracket.</p>
 <div class="admonition warning">
 <p class="admonition-title">ELAS Library Required</p>
 </div>
