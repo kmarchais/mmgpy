@@ -43,6 +43,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from mmgpy._topology import two_ring_patches, vertex_adjacency
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -629,31 +631,21 @@ def compute_hessian(
         msg = f"field length {len(field)} != n_vertices {n_vertices}"
         raise ValueError(msg)
 
-    # Build adjacency (vertex → set of neighbor vertex indices)
-    adjacency: list[set[int]] = [set() for _ in range(n_vertices)]
-    n_nodes_per_elm = elements.shape[1]
-    for elem in elements:
-        for i in range(n_nodes_per_elm):
-            for j in range(i + 1, n_nodes_per_elm):
-                adjacency[elem[i]].add(elem[j])
-                adjacency[elem[j]].add(elem[i])
+    # Quadratic fit has 5 monomials in 2D and 9 in 3D. The 1-ring around a
+    # boundary vertex on a structured grid often spans only 2 distinct values
+    # along an axis, which makes the linear and quadratic columns colinear and
+    # the LSQ rank-deficient. Always use the 2-ring; it is well-conditioned
+    # everywhere and only modestly larger than the 1-ring.
+    adj = vertex_adjacency(n_vertices, elements)
+    patches = two_ring_patches(adj)
 
     if n_dims == 2:
         hessian = np.zeros((n_vertices, 3), dtype=np.float64)
     else:
         hessian = np.zeros((n_vertices, 6), dtype=np.float64)
 
-    # Quadratic fit has 5 monomials in 2D and 9 in 3D. The 1-ring around a
-    # boundary vertex on a structured grid often spans only 2 distinct values
-    # along an axis, which makes the linear and quadratic columns colinear and
-    # the LSQ rank-deficient. Always use the 2-ring; it is well-conditioned
-    # everywhere and only modestly larger than the 1-ring.
     for i in range(n_vertices):
-        ring1 = adjacency[i]
-        ring2: set[int] = set()
-        for nb in ring1:
-            ring2.update(adjacency[nb])
-        patch = list({i, *ring1, *ring2})
+        patch = patches[i]
 
         coords = vertices[patch] - vertices[i]  # center at vertex i
         vals = field[patch] - field[i]
