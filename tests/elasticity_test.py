@@ -5,6 +5,7 @@ import numpy.testing as npt
 import pytest
 
 fedoo = pytest.importorskip("fedoo", reason="fedoo not installed")
+import fedoo as fd  # noqa: E402
 
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D  # noqa: E402
 from mmgpy.lagrangian import (  # noqa: E402
@@ -14,31 +15,47 @@ from mmgpy.lagrangian import (  # noqa: E402
 
 
 def create_2d_test_mesh():
-    """Create a simple 2D square mesh for testing."""
-    vertices = np.array(
-        [
-            [0.0, 0.0],  # 0
-            [1.0, 0.0],  # 1
-            [1.0, 1.0],  # 2
-            [0.0, 1.0],  # 3
-            [0.5, 0.5],  # 4 - interior point
-        ],
-        dtype=np.float64,
+    """Unit-square tri3 mesh built with fedoo (3x3 nodes, 8 triangles)."""
+    m = fd.mesh.rectangle_mesh(
+        nx=3,
+        ny=3,
+        x_min=0,
+        x_max=1,
+        y_min=0,
+        y_max=1,
+        elm_type="tri3",
     )
-    triangles = np.array(
-        [
-            [0, 1, 4],
-            [1, 2, 4],
-            [2, 3, 4],
-            [3, 0, 4],
-        ],
-        dtype=np.int32,
-    )
+    vertices = np.asarray(m.nodes, dtype=np.float64)
+    triangles = np.asarray(m.elements, dtype=np.int32)
     return vertices, triangles
 
 
+def create_3d_hex_mesh():
+    """Unit-cube hex8 mesh built with fedoo (3x3x3 nodes, 8 hexes)."""
+    m = fd.mesh.box_mesh(
+        nx=3,
+        ny=3,
+        nz=3,
+        x_min=0,
+        x_max=1,
+        y_min=0,
+        y_max=1,
+        z_min=0,
+        z_max=1,
+        elm_type="hex8",
+    )
+    vertices = np.asarray(m.nodes, dtype=np.float64)
+    elements = np.asarray(m.elements, dtype=np.int32)
+    return vertices, elements
+
+
 def create_3d_test_mesh():
-    """Create a cube mesh with an interior point for testing."""
+    """Hand-rolled tet4 mesh on the unit cube.
+
+    Used by tests that round-trip through MMG3D or pv.CellType.TETRA.
+    fedoo's mesh module ships no tetrahedral generator (box_mesh is hex-only,
+    and there is no hex2tet helper), so we keep the explicit connectivity here.
+    """
     vertices = np.array(
         [
             [0.0, 0.0, 0.0],
@@ -71,6 +88,21 @@ def create_3d_test_mesh():
         dtype=np.int32,
     )
     return vertices, elements
+
+
+def box_boundary_mask(vertices, atol=1e-9):
+    """Mark vertices that sit on the bounding box of the point cloud.
+
+    Avoids hard-coded indices in tests so the same assertions work for any
+    structured grid resolution.
+    """
+    n_dims = vertices.shape[1]
+    mask = np.zeros(len(vertices), dtype=bool)
+    for d in range(n_dims):
+        col = vertices[:, d]
+        mask |= np.isclose(col, col.min(), atol=atol)
+        mask |= np.isclose(col, col.max(), atol=atol)
+    return mask
 
 
 class TestPropagateDisplacementElasticity:
@@ -111,11 +143,12 @@ class TestPropagateDisplacementElasticity:
     def test_uniform_boundary_2d(self):
         """Uniform boundary displacement propagates uniformly to interior."""
         vertices, triangles = create_2d_test_mesh()
-        n = len(vertices)
+        boundary_mask = box_boundary_mask(vertices)
+        interior = np.where(~boundary_mask)[0]
+        assert interior.size > 0  # sanity: helper must leave at least one interior node
 
-        boundary_mask = np.array([True, True, True, True, False], dtype=bool)
-        displacement = np.zeros((n, 2), dtype=np.float64)
-        displacement[:4] = [0.1, 0.0]
+        displacement = np.zeros_like(vertices)
+        displacement[boundary_mask] = [0.1, 0.0]
 
         result = propagate_displacement_elasticity(
             vertices,
@@ -124,21 +157,23 @@ class TestPropagateDisplacementElasticity:
             displacement,
         )
 
-        # Boundary keeps original values
-        npt.assert_array_almost_equal(result[:4], displacement[:4])
-        # Interior should get approximately the same (rigid body translation)
-        assert abs(result[4, 0] - 0.1) < 0.05
-        assert abs(result[4, 1]) < 0.05
+        b = boundary_mask
+        npt.assert_array_almost_equal(result[b], displacement[b])
+        for i in interior:
+            assert abs(result[i, 0] - 0.1) < 0.05
+            assert abs(result[i, 1]) < 0.05
 
     def test_non_uniform_propagation_2d(self):
         """Non-uniform boundary: interior gets intermediate values."""
         vertices, triangles = create_2d_test_mesh()
-        n = len(vertices)
+        boundary_mask = box_boundary_mask(vertices)
+        interior = np.where(~boundary_mask)[0]
+        assert interior.size > 0
 
-        boundary_mask = np.array([True, True, True, True, False], dtype=bool)
-        displacement = np.zeros((n, 2), dtype=np.float64)
-        displacement[0] = [0.1, 0.0]  # bottom-left
-        displacement[3] = [0.1, 0.0]  # top-left
+        # Left edge moves right; the rest of the boundary stays fixed at zero.
+        left = boundary_mask & np.isclose(vertices[:, 0], vertices[:, 0].min())
+        displacement = np.zeros_like(vertices)
+        displacement[left] = [0.1, 0.0]
 
         result = propagate_displacement_elasticity(
             vertices,
@@ -147,19 +182,18 @@ class TestPropagateDisplacementElasticity:
             displacement,
         )
 
-        # Interior point should be between 0 and 0.1
-        assert 0.0 < result[4, 0] < 0.1
+        for i in interior:
+            assert 0.0 < result[i, 0] < 0.1
 
     def test_3d_propagation(self):
-        """3D propagation: uniform boundary displacement."""
-        vertices, elements = create_3d_test_mesh()
-        n = len(vertices)
+        """3D propagation on a fedoo hex8 cube: uniform boundary displacement."""
+        vertices, elements = create_3d_hex_mesh()
+        boundary_mask = box_boundary_mask(vertices)
+        interior = np.where(~boundary_mask)[0]
+        assert interior.size > 0
 
-        boundary_mask = np.ones(n, dtype=bool)
-        boundary_mask[8] = False  # center is interior
-
-        displacement = np.zeros((n, 3), dtype=np.float64)
-        displacement[:8] = [0.05, 0.0, 0.0]
+        displacement = np.zeros_like(vertices)
+        displacement[boundary_mask] = [0.05, 0.0, 0.0]
 
         result = propagate_displacement_elasticity(
             vertices,
@@ -168,9 +202,12 @@ class TestPropagateDisplacementElasticity:
             displacement,
         )
 
-        npt.assert_array_almost_equal(result[:8], displacement[:8])
-        # Interior should get approximately 0.05 in x
-        assert abs(result[8, 0] - 0.05) < 0.02
+        b = boundary_mask
+        npt.assert_array_almost_equal(result[b], displacement[b])
+        for i in interior:
+            assert abs(result[i, 0] - 0.05) < 0.02
+            assert abs(result[i, 1]) < 0.02
+            assert abs(result[i, 2]) < 0.02
 
     def test_validation_errors(self):
         """Validation errors for invalid input."""
@@ -222,10 +259,9 @@ class TestMoveMeshPropagationMethod:
         vertices, triangles = create_2d_test_mesh()
         mesh = MmgMesh2D(vertices, triangles)
 
-        n = len(vertices)
-        boundary_mask = np.array([True, True, True, True, False], dtype=bool)
-        displacement = np.zeros((n, 2), dtype=np.float64)
-        displacement[:4] = [0.05, 0.0]
+        boundary_mask = box_boundary_mask(vertices)
+        displacement = np.zeros_like(vertices)
+        displacement[boundary_mask] = [0.05, 0.0]
 
         move_mesh(
             mesh,
@@ -308,40 +344,35 @@ class TestFedooMissing:
 
 
 class TestUnsupportedElementType:
-    """Reject element shapes that fedoo's mapping doesn't recognize."""
+    """Reject element shapes whose node count isn't in the propagator's map.
+
+    The propagator currently maps {3, 6, 4} -> tri3/tri6/quad4 in 2D and
+    {4, 10, 8} -> tet4/tet10/hex8 in 3D. Genuine fedoo elements outside that
+    map (quad9 in 2D, hex20 in 3D) must raise.
+    """
 
     def test_unsupported_2d_element(self):
-        """5-node 2D element triggers a clear ValueError."""
-        vertices = np.array(
-            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.5, 1.5], [0.0, 1.0]],
-            dtype=np.float64,
-        )
-        elements = np.array([[0, 1, 2, 3, 4]], dtype=np.int32)
+        """quad9 (9 nodes per element) is not in the 2D map and must raise."""
+        m = fd.mesh.rectangle_mesh(nx=2, ny=2, elm_type="quad9")
+        vertices = np.asarray(m.nodes, dtype=np.float64)
+        elements = np.asarray(m.elements, dtype=np.int32)
         # Leave at least one vertex outside the mask so the element-type
         # check is reached (the all-boundary fast path returns early).
-        mask = np.array([True, True, True, True, False], dtype=bool)
+        mask = np.ones(len(vertices), dtype=bool)
+        mask[-1] = False
         disp = np.zeros_like(vertices)
-        disp[:4] = [0.01, 0.0]
 
         with pytest.raises(ValueError, match="Unsupported 2D element"):
             propagate_displacement_elasticity(vertices, elements, mask, disp)
 
     def test_unsupported_3d_element(self):
-        """5-node 3D element triggers a clear ValueError."""
-        vertices = np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0],
-                [0.0, 0.0, 1.0],
-                [0.5, 0.5, 0.5],
-            ],
-            dtype=np.float64,
-        )
-        elements = np.array([[0, 1, 2, 3, 4]], dtype=np.int32)
-        mask = np.array([True, True, True, True, False], dtype=bool)
+        """hex20 (20 nodes per element) is not in the 3D map and must raise."""
+        m = fd.mesh.box_mesh(nx=2, ny=2, nz=2, elm_type="hex20")
+        vertices = np.asarray(m.nodes, dtype=np.float64)
+        elements = np.asarray(m.elements, dtype=np.int32)
+        mask = np.ones(len(vertices), dtype=bool)
+        mask[-1] = False
         disp = np.zeros_like(vertices)
-        disp[:4] = [0.01, 0.0, 0.0]
 
         with pytest.raises(ValueError, match="Unsupported 3D element"):
             propagate_displacement_elasticity(vertices, elements, mask, disp)
