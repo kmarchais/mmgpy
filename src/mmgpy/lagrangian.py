@@ -23,6 +23,8 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 
+from mmgpy._topology import vertex_adjacency
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -158,35 +160,8 @@ def propagate_displacement_elasticity(
     return np.column_stack(columns)
 
 
-def _build_adjacency_from_elements(
-    n_vertices: int,
-    elements: NDArray[np.int32],
-) -> list[list[int]]:
-    """Build adjacency list from element connectivity.
-
-    Args:
-        n_vertices: Number of vertices in the mesh.
-        elements: Element connectivity array (M x nodes_per_element).
-
-    Returns:
-        List of neighbor indices for each vertex.
-
-    """
-    adjacency: list[set[int]] = [set() for _ in range(n_vertices)]
-    nodes_per_elem = elements.shape[1]
-
-    for elem in elements:
-        for i in range(nodes_per_elem):
-            for j in range(i + 1, nodes_per_elem):
-                v_i, v_j = elem[i], elem[j]
-                adjacency[v_i].add(v_j)
-                adjacency[v_j].add(v_i)
-
-    return [list(neighbors) for neighbors in adjacency]
-
-
 def _build_laplacian_system(
-    adjacency: list[list[int]],
+    adjacency: sparse.csr_matrix,
     boundary_mask: NDArray[np.bool_],
 ) -> tuple[sparse.csr_matrix, sparse.csr_matrix, NDArray[np.intp], NDArray[np.intp]]:
     """Build sparse Laplacian matrices for interior-interior and interior-boundary.
@@ -198,7 +173,7 @@ def _build_laplacian_system(
     - u_B: Known boundary displacements
 
     Args:
-        adjacency: Adjacency list for each vertex.
+        adjacency: Symmetric vertex-vertex CSR adjacency matrix.
         boundary_mask: Boolean array, True for boundary vertices.
 
     Returns:
@@ -213,7 +188,6 @@ def _build_laplacian_system(
     n_boundary = len(boundary_indices)
 
     if n_interior == 0:
-        # All vertices are boundary - return empty matrices
         return (
             sparse.csr_matrix((0, 0)),
             sparse.csr_matrix((0, n_boundary)),
@@ -221,52 +195,16 @@ def _build_laplacian_system(
             boundary_indices,
         )
 
-    # Create mappings from global to local indices
-    interior_map = {idx: i for i, idx in enumerate(interior_indices)}
-    boundary_map = {idx: i for i, idx in enumerate(boundary_indices)}
+    # Reorder rows/columns into [interior | boundary] blocks and read the
+    # graph Laplacian directly: degree on the diagonal, -1 on edges. The
+    # adjacency is symmetric with unit weights, so D - A is the Laplacian.
+    perm = np.concatenate([interior_indices, boundary_indices])
+    a_perm = adjacency[perm][:, perm]
+    degrees = np.asarray(a_perm.sum(axis=1)).ravel()
+    laplacian = sparse.diags(degrees) - a_perm
 
-    # Build sparse matrix data
-    rows_ii: list[int] = []
-    cols_ii: list[int] = []
-    vals_ii: list[float] = []
-
-    rows_ib: list[int] = []
-    cols_ib: list[int] = []
-    vals_ib: list[float] = []
-
-    for idx in interior_indices:
-        local_i = interior_map[idx]
-        neighbors = adjacency[idx]
-        degree = len(neighbors)
-
-        # Diagonal entry (degree of vertex)
-        rows_ii.append(local_i)
-        cols_ii.append(local_i)
-        vals_ii.append(float(degree))
-
-        # Off-diagonal entries
-        for neighbor in neighbors:
-            if interior_mask[neighbor]:
-                # Neighbor is interior
-                local_j = interior_map[neighbor]
-                rows_ii.append(local_i)
-                cols_ii.append(local_j)
-                vals_ii.append(-1.0)
-            else:
-                # Neighbor is boundary
-                local_j = boundary_map[neighbor]
-                rows_ib.append(local_i)
-                cols_ib.append(local_j)
-                vals_ib.append(-1.0)
-
-    l_ii = sparse.csr_matrix(
-        (vals_ii, (rows_ii, cols_ii)),
-        shape=(n_interior, n_interior),
-    )
-    l_ib = sparse.csr_matrix(
-        (vals_ib, (rows_ib, cols_ib)),
-        shape=(n_interior, n_boundary),
-    )
+    l_ii = laplacian[:n_interior, :n_interior].tocsr()
+    l_ib = laplacian[:n_interior, n_interior:].tocsr()
 
     return l_ii, l_ib, interior_indices, boundary_indices
 
@@ -331,7 +269,7 @@ def propagate_displacement(
         return boundary_displacement.copy()
 
     # Build adjacency and Laplacian system
-    adjacency = _build_adjacency_from_elements(n_vertices, elements)
+    adjacency = vertex_adjacency(n_vertices, elements)
     l_ii, l_ib, interior_indices, boundary_indices = _build_laplacian_system(
         adjacency,
         boundary_mask,
