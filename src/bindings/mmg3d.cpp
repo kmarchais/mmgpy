@@ -84,9 +84,7 @@ bool remesh_3d(const py::object &input_mesh, const py::object &input_sol,
 
     // Process mesh
     int ret;
-    if (mesh->info.lag > -1) {
-      ret = MMG3D_mmg3dmov(mesh, met, disp);
-    } else if (mesh->info.iso || mesh->info.isosurf) {
+    if (mesh->info.iso || mesh->info.isosurf) {
       ret = MMG3D_mmg3dls(mesh, ls, met);
     } else {
       ret = MMG3D_mmg3dlib(mesh, met);
@@ -151,7 +149,6 @@ void set_mesh_options_3D(MMG5_pMesh mesh, MMG5_pSol met,
       {"nosizreq", {MMG3D_IPARAM_nosizreq, ParamType::Integer}},
       {"verbose", {MMG3D_IPARAM_verbose, ParamType::Integer}},
       {"mem", {MMG3D_IPARAM_mem, ParamType::Integer}},
-      {"lag", {MMG3D_IPARAM_lag, ParamType::Integer}},
       {"numberOfLocalParam",
        {MMG3D_IPARAM_numberOfLocalParam, ParamType::Integer}},
       {"numberOfLSBaseReferences",

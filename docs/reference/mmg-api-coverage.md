@@ -242,11 +242,11 @@ Many "not bound" functions fall into categories that are intentionally excluded:
 
 ### Remeshing Functions
 
-| Function         | Status | Notes                                     |
-| ---------------- | ------ | ----------------------------------------- |
-| `MMG3D_mmg3dlib` | Bound  | `MmgMesh3D.remesh()` (standard remeshing) |
-| `MMG3D_mmg3dls`  | Bound  | `MmgMesh3D.remesh_levelset()`             |
-| `MMG3D_mmg3dmov` | Bound  | `MmgMesh3D.remesh_lagrangian()`           |
+| Function         | Status  | Notes                                                                                   |
+| ---------------- | ------- | --------------------------------------------------------------------------------------- |
+| `MMG3D_mmg3dlib` | Bound   | `MmgMesh3D.remesh()` (standard remeshing)                                               |
+| `MMG3D_mmg3dls`  | Bound   | `MmgMesh3D.remesh_levelset()`                                                           |
+| `MMG3D_mmg3dmov` | Skipped | Requires the ELAS dependency; mmgpy ships `mmgpy.move_mesh` (Laplacian / fedoo) instead |
 
 ### CLI & Internal Utilities
 
@@ -451,12 +451,12 @@ Many "not bound" functions fall into categories that are intentionally excluded:
 
 ### Remeshing Functions
 
-| Function          | Status | Notes                                                                              |
-| ----------------- | ------ | ---------------------------------------------------------------------------------- |
-| `MMG2D_mmg2dlib`  | Bound  | `MmgMesh2D.remesh()` (standard remeshing)                                          |
-| `MMG2D_mmg2dls`   | Bound  | `MmgMesh2D.remesh_levelset()`                                                      |
-| `MMG2D_mmg2dmov`  | Bound  | `MmgMesh2D.remesh_lagrangian()`                                                    |
-| `MMG2D_mmg2dmesh` | Bound  | Auto-selected by `remesh()` when mesh has no triangles (edge-only mesh generation) |
+| Function          | Status  | Notes                                                                                   |
+| ----------------- | ------- | --------------------------------------------------------------------------------------- |
+| `MMG2D_mmg2dlib`  | Bound   | `MmgMesh2D.remesh()` (standard remeshing)                                               |
+| `MMG2D_mmg2dls`   | Bound   | `MmgMesh2D.remesh_levelset()`                                                           |
+| `MMG2D_mmg2dmov`  | Skipped | Requires the ELAS dependency; mmgpy ships `mmgpy.move_mesh` (Laplacian / fedoo) instead |
+| `MMG2D_mmg2dmesh` | Bound   | Auto-selected by `remesh()` when mesh has no triangles (edge-only mesh generation)      |
 
 ### CLI & Internal Utilities
 

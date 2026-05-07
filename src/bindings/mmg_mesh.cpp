@@ -1472,10 +1472,7 @@ py::dict MmgMesh::remesh(const py::dict &options) {
   const char *mode_name;
   {
     py::gil_scoped_release release;
-    if (mesh->info.lag > -1) {
-      ret = MMG3D_mmg3dmov(mesh, met, disp);
-      mode_name = "MMG3D_mmg3dmov (lagrangian motion)";
-    } else if (mesh->info.iso || mesh->info.isosurf) {
+    if (mesh->info.iso || mesh->info.isosurf) {
       ret = MMG3D_mmg3dls(mesh, ls, met);
       mode_name = "MMG3D_mmg3dls (level-set discretization)";
     } else {
@@ -1493,42 +1490,6 @@ py::dict MmgMesh::remesh(const py::dict &options) {
 
   if (ret != MMG5_SUCCESS) {
     throw std::runtime_error(std::string("Remeshing failed in ") + mode_name);
-  }
-
-  RemeshStats after = collect_mesh_stats_3d(mesh, met);
-
-  return build_remesh_result(before, after, duration, ret, warnings);
-}
-
-py::dict MmgMesh::remesh_lagrangian(const py::array_t<double> &displacement,
-                                    const py::dict &options) {
-  check_not_corrupted("remesh");
-  RemeshStats before = collect_mesh_stats_3d(mesh, met);
-
-  set_field("displacement", displacement);
-  py::dict lag_options =
-      merge_options_with_default(options, "lag", py::int_(1));
-  set_mesh_options_3D(mesh, met, lag_options);
-
-  // Capture stderr to collect MMG warnings
-  StderrCapture capture;
-
-  int ret;
-  auto start = std::chrono::high_resolution_clock::now();
-  {
-    py::gil_scoped_release release;
-    ret = MMG3D_mmg3dmov(mesh, met, disp);
-  }
-  auto end = std::chrono::high_resolution_clock::now();
-  double duration = std::chrono::duration<double>(end - start).count();
-
-  // Stop capture and parse warnings before potentially throwing
-  std::string captured = capture.get();
-  std::vector<std::string> warnings = parse_mmg_warnings(captured);
-
-  if (ret != MMG5_SUCCESS) {
-    throw std::runtime_error("MMG3D Lagrangian motion remeshing failed (ret=" +
-                             std::to_string(ret) + ")");
   }
 
   RemeshStats after = collect_mesh_stats_3d(mesh, met);

@@ -106,9 +106,7 @@ bool remesh_2d(const py::object &input_mesh, const py::object &input_sol,
 
     // Process mesh based on mode
     int ret;
-    if (mesh->info.lag > -1) {
-      ret = MMG2D_mmg2dmov(mesh, met, disp);
-    } else if (mesh->info.iso || mesh->info.isosurf) {
+    if (mesh->info.iso || mesh->info.isosurf) {
       ret = MMG2D_mmg2dls(mesh, ls, met);
     } else if (!mesh->nt) {
       // Mesh generation mode (no triangles in input mesh)
@@ -165,7 +163,6 @@ void set_mesh_options_2D(MMG5_pMesh mesh, MMG5_pSol met,
       {"iso", {MMG2D_IPARAM_iso, ParamType::Integer}},
       {"isosurf", {MMG2D_IPARAM_isosurf, ParamType::Integer}},
       {"opnbdy", {MMG2D_IPARAM_opnbdy, ParamType::Integer}},
-      {"lag", {MMG2D_IPARAM_lag, ParamType::Integer}},
       {"3dmedit", {MMG2D_IPARAM_3dMedit, ParamType::Integer}},
       {"optim", {MMG2D_IPARAM_optim, ParamType::Integer}},
       {"noinsert", {MMG2D_IPARAM_noinsert, ParamType::Integer}},

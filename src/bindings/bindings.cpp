@@ -206,22 +206,6 @@ PYBIND11_MODULE(_mmgpy, m) {
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
           "hgrad, optim, verbose.")
       .def(
-          "remesh_lagrangian",
-          [](MmgMesh &self, const py::array_t<double> &displacement,
-             py::kwargs kwargs) {
-            return self.remesh_lagrangian(displacement,
-                                          kwargs_to_options(kwargs));
-          },
-          py::arg("displacement"),
-          "Remesh the mesh following Lagrangian motion defined by a "
-          "displacement field.\n\n"
-          "Args:\n"
-          "    displacement: Nx3 array of displacement vectors per vertex.\n"
-          "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
-          "              lag: Lagrangian mode (default=1, "
-          "displacement-based).\n"
-          "                   0=velocity, 1=displacement, 2=final position.")
-      .def(
           "remesh_levelset",
           [](MmgMesh &self, const py::array_t<double> &levelset,
              py::kwargs kwargs) {
@@ -368,22 +352,6 @@ PYBIND11_MODULE(_mmgpy, m) {
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
           "hgrad, optim, verbose.")
-      .def(
-          "remesh_lagrangian",
-          [](MmgMesh2D &self, const py::array_t<double> &displacement,
-             py::kwargs kwargs) {
-            return self.remesh_lagrangian(displacement,
-                                          kwargs_to_options(kwargs));
-          },
-          py::arg("displacement"),
-          "Remesh the mesh following Lagrangian motion defined by a "
-          "displacement field.\n\n"
-          "Args:\n"
-          "    displacement: Nx2 array of displacement vectors per vertex.\n"
-          "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
-          "              lag: Lagrangian mode (default=1, "
-          "displacement-based).\n"
-          "                   0=velocity, 1=displacement, 2=final position.")
       .def(
           "remesh_levelset",
           [](MmgMesh2D &self, const py::array_t<double> &levelset,
@@ -537,18 +505,7 @@ PYBIND11_MODULE(_mmgpy, m) {
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
-          "              iso: Enable level-set mode (default=1).")
-      .def(
-          "remesh_lagrangian",
-          [](MmgMeshS &self, const py::array_t<double> &displacement,
-             py::kwargs kwargs) {
-            self.remesh_lagrangian(displacement, kwargs_to_options(kwargs));
-          },
-          py::arg("displacement"),
-          "Not supported for surface meshes - raises RuntimeError.\n\n"
-          "Surface meshes do not support Lagrangian motion because the ELAS\n"
-          "library requires a volumetric interior to solve elasticity PDEs.\n"
-          "Use mmgpy.move_mesh() instead to move vertices and remesh.");
+          "              iso: Enable level-set mode (default=1).");
 
   py::class_<mmg3d>(m, "mmg3d")
       .def_static("remesh", remesh_3d, py::arg("input_mesh"),
