@@ -296,39 +296,33 @@ def _read_mesh_internal(
 def read(
     source: str | Path | pv.UnstructuredGrid | pv.PolyData,
     mesh_kind: MeshKind | None = None,
-) -> pv.UnstructuredGrid | pv.PolyData:
-    """Read a mesh and return a PyVista dataset.
+) -> Mesh:
+    """Read a mesh from a file or PyVista object.
 
     .. deprecated:: 0.13
-        Use :func:`pyvista.read` instead. With ``mmgpy`` installed,
-        ``pv.read('foo.mesh')`` works for Medit files via the registered
-        reader plugin and returns the same PyVista dataset. ``mmgpy.read``
+        Use :func:`pyvista.read` instead, then operate via the ``.mmg``
+        accessor. ``pv.read(...)`` works for any PyVista-supported format;
+        with ``mmgpy`` installed it additionally handles ``.mesh`` /
+        ``.meshb`` via the registered Medit reader plugin. ``mmgpy.read``
         will be removed in 0.14.
 
-    The returned dataset carries the ``.mmg`` accessor for MMG operations,
-    e.g. ``dataset.mmg.remesh(hsiz=0.1)``.
+    Returns the internal :class:`Mesh` wrapper for backwards compatibility
+    with code written against 0.12. New code should call ``pv.read(...)``
+    and use ``dataset.mmg.remesh(...)``.
     """
     import warnings  # noqa: PLC0415
 
     warnings.warn(
         "mmgpy.read() is deprecated and will be removed in 0.14. "
-        "Use pyvista.read() instead; with mmgpy installed it handles .mesh "
-        "and .meshb via the registered reader plugin and returns the same "
-        "PyVista dataset.",
+        "Use pyvista.read() instead, then operate via the .mmg accessor "
+        "(e.g. pv.read('foo.mesh').mmg.remesh(hsiz=0.1)). pv.read() works "
+        "for any PyVista-supported format; with mmgpy installed it also "
+        "handles .mesh / .meshb via the registered Medit reader plugin.",
         DeprecationWarning,
         stacklevel=2,
     )
 
-    mesh = _read_mesh_internal(source, mesh_kind)
-    pv_mesh = mesh.to_pyvista(include_refs=True, include_edges=True)
-
-    # Forward any user point_data from the source / lazy field cache.
-    user_fields = mesh.get_user_fields()
-    for name, arr in user_fields.items():
-        if arr.shape[0] == pv_mesh.n_points:
-            pv_mesh.point_data[name] = arr
-
-    return pv_mesh
+    return _read_mesh_internal(source, mesh_kind)
 
 
 def _mesh_kind_to_class(
