@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778007554587,
+  "lastUpdate": 1778143527512,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -2396,6 +2396,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0005349332068046307",
             "extra": "mean: 74.91064650000924 msec\nrounds: 14"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "yves.chemisky@gmail.com",
+            "name": "Yves Chemisky",
+            "username": "chemiskyy"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a8cd4389e2de3fdbf5a54f6ab25cbe0b88fb3e1a",
+          "message": "Add elasticity propagation & Hessian recovery (#205)\n\n* Add elasticity propagation & Hessian recovery\n\nIntroduce elasticity-based displacement propagation and Hessian recovery for adaptive remeshing.\n\n- Add propagate_displacement_elasticity in lagrangian.py: a fedoo-backed linear elasticity solver (optional dependency) to propagate boundary displacements; includes element-type handling, input validation, and extraction of displacement components.\n- Extend move_mesh to accept propagation_method (\"laplacian\" or \"elasticity\"), validate the option, and call the appropriate propagator while keeping laplacian as the default.\n- Export propagate_displacement_elasticity from package __init__.\n- Add compute_hessian in metrics.py: patch-based least-squares Hessian recovery for 2D/3D scalar fields, returning tensor components suitable for metric creation.\n- Add tests: tests/elasticity_test.py (fedoo-dependent tests for propagation and move_mesh integration) and tests/hessian_test.py (unit tests for Hessian recovery and metric pipeline).\n\nThese changes enable physically meaningful displacement propagation for large deformations (via fedoo) and provide Hessian computation to support solution-adaptive remeshing.\n\n* fix(lagrangian, metrics): unblock CI and add examples for elasticity & Hessian\n\nPre-commit / CI fixes:\n- pyproject.toml: extend ruff per-file-ignores for lagrangian.py\n  (C901, PLR0912/13/15, PLR2004) and metrics.py (PLR0912), matching\n  the existing math-heavy module pattern.\n- Drop unused noqa: N803 (lagrangian) and N806 (metrics) directives,\n  reword inline comments that ruff's ERA001 was flagging as\n  commented-out code.\n- tests/elasticity_test.py: tag the post-importorskip imports with\n  noqa: E402, the standard pytest.importorskip pattern.\n\nHessian recovery bugs surfaced by tests/hessian_test.py:\n- compute_hessian was producing zeroed second derivatives on interior\n  patches because the linear (h) and quadratic (h^2) monomial columns\n  have wildly different magnitudes; lstsq's default rcond was\n  truncating the small singular values that carry the H signal. Scale\n  the centered patch coords by the patch radius and unscale the\n  recovered Hessian.\n- The 1-ring around boundary vertices on a structured grid often spans\n  only two distinct values along an axis, making y and y^2 colinear\n  (rank 4 with 5 unknowns) and steering the min-norm lstsq solution\n  away from the truth even on a linear field. Always use the 2-ring\n  patch.\n\nElasticity propagation:\n- lagrangian.py: fedoo's ModelingSpace does not accept \"2Dstrain\";\n  use \"2Dplane\" (plane strain), the standard fictitious-elasticity\n  assumption for 2D mesh motion. Verified the full elasticity test\n  suite with fedoo installed.\n\nAPI surface:\n- _pv_plugin.PvMeshAccessor.move now forwards propagation_method so the\n  elasticity option is reachable from the high-level .mmg.move() API.\n- pyproject.toml: pin fedoo>=0.8.3,<1 in the fem extra so users get\n  a fedoo new enough to expose the \"2Dplane\" dimension name.\n\nExamples:\n- examples/mmg2d/elasticity_propagation.py: side-by-side comparison of\n  Laplacian and elasticity propagation under a sheared boundary; the\n  elasticity panel auto-skips with a hint when fedoo is missing.\n- examples/mmg2d/hessian_adaptation.py: solution-adaptive remeshing on\n  a sharp circular front via compute_hessian +\n  create_metric_from_hessian; the adapted mesh refines along the front\n  and coarsens elsewhere.\n\nVerification: 946 tests pass, 10 elasticity tests pass with fedoo\ninstalled locally, both new examples run end-to-end, full pre-commit\nclean.\n\n* docs(examples): add 3D counterparts for elasticity & Hessian demos\n\n- examples/mmg3d/elasticity_propagation.py: tetrahedral unit cube with\n  z=0 pinned and z=1 stretched + sheared, run through both\n  propagation_method=\"laplacian\" and \"elasticity\" to compare interior\n  fields side by side. Falls back gracefully when fedoo is missing.\n- examples/mmg3d/hessian_adaptation.py: solution-adaptive 3D remeshing\n  on a sharp spherical front via compute_hessian +\n  create_metric_from_hessian; visualizes a centre slice of both the\n  uniform and adapted meshes so interior refinement is visible.\n\nBoth verified end-to-end locally (Laplacian + elasticity with fedoo\ninstalled; adapted mesh refines on the front and coarsens elsewhere).\n\n* feat(examples): add animated demos and Hessian visualisations\n\nReplaces the static-plot motion examples with proper side-by-side\nanimations comparing Laplacian and elasticity propagation on a\ncantilever, plus polished single-image Hessian-adaptation demos.\n\n- examples/mmg2d/elasticity_propagation.py: L-bracket cantilever\n  animation. The free tip of the foot is pinned, the post top is\n  pulled upward; Laplacian shows a rigid 90-degree pivot, elasticity\n  shows actual cantilever bending. Triangles coloured by displacement\n  magnitude with the matplotlib viridis cmap.\n- examples/mmg3d/elasticity_propagation.py: 3D L-bracket animation\n  rendered via PyVista as a tilted-top-down side-by-side view. The\n  camera frame is sized to the worst-case deformed bounding box so\n  the bracket stays in frame across every step of the loop.\n- examples/mmg3d/elasticity_propagation_blender.gif: Blender-rendered\n  counterpart to the PyVista 3D animation. Curve-bevel wireframe gives\n  a continuous, gap-free triangulation that the Wireframe modifier\n  never produced cleanly, EEVEE PBR keeps the viridis colours\n  saturated, the camera frames both panels with identical perspective\n  via separate render passes, and pill-style text labels stay legible\n  on light or dark backgrounds. The script that generated it is not\n  committed.\n- examples/mmg2d/hessian_adaptation.py and\n  examples/mmg3d/hessian_adaptation.py: write the rendered output\n  alongside the script so the static visualisation is browsable in\n  the repo. The 3D version clips a corner of the cube so the\n  spherical front and the interior refinement of the adapted mesh\n  are visible.\n\nsrc/mmgpy/lagrangian.py: drop the bounding-box auto-pin from\npropagate_displacement_elasticity. The previous behaviour silently\nfixed every node on the mesh's axis-aligned bounding faces to zero\nunless they were in boundary_mask, which forced \"constrained box\"\nsemantics on every problem and made the 3D demo fall flat. Now the\nsolver only constrains what the caller marks; matches the Laplacian\nvariant. Callers must ensure boundary_mask removes rigid body modes.\n\ntests/elasticity_test.py: add coverage for the previously-missed\nnew lines:\n- TestFedooMissing: verifies the helpful ImportError when fedoo is\n  uninstalled (monkeypatch __import__).\n- TestUnsupportedElementType: 2D and 3D unsupported element-shape\n  checks reach the per-dimension element-type lookup.\n- TestPvAccessorMove: drives propagation_method=\"elasticity\" through\n  the dataset.mmg.move() accessor, covering the new parameter\n  forwarding path in src/mmgpy/_pv_plugin.py.\n\n* docs(examples): drop redundant PyVista 3D L-bracket demo\n\nThe animated 3D L-bracket GIF supersedes the PyVista variant; remove\nthe old PyVista script + GIF and rename the rendered output to the\nneutral elasticity_propagation.gif slot.\n\n* docs(examples): transparent backgrounds + Blender-rendered 3D Hessian\n\n- Restore the 3D L-bracket PyVista example so users have a runnable\n  script for the case (the canonical animated GIF is rendered\n  separately at higher fidelity); the script now drives the animation\n  interactively rather than overwriting the committed GIF.\n- Switch the 2D elasticity GIF to a transparent-background pipeline:\n  matplotlib renders each frame to a transparent PNG, then PIL stitches\n  them into a GIF whose palette reserves one slot for fully transparent\n  pixels (matplotlib's PillowWriter bakes in the figure facecolour and\n  cannot do this).\n- Save the 2D Hessian PNG with transparent figure + axes backgrounds.\n- Replace the 3D Hessian PNG with a Blender render: the cube is sliced\n  in half along x=0.5 so the cut face passes through the sphere's\n  centre, exposing the analytic front clearly. Uniform mesh shows a\n  blocky cross-section, the Hessian-adapted mesh shows refinement\n  concentrating along the front. Pill-style labels stay legible on\n  light or dark themes; rendering script not committed.\n\n* ci: install fedoo extra so elasticity tests actually run on coverage\n\nThe elasticity tests (and the matching new branches in\nsrc/mmgpy/lagrangian.py and src/mmgpy/_pv_plugin.py) all guard on\n``pytest.importorskip(\\\"fedoo\\\")`` because fedoo is an optional\ndependency. CI was running ``uv sync`` without ``--extra fem``, so\nfedoo wasn't installed, the entire elasticity test module was skipped,\nand codecov saw the new propagation_method / propagate_displacement_\nelasticity branches as untested (lagrangian.py patch coverage at\n6.89%). Adding ``--extra fem`` brings fedoo in, the elasticity tests\nrun, and the patch climbs above the 70% codecov threshold.\n\n* docs: add Hessian adaptation and elasticity propagation tutorials\n\nMove the rendered PNGs and GIFs from examples/ into docs/assets/ and\nadd tutorial pages that walk through both new features (compute_hessian\n+ create_metric_from_hessian for solution-adaptive remeshing, and\npropagate_displacement_elasticity for fedoo-backed mesh motion). Wire\nthe pages into mkdocs nav, the API references, and the examples gallery.\n\nRe-rendered the 3D Hessian PNG with a half-cube cell-centroid filter\n(no clipping) so the uniform mesh keeps its regular tetrahedral grid\nstructure on the cut face, and bumped 2D Hessian edge thickness for\nreadability.\n\n* docs: skip new code blocks in pytest, embed assets on API pages\n\nThe new tutorial and gallery snippets reference undefined variables\n(vertices, triangles, field, ...), which broke pytest-codeblocks on\nUbuntu 3.14. Mark them as skip. Also embed the rendered Hessian PNGs\nand elasticity GIFs directly on the metrics and lagrangian API pages\nso the visual context shows up next to the function reference.\n\n* docs: bump 3D Hessian render to a 19^3 grid for finer detail\n\n* test: build elasticity test meshes with fedoo\n\nAddress PR review by Yves Chemisky:\n\n- create_2d_test_mesh now uses fd.mesh.rectangle_mesh(elm_type='tri3') to\n  build a 3x3 grid (9 nodes, 8 triangles) instead of a hand-rolled 5-node\n  fan. Tests use a new box_boundary_mask helper instead of hard-coded\n  index 4 for the interior point.\n- create_3d_hex_mesh added for the propagation-only test, using\n  fd.mesh.box_mesh(elm_type='hex8'). The pre-existing tet helper stays\n  (with a comment) for tests that round-trip through MMG3D or\n  pv.CellType.TETRA, since fedoo ships no tet generator.\n- TestUnsupportedElementType now uses real fedoo elements (quad9 in 2D,\n  hex20 in 3D) instead of fabricated 5-node connectivity.\n\n* perf: vectorize vertex adjacency in compute_hessian\n\nReplace the per-element nested-loop set construction in compute_hessian\nwith a vectorized scipy.sparse build, plus a closed 2-ring computed as\nthe nonzero pattern of (I + A + A @ A).\n\nOn the 19^3 tetrahedral grid used by the docs gallery (6859 verts,\n~35k tets), the topology-setup portion drops from ~68 ms to ~13 ms\n(adjacency 38 ms -> 6 ms, 2-ring 30 ms -> 7 ms). The remaining\ncompute_hessian time is the per-vertex LSQ loop, which is unchanged.\n\nThe new helpers live in src/mmgpy/_topology.py so the same primitives\ncan be shared with lagrangian.py in a follow-up.\n\n* refactor: share vertex adjacency helper with lagrangian\n\nDrop the duplicate _build_adjacency_from_elements (the same per-element\nnested-loop set construction lived here and in metrics.py) and call\nmmgpy._topology.vertex_adjacency from propagate_displacement instead.\n\n_build_laplacian_system now consumes the CSR adjacency directly:\npermute the matrix into [interior | boundary] blocks, then read the\ngraph Laplacian D - A as two CSR slices. This removes ~60 lines of\nmanual COO assembly and the int->local-index dictionaries.\n\nPure refactor: behaviour is unchanged (laplacian smoothing tests pass).\n\n* test: drop TestBuildAdjacency from deprecated lagrangian_test\n\nThe previous commit removed _build_adjacency_from_elements from\nmmgpy.lagrangian; CI surfaced that this deprecated test file still\nimported it, breaking collection. The class only exercised the now\ninlined helper, and the file is slated for removal in 0.13, so just\ndrop the import and the class. Adjacency behaviour stays covered by\nTestPropagateDisplacement (same file) and tests/elasticity_test.py.\n\n* test: build the 3D tet test mesh from fedoo via pv.triangulate\n\nDrop the hand-rolled 9-vertex / 12-tet table for create_3d_test_mesh.\nThe mesh now comes from fd.mesh.box_mesh(elm_type='hex8') run through\npv.UnstructuredGrid(...).triangulate(), which leans on VTK's\nvtkDataSetTriangleFilter for a face-conforming 6-tet split (no Steiner\npoints: 27 nodes -> 27 nodes, 8 hexes -> 48 tets).\n\nThis finishes addressing the review comment about leaning on fedoo for\ntest mesh construction: every test mesh in the file is now built from\nfedoo primitives. The two tests that round-trip through MMG3D /\npv.CellType.TETRA also pick up box_boundary_mask in place of hard-coded\nindices into the old 9-node fan structure.\n\n* docs: drop ELAS / iscd-linearelasticity install caveats\n\nPyPI and conda-forge now expose the same Lagrangian motion surface via\nmove_mesh: Laplacian propagator out of the box, elasticity propagator\nthrough the optional [fem] extra (fedoo). Remove the comparison-table\nrow and the conda-forge ELAS pitch from README and installation.md, and\nmention Hessian recovery alongside anisotropic adaptation.\n\n* review: address PR #205 feedback\n\n- lagrangian: clarify propagate_displacement_elasticity docstring (vertices outside the mask are free DOFs, not zero) and note that E does not affect a Dirichlet-only solve\n- metrics: drop the unreachable LinAlgError catch around lstsq, skip vertices whose patch is too small to determine the quadratic fit\n- _topology: drop redundant setdiag/eliminate_zeros, document the duplicate-edge collapse\n- examples: switch the 2D animation/plot scripts to ImageFont.load_default so they work off Debian/Ubuntu\n- tests: add a 2D cantilever case asserting elasticity and Laplacian fields differ in the interior\n\n---------\n\nCo-authored-by: Kevin Marchais <kevinmarchais@gmail.com>",
+          "timestamp": "2026-05-07T10:38:11+02:00",
+          "tree_id": "c14ebccdf67e1fd216de0c9ac968142fac2ef228",
+          "url": "https://github.com/kmarchais/mmgpy/commit/a8cd4389e2de3fdbf5a54f6ab25cbe0b88fb3e1a"
+        },
+        "date": 1778143526831,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 41.281304687377876,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00035344622097632344",
+            "extra": "mean: 24.224040581395645 msec\nrounds: 43"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 21.7200763904563,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00023319313183002905",
+            "extra": "mean: 46.04035372727304 msec\nrounds: 22"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 35.21297177020939,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00016375665678474474",
+            "extra": "mean: 28.398625555540647 msec\nrounds: 36"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3413.85244329816,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007363764386352385",
+            "extra": "mean: 292.92420120943746 usec\nrounds: 3474"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 70.51434515348322,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00013659986263670122",
+            "extra": "mean: 14.181511546670057 msec\nrounds: 75"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 8728.391020550103,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006086977676392013",
+            "extra": "mean: 114.56865276150008 usec\nrounds: 16493"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.11244073100084966,
+            "unit": "iter/sec",
+            "range": "stddev: 0.11787744782139829",
+            "extra": "mean: 8.89357434000001 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.09294452319484797,
+            "unit": "iter/sec",
+            "range": "stddev: 0.10014541867862488",
+            "extra": "mean: 10.75910624559997 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.40058238500196475,
+            "unit": "iter/sec",
+            "range": "stddev: 0.005278600659091915",
+            "extra": "mean: 2.4963653856000065 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.276974425605238,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00020184599393068445",
+            "extra": "mean: 189.50252916666463 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.2734659895922364,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003377944503366502",
+            "extra": "mean: 189.6286051666228 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.263971016645965,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00024346984058328154",
+            "extra": "mean: 189.97065083332623 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.266755074593142,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0013016630057930145",
+            "extra": "mean: 189.87023049999152 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 2.0205069967526366,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00971600358127212",
+            "extra": "mean: 494.9252844000057 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 2.0662371810030042,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0019417341913035798",
+            "extra": "mean: 483.97154460001275 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.8195438070714927,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0043707403062812926",
+            "extra": "mean: 354.6673037999881 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 164.22787558122923,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000017588281618015117",
+            "extra": "mean: 6.089100260603367 msec\nrounds: 165"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 13.54108374820221,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002668254437425594",
+            "extra": "mean: 73.8493327856986 msec\nrounds: 14"
           }
         ]
       }
