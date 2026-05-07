@@ -2231,8 +2231,9 @@ show_root_heading: true</p>
 
         <p>Propagate displacement from boundary to interior using linear elasticity.</p>
 <p>Solves a fictitious linear elasticity problem with prescribed displacements
-on boundary nodes and zero displacement on the mesh exterior. This produces
-a physically meaningful smooth displacement field, superior to Laplacian
+on the vertices flagged in <code>boundary_mask</code>; vertices outside the mask are
+free DOFs whose displacement is computed by the elasticity solve. This
+produces a physically meaningful smooth field, superior to Laplacian
 smoothing for large deformations and complex geometries.</p>
 <p>Requires the <code>fedoo</code> package (optional dependency).</p>
 
@@ -2279,7 +2280,9 @@ Only values at boundary vertices (where boundary_mask is True) are used.</p>
 )
           –
           <div class="doc-md-description">
-            <p>Young's modulus for the fictitious elastic material. Default is 1e6.</p>
+            <p>Young's modulus for the fictitious elastic material. With only
+Dirichlet BCs (no body forces, no tractions) the displacement field
+is independent of <code>E</code>; only <code>nu</code> affects the result. Default 1e6.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
