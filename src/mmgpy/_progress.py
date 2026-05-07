@@ -786,29 +786,27 @@ def remesh_mesh_lagrangian(  # pragma: no cover
     progress: ProgressCallback | None = None,
     **options: float | bool | None,
 ) -> None:
-    """Remesh an in-memory mesh with Lagrangian motion and progress callback.
+    """Forward to :func:`mmgpy.move_mesh` (deprecated).
 
-    This is a wrapper around MmgMesh.remesh_lagrangian that adds progress
-    callback support. The callback can return False to request cancellation
-    before the remeshing operation starts.
-
-    Parameters
-    ----------
-    mesh : MmgMesh3D | MmgMesh2D | MmgMeshS
-        The mesh object to remesh.
-    displacement : NDArray[np.float64]
-        Displacement field for Lagrangian motion.
-    progress : ProgressCallback | None, optional
-        Callback function to receive progress events. Return False to cancel.
-    **options
-        Additional options passed to mesh.remesh_lagrangian.
-
-    Raises
-    ------
-    CancellationError
-        If the callback returns False to cancel the operation.
-
+    Routes the prescribed ``displacement`` through the pure-Python Laplacian
+    propagator (or the optional fedoo elasticity solver) and remeshes. The
+    progress callback receives ``init`` / ``options`` / ``remesh`` events
+    bracketing the call. Will be removed in a future release; new code
+    should call :func:`mmgpy.move_mesh` directly.
     """
+    import warnings
+
+    from mmgpy.lagrangian import move_mesh as _move_mesh
+
+    warnings.warn(
+        "remesh_mesh_lagrangian() is deprecated; use mmgpy.move_mesh() "
+        "directly. The shim now routes through the pure-Python Laplacian / "
+        "fedoo elasticity propagator since the ELAS-bound MMG path is no "
+        "longer linked.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if not _emit_event(progress, "init", "start", "Initializing mesh", progress=0.0):
         raise CancellationError.for_phase("init")  # noqa: EM101
 
@@ -832,7 +830,7 @@ def remesh_mesh_lagrangian(  # pragma: no cover
     ):
         raise CancellationError.for_phase("remesh")  # noqa: EM101
 
-    mesh.remesh_lagrangian(displacement, **options)
+    _move_mesh(mesh, displacement, **options)
 
     final_vertices = len(mesh.get_vertices())
 

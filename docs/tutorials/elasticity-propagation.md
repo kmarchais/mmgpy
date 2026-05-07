@@ -97,6 +97,8 @@ moved_ela = mesh.mmg.move(
 
 ## Installing the `fedoo` extra
 
+<!-- pytest-codeblocks:skip -->
+
 ```bash
 uv sync --extra fem
 # or
@@ -106,6 +108,21 @@ pip install "mmgpy[fem]"
 `fedoo` is an optional dependency; mmgpy still imports cleanly without it
 and the Laplacian path keeps working. Only `propagate_displacement_elasticity`
 and `propagation_method="elasticity"` need it.
+
+### conda-forge users
+
+`fedoo` is published on PyPI but not on conda-forge, so the `[fem]` extra
+isn't reachable via `conda install mmgpy`. Install fedoo separately into
+the same environment:
+
+<!-- pytest-codeblocks:skip -->
+
+```bash
+conda install -c conda-forge mmgpy
+pip install fedoo                # PyPI (recommended)
+# or:
+conda install -c set3MAH fedoo   # the upstream maintainers' personal channel
+```
 
 ## See also
 

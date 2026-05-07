@@ -17,19 +17,7 @@ This is useful for:
 - Fluid-structure interaction
 - Morphing between shapes
 
-## Two Code Paths
-
-| Path                              | Volume support | Surface support | ELAS required |
-| --------------------------------- | -------------- | --------------- | ------------- |
-| `dataset.mmg.remesh_lagrangian()` | TET, 2D        | ❌              | ✅            |
-| `dataset.mmg.move()`              | TET, 2D, S     | ✅              | ❌            |
-
-`remesh_lagrangian()` calls into MMG's ELAS path which propagates boundary displacements
-through an elasticity solve. ELAS only models volumetric (2D/3D) elasticity, so surface
-meshes cannot use it.
-
-`dataset.mmg.move()` is a pure-Python alternative that applies the displacement and
-remeshes; it works for every mesh kind and does not require ELAS.
+`dataset.mmg.move()` applies the displacement and remeshes for every mesh kind (TET, 2D, surface) with no external dependency. For interior propagation it ships two solvers: a pure-Python Laplacian smoother (default) and an optional fedoo-backed linear elasticity solver, selectable via `propagation_method`.
 
 ```python
 import numpy as np
@@ -72,11 +60,18 @@ while the elasticity solver captures the bending kinematics:
 See the [Elasticity Propagation tutorial](../tutorials/elasticity-propagation.md)
 for a full walkthrough.
 
-!!! warning "ELAS Library Required"
-`remesh_lagrangian()` requires MMG to be built with ELAS support. The ELAS library solves
-elasticity PDEs to propagate boundary displacements to interior vertices. If MMG was built
-without ELAS, calls to `remesh_lagrangian()` will fail. The pure-Python `dataset.mmg.move(...)`
-has no such dependency.
+!!! info "fedoo on conda-forge"
+`fedoo` is published on PyPI but not on conda-forge. If you installed mmgpy
+from conda-forge, install fedoo separately with
+`pip install fedoo` (or `conda install -c set3MAH fedoo`) inside the same
+environment to enable elasticity propagation.
+
+!!! warning "Deprecated: `remesh_lagrangian`"
+`Mesh.remesh_lagrangian()`, `dataset.mmg.remesh_lagrangian()` and
+`mmgpy.progress.remesh_mesh_lagrangian()` are kept as deprecation shims
+that forward to `mmgpy.move_mesh` / `dataset.mmg.move`. They emit a
+`DeprecationWarning` and will be removed in a future release; new code
+should call the `move`/`move_mesh` API directly.
 
 ## Accessor Method
 
@@ -93,10 +88,6 @@ mesh = pv.read("input.mesh")
 displacement = np.zeros((mesh.n_points, 3))
 displacement[:, 0] = 0.1
 
-# ELAS-bound path
-moved_elas = mesh.mmg.remesh_lagrangian(displacement)
-
-# Pure-Python path (works without ELAS, supports surface meshes)
 moved = mesh.mmg.move(displacement)
 ```
 
@@ -121,7 +112,7 @@ distances = np.linalg.norm(directions, axis=1, keepdims=True)
 directions = directions / (distances + 1e-10)
 displacement = directions * 0.1 * distances
 
-remeshed = mesh.mmg.remesh_lagrangian(displacement)
+remeshed = mesh.mmg.move(displacement)
 print(f"Cells: {mesh.n_cells} -> {remeshed.n_cells}")
 ```
 
@@ -172,7 +163,7 @@ Combine with remeshing parameters:
 <!-- pytest-codeblocks:skip -->
 
 ```python
-remeshed = mesh.mmg.remesh_lagrangian(
+remeshed = mesh.mmg.move(
     displacement,
     hmin=0.01,
     hmax=0.1,
@@ -201,8 +192,7 @@ relative = vertices - center
 scale = np.array([0.7, 0.7, 1.5])  # Compress x,y, stretch z
 displacement = (center + relative * scale) - vertices
 
-# ELAS-bound path
-remeshed = mesh.mmg.remesh_lagrangian(displacement, hmax=0.1, verbose=1)
+remeshed = mesh.mmg.move(displacement, hmax=0.1, verbose=1)
 
 q = remeshed.mmg.element_qualities()
 print(f"Vertices: {mesh.n_points} -> {remeshed.n_points}")

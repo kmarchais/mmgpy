@@ -114,8 +114,6 @@ public:
 
   // In-memory remeshing
   py::dict remesh(const py::dict &options = py::dict());
-  py::dict remesh_lagrangian(const py::array_t<double> &displacement,
-                             const py::dict &options = py::dict());
   py::dict remesh_levelset(const py::array_t<double> &levelset,
                            const py::dict &options = py::dict());
 

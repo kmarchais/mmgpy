@@ -21,6 +21,7 @@ is auto-loaded into ``point_data``/``cell_data`` if present.
 from __future__ import annotations
 
 import logging
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -186,8 +187,8 @@ def _apply_local_sizing_specs(
     Each spec is a dict with a ``"shape"`` key (one of ``"sphere"``, ``"box"``,
     ``"cylinder"``, ``"from_point"``) plus the parameters that the matching
     ``Mesh.set_size_*`` method expects. ``Mesh.remesh`` auto-applies sizing,
-    but the lagrangian/levelset/optimize/uniform variants do not, so we apply
-    explicitly here for uniform behavior across all accessor methods.
+    but the levelset/optimize/uniform variants do not, so we apply explicitly
+    here for uniform behavior across all accessor methods.
     """
     if not specs:
         return
@@ -363,28 +364,26 @@ class MmgAccessor:
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
-        *,
-        local_sizing: list[Mapping[str, Any]] | None = None,
-        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_lagrangian
+        **options: Any,  # noqa: ANN401  -- forwarded to .mmg.move
     ) -> pv.UnstructuredGrid | pv.PolyData:
-        """Lagrangian (moving-mesh) remeshing.
+        """Forward to :meth:`move` (deprecated alias).
 
-        Only available for TETRAHEDRAL and TRIANGULAR_2D datasets.
-
-        Parameters
-        ----------
-        displacement : ndarray
-            Per-vertex displacement field, shape ``(n_points, dim)``.
-        local_sizing : list of dict, optional
-            Sizing constraints; see :meth:`remesh`.
-        **options : object
-            Forwarded to :meth:`mmgpy.Mesh.remesh_lagrangian`.
-
+        Historically this method called MMG's ELAS-bound Lagrangian path; the
+        bundled MMG is built ``USE_ELAS=OFF``, so it never produced anything
+        useful. The accessor now forwards to :meth:`move`, which works on
+        every mesh kind via the pure-Python Laplacian propagator (or the
+        optional fedoo-backed elasticity solver). The shim exists only to
+        avoid breaking callers and will be removed in a future release.
         """
-        mesh = _build_mesh_with_mmg_fields(self._dataset)
-        _apply_local_sizing_specs(mesh, local_sizing)
-        mesh.remesh_lagrangian(displacement, **options)
-        return _to_pyvista_with_user_fields(mesh)
+        warnings.warn(
+            "dataset.mmg.remesh_lagrangian() is deprecated; use "
+            "dataset.mmg.move() instead. The two are now equivalent — both "
+            "go through the pure-Python Laplacian / fedoo elasticity "
+            "propagator since the ELAS-bound MMG path is no longer linked.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.move(displacement, **options)
 
     def remesh_levelset(
         self,
@@ -455,8 +454,7 @@ class MmgAccessor:
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Apply a displacement field and remesh to maintain quality.
 
-        Pure-Python lagrangian motion (no ELAS dependency). Returns a fresh
-        dataset; the input is not modified.
+        Returns a fresh dataset; the input is not modified.
 
         Parameters
         ----------

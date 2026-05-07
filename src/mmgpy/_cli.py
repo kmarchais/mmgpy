@@ -16,6 +16,7 @@ import stat
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 
@@ -280,7 +281,8 @@ def _run_mmg() -> None:  # pragma: no cover
             "  -hgradreq <val> Gradation on required entities\n"
             "  -ar <val>       Angle detection threshold (degrees)\n"
             "  -ls <val>       Level-set mode with isovalue\n"
-            "  -lag <val>      Lagrangian mode (0, 1, or 2)\n"
+            "  -lag <val>      Lagrangian motion (move + remesh; reads "
+            "'displacement' field from -sol)\n"
             "  -v <val>        Verbosity (-1=silent, 0=errors, 1=info)\n"
             "  -m <val>        Maximum memory (MB)\n"
             "  -noinsert       Disable point insertion\n"
@@ -370,11 +372,10 @@ def _run_mmg() -> None:  # pragma: no cover
                     "load one with -sol or set it via the Python API",
                 )
                 sys.exit(1)
-            result = mesh.remesh_lagrangian(
-                mesh["displacement"],
-                progress=False,
-                **parsed.remesh_options,
-            )
+            from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
+
+            _move_mesh(mesh, mesh["displacement"], **parsed.remesh_options)
+            result = SimpleNamespace(success=True)
         else:
             result = mesh.remesh(
                 progress=False,

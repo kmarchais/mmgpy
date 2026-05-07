@@ -133,10 +133,9 @@ DEFAULT_STATE: dict[str, Any] = {
     "use_preset": "default",
     "remesh_mode": "standard",
     "remesh_source": "original",
-    # Levelset/Lagrangian
+    # Levelset
     "levelset_formula": "x**2 + y**2 + z**2 - 0.25",
     "levelset_isovalue": 0.0,
-    "displacement_scale": 0.1,
     "use_solution_as_metric": False,
     "use_solution_as_levelset": False,
     "solution_type": "",
@@ -192,7 +191,6 @@ DEFAULT_SCALAR_FIELD_OPTIONS: list[dict[str, str]] = [
 DEFAULT_REMESH_MODE_ITEMS: list[dict[str, str]] = [
     {"title": "Standard Remesh", "value": "standard"},
     {"title": "Levelset Discretization", "value": "levelset"},
-    {"title": "Lagrangian Motion", "value": "lagrangian"},
 ]
 
 # Preset ratios for adaptive defaults

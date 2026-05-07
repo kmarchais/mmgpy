@@ -1899,102 +1899,78 @@ class Mesh:
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
-        *,
-        progress: ProgressParam = True,
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
-        """Remesh with Lagrangian motion.
+        """Forward to :func:`mmgpy.move_mesh` (deprecated).
 
-        Only available for TETRAHEDRAL and TRIANGULAR_2D meshes.
-
-        Parameters
-        ----------
-        displacement : ndarray
-            Displacement field for each vertex.
-        progress : bool | Callable[[ProgressEvent], bool] | None, default=True
-            Progress reporting option:
-            - True: Show Rich progress bar (default)
-            - False or None: No progress reporting
-            - Callable: Custom callback that receives ProgressEvent and returns
-              True to continue or False to cancel
-        **kwargs : float
-            Additional remeshing parameters.
-
-        Returns
-        -------
-        RemeshResult
-            Statistics from the remeshing operation.
+        Historically this method called MMG's ELAS-bound Lagrangian path; the
+        bundled MMG is built ``USE_ELAS=OFF``, so it never produced anything
+        useful. The shim now applies ``displacement`` and remeshes via the
+        pure-Python Laplacian propagator (or the optional fedoo elasticity
+        solver) and returns a minimal :class:`RemeshResult`. It will be
+        removed in a future release; new code should call
+        :func:`mmgpy.move_mesh` or ``dataset.mmg.move(...)`` directly.
 
         Raises
         ------
         TypeError
             If mesh is TRIANGULAR_SURFACE.
-        CancellationError
-            If the progress callback returns False to cancel the operation.
 
         """
-        from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+        import time  # noqa: PLC0415
+        import warnings  # noqa: PLC0415
 
+        from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
+        from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
+
+        warnings.warn(
+            "Mesh.remesh_lagrangian() is deprecated; use mmgpy.move_mesh() "
+            "directly. The shim now routes through the pure-Python "
+            "Laplacian / fedoo elasticity propagator since the ELAS-bound "
+            "MMG path is no longer linked.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if self._kind == MeshKind.TRIANGULAR_SURFACE:
             msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
             raise TypeError(msg)
 
-        callback, reporter_ctx = _resolve_progress_callback(progress)
-        if reporter_ctx is not None:  # pragma: no cover
-            reporter_ctx.__enter__()
+        if self._kind == MeshKind.TETRAHEDRAL:
 
-        try:
-            if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
-                raise CancellationError.for_phase("init")  # noqa: EM101
+            def get_cells() -> NDArray[np.int32]:
+                return cast("MmgMesh3D", self._impl).get_tetrahedra()
+        else:
 
-            initial_vertices = len(self._impl.get_vertices())
+            def get_cells() -> NDArray[np.int32]:
+                return self._impl.get_triangles()
 
-            if not _emit_event(
-                callback,
-                "options",
-                "start",
-                "Displacement",
-                progress=0.0,
-            ):
-                raise CancellationError.for_phase("options")  # noqa: EM101
+        verts_before = len(self._impl.get_vertices())
+        elements_before = len(get_cells())
 
-            _emit_event(
-                callback,
-                "options",
-                "complete",
-                "Displacement set",
-                progress=1.0,
-            )
+        start = time.perf_counter()
+        _move_mesh(self, displacement, **kwargs)
+        duration = time.perf_counter() - start
 
-            if not _emit_event(
-                callback,
-                "remesh",
-                "start",
-                "Lagrangian remeshing",
-                progress=0.0,
-            ):
-                raise CancellationError.for_phase("remesh")  # noqa: EM101
+        verts_after = len(self._impl.get_vertices())
+        elements_after = len(get_cells())
 
-            impl = cast("MmgMesh3D | MmgMesh2D", self._impl)
-            stats = impl.remesh_lagrangian(displacement, **kwargs)  # type: ignore[arg-type]
-            final_vertices = len(self._impl.get_vertices())
-
-            _emit_event(
-                callback,
-                "remesh",
-                "complete",
-                "Lagrangian complete",
-                progress=1.0,
-                details={
-                    "initial_vertices": initial_vertices,
-                    "final_vertices": final_vertices,
-                    "vertex_change": final_vertices - initial_vertices,
-                },
-            )
-            return _dict_to_remesh_result(stats)
-        finally:
-            if reporter_ctx is not None:  # pragma: no cover
-                reporter_ctx.__exit__(None, None, None)
+        return _RemeshResult(
+            vertices_before=verts_before,
+            vertices_after=verts_after,
+            elements_before=elements_before,
+            elements_after=elements_after,
+            triangles_before=0,
+            triangles_after=0,
+            edges_before=0,
+            edges_after=0,
+            quality_min_before=0.0,
+            quality_min_after=0.0,
+            quality_mean_before=0.0,
+            quality_mean_after=0.0,
+            duration_seconds=duration,
+            warnings=(),
+            return_code=0,
+        )
 
     def remesh_levelset(
         self,

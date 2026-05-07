@@ -287,10 +287,7 @@ optimized = mesh.mmg.remesh_optimize()
 # Uniform target edge size
 uniform = mesh.mmg.remesh_uniform(0.05)
 
-# Lagrangian (moving-mesh) — TET or 2D only, requires ELAS
-moved_elas = mesh.mmg.remesh_lagrangian(displacement)
-
-# Pure-Python lagrangian — no ELAS dependency
+# Lagrangian (moving-mesh) — supports TET, 2D, and surface meshes
 moved = mesh.mmg.move(displacement, hmax=0.1)
 
 # Level-set discretization — extracts the zero isosurface as a boundary

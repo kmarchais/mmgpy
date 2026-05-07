@@ -213,19 +213,6 @@ def _dense_tets() -> pv.UnstructuredGrid:
     return pts.delaunay_3d()
 
 
-def _lagrangian_available() -> bool:
-    """Check whether the bundled MMG was built with lagrangian motion (-lag) support."""
-    grid = _dense_tets()
-    displacement = np.zeros((grid.n_points, 3), dtype=np.float64)
-    try:
-        grid.mmg.remesh_lagrangian(displacement)
-    except RuntimeError as exc:
-        if "lag" in str(exc).lower():
-            return False
-        raise
-    return True
-
-
 def test_accessor_kind_returns_meshkind_enum() -> None:
     """`.mmg.kind` returns the right MeshKind for each input topology."""
     assert _make_tet_mesh().mmg.kind == mmgpy.MeshKind.TETRAHEDRAL
@@ -251,21 +238,6 @@ def test_accessor_remesh_uniform_returns_dense_mesh() -> None:
 
     assert isinstance(fine, pv.PolyData)
     assert fine.n_cells > coarse.n_cells
-
-
-@pytest.mark.skipif(
-    not _lagrangian_available(),
-    reason="MMG built without lagrangian motion (-lag) support",
-)
-def test_accessor_remesh_lagrangian_with_zero_displacement() -> None:
-    """Zero displacement is a no-op-ish lagrangian remesh; just exercise the path."""
-    tets = _dense_tets()
-    displacement = np.zeros((tets.n_points, 3), dtype=np.float64)
-
-    moved = tets.mmg.remesh_lagrangian(displacement)
-
-    assert isinstance(moved, pv.UnstructuredGrid)
-    assert moved.n_cells > 0
 
 
 def test_accessor_remesh_levelset_carves_isosurface() -> None:

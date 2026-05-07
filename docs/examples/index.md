@@ -52,10 +52,6 @@ remeshed = mesh.mmg.remesh(
 
 Remesh while applying mesh displacement.
 
-!!! info "ELAS-bound vs pure-Python"
-`mesh.mmg.remesh_lagrangian(...)` requires MMG to be built with ELAS.
-`mesh.mmg.move(...)` is a pure-Python alternative that works without ELAS.
-
 <!-- pytest-codeblocks:skip -->
 
 ```python
@@ -70,10 +66,6 @@ vertices = np.asarray(mesh.points)
 displacement = np.zeros_like(vertices)
 displacement[:, 0] = 0.1 * np.sin(vertices[:, 1] * np.pi)
 
-# ELAS-bound
-remeshed = mesh.mmg.remesh_lagrangian(displacement)
-
-# Pure-Python alternative
 moved = mesh.mmg.move(displacement, hmax=0.1)
 ```
 

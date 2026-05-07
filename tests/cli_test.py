@@ -158,7 +158,7 @@ class TestParseArgs:
         assert result.ls_value == 0.5
 
     def test_lagrangian_flag(self, test_mesh_3d: Path) -> None:
-        """The -lag flag triggers Lagrangian mode."""
+        """The -lag flag is accepted and stored as an int."""
         result = _parse_args([str(test_mesh_3d), "-lag", "1"])
         assert result.lag_value == 1
 
