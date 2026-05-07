@@ -2510,6 +2510,34 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.remesh_lagrangian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;remesh_lagrangian
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="remesh_lagrangian">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.remesh_lagrangian--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mmgpy.Mesh.remesh_levelset" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5257,6 +5285,34 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.remesh_lagrangian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;remesh_lagrangian
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="remesh_lagrangian">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.Mesh.remesh_lagrangian--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mmgpy.Mesh.remesh_levelset" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7399,6 +7455,36 @@ mesh.remesh(hmax=0.1, progress=my_callback)</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="mmgpy.Mesh.remesh_lagrangian" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remesh_lagrangian</span>
+
+
+<a href="#mmgpy.Mesh.remesh_lagrangian" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remesh_lagrangian</span><span class="p">(</span><span class="n">displacement</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemeshResult</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Forward to :func:<code>mmgpy.move_mesh</code> (deprecated).</p>
+<p>Historically this method called MMG's ELAS-bound Lagrangian path; the
+bundled MMG is built <code>USE_ELAS=OFF</code>, so it never produced anything
+useful. The shim now applies <code>displacement</code> and remeshes via the
+pure-Python Laplacian propagator (or the optional fedoo elasticity
+solver) and returns a minimal :class:<code>RemeshResult</code>. It will be
+removed in a future release; new code should call
+:func:<code>mmgpy.move_mesh</code> or <code>dataset.mmg.move(...)</code> directly.</p>
+<h5 id="mmgpy.Mesh.remesh_lagrangian--raises">Raises<a class="headerlink" href="#mmgpy.Mesh.remesh_lagrangian--raises" title="Permanent link">&para;</a></h5>
+<p>TypeError
+    If mesh is TRIANGULAR_SURFACE.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="mmgpy.Mesh.remesh_levelset" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remesh_levelset</span>
 
@@ -8066,7 +8152,7 @@ with original.copy() as working:
     </div>
 
 </div><p>options:
-members: - <strong>init</strong> - kind - save - get_vertices - get_triangles - get_tetrahedra - get_edges - remesh - remesh_optimize - remesh_uniform - remesh_levelset - validate - to_pyvista - set_size_sphere - set_size_box - set_size_cylinder - set_size_from_point - clear_local_sizing - get_local_sizing_count</p>
+members: - <strong>init</strong> - kind - save - get_vertices - get_triangles - get_tetrahedra - get_edges - remesh - remesh_optimize - remesh_uniform - remesh_levelset - remesh_lagrangian - validate - to_pyvista - set_size_sphere - set_size_box - set_size_cylinder - set_size_from_point - clear_local_sizing - get_local_sizing_count</p>
 <h2 id="mesh-kind-enumeration">Mesh Kind Enumeration<a class="headerlink" href="#mesh-kind-enumeration" title="Permanent link">&para;</a></h2>
 
 

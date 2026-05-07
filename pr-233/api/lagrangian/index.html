@@ -2348,6 +2348,14 @@ for a full walkthrough.</p>
 from conda-forge, install fedoo separately with
 <code>pip install fedoo</code> (or <code>conda install -c set3MAH fedoo</code>) inside the same
 environment to enable elasticity propagation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Deprecated: <code>remesh_lagrangian</code></p>
+</div>
+<p><code>Mesh.remesh_lagrangian()</code>, <code>dataset.mmg.remesh_lagrangian()</code> and
+<code>mmgpy.progress.remesh_mesh_lagrangian()</code> are kept as deprecation shims
+that forward to <code>mmgpy.move_mesh</code> / <code>dataset.mmg.move</code>. They emit a
+<code>DeprecationWarning</code> and will be removed in a future release; new code
+should call the <code>move</code>/<code>move_mesh</code> API directly.</p>
 <h2 id="accessor-method">Accessor Method<a class="headerlink" href="#accessor-method" title="Permanent link">&para;</a></h2>
 <!-- pytest-codeblocks:skip -->
 
