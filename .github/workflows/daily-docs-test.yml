@@ -50,15 +50,6 @@ jobs:
           uv venv
           uv pip install mmgpy pytest pytest-codeblocks
 
-      - name: Patch conftest to avoid VTK at module level
-        run: |
-          # The released conftest.py creates VTK objects at module level
-          # which segfaults under pytest with PyPI VTK wheels.
-          # Use the fixed conftest from main (can be removed once a release
-          # includes the fixed conftest).
-          git fetch origin main
-          git show origin/main:docs/conftest.py > docs/conftest.py
-
       - name: Test documentation code blocks
         env:
           PYVISTA_OFF_SCREEN: "true"
