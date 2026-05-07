@@ -1,13 +1,18 @@
-"""Pure Python Lagrangian motion implementation using Laplacian smoothing.
+"""Lagrangian motion implementation for mesh movement.
 
-This module provides a Python-only implementation of mesh motion that works
-without the ELAS library. It uses Laplacian smoothing to propagate boundary
-displacements smoothly into the mesh interior, then remeshes to maintain
-mesh quality.
+This module provides mesh motion capabilities with two propagation methods:
+
+- **Laplacian smoothing** (default): Solves the Laplace equation to propagate
+  boundary displacements. No external dependencies required.
+- **Elasticity** (via fedoo): Solves a linear elasticity problem for physically
+  meaningful displacement propagation. Requires ``fedoo`` (optional dependency).
 
 Key functions:
 - propagate_displacement: Propagate boundary displacement to interior nodes
-- move_mesh: Apply displacement and remesh
+  using Laplacian smoothing.
+- propagate_displacement_elasticity: Propagate boundary displacement using
+  a finite element elasticity solve (requires fedoo).
+- move_mesh: Apply displacement and remesh, with configurable propagation method.
 """
 
 from __future__ import annotations
@@ -17,6 +22,8 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
+
+from mmgpy._topology import vertex_adjacency
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -28,35 +35,136 @@ if TYPE_CHECKING:
 MeshType = "MmgMesh2D | MmgMesh3D | MmgMeshS"
 
 
-def _build_adjacency_from_elements(
-    n_vertices: int,
+def _check_fedoo_available() -> None:
+    """Check that fedoo is installed and importable."""
+    try:
+        import fedoo  # noqa: F401, PLC0415
+    except ImportError:
+        msg = (
+            "fedoo is required for elasticity-based displacement propagation. "
+            "Install it with: pip install fedoo"
+        )
+        raise ImportError(msg) from None
+
+
+def propagate_displacement_elasticity(
+    vertices: NDArray[np.float64],
     elements: NDArray[np.int32],
-) -> list[list[int]]:
-    """Build adjacency list from element connectivity.
+    boundary_mask: NDArray[np.bool_],
+    boundary_displacement: NDArray[np.float64],
+    E: float = 1e6,
+    nu: float = 0.3,
+) -> NDArray[np.float64]:
+    """Propagate displacement from boundary to interior using linear elasticity.
+
+    Solves a fictitious linear elasticity problem with prescribed displacements
+    on the vertices flagged in ``boundary_mask``; vertices outside the mask are
+    free DOFs whose displacement is computed by the elasticity solve. This
+    produces a physically meaningful smooth field, superior to Laplacian
+    smoothing for large deformations and complex geometries.
+
+    Requires the ``fedoo`` package (optional dependency).
 
     Args:
-        n_vertices: Number of vertices in the mesh.
-        elements: Element connectivity array (M x nodes_per_element).
+        vertices: Nx2 or Nx3 array of vertex coordinates.
+        elements: Mx(nodes_per_element) array of element connectivity.
+        boundary_mask: N boolean array, True for vertices with prescribed displacement.
+        boundary_displacement: Nxdim array of displacement vectors.
+            Only values at boundary vertices (where boundary_mask is True) are used.
+        E: Young's modulus for the fictitious elastic material. With only
+            Dirichlet BCs (no body forces, no tractions) the displacement field
+            is independent of ``E``; only ``nu`` affects the result. Default 1e6.
+        nu: Poisson's ratio. Default is 0.3.
 
     Returns:
-        List of neighbor indices for each vertex.
+        Nxdim array of displacement for all vertices.
+
+    Raises:
+        ImportError: If fedoo is not installed.
+        ValueError: If array dimensions don't match.
 
     """
-    adjacency: list[set[int]] = [set() for _ in range(n_vertices)]
-    nodes_per_elem = elements.shape[1]
+    _check_fedoo_available()
+    import fedoo as fd  # noqa: PLC0415
 
-    for elem in elements:
-        for i in range(nodes_per_elem):
-            for j in range(i + 1, nodes_per_elem):
-                v_i, v_j = elem[i], elem[j]
-                adjacency[v_i].add(v_j)
-                adjacency[v_j].add(v_i)
+    n_vertices = len(vertices)
+    n_dims = vertices.shape[1]
 
-    return [list(neighbors) for neighbors in adjacency]
+    if len(boundary_mask) != n_vertices:
+        msg = f"boundary_mask length {len(boundary_mask)} != n_vertices {n_vertices}"
+        raise ValueError(msg)
+
+    if boundary_displacement.shape[0] != n_vertices:
+        msg = (
+            f"boundary_displacement rows {boundary_displacement.shape[0]} "
+            f"!= n_vertices {n_vertices}"
+        )
+        raise ValueError(msg)
+
+    if boundary_displacement.shape[1] != n_dims:
+        msg = (
+            f"boundary_displacement columns {boundary_displacement.shape[1]} "
+            f"!= n_dims {n_dims}"
+        )
+        raise ValueError(msg)
+
+    n_boundary = int(np.sum(boundary_mask))
+    if n_boundary == 0:
+        return np.zeros_like(vertices)
+    if n_boundary == n_vertices:
+        return boundary_displacement.copy()
+
+    # Determine element type
+    n_nodes_per_elm = elements.shape[1]
+    elm_type_map_2d = {3: "tri3", 6: "tri6", 4: "quad4"}
+    elm_type_map_3d = {4: "tet4", 10: "tet10", 8: "hex8"}
+
+    if n_dims == 2:
+        if n_nodes_per_elm not in elm_type_map_2d:
+            msg = f"Unsupported 2D element with {n_nodes_per_elm} nodes"
+            raise ValueError(msg)
+        elm_type = elm_type_map_2d[n_nodes_per_elm]
+        # "2Dplane" enables plane-strain elasticity, which is the standard
+        # assumption for fictitious-mesh deformation in 2D.
+        fd.ModelingSpace("2Dplane")
+    else:
+        if n_nodes_per_elm not in elm_type_map_3d:
+            msg = f"Unsupported 3D element with {n_nodes_per_elm} nodes"
+            raise ValueError(msg)
+        elm_type = elm_type_map_3d[n_nodes_per_elm]
+        fd.ModelingSpace("3D")
+
+    # Build fedoo mesh and solve
+    mesh = fd.Mesh(vertices, elements, elm_type)
+    material = fd.constitutivelaw.ElasticIsotrop(E, nu)
+    wf = fd.weakform.StressEquilibrium(material)
+    assembly = fd.Assembly.create(wf, mesh)
+    pb = fd.problem.Linear(assembly)
+
+    # Prescribed displacement on every vertex flagged in boundary_mask. Vertices
+    # outside the mask remain free; the elasticity solve then propagates the
+    # prescribed values into the interior. The caller is responsible for making
+    # the mask cover enough non-collinear nodes to remove rigid body modes,
+    # otherwise the linear system is singular.
+    moving_indices = np.where(boundary_mask)[0]
+    disp_components = ["DispX", "DispY"] if n_dims == 2 else ["DispX", "DispY", "DispZ"]
+    for i, comp in enumerate(disp_components):
+        pb.bc.add(
+            "Dirichlet",
+            moving_indices,
+            comp,
+            boundary_displacement[moving_indices, i],
+        )
+
+    pb.solve()
+
+    # Extract displacement
+    columns = [pb.get_disp(comp) for comp in disp_components]
+    return np.column_stack(columns)
 
 
 def _build_laplacian_system(
-    adjacency: list[list[int]],
+    adjacency: sparse.csr_matrix,
     boundary_mask: NDArray[np.bool_],
 ) -> tuple[sparse.csr_matrix, sparse.csr_matrix, NDArray[np.intp], NDArray[np.intp]]:
     """Build sparse Laplacian matrices for interior-interior and interior-boundary.
@@ -68,7 +176,7 @@ def _build_laplacian_system(
     - u_B: Known boundary displacements
 
     Args:
-        adjacency: Adjacency list for each vertex.
+        adjacency: Symmetric vertex-vertex CSR adjacency matrix.
         boundary_mask: Boolean array, True for boundary vertices.
 
     Returns:
@@ -83,7 +191,6 @@ def _build_laplacian_system(
     n_boundary = len(boundary_indices)
 
     if n_interior == 0:
-        # All vertices are boundary - return empty matrices
         return (
             sparse.csr_matrix((0, 0)),
             sparse.csr_matrix((0, n_boundary)),
@@ -91,52 +198,16 @@ def _build_laplacian_system(
             boundary_indices,
         )
 
-    # Create mappings from global to local indices
-    interior_map = {idx: i for i, idx in enumerate(interior_indices)}
-    boundary_map = {idx: i for i, idx in enumerate(boundary_indices)}
+    # Reorder rows/columns into [interior | boundary] blocks and read the
+    # graph Laplacian directly: degree on the diagonal, -1 on edges. The
+    # adjacency is symmetric with unit weights, so D - A is the Laplacian.
+    perm = np.concatenate([interior_indices, boundary_indices])
+    a_perm = adjacency[perm][:, perm]
+    degrees = np.asarray(a_perm.sum(axis=1)).ravel()
+    laplacian = sparse.diags(degrees) - a_perm
 
-    # Build sparse matrix data
-    rows_ii: list[int] = []
-    cols_ii: list[int] = []
-    vals_ii: list[float] = []
-
-    rows_ib: list[int] = []
-    cols_ib: list[int] = []
-    vals_ib: list[float] = []
-
-    for idx in interior_indices:
-        local_i = interior_map[idx]
-        neighbors = adjacency[idx]
-        degree = len(neighbors)
-
-        # Diagonal entry (degree of vertex)
-        rows_ii.append(local_i)
-        cols_ii.append(local_i)
-        vals_ii.append(float(degree))
-
-        # Off-diagonal entries
-        for neighbor in neighbors:
-            if interior_mask[neighbor]:
-                # Neighbor is interior
-                local_j = interior_map[neighbor]
-                rows_ii.append(local_i)
-                cols_ii.append(local_j)
-                vals_ii.append(-1.0)
-            else:
-                # Neighbor is boundary
-                local_j = boundary_map[neighbor]
-                rows_ib.append(local_i)
-                cols_ib.append(local_j)
-                vals_ib.append(-1.0)
-
-    l_ii = sparse.csr_matrix(
-        (vals_ii, (rows_ii, cols_ii)),
-        shape=(n_interior, n_interior),
-    )
-    l_ib = sparse.csr_matrix(
-        (vals_ib, (rows_ib, cols_ib)),
-        shape=(n_interior, n_boundary),
-    )
+    l_ii = laplacian[:n_interior, :n_interior].tocsr()
+    l_ib = laplacian[:n_interior, n_interior:].tocsr()
 
     return l_ii, l_ib, interior_indices, boundary_indices
 
@@ -201,7 +272,7 @@ def propagate_displacement(
         return boundary_displacement.copy()
 
     # Build adjacency and Laplacian system
-    adjacency = _build_adjacency_from_elements(n_vertices, elements)
+    adjacency = vertex_adjacency(n_vertices, elements)
     l_ii, l_ib, interior_indices, boundary_indices = _build_laplacian_system(
         adjacency,
         boundary_mask,
@@ -275,6 +346,7 @@ def move_mesh(
     *,
     boundary_mask: NDArray[np.bool_] | None = None,
     propagate: bool = True,
+    propagation_method: str = "laplacian",
     n_steps: int = 1,
     **remesh_options: float | bool | None,
 ) -> None:
@@ -293,17 +365,36 @@ def move_mesh(
             prescribed displacement. If None, all vertices are treated as
             having prescribed displacement (no propagation needed).
         propagate: If True and boundary_mask is provided, propagate boundary
-            displacement to interior using Laplacian smoothing.
+            displacement to interior using the chosen propagation_method.
+        propagation_method: Method for propagating boundary displacements to
+            the interior. Options:
+
+            - ``"laplacian"`` (default): Solves the Laplace equation. Fast,
+              no extra dependencies.
+            - ``"elasticity"``: Solves a linear elasticity problem using
+              `fedoo <https://github.com/3MAH/fedoo>`_. Produces physically
+              meaningful displacements, better for large deformations and
+              complex geometries. Requires ``pip install fedoo``.
         n_steps: Number of incremental steps to apply the displacement.
             Use more steps for large displacements to avoid mesh inversion.
         **remesh_options: Options passed to mesh.remesh() (hmax, hmin, etc.).
 
     Raises:
-        ValueError: If displacement dimensions don't match mesh.
+        ValueError: If displacement dimensions don't match mesh or
+            propagation_method is not recognized.
+        ImportError: If propagation_method="elasticity" and fedoo is not installed.
         RuntimeError: If remeshing fails.
 
     """
     from ._mesh import Mesh  # noqa: PLC0415
+
+    valid_methods = ("laplacian", "elasticity")
+    if propagation_method not in valid_methods:
+        msg = (
+            f"propagation_method must be one of {valid_methods}, "
+            f"got {propagation_method!r}"
+        )
+        raise ValueError(msg)
 
     # Unwrap Mesh to its underlying C++ impl; move_mesh mutates the impl
     # in-place, which the Mesh wrapper references, so changes are visible
@@ -322,12 +413,20 @@ def move_mesh(
 
     # Propagate displacement if needed
     if boundary_mask is not None and propagate:
-        full_displacement = propagate_displacement(
-            vertices,
-            elements,
-            boundary_mask,
-            displacement,
-        )
+        if propagation_method == "elasticity":
+            full_displacement = propagate_displacement_elasticity(
+                vertices,
+                elements,
+                boundary_mask,
+                displacement,
+            )
+        else:
+            full_displacement = propagate_displacement(
+                vertices,
+                elements,
+                boundary_mask,
+                displacement,
+            )
     else:
         full_displacement = displacement.copy()
 
@@ -405,4 +504,5 @@ __all__ = [
     "detect_boundary_vertices",
     "move_mesh",
     "propagate_displacement",
+    "propagate_displacement_elasticity",
 ]

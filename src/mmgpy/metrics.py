@@ -43,6 +43,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from mmgpy._topology import two_ring_patches, vertex_adjacency
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -594,3 +596,113 @@ def create_metric_from_hessian(
         M[i] = eigvecs @ np.diag(metric_eigvals) @ eigvecs.T
 
     return matrix_to_tensor(M if not single else M[0])
+
+
+def compute_hessian(
+    vertices: NDArray[np.float64],
+    elements: NDArray[np.int32],
+    field: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """Compute the Hessian of a scalar field on a mesh via least-squares recovery.
+
+    Uses a patch-based least-squares approach: for each vertex, a quadratic
+    polynomial is fitted to the field values at neighboring vertices, and the
+    second-order coefficients give the Hessian components.
+
+    This is the missing piece for solution-adaptive remeshing: compute a
+    solution field with your FE solver, pass it here to get the Hessian,
+    then use :func:`create_metric_from_hessian` to build an adaptation metric.
+
+    Args:
+        vertices: Nx2 or Nx3 array of vertex coordinates.
+        elements: Mx(nodes_per_element) array of element connectivity.
+        field: N array of scalar field values at vertices.
+
+    Returns:
+        Hessian tensor array. Shape (N, 3) for 2D [H11, H12, H22]
+        or (N, 6) for 3D [H11, H12, H13, H22, H23, H33].
+
+    """
+    n_vertices = len(vertices)
+    n_dims = vertices.shape[1]
+    field = np.asarray(field, dtype=np.float64).ravel()
+
+    if len(field) != n_vertices:
+        msg = f"field length {len(field)} != n_vertices {n_vertices}"
+        raise ValueError(msg)
+
+    # Quadratic fit has 5 monomials in 2D and 9 in 3D. The 1-ring around a
+    # boundary vertex on a structured grid often spans only 2 distinct values
+    # along an axis, which makes the linear and quadratic columns colinear and
+    # the LSQ rank-deficient. Always use the 2-ring; it is well-conditioned
+    # everywhere and only modestly larger than the 1-ring.
+    adj = vertex_adjacency(n_vertices, elements)
+    patches = two_ring_patches(adj)
+
+    if n_dims == 2:
+        hessian = np.zeros((n_vertices, 3), dtype=np.float64)
+        n_basis = 5
+    else:
+        hessian = np.zeros((n_vertices, 6), dtype=np.float64)
+        n_basis = 9
+
+    for i in range(n_vertices):
+        patch = patches[i]
+
+        # Underdetermined patch: lstsq returns a least-norm solution rather
+        # than failing, which silently corrupts the recovered Hessian. Skip.
+        if len(patch) < n_basis + 1:
+            continue
+
+        coords = vertices[patch] - vertices[i]  # center at vertex i
+        vals = field[patch] - field[i]
+
+        # Rescale coords by patch size so linear and quadratic monomial columns
+        # share comparable magnitudes; otherwise the LSQ is ill-conditioned and
+        # the small singular values that carry the second-derivative signal get
+        # truncated by lstsq's default rcond.
+        scale = float(np.linalg.norm(coords, axis=1).max())
+        if scale == 0.0:
+            continue
+        coords_n = coords / scale
+        scale2 = scale * scale
+
+        if n_dims == 2:
+            # Monomial basis: x, y, x^2/2, xy, y^2/2
+            x, y = coords_n[:, 0], coords_n[:, 1]
+            A = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])
+            coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
+            # H11 = d2f/dx2, H12 = d2f/dxdy, H22 = d2f/dy2
+            hessian[i] = [
+                coeffs[2] / scale2,
+                coeffs[3] / scale2,
+                coeffs[4] / scale2,
+            ]
+        else:
+            # Monomial basis: x, y, z, x^2/2, xy, xz, y^2/2, yz, z^2/2
+            x, y, z = coords_n[:, 0], coords_n[:, 1], coords_n[:, 2]
+            A = np.column_stack(
+                [
+                    x,
+                    y,
+                    z,
+                    0.5 * x * x,
+                    x * y,
+                    x * z,
+                    0.5 * y * y,
+                    y * z,
+                    0.5 * z * z,
+                ],
+            )
+            coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
+            # Returned ordering: H11, H12, H13, H22, H23, H33
+            hessian[i] = [
+                coeffs[3] / scale2,
+                coeffs[4] / scale2,
+                coeffs[5] / scale2,
+                coeffs[6] / scale2,
+                coeffs[7] / scale2,
+                coeffs[8] / scale2,
+            ]
+
+    return hessian

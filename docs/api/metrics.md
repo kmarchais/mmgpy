@@ -23,6 +23,22 @@ show_root_heading: true
 options:
 show_root_heading: true
 
+## Hessian Recovery
+
+::: mmgpy.metrics.compute_hessian
+options:
+show_root_heading: true
+
+Pairing `compute_hessian` with `create_metric_from_hessian` enables
+solution-adaptive remeshing: the same vertex budget concentrates
+elements where the field has high curvature.
+
+![2D uniform vs Hessian-adapted mesh](../assets/hessian_adaptation_2d.png)
+![3D uniform vs Hessian-adapted mesh](../assets/hessian_adaptation_3d.png)
+
+For an end-to-end walk-through of the solve → recover → adapt loop, see
+the [Hessian-Based Adaptation tutorial](../tutorials/hessian-adaptation.md).
+
 ## Metric Operations
 
 ::: mmgpy.metrics.intersect_metrics

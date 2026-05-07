@@ -449,6 +449,7 @@ class MmgAccessor:
         *,
         boundary_mask: NDArray[np.bool_] | None = None,
         propagate: bool = True,
+        propagation_method: str = "laplacian",
         n_steps: int = 1,
         **remesh_options: Any,  # noqa: ANN401  -- forwarded to mesh.remesh
     ) -> pv.UnstructuredGrid | pv.PolyData:
@@ -468,7 +469,13 @@ class MmgAccessor:
             every vertex as prescribed.
         propagate : bool, default True
             With ``boundary_mask``, propagate boundary values into the
-            interior via Laplacian smoothing.
+            interior using ``propagation_method``.
+        propagation_method : {"laplacian", "elasticity"}, default "laplacian"
+            How to propagate boundary displacements into the interior.
+            ``"elasticity"`` solves a linear elasticity problem via the
+            optional ``fedoo`` package (``pip install fedoo``); it produces
+            physically meaningful displacements better suited to large
+            deformations and complex geometries.
         n_steps : int, default 1
             Number of incremental sub-steps. Use more steps for large
             displacements to avoid mesh inversion.
@@ -490,6 +497,7 @@ class MmgAccessor:
             displacement,
             boundary_mask=boundary_mask,
             propagate=propagate,
+            propagation_method=propagation_method,
             n_steps=n_steps,
             **remesh_options,
         )

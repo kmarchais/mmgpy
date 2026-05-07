@@ -99,6 +99,8 @@ nav:
       - Basic Remeshing: tutorials/basic-remeshing.md
       - Surface Remeshing: tutorials/surface-remeshing.md
       - Adaptive Sizing: tutorials/adaptive-sizing.md
+      - Hessian-Based Adaptation: tutorials/hessian-adaptation.md
+      - Elasticity Propagation: tutorials/elasticity-propagation.md
       - PyVista Integration: tutorials/pyvista-integration.md
       - Level-Set Extraction: tutorials/levelset-extraction.md
   - Examples:

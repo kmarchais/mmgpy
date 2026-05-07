@@ -64,23 +64,24 @@ uv tool install "mmgpy[ui]"  # install CLI tools + UI globally
 
 ### PyPI vs conda-forge
 
-|                       | PyPI (pip/uv)                 | conda-forge (Linux/macOS)                           |
-| --------------------- | ----------------------------- | --------------------------------------------------- |
-| **Install speed**     | Fast (pre-built wheels)       | Slower (solver + download)                          |
-| **Dependencies**      | Bundled (self-contained)      | Shared across packages                              |
-| **Disk usage**        | Larger (duplicate VTK/libs)   | Smaller in conda environments                       |
-| **Lagrangian motion** | No (ELAS library not bundled) | Yes (includes iscd-linearelasticity on Linux/macOS) |
-| **Best for**          | Quick setup, isolated use, CI | Scientific stacks sharing VTK/NumPy                 |
+|                   | PyPI (pip/uv)                 | conda-forge (Linux/macOS)           |
+| ----------------- | ----------------------------- | ----------------------------------- |
+| **Install speed** | Fast (pre-built wheels)       | Slower (solver + download)          |
+| **Dependencies**  | Bundled (self-contained)      | Shared across packages              |
+| **Disk usage**    | Larger (duplicate VTK/libs)   | Smaller in conda environments       |
+| **Best for**      | Quick setup, isolated use, CI | Scientific stacks sharing VTK/NumPy |
 
-Use **PyPI** (`uv pip install`) for the fastest setup. Use **conda-forge** when you already have a conda environment with VTK, PyVista, or other scientific packages — it also includes the [ELAS](https://github.com/ISCDtoolbox/LinearElasticity) library (via iscd-linearelasticity) for Lagrangian motion on Linux and macOS.
+Use **PyPI** (`uv pip install`) for the fastest setup. Use **conda-forge** when you already have a conda environment with VTK, PyVista, or other scientific packages.
+
+Lagrangian motion (boundary-driven mesh displacement) is available on every channel via `mmgpy.move_mesh`, with a built-in Laplacian propagator and an optional elasticity propagator backed by [`fedoo`](https://github.com/3MAH/fedoo) (`uv pip install "mmgpy[fem]"`).
 
 ## Features
 
 - **Multi-dimensional** — 2D triangular, 3D tetrahedral, and surface meshes
 - **Local refinement** — Control mesh density with spheres, boxes, cylinders
-- **Anisotropic adaptation** — Metric tensors for directional refinement
+- **Anisotropic adaptation** — Metric tensors for directional refinement, including least-squares Hessian recovery from a scalar field
 - **Level-set discretization** — Extract isosurfaces from implicit functions
-- **Lagrangian motion** — Remesh while tracking displacement fields
+- **Lagrangian motion** — Move boundaries and remesh, with Laplacian or (optional) elasticity-based propagation
 - **PyVista integration** — Visualize and convert meshes seamlessly
 - **40+ file formats** — VTK, STL, OBJ, GMSH, and more
 

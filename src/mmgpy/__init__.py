@@ -39,7 +39,12 @@ from ._validation import (
     ValidationIssue,
     ValidationReport,
 )
-from .lagrangian import detect_boundary_vertices, move_mesh, propagate_displacement
+from .lagrangian import (
+    detect_boundary_vertices,
+    move_mesh,
+    propagate_displacement,
+    propagate_displacement_elasticity,
+)
 from .sizing import (
     BoxSize,
     CylinderSize,
@@ -87,6 +92,7 @@ __all__ = [
     "polydata_from_2d_triangles",
     "progress",
     "propagate_displacement",
+    "propagate_displacement_elasticity",
     "read",
     "repair",
     "rich_progress",
