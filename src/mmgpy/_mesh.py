@@ -1935,10 +1935,14 @@ class Mesh:
             msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
             raise TypeError(msg)
 
-        is_3d = self._kind == MeshKind.TETRAHEDRAL
-        get_cells = (
-            self._impl.get_tetrahedra if is_3d else self._impl.get_triangles  # type: ignore[union-attr]
-        )
+        if self._kind == MeshKind.TETRAHEDRAL:
+
+            def get_cells() -> NDArray[np.int32]:
+                return cast("MmgMesh3D", self._impl).get_tetrahedra()
+        else:
+
+            def get_cells() -> NDArray[np.int32]:
+                return self._impl.get_triangles()
 
         verts_before = len(self._impl.get_vertices())
         elements_before = len(get_cells())
