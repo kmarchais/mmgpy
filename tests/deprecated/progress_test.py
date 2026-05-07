@@ -376,6 +376,7 @@ def test_progress_module_exports() -> None:
     assert hasattr(progress, "remesh_2d")
     assert hasattr(progress, "remesh_surface")
     assert hasattr(progress, "remesh_mesh")
+    assert hasattr(progress, "remesh_mesh_lagrangian")
 
 
 def test_cancellation_error_import() -> None:

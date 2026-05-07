@@ -49,6 +49,7 @@ from ._progress import (
     remesh_2d,
     remesh_3d,
     remesh_mesh,
+    remesh_mesh_lagrangian,
     remesh_surface,
     rich_progress,
 )
@@ -62,6 +63,7 @@ __all__ = [
     "remesh_2d",
     "remesh_3d",
     "remesh_mesh",
+    "remesh_mesh_lagrangian",
     "remesh_surface",
     "rich_progress",
 ]

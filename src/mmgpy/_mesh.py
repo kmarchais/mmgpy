@@ -1896,6 +1896,78 @@ class Mesh:
             if reporter_ctx is not None:  # pragma: no cover
                 reporter_ctx.__exit__(None, None, None)
 
+    def remesh_lagrangian(
+        self,
+        displacement: NDArray[np.float64],
+        **kwargs: Any,  # noqa: ANN401
+    ) -> RemeshResult:
+        """Forward to :func:`mmgpy.move_mesh` (deprecated).
+
+        Historically this method called MMG's ELAS-bound Lagrangian path; the
+        bundled MMG is built ``USE_ELAS=OFF``, so it never produced anything
+        useful. The shim now applies ``displacement`` and remeshes via the
+        pure-Python Laplacian propagator (or the optional fedoo elasticity
+        solver) and returns a minimal :class:`RemeshResult`. It will be
+        removed in a future release; new code should call
+        :func:`mmgpy.move_mesh` or ``dataset.mmg.move(...)`` directly.
+
+        Raises
+        ------
+        TypeError
+            If mesh is TRIANGULAR_SURFACE.
+
+        """
+        import time  # noqa: PLC0415
+        import warnings  # noqa: PLC0415
+
+        from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
+        from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
+
+        warnings.warn(
+            "Mesh.remesh_lagrangian() is deprecated; use mmgpy.move_mesh() "
+            "directly. The shim now routes through the pure-Python "
+            "Laplacian / fedoo elasticity propagator since the ELAS-bound "
+            "MMG path is no longer linked.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if self._kind == MeshKind.TRIANGULAR_SURFACE:
+            msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
+            raise TypeError(msg)
+
+        is_3d = self._kind == MeshKind.TETRAHEDRAL
+        get_cells = (
+            self._impl.get_tetrahedra if is_3d else self._impl.get_triangles  # type: ignore[union-attr]
+        )
+
+        verts_before = len(self._impl.get_vertices())
+        elements_before = len(get_cells())
+
+        start = time.perf_counter()
+        _move_mesh(self, displacement, **kwargs)
+        duration = time.perf_counter() - start
+
+        verts_after = len(self._impl.get_vertices())
+        elements_after = len(get_cells())
+
+        return _RemeshResult(
+            vertices_before=verts_before,
+            vertices_after=verts_after,
+            elements_before=elements_before,
+            elements_after=elements_after,
+            triangles_before=0,
+            triangles_after=0,
+            edges_before=0,
+            edges_after=0,
+            quality_min_before=0.0,
+            quality_min_after=0.0,
+            quality_mean_before=0.0,
+            quality_mean_after=0.0,
+            duration_seconds=duration,
+            warnings=(),
+            return_code=0,
+        )
+
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],

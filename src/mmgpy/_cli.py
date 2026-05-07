@@ -16,6 +16,7 @@ import stat
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 
@@ -132,6 +133,7 @@ _FLAGS_WITH_VALUE = {
     "-sol",
     "-met",
     "-ls",
+    "-lag",
     "-ar",
     "-nr",  # consumed but intentionally unhandled (MMG no-ridge flag)
     "-hmin",
@@ -180,6 +182,7 @@ class _ParsedArgs:
     sol_file: str | None = None
     met_file: str | None = None
     ls_value: float | None = None
+    lag_value: int | None = None
     remesh_options: dict[str, Any] = field(default_factory=dict)
 
 
@@ -208,6 +211,8 @@ def _parse_args(args: list[str]) -> _ParsedArgs:
                 parsed.met_file = value
             elif arg == "-ls":
                 parsed.ls_value = float(value)
+            elif arg == "-lag":
+                parsed.lag_value = int(value)
             elif arg == "-v":
                 parsed.remesh_options["verbose"] = int(value)
             elif arg == "-m":
@@ -276,6 +281,8 @@ def _run_mmg() -> None:  # pragma: no cover
             "  -hgradreq <val> Gradation on required entities\n"
             "  -ar <val>       Angle detection threshold (degrees)\n"
             "  -ls <val>       Level-set mode with isovalue\n"
+            "  -lag <val>      Lagrangian motion (move + remesh; reads "
+            "'displacement' field from -sol)\n"
             "  -v <val>        Verbosity (-1=silent, 0=errors, 1=info)\n"
             "  -m <val>        Maximum memory (MB)\n"
             "  -noinsert       Disable point insertion\n"
@@ -358,6 +365,17 @@ def _run_mmg() -> None:  # pragma: no cover
                 progress=False,
                 **parsed.remesh_options,
             )
+        elif parsed.lag_value is not None:
+            if "displacement" not in mesh:
+                _get_cli_logger().error(
+                    "-lag requires a 'displacement' field in the mesh; "
+                    "load one with -sol or set it via the Python API",
+                )
+                sys.exit(1)
+            from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
+
+            _move_mesh(mesh, mesh["displacement"], **parsed.remesh_options)
+            result = SimpleNamespace(success=True)
         else:
             result = mesh.remesh(
                 progress=False,

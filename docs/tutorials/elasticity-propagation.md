@@ -97,6 +97,8 @@ moved_ela = mesh.mmg.move(
 
 ## Installing the `fedoo` extra
 
+<!-- pytest-codeblocks:skip -->
+
 ```bash
 uv sync --extra fem
 # or
@@ -112,6 +114,8 @@ and `propagation_method="elasticity"` need it.
 `fedoo` is published on PyPI but not on conda-forge, so the `[fem]` extra
 isn't reachable via `conda install mmgpy`. Install fedoo separately into
 the same environment:
+
+<!-- pytest-codeblocks:skip -->
 
 ```bash
 conda install -c conda-forge mmgpy

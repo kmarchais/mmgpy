@@ -7,7 +7,7 @@
 
 ::: mmgpy.Mesh
 options:
-members: - **init** - kind - save - get_vertices - get_triangles - get_tetrahedra - get_edges - remesh - remesh_optimize - remesh_uniform - remesh_levelset - validate - to_pyvista - set_size_sphere - set_size_box - set_size_cylinder - set_size_from_point - clear_local_sizing - get_local_sizing_count
+members: - **init** - kind - save - get_vertices - get_triangles - get_tetrahedra - get_edges - remesh - remesh_optimize - remesh_uniform - remesh_levelset - remesh_lagrangian - validate - to_pyvista - set_size_sphere - set_size_box - set_size_cylinder - set_size_from_point - clear_local_sizing - get_local_sizing_count
 
 ## Mesh Kind Enumeration
 

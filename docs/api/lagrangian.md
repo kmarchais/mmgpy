@@ -66,6 +66,13 @@ from conda-forge, install fedoo separately with
 `pip install fedoo` (or `conda install -c set3MAH fedoo`) inside the same
 environment to enable elasticity propagation.
 
+!!! warning "Deprecated: `remesh_lagrangian`"
+`Mesh.remesh_lagrangian()`, `dataset.mmg.remesh_lagrangian()` and
+`mmgpy.progress.remesh_mesh_lagrangian()` are kept as deprecation shims
+that forward to `mmgpy.move_mesh` / `dataset.mmg.move`. They emit a
+`DeprecationWarning` and will be removed in a future release; new code
+should call the `move`/`move_mesh` API directly.
+
 ## Accessor Method
 
 <!-- pytest-codeblocks:skip -->

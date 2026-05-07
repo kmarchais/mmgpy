@@ -157,6 +157,11 @@ class TestParseArgs:
         result = _parse_args([str(test_mesh_3d), "-ls", "0.5"])
         assert result.ls_value == 0.5
 
+    def test_lagrangian_flag(self, test_mesh_3d: Path) -> None:
+        """The -lag flag is accepted and stored as an int."""
+        result = _parse_args([str(test_mesh_3d), "-lag", "1"])
+        assert result.lag_value == 1
+
     def test_sol_and_met_flags(self, test_mesh_3d: Path) -> None:
         """The -sol and -met flags are parsed."""
         result = _parse_args(

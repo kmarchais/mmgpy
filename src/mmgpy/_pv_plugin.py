@@ -21,6 +21,7 @@ is auto-loaded into ``point_data``/``cell_data`` if present.
 from __future__ import annotations
 
 import logging
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -359,6 +360,30 @@ class MmgAccessor:
         else:
             mesh.remesh(**options)
         return _to_pyvista_with_user_fields(mesh)
+
+    def remesh_lagrangian(
+        self,
+        displacement: NDArray[np.float64],
+        **options: Any,  # noqa: ANN401  -- forwarded to .mmg.move
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Forward to :meth:`move` (deprecated alias).
+
+        Historically this method called MMG's ELAS-bound Lagrangian path; the
+        bundled MMG is built ``USE_ELAS=OFF``, so it never produced anything
+        useful. The accessor now forwards to :meth:`move`, which works on
+        every mesh kind via the pure-Python Laplacian propagator (or the
+        optional fedoo-backed elasticity solver). The shim exists only to
+        avoid breaking callers and will be removed in a future release.
+        """
+        warnings.warn(
+            "dataset.mmg.remesh_lagrangian() is deprecated; use "
+            "dataset.mmg.move() instead. The two are now equivalent — both "
+            "go through the pure-Python Laplacian / fedoo elasticity "
+            "propagator since the ELAS-bound MMG path is no longer linked.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.move(displacement, **options)
 
     def remesh_levelset(
         self,
