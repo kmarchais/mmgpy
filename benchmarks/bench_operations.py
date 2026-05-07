@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from mmgpy import Mesh
+from mmgpy._mesh import Mesh
 from mmgpy._mmgpy import MmgMesh3D
 
 if TYPE_CHECKING:

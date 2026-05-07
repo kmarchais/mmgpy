@@ -140,11 +140,6 @@ python_files = ["test_*.py", "*_test.py", "bench_*.py"]
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
-# Mesh-deprecation filters live in tests/deprecated/conftest.py, scoped to
-# the legacy tests that target the Mesh class itself. Other suites that
-# incidentally still construct Mesh objects must port to the .mmg accessor
-# or use Mesh._from_arrays() (silent path) for fixture builders.
-
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
