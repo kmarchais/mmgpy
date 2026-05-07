@@ -11,6 +11,7 @@ import pyvista as pv  # noqa: E402
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D  # noqa: E402
 from mmgpy.lagrangian import (  # noqa: E402
     move_mesh,
+    propagate_displacement,
     propagate_displacement_elasticity,
 )
 
@@ -386,3 +387,54 @@ class TestPvAccessorMove:
 
         assert isinstance(moved, pv.PolyData | pv.UnstructuredGrid)
         assert moved.n_points > 0
+
+
+class TestElasticityVsLaplacian:
+    """Lock in that elasticity actually differs from Laplacian on a bending case.
+
+    Both propagators agree on uniform / monotone loadings, so the rest of the
+    suite would still pass even if the elasticity branch silently degraded to
+    a Laplace solve. This case prescribes an asymmetric load on a cantilever
+    (fixed left edge, top edge pulled upward) where bending kinematics make
+    the two fields measurably different.
+    """
+
+    def test_cantilever_fields_differ(self):
+        """Elasticity and Laplacian fields differ on a 2D cantilever load."""
+        m = fd.mesh.rectangle_mesh(
+            nx=11,
+            ny=5,
+            x_min=0,
+            x_max=2,
+            y_min=0,
+            y_max=0.4,
+            elm_type="tri3",
+        )
+        vertices = np.asarray(m.nodes, dtype=np.float64)
+        triangles = np.asarray(m.elements, dtype=np.int32)
+
+        fixed = np.isclose(vertices[:, 0], 0.0)
+        loaded = np.isclose(vertices[:, 0], 2.0)
+        boundary = fixed | loaded
+
+        displacement = np.zeros_like(vertices)
+        displacement[loaded, 1] = 0.1
+
+        u_lap = propagate_displacement(vertices, triangles, boundary, displacement)
+        u_ela = propagate_displacement_elasticity(
+            vertices,
+            triangles,
+            boundary,
+            displacement,
+            nu=0.3,
+        )
+
+        # Boundary values are identical by construction.
+        npt.assert_array_almost_equal(u_lap[boundary], u_ela[boundary])
+
+        # Interior must differ noticeably; otherwise the elasticity path is
+        # effectively a no-op vs the Laplacian one.
+        interior = ~boundary
+        diff = np.linalg.norm(u_ela[interior] - u_lap[interior])
+        ref = np.linalg.norm(u_lap[interior])
+        assert diff / max(ref, 1e-12) > 0.05

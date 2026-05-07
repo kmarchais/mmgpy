@@ -641,11 +641,18 @@ def compute_hessian(
 
     if n_dims == 2:
         hessian = np.zeros((n_vertices, 3), dtype=np.float64)
+        n_basis = 5
     else:
         hessian = np.zeros((n_vertices, 6), dtype=np.float64)
+        n_basis = 9
 
     for i in range(n_vertices):
         patch = patches[i]
+
+        # Underdetermined patch: lstsq returns a least-norm solution rather
+        # than failing, which silently corrupts the recovered Hessian. Skip.
+        if len(patch) < n_basis + 1:
+            continue
 
         coords = vertices[patch] - vertices[i]  # center at vertex i
         vals = field[patch] - field[i]
@@ -660,15 +667,11 @@ def compute_hessian(
         coords_n = coords / scale
         scale2 = scale * scale
 
-        # Fit quadratic polynomial via least-squares
         if n_dims == 2:
             # Monomial basis: x, y, x^2/2, xy, y^2/2
             x, y = coords_n[:, 0], coords_n[:, 1]
             A = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])
-            try:
-                coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
-            except np.linalg.LinAlgError:
-                continue
+            coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
             # H11 = d2f/dx2, H12 = d2f/dxdy, H22 = d2f/dy2
             hessian[i] = [
                 coeffs[2] / scale2,
@@ -691,10 +694,7 @@ def compute_hessian(
                     0.5 * z * z,
                 ],
             )
-            try:
-                coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
-            except np.linalg.LinAlgError:
-                continue
+            coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
             # Returned ordering: H11, H12, H13, H22, H23, H33
             hessian[i] = [
                 coeffs[3] / scale2,

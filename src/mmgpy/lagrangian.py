@@ -58,8 +58,9 @@ def propagate_displacement_elasticity(
     """Propagate displacement from boundary to interior using linear elasticity.
 
     Solves a fictitious linear elasticity problem with prescribed displacements
-    on boundary nodes and zero displacement on the mesh exterior. This produces
-    a physically meaningful smooth displacement field, superior to Laplacian
+    on the vertices flagged in ``boundary_mask``; vertices outside the mask are
+    free DOFs whose displacement is computed by the elasticity solve. This
+    produces a physically meaningful smooth field, superior to Laplacian
     smoothing for large deformations and complex geometries.
 
     Requires the ``fedoo`` package (optional dependency).
@@ -70,7 +71,9 @@ def propagate_displacement_elasticity(
         boundary_mask: N boolean array, True for vertices with prescribed displacement.
         boundary_displacement: Nxdim array of displacement vectors.
             Only values at boundary vertices (where boundary_mask is True) are used.
-        E: Young's modulus for the fictitious elastic material. Default is 1e6.
+        E: Young's modulus for the fictitious elastic material. With only
+            Dirichlet BCs (no body forces, no tractions) the displacement field
+            is independent of ``E``; only ``nu`` affects the result. Default 1e6.
         nu: Poisson's ratio. Default is 0.3.
 
     Returns:

@@ -48,9 +48,9 @@ def vertex_adjacency(
         (data, (all_rows, all_cols)),
         shape=(n_vertices, n_vertices),
     ).tocsr()
+    # tocsr sums duplicate (i, j) entries from elements sharing an edge;
+    # collapse them back to plain 0/1 adjacency.
     csr.data[:] = 1.0
-    csr.setdiag(0.0)
-    csr.eliminate_zeros()
     return csr
 
 

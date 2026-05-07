@@ -102,10 +102,7 @@ def _add_pill_labels(
     canvas.paste(rendered, (0, header_h), rendered)
 
     draw = ImageDraw.Draw(canvas, "RGBA")
-    font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        size=font_size,
-    )
+    font = ImageFont.load_default(size=font_size)
     for i, text in enumerate(labels):
         cx = width * (i + 0.5) / n
         cy = header_h / 2

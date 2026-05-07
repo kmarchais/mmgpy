@@ -186,10 +186,7 @@ def main() -> None:  # noqa: C901
             transform=axes[1].transAxes,
         )
 
-    font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        size=20,
-    )
+    font = ImageFont.load_default(size=20)
 
     def add_pill_labels(rendered: Image.Image) -> Image.Image:
         """Composite translucent pill labels at the top of each panel."""
