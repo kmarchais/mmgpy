@@ -1223,17 +1223,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#two-code-paths" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two Code Paths
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#functions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1684,17 +1673,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#two-code-paths" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two Code Paths
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#functions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1925,36 +1903,7 @@
 <li>Fluid-structure interaction</li>
 <li>Morphing between shapes</li>
 </ul>
-<h2 id="two-code-paths">Two Code Paths<a class="headerlink" href="#two-code-paths" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>Volume support</th>
-<th>Surface support</th>
-<th>ELAS required</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>dataset.mmg.remesh_lagrangian()</code></td>
-<td>TET, 2D</td>
-<td>❌</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><code>dataset.mmg.move()</code></td>
-<td>TET, 2D, S</td>
-<td>✅</td>
-<td>❌</td>
-</tr>
-</tbody>
-</table>
-<p><code>remesh_lagrangian()</code> calls into MMG's ELAS path which propagates boundary displacements
-through an elasticity solve. ELAS only models volumetric (2D/3D) elasticity, so surface
-meshes cannot use it.</p>
-<p><code>dataset.mmg.move()</code> is a pure-Python alternative that applies the displacement and
-remeshes; it works for every mesh kind and does not require ELAS.</p>
+<p><code>dataset.mmg.move()</code> applies the displacement and remeshes for every mesh kind (TET, 2D, surface) with no external dependency. For interior propagation it ships two solvers: a pure-Python Laplacian smoother (default) and an optional fedoo-backed linear elasticity solver, selectable via <code>propagation_method</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401  -- registers reader/writer + accessor</span>
@@ -1991,9 +1940,8 @@ remeshes; it works for every mesh kind and does not require ELAS.</p>
     <div class="doc doc-contents first">
 
         <p>Move mesh vertices by displacement and remesh to maintain quality.</p>
-<p>This is a pure Python implementation of Lagrangian motion that works
-without the ELAS library. For large displacements, consider using
-multiple steps (n_steps &gt; 1) to avoid mesh inversion.</p>
+<p>For large displacements, consider using multiple steps (<code>n_steps &gt; 1</code>)
+to avoid mesh inversion.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2393,13 +2341,21 @@ while the elasticity solver captures the bending kinematics:</p>
 <img alt="Laplacian vs elasticity on a 3D L-bracket" src="../../assets/elasticity_propagation_3d.gif" /></p>
 <p>See the <a href="../../tutorials/elasticity-propagation/">Elasticity Propagation tutorial</a>
 for a full walkthrough.</p>
-<div class="admonition warning">
-<p class="admonition-title">ELAS Library Required</p>
+<div class="admonition info">
+<p class="admonition-title">fedoo on conda-forge</p>
 </div>
-<p><code>remesh_lagrangian()</code> requires MMG to be built with ELAS support. The ELAS library solves
-elasticity PDEs to propagate boundary displacements to interior vertices. If MMG was built
-without ELAS, calls to <code>remesh_lagrangian()</code> will fail. The pure-Python <code>dataset.mmg.move(...)</code>
-has no such dependency.</p>
+<p><code>fedoo</code> is published on PyPI but not on conda-forge. If you installed mmgpy
+from conda-forge, install fedoo separately with
+<code>pip install fedoo</code> (or <code>conda install -c set3MAH fedoo</code>) inside the same
+environment to enable elasticity propagation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Deprecated: <code>remesh_lagrangian</code></p>
+</div>
+<p><code>Mesh.remesh_lagrangian()</code>, <code>dataset.mmg.remesh_lagrangian()</code> and
+<code>mmgpy.progress.remesh_mesh_lagrangian()</code> are kept as deprecation shims
+that forward to <code>mmgpy.move_mesh</code> / <code>dataset.mmg.move</code>. They emit a
+<code>DeprecationWarning</code> and will be removed in a future release; new code
+should call the <code>move</code>/<code>move_mesh</code> API directly.</p>
 <h2 id="accessor-method">Accessor Method<a class="headerlink" href="#accessor-method" title="Permanent link">&para;</a></h2>
 <!-- pytest-codeblocks:skip -->
 
@@ -2413,11 +2369,7 @@ has no such dependency.</p>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">displacement</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">n_points</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">displacement</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># ELAS-bound path</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">moved_elas</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_lagrangian</span><span class="p">(</span><span class="n">displacement</span><span class="p">)</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># Pure-Python path (works without ELAS, supports surface meshes)</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">moved</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">displacement</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">moved</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">displacement</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="usage-examples">Usage Examples<a class="headerlink" href="#usage-examples" title="Permanent link">&para;</a></h2>
 <h3 id="basic-lagrangian-remeshing">Basic Lagrangian Remeshing<a class="headerlink" href="#basic-lagrangian-remeshing" title="Permanent link">&para;</a></h3>
@@ -2437,7 +2389,7 @@ has no such dependency.</p>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">directions</span> <span class="o">=</span> <span class="n">directions</span> <span class="o">/</span> <span class="p">(</span><span class="n">distances</span> <span class="o">+</span> <span class="mf">1e-10</span><span class="p">)</span>
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">displacement</span> <span class="o">=</span> <span class="n">directions</span> <span class="o">*</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">distances</span>
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_lagrangian</span><span class="p">(</span><span class="n">displacement</span><span class="p">)</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">displacement</span><span class="p">)</span>
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cells: </span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">n_cells</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">remeshed</span><span class="o">.</span><span class="n">n_cells</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="boundary-only-displacement">Boundary-Only Displacement<a class="headerlink" href="#boundary-only-displacement" title="Permanent link">&para;</a></h3>
@@ -2476,7 +2428,7 @@ has no such dependency.</p>
 <p>Combine with remeshing parameters:</p>
 <!-- pytest-codeblocks:skip -->
 
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_lagrangian</span><span class="p">(</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">move</span><span class="p">(</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">displacement</span><span class="p">,</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">hmin</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
@@ -2501,14 +2453,13 @@ has no such dependency.</p>
 </span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">])</span>  <span class="c1"># Compress x,y, stretch z</span>
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">displacement</span> <span class="o">=</span> <span class="p">(</span><span class="n">center</span> <span class="o">+</span> <span class="n">relative</span> <span class="o">*</span> <span class="n">scale</span><span class="p">)</span> <span class="o">-</span> <span class="n">vertices</span>
 </span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="c1"># ELAS-bound path</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_lagrangian</span><span class="p">(</span><span class="n">displacement</span><span class="p">,</span> <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="n">q</span> <span class="o">=</span> <span class="n">remeshed</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">element_qualities</span><span class="p">()</span>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Vertices: </span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">n_points</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">remeshed</span><span class="o">.</span><span class="n">n_points</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean quality: </span><span class="si">{</span><span class="n">q</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="n">remeshed</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;ellipsoid.vtk&quot;</span><span class="p">)</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">displacement</span><span class="p">,</span> <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">q</span> <span class="o">=</span> <span class="n">remeshed</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">element_qualities</span><span class="p">()</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Vertices: </span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">n_points</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">remeshed</span><span class="o">.</span><span class="n">n_points</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean quality: </span><span class="si">{</span><span class="n">q</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="n">remeshed</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;ellipsoid.vtk&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="tips">Tips<a class="headerlink" href="#tips" title="Permanent link">&para;</a></h2>
 <ol>

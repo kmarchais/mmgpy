@@ -2522,28 +2522,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mmgpy.Mesh.remesh_lagrangian--parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mmgpy.Mesh.remesh_lagrangian--returns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Returns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#mmgpy.Mesh.remesh_lagrangian--raises" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5319,28 +5297,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mmgpy.Mesh.remesh_lagrangian--parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mmgpy.Mesh.remesh_lagrangian--returns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Returns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#mmgpy.Mesh.remesh_lagrangian--raises" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7504,34 +7460,22 @@ mesh.remesh(hmax=0.1, progress=my_callback)</p>
 
 
 <a href="#mmgpy.Mesh.remesh_lagrangian" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remesh_lagrangian</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">displacement</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">progress</span><span class="p">:</span> <span class="n">ProgressParam</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemeshResult</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remesh_lagrangian</span><span class="p">(</span><span class="n">displacement</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">float64</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemeshResult</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remesh with Lagrangian motion.</p>
-<p>Only available for TETRAHEDRAL and TRIANGULAR_2D meshes.</p>
-<h5 id="mmgpy.Mesh.remesh_lagrangian--parameters">Parameters<a class="headerlink" href="#mmgpy.Mesh.remesh_lagrangian--parameters" title="Permanent link">&para;</a></h5>
-<p>displacement : ndarray
-    Displacement field for each vertex.
-progress : bool | Callable[[ProgressEvent], bool] | None, default=True
-    Progress reporting option:
-    - True: Show Rich progress bar (default)
-    - False or None: No progress reporting
-    - Callable: Custom callback that receives ProgressEvent and returns
-      True to continue or False to cancel
-**kwargs : float
-    Additional remeshing parameters.</p>
-<h5 id="mmgpy.Mesh.remesh_lagrangian--returns">Returns<a class="headerlink" href="#mmgpy.Mesh.remesh_lagrangian--returns" title="Permanent link">&para;</a></h5>
-<p>RemeshResult
-    Statistics from the remeshing operation.</p>
+        <p>Forward to :func:<code>mmgpy.move_mesh</code> (deprecated).</p>
+<p>Historically this method called MMG's ELAS-bound Lagrangian path; the
+bundled MMG is built <code>USE_ELAS=OFF</code>, so it never produced anything
+useful. The shim now applies <code>displacement</code> and remeshes via the
+pure-Python Laplacian propagator (or the optional fedoo elasticity
+solver) and returns a minimal :class:<code>RemeshResult</code>. It will be
+removed in a future release; new code should call
+:func:<code>mmgpy.move_mesh</code> or <code>dataset.mmg.move(...)</code> directly.</p>
 <h5 id="mmgpy.Mesh.remesh_lagrangian--raises">Raises<a class="headerlink" href="#mmgpy.Mesh.remesh_lagrangian--raises" title="Permanent link">&para;</a></h5>
 <p>TypeError
-    If mesh is TRIANGULAR_SURFACE.
-CancellationError
-    If the progress callback returns False to cancel the operation.</p>
+    If mesh is TRIANGULAR_SURFACE.</p>
 
 
     </div>

@@ -834,6 +834,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Installing the fedoo extra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conda-forge-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        conda-forge users
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1620,6 +1637,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Installing the fedoo extra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conda-forge-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        conda-forge users
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1799,6 +1833,8 @@ loading through the corner, bending the entire bracket.</p>
 </span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="installing-the-fedoo-extra">Installing the <code>fedoo</code> extra<a class="headerlink" href="#installing-the-fedoo-extra" title="Permanent link">&para;</a></h2>
+<!-- pytest-codeblocks:skip -->
+
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>fem
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># or</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;mmgpy[fem]&quot;</span>
@@ -1806,6 +1842,17 @@ loading through the corner, bending the entire bracket.</p>
 <p><code>fedoo</code> is an optional dependency; mmgpy still imports cleanly without it
 and the Laplacian path keeps working. Only <code>propagate_displacement_elasticity</code>
 and <code>propagation_method="elasticity"</code> need it.</p>
+<h3 id="conda-forge-users">conda-forge users<a class="headerlink" href="#conda-forge-users" title="Permanent link">&para;</a></h3>
+<p><code>fedoo</code> is published on PyPI but not on conda-forge, so the <code>[fem]</code> extra
+isn't reachable via <code>conda install mmgpy</code>. Install fedoo separately into
+the same environment:</p>
+<!-- pytest-codeblocks:skip -->
+
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>mmgpy
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pip<span class="w"> </span>install<span class="w"> </span>fedoo<span class="w">                </span><span class="c1"># PyPI (recommended)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># or:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>set3MAH<span class="w"> </span>fedoo<span class="w">   </span><span class="c1"># the upstream maintainers&#39; personal channel</span>
+</span></code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../api/lagrangian/">API reference: Lagrangian Motion</a> for the full

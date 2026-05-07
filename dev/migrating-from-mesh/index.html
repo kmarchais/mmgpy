@@ -1586,7 +1586,7 @@
 </tr>
 <tr>
 <td><code>mesh.remesh_lagrangian(displacement, **opts)</code></td>
-<td><code>new = dataset.mmg.remesh_lagrangian(displacement, **opts)</code></td>
+<td><code>new = dataset.mmg.move(displacement, **opts)</code> (Laplacian by default; pass <code>propagation_method="elasticity"</code> for the fedoo-backed solver)</td>
 </tr>
 <tr>
 <td><code>mesh.remesh_levelset(levelset, **opts)</code></td>

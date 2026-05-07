@@ -2014,11 +2014,6 @@
 <hr />
 <h3 id="lagrangian-motion">Lagrangian Motion<a class="headerlink" href="#lagrangian-motion" title="Permanent link">&para;</a></h3>
 <p>Remesh while applying mesh displacement.</p>
-<div class="admonition info">
-<p class="admonition-title">ELAS-bound vs pure-Python</p>
-</div>
-<p><code>mesh.mmg.remesh_lagrangian(...)</code> requires MMG to be built with ELAS.
-<code>mesh.mmg.move(...)</code> is a pure-Python alternative that works without ELAS.</p>
 <!-- pytest-codeblocks:skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="sd">&quot;&quot;&quot;Lagrangian mesh motion remeshing.&quot;&quot;&quot;</span>
@@ -2032,11 +2027,7 @@
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">displacement</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">displacement</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># ELAS-bound</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_lagrangian</span><span class="p">(</span><span class="n">displacement</span><span class="p">)</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># Pure-Python alternative</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">moved</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">displacement</span><span class="p">,</span> <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">moved</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">displacement</span><span class="p">,</span> <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 </span></code></pre></div>
 <p><a href="https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/lagrangian_motion.py">View full example</a></p>
 <hr />
