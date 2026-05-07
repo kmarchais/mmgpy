@@ -163,6 +163,60 @@ remeshed = mesh.mmg.remesh()
 
 ---
 
+### Hessian-Based Adaptation
+
+Solution-adaptive remeshing via patch-based Hessian recovery — same
+vertex budget, elements concentrate around fronts and stay coarse
+elsewhere. See the [tutorial](../tutorials/hessian-adaptation.md) for a
+walkthrough.
+
+![2D Hessian adaptation](../assets/hessian_adaptation_2d.png)
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+from mmgpy.metrics import compute_hessian, create_metric_from_hessian
+
+hessian = compute_hessian(vertices, triangles, field)
+metric  = create_metric_from_hessian(hessian, target_error=5e-3, hmin=3e-3, hmax=8e-2)
+
+mesh.point_data["metric"] = metric
+adapted = mesh.mmg.remesh(hgrad=2.0)
+```
+
+[2D example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/hessian_adaptation.py)
+&middot;
+[3D example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/hessian_adaptation.py)
+
+---
+
+### Elasticity-Based Displacement Propagation
+
+When a Laplacian smoother can't capture bending, the optional `fedoo`
+backend solves a linear elasticity problem to propagate boundary
+displacements through the mesh. See the
+[tutorial](../tutorials/elasticity-propagation.md) for a side-by-side
+demo on an L-bracket cantilever.
+
+![Laplacian vs elasticity on a 2D L-bracket](../assets/elasticity_propagation_2d.gif)
+
+<!-- pytest-codeblocks:skip -->
+
+```python
+from mmgpy.lagrangian import propagate_displacement_elasticity
+
+field = propagate_displacement_elasticity(
+    vertices, elements, boundary_mask, boundary_displacement,
+    E=1e6, nu=0.3,
+)
+```
+
+[2D example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/elasticity_propagation.py)
+&middot;
+[3D example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/elasticity_propagation.py)
+
+---
+
 ### Anisotropic Mesh Adaptation
 
 Directional mesh refinement.

@@ -7,7 +7,6 @@ import pytest
 from mmgpy import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 from mmgpy.lagrangian import (
-    _build_adjacency_from_elements,
     detect_boundary_vertices,
     move_mesh,
     propagate_displacement,
@@ -77,31 +76,6 @@ def create_3d_test_mesh() -> tuple[np.ndarray, np.ndarray]:
     )
 
     return vertices, elements
-
-
-class TestBuildAdjacency:
-    """Tests for adjacency building."""
-
-    def test_triangle_adjacency(self) -> None:
-        """Test adjacency building from triangles."""
-        elements = np.array([[0, 1, 2]], dtype=np.int32)
-        adj = _build_adjacency_from_elements(3, elements)
-
-        assert len(adj) == 3
-        assert set(adj[0]) == {1, 2}
-        assert set(adj[1]) == {0, 2}
-        assert set(adj[2]) == {0, 1}
-
-    def test_tetrahedral_adjacency(self) -> None:
-        """Test adjacency building from tetrahedra."""
-        elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
-        adj = _build_adjacency_from_elements(4, elements)
-
-        assert len(adj) == 4
-        # Each vertex should be connected to all others
-        for i in range(4):
-            expected = set(range(4)) - {i}
-            assert set(adj[i]) == expected
 
 
 class TestPropagateDisplacement:
