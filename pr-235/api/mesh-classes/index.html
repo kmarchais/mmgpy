@@ -7470,13 +7470,9 @@ mesh.remesh(hmax=0.1, progress=my_callback)</p>
 bundled MMG is built <code>USE_ELAS=OFF</code>, so it never produced anything
 useful. The shim now applies <code>displacement</code> and remeshes via the
 pure-Python Laplacian propagator (or the optional fedoo elasticity
-solver) and returns a fully-populated :class:<code>RemeshResult</code>. It will
-be removed in a future release; new code should call
+solver) and returns a minimal :class:<code>RemeshResult</code>. It will be
+removed in a future release; new code should call
 :func:<code>mmgpy.move_mesh</code> or <code>dataset.mmg.move(...)</code> directly.</p>
-<p>Surface meshes are still rejected here, matching the historical
-:class:<code>Mesh</code> contract; <code>dataset.mmg.move(...)</code> (or
-:func:<code>mmgpy.move_mesh</code> with an <code>MmgMeshS</code>) handles surface meshes
-directly.</p>
 <h5 id="mmgpy.Mesh.remesh_lagrangian--raises">Raises<a class="headerlink" href="#mmgpy.Mesh.remesh_lagrangian--raises" title="Permanent link">&para;</a></h5>
 <p>TypeError
     If mesh is TRIANGULAR_SURFACE.</p>
