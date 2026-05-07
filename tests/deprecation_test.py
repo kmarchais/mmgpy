@@ -64,6 +64,25 @@ def test_mmgpy_read_emits_deprecation_warning(tmp_path: Path) -> None:
     assert isinstance(result, pv.UnstructuredGrid | pv.PolyData)
 
 
+def test_mmgpy_read_forwards_user_point_data(tmp_path: Path) -> None:
+    """User point_data on the source survives the deprecated ``mmgpy.read``."""
+    vertices, tets = _tiny_tet_arrays()
+    grid = pv.UnstructuredGrid({pv.CellType.TETRA: tets}, vertices)
+    grid.point_data["temperature"] = np.linspace(0.0, 1.0, len(vertices))
+    path = tmp_path / "tiny.vtu"
+    grid.save(str(path))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        result = mmgpy.read(path)
+
+    assert "temperature" in result.point_data
+    np.testing.assert_allclose(
+        result.point_data["temperature"],
+        np.linspace(0.0, 1.0, len(vertices)),
+    )
+
+
 def test_accessor_remesh_does_not_warn() -> None:
     """The .mmg accessor builds the internal helper but must stay silent."""
     vertices, tets = _tiny_tet_arrays()

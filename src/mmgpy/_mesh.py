@@ -126,74 +126,6 @@ def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
     )
 
 
-def _collect_shim_stats(
-    impl: MmgMesh2D | MmgMesh3D | MmgMeshS,
-    *,
-    kind: MeshKind,
-) -> dict[str, Any]:
-    """Collect mesh stats for the remesh_lagrangian deprecation shim.
-
-    Mirrors the fields the C++ ``collect_mesh_stats_*`` helpers populate so
-    callers can build a fully-populated :class:`RemeshResult` around a
-    :func:`mmgpy.move_mesh` call.
-    """
-    if kind == MeshKind.TETRAHEDRAL:
-        elements = cast("MmgMesh3D", impl).get_tetrahedra()
-    else:
-        elements = impl.get_triangles()
-
-    triangles = (
-        cast("MmgMesh3D", impl).get_triangles()
-        if kind == MeshKind.TETRAHEDRAL
-        else elements
-    )
-    edges = impl.get_edges() if hasattr(impl, "get_edges") else np.empty((0,))
-
-    qualities = impl.get_element_qualities()
-    if qualities.size > 0:
-        q_min = float(qualities.min())
-        q_mean = float(qualities.mean())
-    else:
-        q_min = 0.0
-        q_mean = 0.0
-
-    return {
-        "vertices": len(impl.get_vertices()),
-        "elements": len(elements),
-        "triangles": len(triangles),
-        "edges": len(edges),
-        "quality_min": q_min,
-        "quality_mean": q_mean,
-    }
-
-
-def _shim_stats_to_remesh_result(
-    before: dict[str, Any],
-    after: dict[str, Any],
-    duration: float,
-) -> RemeshResult:
-    """Build a :class:`RemeshResult` from before/after stats dicts."""
-    from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
-
-    return _RemeshResult(
-        vertices_before=before["vertices"],
-        vertices_after=after["vertices"],
-        elements_before=before["elements"],
-        elements_after=after["elements"],
-        triangles_before=before["triangles"],
-        triangles_after=after["triangles"],
-        edges_before=before["edges"],
-        edges_after=after["edges"],
-        quality_min_before=before["quality_min"],
-        quality_min_after=after["quality_min"],
-        quality_mean_before=before["quality_mean"],
-        quality_mean_after=after["quality_mean"],
-        duration_seconds=duration,
-        warnings=(),
-        return_code=0,
-    )
-
-
 class _LazyFieldSource:
     """Deferred point_data from a PyVista read.
 
@@ -1793,59 +1725,6 @@ class Mesh:
         finally:
             if reporter_ctx is not None:  # pragma: no cover
                 reporter_ctx.__exit__(None, None, None)
-
-    def remesh_lagrangian(
-        self,
-        displacement: NDArray[np.float64],
-        **kwargs: Any,  # noqa: ANN401
-    ) -> RemeshResult:
-        """Forward to :func:`mmgpy.move_mesh` (deprecated).
-
-        Historically this method called MMG's ELAS-bound Lagrangian path; the
-        bundled MMG is built ``USE_ELAS=OFF``, so it never produced anything
-        useful. The shim now applies ``displacement`` and remeshes via the
-        pure-Python Laplacian propagator (or the optional fedoo elasticity
-        solver) and returns a fully-populated :class:`RemeshResult`. It will
-        be removed in a future release; new code should call
-        :func:`mmgpy.move_mesh` or ``dataset.mmg.move(...)`` directly.
-
-        Surface meshes are still rejected here, matching the historical
-        :class:`Mesh` contract; ``dataset.mmg.move(...)`` (or
-        :func:`mmgpy.move_mesh` with an ``MmgMeshS``) handles surface meshes
-        directly.
-
-        Raises
-        ------
-        TypeError
-            If mesh is TRIANGULAR_SURFACE.
-
-        """
-        import time  # noqa: PLC0415
-        import warnings  # noqa: PLC0415
-
-        from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
-
-        warnings.warn(
-            "Mesh.remesh_lagrangian() is deprecated; use mmgpy.move_mesh() "
-            "directly. The shim now routes through the pure-Python "
-            "Laplacian / fedoo elasticity propagator since the ELAS-bound "
-            "MMG path is no longer linked.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if self._kind == MeshKind.TRIANGULAR_SURFACE:
-            msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
-            raise TypeError(msg)
-
-        before = _collect_shim_stats(self._impl, kind=self._kind)
-
-        start = time.perf_counter()
-        _move_mesh(self, displacement, **kwargs)
-        duration = time.perf_counter() - start
-
-        after = _collect_shim_stats(self._impl, kind=self._kind)
-
-        return _shim_stats_to_remesh_result(before, after, duration)
 
     def remesh_levelset(
         self,
