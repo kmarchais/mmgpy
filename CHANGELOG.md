@@ -7,17 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-07
+
 ### Added
 
-- `dataset.mmg.move(displacement, ...)`: pure-Python lagrangian motion accessor that returns a fresh dataset, mirroring the standalone `mmgpy.move_mesh` helper without requiring a `Mesh` wrapper.
-- `dataset.mmg.remesh(opts)` now accepts a typed options object (`Mmg2DOptions` / `Mmg3DOptions` / `MmgSOptions`) as the first positional argument; mutually exclusive with `**options` kwargs.
-- The accessor's remesh round-trip now copies user `point_data` back onto the returned dataset whenever array shape matches the new vertex count (previously only geometry + refs survived). Mismatched fields are dropped with a debug log; pass `transfer_fields=True` to interpolate them.
-- `mmgpy.polydata_from_2d_triangles(vertices, triangles)`: helper that embeds 2D triangulations as a planar `pv.PolyData` so they can flow through the `.mmg` accessor.
+- **PyVista 0.48 plugin integration** ([#230](https://github.com/kmarchais/mmgpy/pull/230)): `pv.read("foo.mesh")` and `dataset.save("out.mesh")` now work without importing mmgpy thanks to reader/writer entry points for `.mesh` / `.meshb`. A sibling `.sol` file with the same stem is auto-loaded into `point_data` / `cell_data` on read. The `.mmg` dataset accessor (`dataset.mmg.remesh(...)`, `dataset.mmg.load_sol(...)`) is registered through PyVista's accessor registry.
+- **`.mmg` accessor reaches Mesh-equivalent surface** ([#231](https://github.com/kmarchais/mmgpy/pull/231)): adds `remesh_lagrangian`, `remesh_levelset`, `remesh_optimize`, `remesh_uniform`, `save_sol`, `validate`, `element_quality`, `element_qualities`, and a `kind` property. New `local_sizing` keyword on every remesh variant accepts a list of dict specs (`sphere` / `box` / `cylinder` / `from_point`) as a stateless replacement for `Mesh.set_size_*`.
+- **Elasticity-based displacement propagation & Hessian recovery** ([#205](https://github.com/kmarchais/mmgpy/pull/205)): new `propagate_displacement_elasticity` (fedoo-backed linear elasticity solver, optional dependency) and `compute_hessian` (patch-based least-squares recovery for 2D/3D scalar fields). `move_mesh` gains a `propagation_method` argument (`"laplacian"` default, `"elasticity"` opt-in).
+- `dataset.mmg.move(displacement, ...)` ([#232](https://github.com/kmarchais/mmgpy/pull/232)): pure-Python lagrangian motion accessor that returns a fresh dataset, mirroring the standalone `mmgpy.move_mesh` helper without requiring a `Mesh` wrapper.
+- `dataset.mmg.remesh(opts)` now accepts a typed options object (`Mmg2DOptions` / `Mmg3DOptions` / `MmgSOptions`) as the first positional argument; mutually exclusive with `**options` kwargs ([#232](https://github.com/kmarchais/mmgpy/pull/232)).
+- The accessor's remesh round-trip now copies user `point_data` back onto the returned dataset whenever array shape matches the new vertex count (previously only geometry + refs survived). Mismatched fields are dropped with a debug log; pass `transfer_fields=True` to interpolate them ([#232](https://github.com/kmarchais/mmgpy/pull/232)).
+- `mmgpy.polydata_from_2d_triangles(vertices, triangles)`: helper that embeds 2D triangulations as a planar `pv.PolyData` so they can flow through the `.mmg` accessor ([#232](https://github.com/kmarchais/mmgpy/pull/232)).
 
 ### Deprecated
 
-- `mmgpy.Mesh` and `mmgpy.MeshCheckpoint` are deprecated and will be removed in 0.13. Use the `.mmg` PyVista accessor instead, e.g. `pv.read("foo.mesh").mmg.remesh(hsiz=0.1)`. See the [migration guide](docs/migrating-from-mesh.md) for a method-by-method mapping.
-- `Mesh.checkpoint()` is deprecated alongside the class. The accessor's stateless model makes the rollback idiom unnecessary: keep a snapshot via `snap = dataset.copy()` and reassign on success.
+- **`mmgpy.Mesh` and `mmgpy.MeshCheckpoint`** are deprecated and will be removed in 0.13 ([#232](https://github.com/kmarchais/mmgpy/pull/232)). Use the `.mmg` PyVista accessor instead, e.g. `pv.read("foo.mesh").mmg.remesh(hsiz=0.1)`. See the [migration guide](docs/migrating-from-mesh.md) for a method-by-method mapping. `MeshKind` survives (still returned by `dataset.mmg.kind`).
+- **`Mesh.checkpoint()`** is deprecated alongside the class ([#232](https://github.com/kmarchais/mmgpy/pull/232)). The accessor's stateless model makes the rollback idiom unnecessary: keep a snapshot via `snap = dataset.copy()` and reassign on success.
+- **`Mesh.remesh_lagrangian()`**, **`dataset.mmg.remesh_lagrangian()`**, and **`mmgpy.progress.remesh_mesh_lagrangian()`** are deprecated and now forward to `mmgpy.move_mesh` / `dataset.mmg.move` ([#233](https://github.com/kmarchais/mmgpy/pull/233)). The `mmg -lag <val>` CLI flag is preserved (no warning, by design) and routes silently through `move_mesh`.
+
+### Removed
+
+- C++ `MmgMesh{3D,2D,S}.remesh_lagrangian` methods and the corresponding pybind11 bindings ([#233](https://github.com/kmarchais/mmgpy/pull/233)). These were dead code in every shipped wheel because `extern/CMakeLists.txt` forces `USE_ELAS=OFF`. The Python wrappers survive as deprecation shims (see Deprecated above) and now actually work for users via the Laplacian propagator (or fedoo when installed), which the previous `USE_ELAS=ON`-only path did not.
+- UI "Lagrangian Motion" mode (internal, no API contract).
+
+### Fixed
+
+- `mmgpy.read` / `pv.read` could not determine the mesh kind from binary `.meshb` files because `_detect_medit_mesh_kind` only parses text headers. `_load_medit_native` now falls through to a trial-load against `MmgMesh3D` → `MmgMeshS` → `MmgMesh2D` and picks whichever yields a non-empty mesh ([#230](https://github.com/kmarchais/mmgpy/pull/230)).
+
+### CI
+
+- Daily Docs Test simplified to `(released tag, released binary, released conftest)`, runtime bounded to 30 min with a 5 min budget per example, and the Trame interactive viewer example skipped headlessly ([#234](https://github.com/kmarchais/mmgpy/pull/234)).
 
 ## [0.8.0] - 2026-03-18
 
