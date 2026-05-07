@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778149820808,
+  "lastUpdate": 1778153322759,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -2696,6 +2696,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0062092217522417125",
             "extra": "mean: 73.01204326665054 msec\nrounds: 15"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevinmarchais@gmail.com",
+            "name": "Kevin Marchais",
+            "username": "kmarchais"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "83437128c2ca90f18917518732e89a5878ffd9d5",
+          "message": "chore: route remesh_lagrangian through move_mesh, drop ELAS-bound code (#233)\n\n* chore: drop the dead -lag / ELAS surface\n\nmmgpy ships its wheels with USE_ELAS=OFF (extern/CMakeLists.txt:42), so\nremesh_lagrangian and the -lag CLI flag could never succeed against the\nbundled MMG. Now that mmgpy.move_mesh covers Lagrangian motion via the\nLaplacian and (optional) fedoo elasticity propagators, the bound ELAS\nsurface is dead code in every shipped artifact.\n\n- C++ bindings: drop MmgMesh*.remesh_lagrangian methods, MMG3D_mmg3dmov /\n  MMG2D_mmg2dmov callsites, the MMG3D/2D_IPARAM_lag table entries, and the\n  lag>-1 branches in MmgMesh{,_2D}::remesh.\n- Python wrappers: remove Mesh.remesh_lagrangian, the .mmg.remesh_lagrangian\n  accessor, _progress.remesh_mesh_lagrangian, the -lag CLI flag, and the\n  related .pyi stubs. Drop the UI's \"Lagrangian Motion\" mode.\n- Tests: drop TestLagrangianRemeshing in mesh_{2,3}d_test, the deprecated\n  lagrangian_test module entirely, and the lag-only entries in\n  pv_plugin_test, cli_test, and the deprecated progress / remesh_result /\n  warning_capture / mesh_unified suites.\n- Docs: rewrite docs/api/lagrangian.md around dataset.mmg.move(...), strip\n  the ELAS-bound path from getting-started, examples, tutorials, the\n  migration table, and update the MMG API coverage table to flag\n  MMG{3,2}D_mmg{3,2}dmov as skipped.\n- Add a conda-forge install note (mmgpy[fem] is not available there;\n  install fedoo from PyPI or the set3MAH channel).\n\nSweep verified: only extern/CMakeLists.txt's \"USE_ELAS OFF\" line and the\ntwo deliberate doc table entries reference the removed surface.\nFull test suite passes (937 passed, 15 skipped).\n\n* shim: keep remesh_lagrangian alive as deprecation forwards\n\nPR #205 stopped at hard deletion of every remesh_lagrangian entry point,\nwhich would break callers on upgrade. The Python wrappers now survive as\nthin deprecation shims that route through the no-ELAS code path\n(mmgpy.move_mesh / dataset.mmg.move). The C++ side stays removed: the\nELAS-bound MMG3D_mmg3dmov / MMG2D_mmg2dmov implementations could never\nsucceed against the wheels we ship (USE_ELAS=OFF) and there is no\nin-process replacement for them.\n\nShims and their behaviour:\n\n- `Mesh.remesh_lagrangian(displacement, **opts)` and\n  `dataset.mmg.remesh_lagrangian(displacement, **opts)` emit a\n  DeprecationWarning, forward through `move_mesh` / `move`, and return\n  the same object types they used to (RemeshResult / dataset).\n- `mmgpy.progress.remesh_mesh_lagrangian(...)` is restored as a\n  deprecation alias that wraps `move_mesh` and continues to emit the\n  init/options/remesh progress events.\n- The `mmg -lag <val>` CLI flag is restored. Internally it now calls\n  `mmgpy.move_mesh` on the mesh's `displacement` field; externally the\n  invocation, the help line, and the output behave the same way they\n  did when MMG was built with USE_ELAS=ON, so users get the feature\n  back without noticing the implementation change.\n\nTests:\n- New `tests/deprecation_lagrangian_shims_test.py` pins each shim down:\n  warns + forwards (accessor / Mesh / progress), and the surface-mesh\n  rejection path still raises TypeError.\n- Restore `tests/cli_test.py::TestParseArgs::test_lagrangian_flag` and\n  the `hasattr(progress, 'remesh_mesh_lagrangian')` assertion in the\n  deprecated progress smoke test.\n- `<!-- pytest-codeblocks:skip -->` markers on the install-instruction\n  bash blocks in docs/tutorials/elasticity-propagation.md so the doc\n  smoke run doesn't try to invoke conda / pip in the test sandbox.\n\nDocs:\n- docs/api/lagrangian.md gets a \"Deprecated: remesh_lagrangian\" warning\n  block calling out the shim status and pointing at move / move_mesh.\n- docs/api/mesh-classes.md restores `remesh_lagrangian` in the rendered\n  member list.\n\nVerified: full pytest run (942 passed, 15 skipped), `pytest --codeblocks\ndocs/` (84 passed, 50 skipped), ruff clean. Sweep matches only the\nintentional docstring / docstring-test references plus\n`extern/CMakeLists.txt`'s \"USE_ELAS OFF\" line.\n\n* fix(_mesh): narrow self._impl with cast() in remesh_lagrangian shim\n\nThe previous version relied on a `# type: ignore[union-attr]` comment\nthat mypy honors but ty does not, so CI's ty hook flagged the\nget_tetrahedra/get_triangles conditional as unresolved-attribute. Match\nthe existing pattern in this file (cast(\"MmgMesh3D\", self._impl) in the\n3D branch) so the shim type-checks under ty without ignore comments.",
+          "timestamp": "2026-05-07T13:21:40+02:00",
+          "tree_id": "f75b24c9154b51d1cbcc812dfbcce573d2798542",
+          "url": "https://github.com/kmarchais/mmgpy/commit/83437128c2ca90f18917518732e89a5878ffd9d5"
+        },
+        "date": 1778153321629,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 33.243404099732174,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00047204348490066",
+            "extra": "mean: 30.081155257143372 msec\nrounds: 35"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 17.72680162409054,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004734653921697398",
+            "extra": "mean: 56.41175555555438 msec\nrounds: 18"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 27.79518986680446,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006728182985454232",
+            "extra": "mean: 35.97744806896573 msec\nrounds: 29"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3397.1339851095463,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006662661672789829",
+            "extra": "mean: 294.36578138608604 usec\nrounds: 3449"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 75.5098325147736,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005612027789836346",
+            "extra": "mean: 13.243308410257017 msec\nrounds: 78"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 7170.819662751425,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000672880954759865",
+            "extra": "mean: 139.45407178407586 usec\nrounds: 16675"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.12698754936872803,
+            "unit": "iter/sec",
+            "range": "stddev: 0.026490276432799064",
+            "extra": "mean: 7.874787764399997 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.10365970122815045,
+            "unit": "iter/sec",
+            "range": "stddev: 0.10329985842117193",
+            "extra": "mean: 9.646950436400004 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.33903385034644296,
+            "unit": "iter/sec",
+            "range": "stddev: 0.009025490816826614",
+            "extra": "mean: 2.9495579836000045 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.173685427000069,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0013349193755195204",
+            "extra": "mean: 193.2858141666808 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.2404086784765385,
+            "unit": "iter/sec",
+            "range": "stddev: 0.001799307178059502",
+            "extra": "mean: 190.82481183332334 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.313974204107399,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00026198609656649007",
+            "extra": "mean: 188.18307383333868 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.070677168907111,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0016834149816345489",
+            "extra": "mean: 197.21231833331862 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 2.0925574249872705,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002607121945366838",
+            "extra": "mean: 477.8841373999967 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 2.0722305405447643,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003833961972922258",
+            "extra": "mean: 482.5717893999922 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.8503743435675117,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0022959158608428796",
+            "extra": "mean: 350.83111180000515 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 171.86162123017812,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00003695010048496201",
+            "extra": "mean: 5.818634741381135 msec\nrounds: 174"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 14.262295596346611,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005175537880828828",
+            "extra": "mean: 70.1149399999925 msec\nrounds: 15"
           }
         ]
       }
