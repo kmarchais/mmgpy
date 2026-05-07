@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pyvista as pv
 
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "linkrods.mesh"
 
@@ -26,19 +26,15 @@ pl = pv.Plotter(shape=(2, len(hausorff_parameters)))
 for i, hausd in enumerate(hausorff_parameters):
     pl.subplot(0, i)
 
-    mesh = mmgpy.read(INPUT_FILE)
-    mesh.remesh(hausd=hausd)
-
-    pl.add_mesh(mesh.to_pyvista(), show_edges=True)
+    mesh = pv.read(INPUT_FILE)
+    pl.add_mesh(mesh.mmg.remesh(hausd=hausd), show_edges=True)
     pl.add_text(f"Hausdorff parameter: {hausd}")
 
 for i, hmax in enumerate(hmax_parameters):
     pl.subplot(1, i)
 
-    mesh = mmgpy.read(INPUT_FILE)
-    mesh.remesh(hmax=hmax)
-
-    pl.add_mesh(mesh.to_pyvista(), show_edges=True)
+    mesh = pv.read(INPUT_FILE)
+    pl.add_mesh(mesh.mmg.remesh(hmax=hmax), show_edges=True)
     pl.add_text(f"Hmax parameter: {hmax}")
 
 pl.link_views()
