@@ -6,11 +6,10 @@ This section provides detailed API documentation for all public classes and func
 
 ### Core Classes
 
-| Class                                        | Description                                                  |
-| -------------------------------------------- | ------------------------------------------------------------ |
-| `MmgAccessor` (`dataset.mmg`)                | PyVista accessor exposing all MMG operations on `pv.DataSet` |
-| [`MeshKind`](mesh-classes.md#mmgpy.MeshKind) | Enumeration of mesh types                                    |
-| [`Mesh`](mesh-classes.md#mmgpy.Mesh)         | Unified mesh class — **deprecated in 0.12, removed in 0.13** |
+| Class                         | Description                                                  |
+| ----------------------------- | ------------------------------------------------------------ |
+| `MmgAccessor` (`dataset.mmg`) | PyVista accessor exposing all MMG operations on `pv.DataSet` |
+| `MeshKind`                    | Enumeration of mesh types                                    |
 
 ### Options Classes
 
@@ -39,11 +38,12 @@ This section provides detailed API documentation for all public classes and func
 
 ### I/O Functions
 
-| Function                                     | Description                           |
-| -------------------------------------------- | ------------------------------------- |
-| [`read()`](io.md#mmgpy.read)                 | Load mesh from file or PyVista object |
-| [`from_pyvista()`](io.md#mmgpy.from_pyvista) | Create mesh from PyVista              |
-| [`to_pyvista()`](io.md#mmgpy.to_pyvista)     | Convert mesh to PyVista               |
+| Function                                     | Description                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| `pv.read(...)` (PyVista)                     | Preferred: handles `.mesh` / `.meshb` via mmgpy's reader plugin  |
+| [`read()`](io.md#mmgpy.read)                 | **Deprecated in 0.13, removed in 0.14.** Use `pv.read()` instead |
+| [`from_pyvista()`](io.md#mmgpy.from_pyvista) | Create mesh from PyVista                                         |
+| [`to_pyvista()`](io.md#mmgpy.to_pyvista)     | Convert mesh to PyVista                                          |
 
 ### Modules
 
@@ -57,9 +57,8 @@ This section provides detailed API documentation for all public classes and func
 
 ```
 mmgpy
-├── Core Classes
-│   ├── Mesh              # Unified mesh class (auto-detects type)
-│   └── MeshKind          # Mesh type enumeration
+├── Core
+│   └── MeshKind          # Mesh type enumeration (returned by dataset.mmg.kind)
 │
 ├── Options
 │   ├── Mmg3DOptions      # 3D options
@@ -79,7 +78,6 @@ mmgpy
 │   └── PointSize         # Point-based sizing
 │
 ├── I/O Functions
-│   ├── read()            # Load mesh
 │   ├── from_pyvista()    # From PyVista
 │   └── to_pyvista()      # To PyVista
 │

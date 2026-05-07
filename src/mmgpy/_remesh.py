@@ -70,7 +70,7 @@ def _wrapped_remesh(
     # Non-native format detected — use the in-memory remesh path.
     # mmgpy.read() handles any format via PyVista, Mesh.remesh()
     # works in-memory, and Mesh.save() converts back via PyVista.
-    from mmgpy._io import read as _read  # noqa: PLC0415
+    from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
 
     mesh = _read(input_mesh)
 

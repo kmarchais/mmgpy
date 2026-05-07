@@ -16,7 +16,7 @@ from mmgpy.ui.utils import (
 )
 
 if TYPE_CHECKING:
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class RemeshingMixin:
 
     def _run_remesh(self) -> None:
         """Execute remeshing operation."""
-        from mmgpy import Mesh
+        from mmgpy._mesh import Mesh
 
         if self._mesh is None:
             return

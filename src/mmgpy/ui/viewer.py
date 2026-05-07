@@ -9,7 +9,7 @@ import numpy as np
 import pyvista as pv
 
 if TYPE_CHECKING:
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
 
 logger = logging.getLogger(__name__)
 

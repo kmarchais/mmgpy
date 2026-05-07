@@ -16,7 +16,6 @@ import stat
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 
@@ -322,7 +321,7 @@ def _run_mmg() -> None:  # pragma: no cover
         sys.exit(1)
 
     # -- read mesh (single read, auto-detects type) --------------------------
-    from ._io import read as _read  # noqa: PLC0415
+    from ._io import _read_mesh_internal as _read  # noqa: PLC0415
     from ._logging import get_logger  # noqa: PLC0415
 
     try:
@@ -351,6 +350,12 @@ def _run_mmg() -> None:  # pragma: no cover
         mesh._impl.load_sol(str(parsed.met_file))  # noqa: SLF001
 
     # -- remesh --------------------------------------------------------------
+    # `success` tracks whether remeshing returned cleanly. The level-set and
+    # standard paths return a RemeshResult whose `.success` is the source of
+    # truth; the `-lag` path goes through `mmgpy.move_mesh`, which has no
+    # return value but raises on failure, so reaching the assignment after
+    # the call is itself the success signal.
+    success = True
     try:
         if parsed.ls_value is not None:
             if "levelset" not in mesh:
@@ -359,12 +364,12 @@ def _run_mmg() -> None:  # pragma: no cover
                     "load one with -sol or set it via the Python API",
                 )
                 sys.exit(1)
-            result = mesh.remesh_levelset(
+            success = mesh.remesh_levelset(
                 mesh["levelset"],
                 ls=parsed.ls_value,
                 progress=False,
                 **parsed.remesh_options,
-            )
+            ).success
         elif parsed.lag_value is not None:
             if "displacement" not in mesh:
                 _get_cli_logger().error(
@@ -374,13 +379,16 @@ def _run_mmg() -> None:  # pragma: no cover
                 sys.exit(1)
             from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
 
+            # `move_mesh` doesn't accept a `progress` kwarg; it doesn't emit
+            # progress events either, so passing the standard CLI options
+            # straight through is correct. `verbose` (if present in
+            # `parsed.remesh_options`) still controls MMG verbosity.
             _move_mesh(mesh, mesh["displacement"], **parsed.remesh_options)
-            result = SimpleNamespace(success=True)
         else:
-            result = mesh.remesh(
+            success = mesh.remesh(
                 progress=False,
                 **parsed.remesh_options,
-            )
+            ).success
     except Exception:  # noqa: BLE001
         _get_cli_logger().exception("Remeshing failed")
         sys.exit(1)
@@ -405,7 +413,7 @@ def _run_mmg() -> None:  # pragma: no cover
                 output_sol_path,
             )
 
-    if not result.success:
+    if not success:
         _get_cli_logger().error("Remeshing completed with errors")
         sys.exit(1)
 

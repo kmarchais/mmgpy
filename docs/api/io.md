@@ -10,7 +10,7 @@ mmgpy registers a Medit reader/writer plugin with PyVista on import, so `pv.read
 options:
 show_root_heading: true
 
-`mmgpy.read` returns a `Mesh` (deprecated). For new code, use `pv.read(...)` and the `.mmg` accessor.
+`mmgpy.read` is **deprecated in 0.13 and will be removed in 0.14**. It now returns a PyVista dataset (`pv.UnstructuredGrid` / `pv.PolyData`) with the `.mmg` accessor, but emits a `DeprecationWarning`. New code should call `pv.read(...)` directly: with `mmgpy` installed, the registered reader plugin handles `.mesh` / `.meshb` natively.
 
 ### Supported Formats
 

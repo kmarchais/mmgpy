@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
 
 _GEOMETRY_TOLERANCE = 1e-10
 
@@ -81,7 +81,7 @@ def remove_degenerate_elements(
     >>> print(f"Removed {removed_count} degenerate elements")
 
     """
-    from mmgpy import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
     from mmgpy.repair._vertices import remove_orphan_vertices  # noqa: PLC0415
 
     vertices = mesh.get_vertices()
@@ -150,7 +150,7 @@ def fix_inverted_elements(mesh: Mesh) -> tuple[Mesh, int]:
     >>> print(f"Fixed {fixed_count} inverted elements")
 
     """
-    from mmgpy import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
 
     vertices = mesh.get_vertices()
 
@@ -205,7 +205,7 @@ def remove_duplicate_elements(mesh: Mesh) -> tuple[Mesh, int]:
     >>> print(f"Removed {removed_count} duplicate elements")
 
     """
-    from mmgpy import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
     from mmgpy.repair._vertices import remove_orphan_vertices  # noqa: PLC0415
 
     vertices = mesh.get_vertices()

@@ -1,7 +1,7 @@
 """Tests for the remesh_lagrangian deprecation shims.
 
 The bound MMG ELAS-driven Lagrangian path is gone (the bundled MMG is built
-``USE_ELAS=OFF``), but the Python wrappers ``Mesh.remesh_lagrangian``,
+``USE_ELAS=OFF``), but the public-facing wrappers
 ``dataset.mmg.remesh_lagrangian`` and ``mmgpy.progress.remesh_mesh_lagrangian``
 survive as deprecation shims that route through ``mmgpy.move_mesh``. These
 tests pin down that the shims warn and forward correctly.
@@ -12,7 +12,6 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-import pytest
 import pyvista as pv
 
 
@@ -51,33 +50,6 @@ def test_accessor_remesh_lagrangian_warns_and_forwards_to_move() -> None:
     assert moved.n_points > 0
 
 
-def test_mesh_remesh_lagrangian_warns_and_returns_remesh_result() -> None:
-    """``Mesh.remesh_lagrangian`` emits DeprecationWarning and returns a result."""
-    from mmgpy import Mesh
-    from mmgpy._result import RemeshResult
-
-    vertices, triangles = _square_mesh()
-    with warnings.catch_warnings():
-        # Mesh itself is deprecated (PR #232); silence that here so we only
-        # observe the lagrangian-specific warning.
-        warnings.simplefilter("ignore", DeprecationWarning)
-        mesh = Mesh(vertices, triangles)
-
-    displacement = np.zeros_like(vertices)
-    displacement[:, 0] = 0.01
-
-    with warnings.catch_warnings(record=True) as captured:
-        warnings.simplefilter("always")
-        result = mesh.remesh_lagrangian(displacement, verbose=-1)
-
-    msgs = [
-        str(w.message) for w in captured if issubclass(w.category, DeprecationWarning)
-    ]
-    assert any("remesh_lagrangian" in m for m in msgs)
-    assert isinstance(result, RemeshResult)
-    assert result.vertices_after > 0
-
-
 def test_progress_remesh_mesh_lagrangian_warns_and_forwards() -> None:
     """``progress.remesh_mesh_lagrangian`` emits DeprecationWarning and runs."""
     from mmgpy._mmgpy import MmgMesh2D
@@ -96,27 +68,3 @@ def test_progress_remesh_mesh_lagrangian_warns_and_forwards() -> None:
     ]
     assert any("remesh_mesh_lagrangian" in m for m in msgs)
     assert len(impl.get_vertices()) > 0
-
-
-def test_mesh_remesh_lagrangian_rejects_surface() -> None:
-    """The shim still rejects surface meshes (move_mesh has no surface path)."""
-    from mmgpy import Mesh
-
-    vertices = np.array(
-        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.5]],
-        dtype=np.float64,
-    )
-    triangles = np.array([[0, 1, 2]], dtype=np.int32)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        mesh = Mesh(vertices, triangles)
-
-    displacement = np.zeros_like(vertices)
-
-    def _call() -> None:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            mesh.remesh_lagrangian(displacement)
-
-    with pytest.raises(TypeError, match="not available for TRIANGULAR_SURFACE"):
-        _call()

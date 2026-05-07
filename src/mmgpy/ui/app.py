@@ -29,7 +29,7 @@ from mmgpy.ui.utils import (
 from mmgpy.ui.viewer import ViewerMixin
 
 if TYPE_CHECKING:
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
     def _handle_file_upload(self, file_upload) -> None:
         """Handle uploaded mesh file."""
-        from mmgpy import read as _read_mesh
+        from mmgpy._io import _read_mesh_internal as _read_mesh
 
         client_file = ClientFile(file_upload)
 
@@ -469,7 +469,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
     def _load_sample_mesh(self, sample_name: str) -> None:
         """Load a sample mesh."""
-        from mmgpy import read as _read_mesh
+        from mmgpy._io import _read_mesh_internal as _read_mesh
 
         pv_mesh = get_sample_mesh(sample_name)
         if pv_mesh is None:

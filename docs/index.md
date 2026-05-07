@@ -24,17 +24,17 @@ Python bindings for the [MMG](https://www.mmgtools.org) remeshing library.
 ## Quick Start
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers the Medit reader/writer + .mmg accessor
 
-# Load a mesh from any supported format
-mesh = mmgpy.read("input.mesh")
+# Load a mesh from any supported format (mmgpy registers a Medit plugin)
+mesh = pv.read("input.mesh")
 
-# Remesh with target edge size
-result = mesh.remesh(hmax=0.1)
-print(f"Quality: {result.quality_mean_before:.2f} → {result.quality_mean_after:.2f}")
+# Remesh with target edge size (returns a fresh dataset)
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
 # Save the result
-mesh.save("output.vtk")
+remeshed.save("output.vtk")
 ```
 
 ## Installation
