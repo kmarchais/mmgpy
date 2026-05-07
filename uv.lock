@@ -1558,7 +1558,7 @@ dev = [
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pybind11", specifier = ">=3.0.0" },
-    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-codeblocks", specifier = ">=0.17.0" },
     { name = "pytest-cov", specifier = ">=4.1.0" },
