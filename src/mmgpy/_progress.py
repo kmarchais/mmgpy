@@ -42,9 +42,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    import numpy as np
-    from numpy.typing import NDArray
-
     from ._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
     MeshType = MmgMesh3D | MmgMesh2D | MmgMeshS
@@ -770,77 +767,6 @@ def remesh_mesh(
         "remesh",
         "complete",
         "Remeshing complete",
-        progress=1.0,
-        details={
-            "initial_vertices": initial_vertices,
-            "final_vertices": final_vertices,
-            "vertex_change": final_vertices - initial_vertices,
-        },
-    )
-
-
-def remesh_mesh_lagrangian(  # pragma: no cover
-    mesh: MeshType,
-    displacement: NDArray[np.float64],
-    *,
-    progress: ProgressCallback | None = None,
-    **options: float | bool | None,
-) -> None:
-    """Remesh an in-memory mesh with Lagrangian motion and progress callback.
-
-    This is a wrapper around MmgMesh.remesh_lagrangian that adds progress
-    callback support. The callback can return False to request cancellation
-    before the remeshing operation starts.
-
-    Parameters
-    ----------
-    mesh : MmgMesh3D | MmgMesh2D | MmgMeshS
-        The mesh object to remesh.
-    displacement : NDArray[np.float64]
-        Displacement field for Lagrangian motion.
-    progress : ProgressCallback | None, optional
-        Callback function to receive progress events. Return False to cancel.
-    **options
-        Additional options passed to mesh.remesh_lagrangian.
-
-    Raises
-    ------
-    CancellationError
-        If the callback returns False to cancel the operation.
-
-    """
-    if not _emit_event(progress, "init", "start", "Initializing mesh", progress=0.0):
-        raise CancellationError.for_phase("init")  # noqa: EM101
-
-    initial_vertices = len(mesh.get_vertices())
-
-    if not _emit_event(
-        progress,
-        "options",
-        "start",
-        "Setting displacement field",
-        progress=0.0,
-    ):
-        raise CancellationError.for_phase("options")  # noqa: EM101
-
-    if not _emit_event(
-        progress,
-        "remesh",
-        "start",
-        "Starting Lagrangian remeshing",
-        progress=0.0,
-    ):
-        raise CancellationError.for_phase("remesh")  # noqa: EM101
-
-    mesh.remesh_lagrangian(displacement, **options)
-
-    final_vertices = len(mesh.get_vertices())
-
-    _emit_event(
-        progress,
-        "remesh",
-        "complete",
-        "Lagrangian remeshing complete",
         progress=1.0,
         details={
             "initial_vertices": initial_vertices,

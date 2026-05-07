@@ -352,9 +352,8 @@ def move_mesh(
 ) -> None:
     """Move mesh vertices by displacement and remesh to maintain quality.
 
-    This is a pure Python implementation of Lagrangian motion that works
-    without the ELAS library. For large displacements, consider using
-    multiple steps (n_steps > 1) to avoid mesh inversion.
+    For large displacements, consider using multiple steps (``n_steps > 1``)
+    to avoid mesh inversion.
 
     Args:
         mesh: Mesh, MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.

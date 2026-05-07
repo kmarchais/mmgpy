@@ -173,23 +173,6 @@ class TestWarningsWithSpecialCases:
 
         assert isinstance(result.warnings, tuple)
 
-    def test_lagrangian_remesh_has_warnings_tuple(self) -> None:
-        """Lagrangian remeshing should also capture warnings."""
-        vertices, elements = create_test_cube()
-        mesh = Mesh(vertices, elements)
-
-        displacement = np.zeros((len(vertices), 3), dtype=np.float64)
-        displacement[:, 0] = 0.01
-
-        try:
-            result = mesh.remesh_lagrangian(displacement, verbose=-1)
-        except RuntimeError as e:
-            if "lag" in str(e).lower():
-                pytest.skip("MMG not compiled with USE_ELAS for Lagrangian motion")
-            raise
-
-        assert isinstance(result.warnings, tuple)
-
     def test_remesh_result_repr_with_warnings(self) -> None:
         """RemeshResult string representation handles warnings gracefully."""
         vertices, elements = create_test_cube()

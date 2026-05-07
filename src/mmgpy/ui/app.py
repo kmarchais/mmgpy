@@ -124,21 +124,11 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 self._update_viewer(reset_camera=False)
 
         @self.state.change("mesh_kind")
-        def on_mesh_kind_change(mesh_kind, **_):
-            base_modes = [
+        def on_mesh_kind_change(mesh_kind, **_):  # noqa: ARG001
+            self.state.remesh_mode_items = [
                 {"title": "Standard Remesh", "value": "standard"},
                 {"title": "Levelset Discretization", "value": "levelset"},
             ]
-            if mesh_kind != "triangular_surface":
-                base_modes.append(
-                    {"title": "Lagrangian Motion", "value": "lagrangian"},
-                )
-            self.state.remesh_mode_items = base_modes
-            if (
-                self.state.remesh_mode == "lagrangian"
-                and mesh_kind == "triangular_surface"
-            ):
-                self.state.remesh_mode = "standard"
 
         @self.state.change("theme_name")
         def on_theme_change(theme_name, **_):
@@ -1038,7 +1028,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             variant="outlined",
             hide_details=True,
             classes="mb-3",
-            title="Standard: global remesh | Levelset: iso-surface extraction | Lagrangian: move vertices",
+            title="Standard: global remesh | Levelset: iso-surface extraction",
         )
         # Default/Custom row
         with v3.VBtnToggle(
@@ -1333,7 +1323,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     )
 
     def _build_mode_specific_options(self) -> None:
-        """Build mode-specific options (levelset formula, lagrangian, source)."""
+        """Build mode-specific options (levelset formula, source)."""
         v3.VTextField(
             v_model=("levelset_formula",),
             label=(
@@ -1359,19 +1349,6 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             classes="mb-3",
             v_show="remesh_mode === 'levelset'",
             title="Iso-surface extraction value (default: 0.0)",
-        )
-        v3.VSlider(
-            v_model=("displacement_scale",),
-            label="Displacement Scale",
-            min=0.01,
-            max=1.0,
-            step=0.01,
-            density="compact",
-            hide_details=True,
-            thumb_label=True,
-            classes="mb-3",
-            v_show="remesh_mode === 'lagrangian'",
-            title="Scale factor for vertex displacement",
         )
         html.Div("Remesh from", classes="text-caption text-grey mb-1")
         with v3.VBtnToggle(

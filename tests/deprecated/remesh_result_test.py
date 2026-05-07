@@ -318,44 +318,6 @@ class TestRemeshResultDataclass:
 class TestRemeshMethodsReturnResult:
     """Tests for remesh methods returning RemeshResult."""
 
-    def test_remesh_lagrangian_3d_returns_result(self) -> None:
-        """remesh_lagrangian() returns a RemeshResult for 3D meshes."""
-        vertices, elements = create_test_cube()
-        mesh = Mesh(vertices, elements)
-
-        # Small displacement field
-        displacement = np.zeros((len(vertices), 3), dtype=np.float64)
-        displacement[:, 0] = 0.01  # Small x displacement
-
-        try:
-            result = mesh.remesh_lagrangian(displacement, verbose=-1)
-        except RuntimeError as e:
-            if "lag" in str(e).lower():
-                pytest.skip("MMG not compiled with USE_ELAS for Lagrangian motion")
-            raise
-
-        assert isinstance(result, RemeshResult)
-        assert result.success
-
-    def test_remesh_lagrangian_2d_returns_result(self) -> None:
-        """remesh_lagrangian() returns a RemeshResult for 2D meshes."""
-        vertices, triangles = create_test_square()
-        mesh = Mesh(vertices, triangles)
-
-        # Small displacement field
-        displacement = np.zeros((len(vertices), 2), dtype=np.float64)
-        displacement[:, 0] = 0.01  # Small x displacement
-
-        try:
-            result = mesh.remesh_lagrangian(displacement, verbose=-1)
-        except RuntimeError as e:
-            if "lag" in str(e).lower():
-                pytest.skip("MMG not compiled with USE_ELAS for Lagrangian motion")
-            raise
-
-        assert isinstance(result, RemeshResult)
-        assert result.success
-
     def test_remesh_levelset_3d_returns_result(self) -> None:
         """remesh_levelset() returns a RemeshResult for 3D meshes."""
         vertices, elements = create_test_cube()

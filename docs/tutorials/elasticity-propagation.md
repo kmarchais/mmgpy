@@ -107,6 +107,19 @@ pip install "mmgpy[fem]"
 and the Laplacian path keeps working. Only `propagate_displacement_elasticity`
 and `propagation_method="elasticity"` need it.
 
+### conda-forge users
+
+`fedoo` is published on PyPI but not on conda-forge, so the `[fem]` extra
+isn't reachable via `conda install mmgpy`. Install fedoo separately into
+the same environment:
+
+```bash
+conda install -c conda-forge mmgpy
+pip install fedoo                # PyPI (recommended)
+# or:
+conda install -c set3MAH fedoo   # the upstream maintainers' personal channel
+```
+
 ## See also
 
 - [API reference: Lagrangian Motion](../api/lagrangian.md) for the full

@@ -1196,52 +1196,6 @@ class MmgMesh3D:
 
         """
 
-    def remesh_lagrangian(
-        self,
-        displacement: NDArray[np.float64],
-        *,
-        hmin: float | None = None,
-        hmax: float | None = None,
-        hsiz: float | None = None,
-        hausd: float | None = None,
-        hgrad: float | None = None,
-        verbose: int | bool | None = None,
-        lag: int | None = None,
-        **kwargs: float | None,
-    ) -> dict[str, Any]:
-        """Remesh following Lagrangian motion.
-
-        Moves the mesh according to a displacement field while
-        maintaining mesh quality.
-
-        Parameters
-        ----------
-        displacement : NDArray[np.float64]
-            Displacement vectors, shape (n_vertices, 3).
-        hmin : float | None
-            Minimum edge size.
-        hmax : float | None
-            Maximum edge size.
-        hsiz : float | None
-            Uniform target edge size.
-        hausd : float | None
-            Hausdorff distance for geometry approximation.
-        hgrad : float | None
-            Gradation parameter.
-        verbose : int | bool | None
-            Verbosity level.
-        lag : int | None
-            Lagrangian mode: 0=velocity, 1=displacement (default), 2=final position.
-        **kwargs : float | int | None
-            Additional MMG options.
-
-        Returns
-        -------
-        dict[str, Any]
-            Statistics dictionary with before/after metrics.
-
-        """
-
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -2040,49 +1994,6 @@ class MmgMesh2D:
 
         """
 
-    def remesh_lagrangian(
-        self,
-        displacement: NDArray[np.float64],
-        *,
-        hmin: float | None = None,
-        hmax: float | None = None,
-        hsiz: float | None = None,
-        hausd: float | None = None,
-        hgrad: float | None = None,
-        verbose: int | bool | None = None,
-        lag: int | None = None,
-        **kwargs: float | None,
-    ) -> dict[str, Any]:
-        """Remesh following Lagrangian motion.
-
-        Parameters
-        ----------
-        displacement : NDArray[np.float64]
-            Displacement vectors, shape (n_vertices, 2).
-        hmin : float | None
-            Minimum edge size.
-        hmax : float | None
-            Maximum edge size.
-        hsiz : float | None
-            Uniform target edge size.
-        hausd : float | None
-            Hausdorff distance for geometry approximation.
-        hgrad : float | None
-            Gradation parameter.
-        verbose : int | bool | None
-            Verbosity level.
-        lag : int | None
-            Lagrangian mode: 0=velocity, 1=displacement (default), 2=final position.
-        **kwargs : float | int | None
-            Additional MMG options.
-
-        Returns
-        -------
-        dict[str, Any]
-            Statistics dictionary with before/after metrics.
-
-        """
-
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -2135,8 +2046,6 @@ class MmgMeshS:
     All element indices in this class are 0-based (Python convention).
     The underlying MMG library uses 1-based indexing, but the bindings
     handle this conversion automatically.
-
-    Note: MmgMeshS does not support Lagrangian remeshing (remesh_lagrangian).
     """
 
     @overload
@@ -2813,37 +2722,6 @@ class MmgMeshS:
         -------
         dict[str, Any]
             Statistics dictionary with before/after metrics.
-
-        """
-
-    def remesh_lagrangian(
-        self,
-        displacement: NDArray[np.float64],
-        **kwargs: float | None,
-    ) -> None:
-        """Not supported - raises RuntimeError.
-
-        Lagrangian motion is not supported for surface meshes (MmgMeshS).
-
-        Reason: Lagrangian motion requires solving elasticity PDEs to propagate
-        boundary displacements to interior vertices. Surface meshes have no
-        volumetric interior - the ELAS library only supports 2D/3D elasticity,
-        not shell/membrane elasticity needed for surfaces.
-
-        Alternative: Use mmgpy.move_mesh() to move vertices and remesh:
-            mmgpy.move_mesh(mesh, displacement, hausd=0.01)
-
-        Parameters
-        ----------
-        displacement : NDArray[np.float64]
-            Not used - raises RuntimeError immediately.
-        **kwargs : float | None
-            Not used - raises RuntimeError immediately.
-
-        Raises
-        ------
-        RuntimeError
-            Always raised - Lagrangian motion is not supported for surface meshes.
 
         """
 

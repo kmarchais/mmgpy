@@ -12,12 +12,10 @@
 # ///
 """2D Lagrangian motion remeshing example.
 
-This example demonstrates how to use the pure Python Lagrangian motion
-implementation to deform a 2D mesh while maintaining mesh quality.
-
-The Python implementation uses Laplacian smoothing to propagate boundary
-displacements to interior nodes, then applies the motion and remeshes.
-This works on all platforms without requiring the ELAS library.
+This example demonstrates how to deform a 2D mesh while maintaining mesh
+quality. ``mmgpy.move_mesh`` propagates boundary displacements to interior
+nodes via Laplacian smoothing (or, optionally, a fedoo-backed elasticity
+solve when installed via the ``[fem]`` extra) and then remeshes.
 """
 
 import matplotlib.pyplot as plt

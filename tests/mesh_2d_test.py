@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
-import pytest
 
 from mmgpy._mmgpy import MmgMesh2D
 
@@ -184,53 +183,4 @@ class TestRemeshing:
         assert output_triangles.shape[0] > 0, (
             "Mesh should have triangles after remeshing"
         )
-        assert output_triangles.shape[1] == 3, "Triangles should have 3 vertices"
-
-
-class TestLagrangianRemeshing:
-    """Tests for MmgMesh2D Lagrangian motion remeshing.
-
-    Note: Lagrangian motion requires the optional ELAS library.
-    The feature is disabled by default (USE_ELAS=OFF in CMake).
-    Tests are skipped if the feature is not available.
-    """
-
-    @staticmethod
-    def _lagrangian_available(square_mesh: tuple[np.ndarray, np.ndarray]) -> bool:
-        """Check if Lagrangian motion is available for 2D meshes."""
-        try:
-            vertices, triangles = square_mesh
-            mesh = MmgMesh2D(vertices, triangles)
-            displacement = np.zeros((vertices.shape[0], 2), dtype=np.float64)
-            mesh.remesh_lagrangian(displacement, verbose=False)
-        except RuntimeError as e:
-            if "lagrangian motion" in str(e).lower() or "lag" in str(e).lower():
-                return False
-            raise
-        else:
-            return True
-
-    def test_remesh_lagrangian(
-        self,
-        square_mesh: tuple[np.ndarray, np.ndarray],
-    ) -> None:
-        """Test Lagrangian motion remeshing for MmgMesh2D."""
-        if not self._lagrangian_available(square_mesh):
-            pytest.skip("Lagrangian motion requires USE_ELAS=ON at build time")
-
-        vertices, triangles = square_mesh
-        mesh = MmgMesh2D(vertices, triangles)
-
-        n_vertices = vertices.shape[0]
-        displacement = np.zeros((n_vertices, 2), dtype=np.float64)
-        displacement[:, 0] = 0.05
-
-        mesh.remesh_lagrangian(displacement, verbose=False)
-
-        output_vertices = mesh.get_vertices()
-        output_triangles = mesh.get_triangles()
-
-        assert output_vertices.shape[0] > 0, "Should have vertices after remeshing"
-        assert output_vertices.shape[1] == 2, "Vertices should be 2D"
-        assert output_triangles.shape[0] > 0, "Should have triangles after remeshing"
         assert output_triangles.shape[1] == 3, "Triangles should have 3 vertices"

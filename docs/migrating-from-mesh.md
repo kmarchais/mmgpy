@@ -15,39 +15,39 @@ Every MMG-specific operation that used to live on `Mesh` now lives on the access
 
 ## Quick reference
 
-| `Mesh` method                                                  | Replacement                                                                       |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `Mesh(pv_dataset)`                                             | `pv_dataset` directly — no wrapper needed                                         |
-| `mesh.kind`                                                    | `dataset.mmg.kind`                                                                |
-| `mesh.remesh(**opts)`                                          | `new = dataset.mmg.remesh(**opts)`                                                |
-| `mesh.remesh_lagrangian(displacement, **opts)`                 | `new = dataset.mmg.remesh_lagrangian(displacement, **opts)`                       |
-| `mesh.remesh_levelset(levelset, **opts)`                       | `new = dataset.mmg.remesh_levelset(levelset, **opts)`                             |
-| `mesh.remesh_optimize(**opts)`                                 | `new = dataset.mmg.remesh_optimize(**opts)`                                       |
-| `mesh.remesh_uniform(size, **opts)`                            | `new = dataset.mmg.remesh_uniform(size, **opts)`                                  |
-| `mesh.set_size_sphere(...)` etc. + `mesh.remesh()`             | `dataset.mmg.remesh(local_sizing=[{"shape": "sphere", ...}])`                     |
-| `mesh.load_sol(path)`                                          | `dataset.mmg.load_sol(path)`                                                      |
-| `mesh.save_sol(path)`                                          | `dataset.mmg.save_sol(path)`                                                      |
-| `mesh.validate(detailed=True)`                                 | `dataset.mmg.validate(detailed=True)`                                             |
-| `mesh.get_element_quality(idx)`                                | `dataset.mmg.element_quality(idx)`                                                |
-| `mesh.get_element_qualities()`                                 | `dataset.mmg.element_qualities()`                                                 |
-| `mesh.get_adjacent_elements(idx)`                              | `dataset.mmg.adjacent_elements(idx)`                                              |
-| `mesh.get_vertex_neighbors(idx)`                               | `dataset.mmg.vertex_neighbors(idx)`                                               |
-| `mesh.get_center_of_mass()`                                    | `dataset.mmg.center_of_mass()`                                                    |
-| `mesh.get_vertices()` / `mesh.set_vertices(v)`                 | `dataset.points` (read/write)                                                     |
-| `mesh.get_triangles()` / `mesh.get_tetrahedra()`               | `dataset.cells_dict[pv.CellType.TRIANGLE]` / `[pv.CellType.TETRA]`                |
-| `mesh.get_edges()`                                             | `dataset.cells_dict[pv.CellType.LINE]` (when `include_edges=True`)                |
-| `mesh.compute_volume()`                                        | `dataset.volume` (tet meshes)                                                     |
-| `mesh.compute_surface_area()`                                  | `dataset.area`                                                                    |
-| `mesh.get_bounds()`                                            | `dataset.bounds` (note: returns `(xmin, xmax, ymin, ymax, zmin, zmax)`)           |
-| `mesh.get_diagonal()`                                          | `np.linalg.norm(np.array(dataset.bounds[1::2]) - np.array(dataset.bounds[0::2]))` |
-| `mesh["metric"] = arr`                                         | `dataset.point_data["metric"] = arr`                                              |
-| `mesh["temperature"] = arr`                                    | `dataset.point_data["temperature"] = arr`                                         |
-| `mesh.set_user_field(name, arr)` / `mesh.get_user_field(name)` | `dataset.point_data[name]`                                                        |
-| `mesh.to_pyvista()` / `mesh.vtk`                               | `dataset` (already PyVista)                                                       |
-| `mesh.plot(**kwargs)`                                          | `dataset.plot(**kwargs)`                                                          |
-| `mesh.save(path)`                                              | `dataset.save(path)` (mmgpy's writer plugin handles `.mesh`/`.meshb`)             |
-| `mesh.copy()`                                                  | `dataset.copy()`                                                                  |
-| `mesh.checkpoint()`                                            | snapshot via `snap = dataset.copy()`, reassign on success (see below)             |
+| `Mesh` method                                                  | Replacement                                                                                                                               |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `Mesh(pv_dataset)`                                             | `pv_dataset` directly — no wrapper needed                                                                                                 |
+| `mesh.kind`                                                    | `dataset.mmg.kind`                                                                                                                        |
+| `mesh.remesh(**opts)`                                          | `new = dataset.mmg.remesh(**opts)`                                                                                                        |
+| `mesh.remesh_lagrangian(displacement, **opts)`                 | `new = dataset.mmg.move(displacement, **opts)` (Laplacian by default; pass `propagation_method="elasticity"` for the fedoo-backed solver) |
+| `mesh.remesh_levelset(levelset, **opts)`                       | `new = dataset.mmg.remesh_levelset(levelset, **opts)`                                                                                     |
+| `mesh.remesh_optimize(**opts)`                                 | `new = dataset.mmg.remesh_optimize(**opts)`                                                                                               |
+| `mesh.remesh_uniform(size, **opts)`                            | `new = dataset.mmg.remesh_uniform(size, **opts)`                                                                                          |
+| `mesh.set_size_sphere(...)` etc. + `mesh.remesh()`             | `dataset.mmg.remesh(local_sizing=[{"shape": "sphere", ...}])`                                                                             |
+| `mesh.load_sol(path)`                                          | `dataset.mmg.load_sol(path)`                                                                                                              |
+| `mesh.save_sol(path)`                                          | `dataset.mmg.save_sol(path)`                                                                                                              |
+| `mesh.validate(detailed=True)`                                 | `dataset.mmg.validate(detailed=True)`                                                                                                     |
+| `mesh.get_element_quality(idx)`                                | `dataset.mmg.element_quality(idx)`                                                                                                        |
+| `mesh.get_element_qualities()`                                 | `dataset.mmg.element_qualities()`                                                                                                         |
+| `mesh.get_adjacent_elements(idx)`                              | `dataset.mmg.adjacent_elements(idx)`                                                                                                      |
+| `mesh.get_vertex_neighbors(idx)`                               | `dataset.mmg.vertex_neighbors(idx)`                                                                                                       |
+| `mesh.get_center_of_mass()`                                    | `dataset.mmg.center_of_mass()`                                                                                                            |
+| `mesh.get_vertices()` / `mesh.set_vertices(v)`                 | `dataset.points` (read/write)                                                                                                             |
+| `mesh.get_triangles()` / `mesh.get_tetrahedra()`               | `dataset.cells_dict[pv.CellType.TRIANGLE]` / `[pv.CellType.TETRA]`                                                                        |
+| `mesh.get_edges()`                                             | `dataset.cells_dict[pv.CellType.LINE]` (when `include_edges=True`)                                                                        |
+| `mesh.compute_volume()`                                        | `dataset.volume` (tet meshes)                                                                                                             |
+| `mesh.compute_surface_area()`                                  | `dataset.area`                                                                                                                            |
+| `mesh.get_bounds()`                                            | `dataset.bounds` (note: returns `(xmin, xmax, ymin, ymax, zmin, zmax)`)                                                                   |
+| `mesh.get_diagonal()`                                          | `np.linalg.norm(np.array(dataset.bounds[1::2]) - np.array(dataset.bounds[0::2]))`                                                         |
+| `mesh["metric"] = arr`                                         | `dataset.point_data["metric"] = arr`                                                                                                      |
+| `mesh["temperature"] = arr`                                    | `dataset.point_data["temperature"] = arr`                                                                                                 |
+| `mesh.set_user_field(name, arr)` / `mesh.get_user_field(name)` | `dataset.point_data[name]`                                                                                                                |
+| `mesh.to_pyvista()` / `mesh.vtk`                               | `dataset` (already PyVista)                                                                                                               |
+| `mesh.plot(**kwargs)`                                          | `dataset.plot(**kwargs)`                                                                                                                  |
+| `mesh.save(path)`                                              | `dataset.save(path)` (mmgpy's writer plugin handles `.mesh`/`.meshb`)                                                                     |
+| `mesh.copy()`                                                  | `dataset.copy()`                                                                                                                          |
+| `mesh.checkpoint()`                                            | snapshot via `snap = dataset.copy()`, reassign on success (see below)                                                                     |
 
 ## Three concrete migrations
 

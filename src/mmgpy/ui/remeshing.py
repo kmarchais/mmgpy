@@ -20,16 +20,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Random number generator for reproducible displacement fields
-# Using fixed seed for deterministic Lagrangian motion demo
-_rng = np.random.default_rng(42)
-
 
 class RemeshingMixin:
     """Mixin class providing remeshing functionality.
 
     This mixin provides methods for:
-    - Executing remeshing operations (standard, levelset, lagrangian, optimize)
+    - Executing remeshing operations (standard, levelset, optimize)
     - Building remesh options from UI state
     - Transferring solution fields between meshes
     - Managing sizing constraints
@@ -298,14 +294,6 @@ class RemeshingMixin:
                 options["ls"] = ls_value
             return self._mesh.remesh_levelset(levelset, progress=False, **options)
 
-        if mode == "lagrangian":
-            displacement = self._compute_displacement()
-            return self._mesh.remesh_lagrangian(
-                displacement,
-                progress=False,
-                **options,
-            )
-
         # Fallback to standard remesh
         return self._mesh.remesh(progress=False, **options)
 
@@ -369,17 +357,6 @@ class RemeshingMixin:
 
         formula = self.state.levelset_formula
         return evaluate_levelset_formula(formula, x, y, z)
-
-    def _compute_displacement(self) -> np.ndarray:
-        """Compute displacement field."""
-        vertices = self._mesh.get_vertices()
-        n_verts = len(vertices)
-        dim = vertices.shape[1]
-
-        scale = float(self.state.displacement_scale)
-        displacement = _rng.standard_normal((n_verts, dim)) * scale
-
-        return displacement.astype(np.float64)
 
     def _run_validation(self) -> None:
         """Run mesh validation."""

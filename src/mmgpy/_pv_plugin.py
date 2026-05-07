@@ -186,8 +186,8 @@ def _apply_local_sizing_specs(
     Each spec is a dict with a ``"shape"`` key (one of ``"sphere"``, ``"box"``,
     ``"cylinder"``, ``"from_point"``) plus the parameters that the matching
     ``Mesh.set_size_*`` method expects. ``Mesh.remesh`` auto-applies sizing,
-    but the lagrangian/levelset/optimize/uniform variants do not, so we apply
-    explicitly here for uniform behavior across all accessor methods.
+    but the levelset/optimize/uniform variants do not, so we apply explicitly
+    here for uniform behavior across all accessor methods.
     """
     if not specs:
         return
@@ -360,32 +360,6 @@ class MmgAccessor:
             mesh.remesh(**options)
         return _to_pyvista_with_user_fields(mesh)
 
-    def remesh_lagrangian(
-        self,
-        displacement: NDArray[np.float64],
-        *,
-        local_sizing: list[Mapping[str, Any]] | None = None,
-        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_lagrangian
-    ) -> pv.UnstructuredGrid | pv.PolyData:
-        """Lagrangian (moving-mesh) remeshing.
-
-        Only available for TETRAHEDRAL and TRIANGULAR_2D datasets.
-
-        Parameters
-        ----------
-        displacement : ndarray
-            Per-vertex displacement field, shape ``(n_points, dim)``.
-        local_sizing : list of dict, optional
-            Sizing constraints; see :meth:`remesh`.
-        **options : object
-            Forwarded to :meth:`mmgpy.Mesh.remesh_lagrangian`.
-
-        """
-        mesh = _build_mesh_with_mmg_fields(self._dataset)
-        _apply_local_sizing_specs(mesh, local_sizing)
-        mesh.remesh_lagrangian(displacement, **options)
-        return _to_pyvista_with_user_fields(mesh)
-
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -455,8 +429,7 @@ class MmgAccessor:
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Apply a displacement field and remesh to maintain quality.
 
-        Pure-Python lagrangian motion (no ELAS dependency). Returns a fresh
-        dataset; the input is not modified.
+        Returns a fresh dataset; the input is not modified.
 
         Parameters
         ----------

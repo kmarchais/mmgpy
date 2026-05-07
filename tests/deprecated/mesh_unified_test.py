@@ -716,36 +716,6 @@ class TestMeshRemeshing:
 
         assert len(mesh.get_tetrahedra()) != initial_count
 
-    @pytest.mark.skip(reason="Requires MMG compiled with USE_ELAS flag")
-    def test_remesh_lagrangian_tetrahedral(self) -> None:
-        """Test Lagrangian remeshing for tetrahedral mesh."""
-        x = np.linspace(0, 1, 4)
-        y = np.linspace(0, 1, 4)
-        z = np.linspace(0, 1, 4)
-        xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
-        points = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
-        cloud = pv.PolyData(points)
-        tetra = cloud.delaunay_3d()
-
-        mesh = Mesh(tetra)
-        displacement = np.zeros((len(mesh.get_vertices()), 3))
-        displacement[:, 0] = 0.01  # Small x displacement
-
-        # Should not raise
-        mesh.remesh_lagrangian(displacement, verbose=-1)
-
-    def test_remesh_lagrangian_raises_for_surface(
-        self,
-        triangle_3d_vertices: np.ndarray,
-        triangle_cells: np.ndarray,
-    ) -> None:
-        """Test remesh_lagrangian raises for surface mesh."""
-        mesh = Mesh(triangle_3d_vertices, triangle_cells)
-        displacement = np.zeros((3, 3))
-
-        with pytest.raises(TypeError, match="not available for TRIANGULAR_SURFACE"):
-            mesh.remesh_lagrangian(displacement)
-
 
 # Non-native format remesh with sol tests
 

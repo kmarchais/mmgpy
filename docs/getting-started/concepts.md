@@ -161,18 +161,12 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 Remesh while preserving a displacement field (useful for moving meshes):
 
-!!! warning "Requires ELAS library for the bound path; the pure-Python `dataset.mmg.move(...)` works without ELAS"
-
 <!-- pytest-codeblocks:skip -->
 
 ```python
 displacement = np.zeros((mesh.n_points, 3))
 displacement[:, 0] = 0.1  # Move all vertices in x
 
-# ELAS-bound lagrangian
-remeshed = mesh.mmg.remesh_lagrangian(displacement)
-
-# Pure-Python alternative (no ELAS required)
 moved = mesh.mmg.move(displacement, hmax=0.1)
 ```
 
