@@ -13,7 +13,7 @@ from mmgpy._progress import _emit_event, remesh_mesh, rich_progress
 from mmgpy.progress import LoggingProgressReporter
 
 if TYPE_CHECKING:
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
 
 
 class CallbackTracker:
@@ -397,7 +397,7 @@ def test_cancellation_error_import() -> None:
 @pytest.fixture
 def simple_mesh() -> Mesh:
     """Create a simple Mesh for testing progress parameter."""
-    from mmgpy import Mesh as _Mesh
+    from mmgpy._mesh import Mesh as _Mesh
 
     vertices = np.array(
         [

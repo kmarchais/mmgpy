@@ -1,9 +1,11 @@
-"""Tests for the 0.12 deprecation of ``mmgpy.Mesh`` and friends.
+"""Tests for the 0.13 removal of ``mmgpy.Mesh`` / ``mmgpy.MeshCheckpoint``.
 
-The class is scheduled for removal in 0.13. Until then, instantiation must
-emit ``DeprecationWarning`` while the internal I/O fast path
-(``mmgpy.read`` / ``Mesh._from_impl``) stays silent so the accessor doesn't
-spam users on every call.
+The classes were deprecated in 0.12 and removed from the public API in 0.13.
+``MeshKind`` survives. The internal Mesh helper that the accessor uses is now
+private and stripped of deprecation warnings; the accessor must stay silent
+on every call.
+
+``mmgpy.read()`` is now deprecated for removal in 0.14 and emits a warning.
 """
 
 from __future__ import annotations
@@ -34,48 +36,87 @@ def _tiny_tet_arrays() -> tuple[np.ndarray, np.ndarray]:
     return vertices, tets
 
 
-def test_mesh_init_emits_deprecation_warning() -> None:
-    """``mmgpy.Mesh(verts, cells)`` triggers ``DeprecationWarning``."""
-    vertices, tets = _tiny_tet_arrays()
-    with pytest.warns(DeprecationWarning, match=r"mmgpy\.Mesh is deprecated"):
-        mmgpy.Mesh(vertices, tets)
+def test_mesh_is_no_longer_public() -> None:
+    """``mmgpy.Mesh`` is removed from the public API in 0.13."""
+    assert not hasattr(mmgpy, "Mesh")
 
 
-def test_mesh_init_from_pyvista_emits_deprecation_warning() -> None:
-    """The PyVista-source overload of ``Mesh()`` warns too."""
+def test_mesh_checkpoint_is_no_longer_public() -> None:
+    """``mmgpy.MeshCheckpoint`` is removed from the public API in 0.13."""
+    assert not hasattr(mmgpy, "MeshCheckpoint")
+
+
+def test_meshkind_is_still_public() -> None:
+    """``MeshKind`` survives 0.13 because the accessor still returns it."""
+    assert mmgpy.MeshKind.TETRAHEDRAL.value == "tetrahedral"
+
+
+def test_mmgpy_read_emits_deprecation_warning(tmp_path: Path) -> None:
+    """``mmgpy.read(path)`` emits a DeprecationWarning announcing 0.14 removal."""
+    from mmgpy._mesh import Mesh
+
     vertices, tets = _tiny_tet_arrays()
     grid = pv.UnstructuredGrid({pv.CellType.TETRA: tets}, vertices)
-    with pytest.warns(DeprecationWarning, match=r"mmgpy\.Mesh is deprecated"):
-        mmgpy.Mesh(grid)
+    path = tmp_path / "tiny.mesh"
+    grid.save(str(path))
+
+    with pytest.warns(DeprecationWarning, match=r"mmgpy\.read\(\) is deprecated"):
+        result = mmgpy.read(path)
+
+    # 0.13 keeps the 0.12 return contract: `read()` still hands back the
+    # internal Mesh wrapper so that pre-existing
+    # `mesh = mmgpy.read(...); mesh.remesh(...)` code keeps running while the
+    # warning nudges users toward `pv.read(...).mmg.remesh(...)`.
+    assert isinstance(result, Mesh)
+    assert hasattr(result, "remesh")
+    assert hasattr(result, "to_pyvista")
 
 
-def test_mesh_checkpoint_emits_deprecation_warning() -> None:
-    """``Mesh.checkpoint()`` triggers its own ``DeprecationWarning``."""
+def test_mmgpy_read_forwards_user_point_data(tmp_path: Path) -> None:
+    """User point_data on the source survives the deprecated ``mmgpy.read``."""
     vertices, tets = _tiny_tet_arrays()
+    grid = pv.UnstructuredGrid({pv.CellType.TETRA: tets}, vertices)
+    grid.point_data["temperature"] = np.linspace(0.0, 1.0, len(vertices))
+    path = tmp_path / "tiny.vtu"
+    grid.save(str(path))
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
-        mesh = mmgpy.Mesh(vertices, tets)
+        result = mmgpy.read(path)
 
-    with pytest.warns(DeprecationWarning, match=r"Mesh\.checkpoint\(\) is deprecated"):
-        mesh.checkpoint()
+    np.testing.assert_allclose(
+        result["temperature"],
+        np.linspace(0.0, 1.0, len(vertices)),
+    )
 
 
-def test_mmgpy_read_does_not_warn(tmp_path: Path) -> None:
-    """``mmgpy.read(path)`` returns a Mesh without firing the deprecation."""
+def test_mmgpy_read_result_supports_mmg_accessor_via_to_pyvista(
+    tmp_path: Path,
+) -> None:
+    """Users can still bridge the deprecated ``read()`` to the new accessor.
+
+    The 0.12 → 0.13 → 0.14 migration story tells users to switch to
+    ``pv.read(...).mmg.remesh(...)``. While the shim is alive, any code that
+    still goes through ``mmgpy.read`` must be able to convert to a PyVista
+    dataset and reach the accessor without further breakage.
+    """
     vertices, tets = _tiny_tet_arrays()
     grid = pv.UnstructuredGrid({pv.CellType.TETRA: tets}, vertices)
     path = tmp_path / "tiny.mesh"
     grid.save(str(path))
 
     with warnings.catch_warnings():
-        warnings.simplefilter("error", DeprecationWarning)
+        warnings.simplefilter("ignore", DeprecationWarning)
         mesh = mmgpy.read(path)
 
-    assert mesh is not None
+    pv_mesh = mesh.to_pyvista()
+    assert pv_mesh.mmg.kind == mmgpy.MeshKind.TETRAHEDRAL
+    remeshed = pv_mesh.mmg.remesh(hsiz=0.5, verbose=-1)
+    assert remeshed.n_cells > 0
 
 
 def test_accessor_remesh_does_not_warn() -> None:
-    """The .mmg accessor builds Mesh internally but must stay silent."""
+    """The .mmg accessor builds the internal helper but must stay silent."""
     vertices, tets = _tiny_tet_arrays()
     grid = pv.UnstructuredGrid({pv.CellType.TETRA: tets}, vertices)
 

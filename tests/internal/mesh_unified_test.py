@@ -8,7 +8,9 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy import Mesh, MeshKind, read
+from mmgpy import MeshKind
+from mmgpy._io import _read_mesh_internal as read
+from mmgpy._mesh import Mesh
 
 _ASSETS = Path(__file__).resolve().parents[2] / "assets"
 
@@ -646,10 +648,8 @@ class TestMeshMethods:
 
     def test_save_non_native_format(self) -> None:
         """Test save to non-native format via PyVista (3D mesh)."""
-        import mmgpy
-
         # Use a cube mesh that has tets, boundary triangles, and edges
-        mesh = mmgpy.read(_ASSETS / "cube.mesh")
+        mesh = read(_ASSETS / "cube.mesh")
         mesh.set_user_field("temperature", np.ones(len(mesh.get_vertices())))
 
         with TemporaryDirectory() as tmpdir:
@@ -1199,10 +1199,9 @@ class TestMeshEdgesRoundTrip:
 
 
 def test_mesh_exported() -> None:
-    """Test that Mesh and MeshKind are exported from main package."""
+    """MeshKind is public; Mesh is internal-only."""
     import mmgpy
 
-    assert hasattr(mmgpy, "Mesh")
+    assert not hasattr(mmgpy, "Mesh")
     assert hasattr(mmgpy, "MeshKind")
-    assert mmgpy.Mesh is Mesh
     assert mmgpy.MeshKind is MeshKind

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pyvista as pv
 
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "island.mesh"
 
@@ -23,10 +23,8 @@ pl = pv.Plotter(shape=(1, 2), window_size=(800, 400))
 for open_boundary in [False, True]:
     pl.subplot(0, int(open_boundary))
 
-    mesh = mmgpy.read(INPUT_FILE)
-    mesh.remesh(opnbdy=open_boundary, verbose=-1)
-
-    pv_mesh = mesh.to_pyvista()
+    mesh = pv.read(INPUT_FILE)
+    pv_mesh = mesh.mmg.remesh(opnbdy=open_boundary, verbose=-1)
     pl.add_mesh(
         pv_mesh.extract_cells(pv_mesh.cell_centers().points[:, 0] < 0),
         show_edges=True,

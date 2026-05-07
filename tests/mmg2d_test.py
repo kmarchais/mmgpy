@@ -76,9 +76,9 @@ def generated_meshes(
     ]
     subprocess.check_call(command)
 
-    # Load meshes with PyVista
-    test_mesh: pv.PolyData = mmgpy.read(test_path).to_pyvista()
-    ref_mesh: pv.PolyData = mmgpy.read(ref_path).to_pyvista()
+    # Load meshes with PyVista (mmgpy registers a Medit reader plugin)
+    test_mesh: pv.PolyData = pv.read(test_path)
+    ref_mesh: pv.PolyData = pv.read(ref_path)
 
     return test_mesh, ref_mesh
 

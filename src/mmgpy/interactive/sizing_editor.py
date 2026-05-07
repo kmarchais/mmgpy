@@ -18,7 +18,7 @@ from mmgpy.sizing import BoxSize, CylinderSize, PointSize, SizingConstraint, Sph
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
     from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
@@ -118,8 +118,8 @@ class SizingEditor:
 
         """
         # Wrap raw MmgMesh* objects in a Mesh wrapper
-        from mmgpy import Mesh as MeshClass
         from mmgpy import MeshKind
+        from mmgpy._mesh import Mesh as MeshClass
         from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
         if isinstance(mesh, MmgMesh3D):

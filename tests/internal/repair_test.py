@@ -2,7 +2,8 @@
 
 import numpy as np
 
-from mmgpy import Mesh, MeshKind
+from mmgpy import MeshKind
+from mmgpy._mesh import Mesh
 
 
 class TestRemoveDuplicateVertices:

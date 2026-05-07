@@ -141,7 +141,7 @@ def _classify_filename(name: str) -> str:
 
 import mmgpy  # noqa: E402
 import mmgpy._io as _io_mod  # noqa: E402
-from mmgpy import Mesh  # noqa: E402
+from mmgpy._mesh import Mesh  # noqa: E402
 
 _real_read = _io_mod.read
 _real_save = Mesh.save

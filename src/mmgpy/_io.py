@@ -230,67 +230,16 @@ if TYPE_CHECKING:
     from mmgpy._mesh import Mesh
 
 
-def read(
+def _read_mesh_internal(
     source: str | Path | pv.UnstructuredGrid | pv.PolyData,
     mesh_kind: MeshKind | None = None,
 ) -> Mesh:
-    """Read a mesh from a file or PyVista object.
+    """Read a mesh and return the internal :class:`Mesh` wrapper.
 
-    This function provides unified mesh loading from any format supported by
-    PyVista or directly from PyVista mesh objects.
-
-    For Medit format (.mesh) files, native MMG loading is used to preserve
-    MMG-specific keywords like Ridges, RequiredVertices, Tangents, and
-    reference markers.
-
-    Args:
-        source: File path (str or Path) or PyVista mesh object.
-        mesh_kind: Force a specific mesh kind instead of auto-detection.
-            - MeshKind.TETRAHEDRAL: 3D volumetric mesh
-            - MeshKind.TRIANGULAR_2D: 2D planar mesh
-            - MeshKind.TRIANGULAR_SURFACE: 3D surface mesh
-            - None: Auto-detect based on element types and coordinates
-
-    Returns:
-        A Mesh instance with the appropriate kind.
-
-    Raises:
-        ValueError: If mesh kind cannot be determined or file cannot be read.
-        TypeError: If source type is not supported.
-        FileNotFoundError: If file does not exist.
-
-    Auto-detection logic:
-        - Has tetrahedra → TETRAHEDRAL
-        - Has triangles + 3D coords → TRIANGULAR_SURFACE
-        - Has triangles + 2D coords (or z~=0) -> TRIANGULAR_2D
-
-    Supported file formats:
-        - Medit: .mesh, .meshb (native MMG loading, preserves all MMG keywords)
-        - VTK: .vtk, .vtu, .vtp (via PyVista)
-        - STL: .stl (via PyVista)
-        - OBJ: .obj (via PyVista)
-        - PLY: .ply (via PyVista)
-        - Gmsh, Abaqus, NASTRAN, Exodus, XDMF, etc. (via PyVista + meshio)
-        - And many more via PyVista (which uses meshio as fallback)...
-
-    Example:
-        >>> import mmgpy
-        >>>
-        >>> # Auto-detect mesh kind from file
-        >>> mesh = mmgpy.read("tetra_mesh.vtk")
-        >>> mesh.kind  # MeshKind.TETRAHEDRAL
-        >>>
-        >>> # Force specific mesh kind
-        >>> mesh = mmgpy.read("mesh.vtk", mesh_kind=MeshKind.TRIANGULAR_SURFACE)
-        >>>
-        >>> # Read Medit file with native loading (preserves Ridges, etc.)
-        >>> mesh = mmgpy.read("mesh.mesh")
-        >>>
-        >>> # Read from PyVista object
-        >>> import pyvista as pv
-        >>> grid = pv.read("mesh.vtk")
-        >>> mesh = mmgpy.read(grid)
-
+    Internal entry point used by the ``.mmg`` accessor and other in-package
+    consumers that need a :class:`Mesh` to drive sizing / user-field state.
+    External users should construct a PyVista dataset (``pv.read`` or any
+    other PyVista path) and use the ``.mmg`` accessor.
     """
     # Import here to avoid circular imports
     from mmgpy._mesh import Mesh, _LazyFieldSource  # noqa: PLC0415
@@ -342,6 +291,38 @@ def read(
 
     msg = f"Unsupported source type: {type(source)}"
     raise TypeError(msg)
+
+
+def read(
+    source: str | Path | pv.UnstructuredGrid | pv.PolyData,
+    mesh_kind: MeshKind | None = None,
+) -> Mesh:
+    """Read a mesh from a file or PyVista object.
+
+    .. deprecated:: 0.13
+        Use :func:`pyvista.read` instead, then operate via the ``.mmg``
+        accessor. ``pv.read(...)`` works for any PyVista-supported format;
+        with ``mmgpy`` installed it additionally handles ``.mesh`` /
+        ``.meshb`` via the registered Medit reader plugin. ``mmgpy.read``
+        will be removed in 0.14.
+
+    Returns the internal :class:`Mesh` wrapper for backwards compatibility
+    with code written against 0.12. New code should call ``pv.read(...)``
+    and use ``dataset.mmg.remesh(...)``.
+    """
+    import warnings  # noqa: PLC0415
+
+    warnings.warn(
+        "mmgpy.read() is deprecated and will be removed in 0.14. "
+        "Use pyvista.read() instead, then operate via the .mmg accessor "
+        "(e.g. pv.read('foo.mesh').mmg.remesh(hsiz=0.1)). pv.read() works "
+        "for any PyVista-supported format; with mmgpy installed it also "
+        "handles .mesh / .meshb via the registered Medit reader plugin.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _read_mesh_internal(source, mesh_kind)
 
 
 def _mesh_kind_to_class(

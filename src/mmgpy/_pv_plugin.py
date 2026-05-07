@@ -132,10 +132,7 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
     """
     import numpy as np  # noqa: PLC0415
 
-    # Use mmgpy.read instead of Mesh(dataset) to bypass the deprecation
-    # warning: read returns a Mesh built via Mesh._from_impl, which does
-    # not run __init__.
-    from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+    from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
     mesh = _read_mesh(dataset)
     for key in _MMG_FIELD_NAMES:
@@ -315,7 +312,7 @@ class MmgAccessor:
         Inferred from the dataset's cell types via the same auto-detection
         path used by ``mesh.mmg.remesh``.
         """
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).kind
 
@@ -542,7 +539,7 @@ class MmgAccessor:
 
         See :meth:`mmgpy.Mesh.validate` for parameter semantics.
         """
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).validate(
             detailed=detailed,
@@ -559,13 +556,13 @@ class MmgAccessor:
         Distinct from :meth:`pyvista.DataSet.cell_quality`, which exposes
         VTK's metrics (e.g. scaled jacobian, aspect ratio).
         """
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_element_quality(idx)
 
     def element_qualities(self) -> NDArray[np.float64]:
         """Return MMG in-radius-ratio quality for every element."""
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_element_qualities()
 
@@ -576,7 +573,7 @@ class MmgAccessor:
         VTK's 0-based topology. Useful when migrating code that relied on
         ``Mesh.get_adjacent_elements``.
         """
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_adjacent_elements(idx)
 
@@ -587,7 +584,7 @@ class MmgAccessor:
         VTK's 0-based topology. Useful when migrating code that relied on
         ``Mesh.get_vertex_neighbors``.
         """
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_vertex_neighbors(idx)
 
@@ -598,7 +595,7 @@ class MmgAccessor:
         arithmetic mean of point coordinates without volume/area
         weighting.
         """
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_center_of_mass()
 

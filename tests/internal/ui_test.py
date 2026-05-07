@@ -576,7 +576,7 @@ class TestGetMeshDiagonal:
         """Test with a real mesh returns correct diagonal."""
         import pyvista as pv
 
-        from mmgpy import Mesh
+        from mmgpy._mesh import Mesh
 
         # Create a unit cube mesh
         pv_mesh = pv.Cube().triangulate()

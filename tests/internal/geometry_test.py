@@ -7,7 +7,8 @@ import numpy.testing as npt
 import pytest
 import pyvista as pv
 
-from mmgpy import Mesh, MeshKind
+from mmgpy import MeshKind
+from mmgpy._mesh import Mesh
 
 
 class TestEmptyMesh:

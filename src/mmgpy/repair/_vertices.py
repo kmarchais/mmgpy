@@ -29,7 +29,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 if TYPE_CHECKING:
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
 
 _logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def remove_duplicate_vertices(
     >>> print(f"Removed {removed_count} duplicate vertices")
 
     """
-    from mmgpy import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
 
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)
@@ -147,7 +147,7 @@ def remove_orphan_vertices(mesh: Mesh) -> tuple[Mesh, int]:
     >>> print(f"Removed {removed_count} orphan vertices")
 
     """
-    from mmgpy import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
 
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)

@@ -14,14 +14,12 @@ from pathlib import Path
 
 import pyvista as pv
 
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "cube.mesh"
 
-mesh = mmgpy.read(INPUT_FILE)
-mesh.remesh(optim=1, verbose=-1)
-
-pv_mesh = mesh.to_pyvista()
+mesh = pv.read(INPUT_FILE)
+pv_mesh = mesh.mmg.remesh(optim=1, verbose=-1)
 
 center = (0.5, 0.5, 0.5)
 

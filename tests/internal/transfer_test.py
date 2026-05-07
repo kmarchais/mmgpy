@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.spatial import Delaunay
 
-from mmgpy import Mesh
+from mmgpy._mesh import Mesh
 
 
 @pytest.fixture

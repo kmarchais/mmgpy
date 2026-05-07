@@ -12,6 +12,12 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### Removed
 
 - `mmg2d`, `mmg3d`, `mmgs` CLI commands — use the unified `mmg` command instead
+- `mmgpy.Mesh` and `mmgpy.MeshCheckpoint` from the public API (deprecated in 0.12). Use the `.mmg` PyVista accessor on a `pv.UnstructuredGrid` / `pv.PolyData` instead.
+- `Mesh.checkpoint()` (deprecated in 0.12). Snapshot a dataset with `snap = dataset.copy()` and reassign on success.
+
+### Deprecated
+
+- `mmgpy.read(...)` now emits `DeprecationWarning`; scheduled for removal in 0.14. The return value is unchanged from 0.12 (an internal `Mesh` wrapper), so existing `mesh = mmgpy.read(...); mesh.remesh(...)` code keeps working while the warning is active. New code should call `pv.read(...)` and use the `.mmg` accessor (e.g. `pv.read("foo.mesh").mmg.remesh(hsiz=0.1)`); with `mmgpy` installed, `pv.read` handles `.mesh` / `.meshb` via the registered Medit reader plugin.
 
 ## [0.9.0] - 2026-04-01
 

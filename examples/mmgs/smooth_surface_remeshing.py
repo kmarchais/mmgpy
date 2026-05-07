@@ -15,17 +15,17 @@ from pathlib import Path
 
 import pyvista as pv
 
-import mmgpy
+import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "rodin.mesh"
 
 SCREENSHOT = False
 
-mesh = mmgpy.read(INPUT_FILE)
-mesh.remesh(hausd=0.001, angle=0, verbose=-1)
+mesh = pv.read(INPUT_FILE)
+result = mesh.mmg.remesh(hausd=0.001, angle=0, verbose=-1)
 
 pl = pv.Plotter(off_screen=SCREENSHOT)
-pl.add_mesh(mesh.to_pyvista(), show_edges=True)
+pl.add_mesh(result, show_edges=True)
 pl.camera.elevation = -30
 if SCREENSHOT:
     pl.show(screenshot="smooth_surface_remeshing.png")

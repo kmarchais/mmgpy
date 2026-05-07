@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from mmgpy import Mesh
+from mmgpy._mesh import Mesh
 
 
 def create_test_cube() -> tuple[np.ndarray, np.ndarray]:

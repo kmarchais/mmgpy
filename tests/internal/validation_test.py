@@ -5,13 +5,13 @@ import pytest
 
 from mmgpy import (
     IssueSeverity,
-    Mesh,
     MeshKind,
     QualityStats,
     ValidationError,
     ValidationIssue,
     ValidationReport,
 )
+from mmgpy._mesh import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 

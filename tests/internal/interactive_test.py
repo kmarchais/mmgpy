@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from mmgpy import Mesh
+from mmgpy._mesh import Mesh
 from mmgpy.interactive import SizingEditor
 from mmgpy.interactive.sizing_editor import ConstraintMode
 from mmgpy.sizing import BoxSize, CylinderSize, PointSize, SphereSize

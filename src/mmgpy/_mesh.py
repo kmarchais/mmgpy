@@ -1,45 +1,18 @@
-"""Unified Mesh class for mmgpy.
+"""Internal Mesh helper used by mmgpy's accessor and high-level helpers.
 
-This module provides a single `Mesh` class that wraps the underlying
-MmgMesh3D, MmgMesh2D, and MmgMeshS implementations with auto-detection
-of mesh type.
-
-The Mesh class is the primary public API for mmgpy. The underlying C++
-bindings (MmgMesh3D, MmgMesh2D, MmgMeshS) are implementation details
-and should not be used directly.
-
-Example:
-    >>> from mmgpy import Mesh, MeshKind
-    >>>
-    >>> # Auto-detect mesh type from data
-    >>> mesh = Mesh(vertices, cells)
-    >>> mesh.kind  # MeshKind.TETRAHEDRAL
-    >>>
-    >>> # Remesh and save
-    >>> mesh.remesh(hmax=0.1)
-    >>> mesh.save("output.vtk")
-
-    >>> # Context manager usage
-    >>> with Mesh(vertices, cells) as mesh:
-    ...     mesh.remesh(hmax=0.1)
-    ...     mesh.save("output.vtk")
-
-    >>> # Transactional modifications with checkpoint
-    >>> mesh = Mesh(vertices, cells)
-    >>> with mesh.checkpoint() as snapshot:
-    ...     mesh.remesh(hmax=0.01)
-    ...     if mesh.validate():
-    ...         snapshot.commit()
-    ...     else:
-    ...         snapshot.rollback()
-
+The ``Mesh`` class in this module is **private** as of 0.13. The public
+``mmgpy.Mesh`` API was deprecated in 0.12 and removed in 0.13; what
+remains here is an internal wrapper that the ``.mmg`` PyVista accessor,
+``mmgpy.repair``, and ``mmgpy.ui`` use to bundle a C++ ``MmgMesh*`` impl
+with extra Python-side state (sizing constraints, user fields, lazy
+point_data). External code must use the ``.mmg`` accessor on a PyVista
+dataset instead.
 """
 
 from __future__ import annotations
 
 import warnings
 from contextlib import contextmanager
-from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -369,134 +342,6 @@ def _create_impl(  # noqa: PLR0913
     return impl
 
 
-@dataclass
-class MeshCheckpoint:
-    """Snapshot of mesh state for rollback.
-
-    This class is returned by `Mesh.checkpoint()` and provides transactional
-    semantics for mesh modifications. Changes are automatically rolled back
-    on context exit unless `commit()` is called.
-
-    Parameters
-    ----------
-    mesh : Mesh
-        The mesh to checkpoint.
-
-    Notes
-    -----
-    The checkpoint stores a complete copy of the mesh data including vertices,
-    elements, reference markers, and solution fields (metric, displacement,
-    levelset). For large meshes, this may consume significant memory.
-
-    Note: The tensor field is not saved because it shares memory with metric
-    in MMG's internal representation. Only one of metric or tensor can be
-    set at a time.
-
-    Examples
-    --------
-    >>> mesh = Mesh(vertices, cells)
-    >>> with mesh.checkpoint() as snapshot:
-    ...     mesh.remesh(hmax=0.01)
-    ...     if mesh.validate():
-    ...         snapshot.commit()  # Keep changes
-    ...     # Otherwise, changes are automatically rolled back
-
-    >>> # Automatic rollback on exception
-    >>> with mesh.checkpoint():
-    ...     mesh.remesh(hmax=0.01)
-    ...     raise ValueError("Something went wrong")
-    >>> # mesh is restored to original state
-
-    """
-
-    _mesh: Mesh
-    _vertices: NDArray[np.float64] = field(repr=False)
-    _vertex_refs: NDArray[np.int64] = field(repr=False)
-    _triangles: NDArray[np.int32] = field(repr=False)
-    _triangle_refs: NDArray[np.int64] = field(repr=False)
-    _edges: NDArray[np.int32] = field(repr=False)
-    _edge_refs: NDArray[np.int64] = field(repr=False)
-    _tetrahedra: NDArray[np.int32] | None = field(default=None, repr=False)
-    _tetrahedra_refs: NDArray[np.int64] | None = field(default=None, repr=False)
-    _fields: dict[str, NDArray[np.float64]] = field(default_factory=dict, repr=False)
-    _committed: bool = field(default=False, repr=False)
-
-    def commit(self) -> None:
-        """Keep the current mesh state.
-
-        Call this method to prevent rollback when the context manager exits.
-        """
-        self._committed = True
-
-    def rollback(self) -> None:
-        """Restore the mesh to its checkpoint state.
-
-        This is called automatically on context exit if `commit()` was not called,
-        or if an exception occurred. Can also be called manually.
-        """
-        mesh = self._mesh
-        kind = mesh._kind  # noqa: SLF001
-
-        if kind == MeshKind.TETRAHEDRAL:
-            if self._tetrahedra is None or self._tetrahedra_refs is None:
-                msg = "Tetrahedra data missing in checkpoint"
-                raise RuntimeError(msg)
-            impl = cast("MmgMesh3D", mesh._impl)  # noqa: SLF001
-            impl.set_mesh_size(
-                vertices=len(self._vertices),
-                tetrahedra=len(self._tetrahedra),
-                triangles=len(self._triangles),
-                edges=len(self._edges),
-            )
-            impl.set_vertices(self._vertices, self._vertex_refs)
-            impl.set_tetrahedra(self._tetrahedra, self._tetrahedra_refs)
-            if len(self._triangles) > 0:
-                impl.set_triangles(self._triangles, self._triangle_refs)
-            if len(self._edges) > 0:
-                impl.set_edges(self._edges, self._edge_refs)
-        elif kind == MeshKind.TRIANGULAR_2D:
-            impl_2d = cast("MmgMesh2D", mesh._impl)  # noqa: SLF001
-            impl_2d.set_mesh_size(
-                vertices=len(self._vertices),
-                triangles=len(self._triangles),
-                edges=len(self._edges),
-            )
-            impl_2d.set_vertices(self._vertices, self._vertex_refs)
-            impl_2d.set_triangles(self._triangles, self._triangle_refs)
-            if len(self._edges) > 0:
-                impl_2d.set_edges(self._edges, self._edge_refs)
-        else:  # TRIANGULAR_SURFACE
-            impl_s = cast("MmgMeshS", mesh._impl)  # noqa: SLF001
-            impl_s.set_mesh_size(
-                vertices=len(self._vertices),
-                triangles=len(self._triangles),
-                edges=len(self._edges),
-            )
-            impl_s.set_vertices(self._vertices, self._vertex_refs)
-            impl_s.set_triangles(self._triangles, self._triangle_refs)
-            if len(self._edges) > 0:
-                impl_s.set_edges(self._edges, self._edge_refs)
-
-        # Restore solution fields
-        for field_name, field_data in self._fields.items():
-            mesh._impl.set_field(field_name, field_data)  # noqa: SLF001
-
-    def __enter__(self) -> MeshCheckpoint:  # noqa: PYI034
-        """Enter the context manager."""
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> bool:
-        """Exit the context manager, rolling back if not committed or on exception."""
-        if exc_type is not None or not self._committed:
-            self.rollback()
-        return False
-
-
 class Mesh:
     """Unified mesh class with auto-detection of mesh type.
 
@@ -564,17 +409,8 @@ class Mesh:
         edge_refs: NDArray[np.integer] | None = None,
     ) -> None:
         """Initialize a Mesh from various sources."""
-        warnings.warn(
-            "mmgpy.Mesh is deprecated and will be removed in 0.13. "
-            "Use the .mmg PyVista accessor instead, e.g. "
-            "pv.read('foo.mesh').mmg.remesh(hsiz=0.1). "
-            "See docs/migrating-from-mesh.md for the full migration guide.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
         # Import here to avoid circular imports
-        from mmgpy._io import read as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         self._sizing_constraints = []
         self._user_fields = {}
@@ -677,13 +513,7 @@ class Mesh:
         edges: NDArray[np.integer] | None = None,
         edge_refs: NDArray[np.integer] | None = None,
     ) -> Mesh:
-        """Build a Mesh from raw arrays without firing the deprecation warning.
-
-        Internal entry point for code paths that genuinely need raw-array
-        construction (e.g. ``mmgpy.repair`` rebuilding meshes after vertex
-        deduplication). External callers must go through
-        ``mmgpy.read`` / the ``.mmg`` accessor.
-        """
+        """Build an internal Mesh from raw arrays."""
         verts = np.asarray(vertices)
         cells_arr = np.asarray(cells)
         cell_refs = np.asarray(refs) if refs is not None else None
@@ -1896,82 +1726,6 @@ class Mesh:
             if reporter_ctx is not None:  # pragma: no cover
                 reporter_ctx.__exit__(None, None, None)
 
-    def remesh_lagrangian(
-        self,
-        displacement: NDArray[np.float64],
-        **kwargs: Any,  # noqa: ANN401
-    ) -> RemeshResult:
-        """Forward to :func:`mmgpy.move_mesh` (deprecated).
-
-        Historically this method called MMG's ELAS-bound Lagrangian path; the
-        bundled MMG is built ``USE_ELAS=OFF``, so it never produced anything
-        useful. The shim now applies ``displacement`` and remeshes via the
-        pure-Python Laplacian propagator (or the optional fedoo elasticity
-        solver) and returns a minimal :class:`RemeshResult`. It will be
-        removed in a future release; new code should call
-        :func:`mmgpy.move_mesh` or ``dataset.mmg.move(...)`` directly.
-
-        Raises
-        ------
-        TypeError
-            If mesh is TRIANGULAR_SURFACE.
-
-        """
-        import time  # noqa: PLC0415
-        import warnings  # noqa: PLC0415
-
-        from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
-        from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
-
-        warnings.warn(
-            "Mesh.remesh_lagrangian() is deprecated; use mmgpy.move_mesh() "
-            "directly. The shim now routes through the pure-Python "
-            "Laplacian / fedoo elasticity propagator since the ELAS-bound "
-            "MMG path is no longer linked.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if self._kind == MeshKind.TRIANGULAR_SURFACE:
-            msg = "remesh_lagrangian() is not available for TRIANGULAR_SURFACE meshes"
-            raise TypeError(msg)
-
-        if self._kind == MeshKind.TETRAHEDRAL:
-
-            def get_cells() -> NDArray[np.int32]:
-                return cast("MmgMesh3D", self._impl).get_tetrahedra()
-        else:
-
-            def get_cells() -> NDArray[np.int32]:
-                return self._impl.get_triangles()
-
-        verts_before = len(self._impl.get_vertices())
-        elements_before = len(get_cells())
-
-        start = time.perf_counter()
-        _move_mesh(self, displacement, **kwargs)
-        duration = time.perf_counter() - start
-
-        verts_after = len(self._impl.get_vertices())
-        elements_after = len(get_cells())
-
-        return _RemeshResult(
-            vertices_before=verts_before,
-            vertices_after=verts_after,
-            elements_before=elements_before,
-            elements_after=elements_after,
-            triangles_before=0,
-            triangles_after=0,
-            edges_before=0,
-            edges_after=0,
-            quality_min_before=0.0,
-            quality_min_after=0.0,
-            quality_mean_before=0.0,
-            quality_mean_after=0.0,
-            duration_seconds=duration,
-            warnings=(),
-            return_code=0,
-        )
-
     def remesh_levelset(
         self,
         levelset: NDArray[np.float64],
@@ -2533,86 +2287,6 @@ class Mesh:
         """
         return False
 
-    def checkpoint(self) -> MeshCheckpoint:
-        """Create a checkpoint for transactional modifications.
-
-        Returns a context manager that captures the current mesh state.
-        On exit, if `commit()` was not called or an exception occurred,
-        the mesh is automatically rolled back to its checkpoint state.
-
-        Returns
-        -------
-        MeshCheckpoint
-            A context manager for transactional mesh modifications.
-
-        Notes
-        -----
-        The checkpoint stores a complete copy of the mesh data including
-        vertices, elements, reference markers, and solution fields
-        (metric, displacement, levelset). For large meshes, this may
-        consume significant memory.
-
-        Note: The tensor field is not saved because it shares memory with
-        metric in MMG's internal representation.
-
-        Examples
-        --------
-        >>> mesh = Mesh(vertices, cells)
-        >>> with mesh.checkpoint() as snapshot:
-        ...     mesh.remesh(hmax=0.01)
-        ...     if mesh.validate():
-        ...         snapshot.commit()  # Keep changes
-        ...     # If not committed, changes are rolled back
-
-        >>> # Automatic rollback on exception
-        >>> with mesh.checkpoint():
-        ...     mesh.remesh(hmax=0.01)
-        ...     raise ValueError("Simulated failure")
-        >>> # mesh is restored to original state
-
-        """
-        warnings.warn(
-            "Mesh.checkpoint() is deprecated and will be removed in 0.13 "
-            "alongside the Mesh class. The .mmg accessor's stateless model "
-            "makes this idiom unnecessary: keep a snapshot via "
-            "snap = dataset.copy() and reassign on success. "
-            "See docs/migrating-from-mesh.md.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        vertices, vertex_refs = self._impl.get_vertices_with_refs()
-        triangles, triangle_refs = self._impl.get_triangles_with_refs()
-        edges, edge_refs = self._impl.get_edges_with_refs()
-
-        tetrahedra = None
-        tetrahedra_refs = None
-        if self._kind == MeshKind.TETRAHEDRAL:
-            impl_3d = cast("MmgMesh3D", self._impl)
-            tetrahedra, tetrahedra_refs = impl_3d.get_tetrahedra_with_refs()
-
-        # Save solution fields (metric, displacement, levelset)
-        # Note: tensor is not saved because it shares memory with metric in MMG
-        fields: dict[str, NDArray[np.float64]] = {}
-        for field_name in ("metric", "displacement", "levelset"):
-            field_data = self._try_get_field(field_name)
-            if field_data is not None:
-                fields[field_name] = field_data.copy()
-
-        return MeshCheckpoint(
-            _mesh=self,
-            _vertices=vertices.copy(),
-            _vertex_refs=vertex_refs.copy(),
-            _triangles=triangles.copy(),
-            _triangle_refs=triangle_refs.copy(),
-            _edges=edges.copy(),
-            _edge_refs=edge_refs.copy(),
-            _tetrahedra=tetrahedra.copy() if tetrahedra is not None else None,
-            _tetrahedra_refs=(
-                tetrahedra_refs.copy() if tetrahedra_refs is not None else None
-            ),
-            _fields=fields,
-        )
-
     @contextmanager
     def copy(self) -> Generator[Mesh, None, None]:
         """Create a working copy that is discarded on exit.
@@ -2728,6 +2402,5 @@ class Mesh:
 
 __all__ = [
     "Mesh",
-    "MeshCheckpoint",
     "MeshKind",
 ]

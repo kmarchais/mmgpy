@@ -8,7 +8,9 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy import Mesh, MeshKind, read
+from mmgpy import MeshKind
+from mmgpy._io import _read_mesh_internal as read
+from mmgpy._mesh import Mesh
 
 # Test fixtures
 

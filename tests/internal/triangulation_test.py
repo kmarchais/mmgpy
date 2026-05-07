@@ -9,8 +9,9 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-import mmgpy
-from mmgpy import Mesh, MeshKind
+from mmgpy import MeshKind
+from mmgpy._io import _read_mesh_internal
+from mmgpy._mesh import Mesh
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -182,7 +183,7 @@ class TestFileTriangulation:
 
     def test_quad_file_is_triangulated(self, quad_mesh_file: Path) -> None:
         """Test that quad meshes loaded from files are triangulated."""
-        mesh = mmgpy.read(quad_mesh_file)
+        mesh = _read_mesh_internal(quad_mesh_file)
         assert mesh.kind == MeshKind.TRIANGULAR_SURFACE
         triangles = mesh.get_triangles()
         assert triangles.shape[1] == 3
@@ -195,12 +196,12 @@ class TestFileTriangulation:
     ) -> None:
         """Test that a warning is issued when triangulating from file."""
         with caplog.at_level(logging.WARNING, logger="mmgpy"):
-            mmgpy.read(quad_mesh_file)
+            _read_mesh_internal(quad_mesh_file)
         assert "non-triangular elements" in caplog.text
 
     def test_mixed_cells_mesh_triangulated(self, mixed_cells_mesh_file: Path) -> None:
         """Test mesh with mixed surface and non-surface cells is triangulated."""
-        mesh = mmgpy.read(mixed_cells_mesh_file)
+        mesh = _read_mesh_internal(mixed_cells_mesh_file)
         triangles = mesh.get_triangles()
         assert triangles.shape[1] == 3
         assert len(triangles) == 18  # 9 quads become 18 triangles
@@ -211,11 +212,11 @@ class TestFileTriangulation:
     ) -> None:
         """Test that mesh with no surface cells raises ValueError."""
         with pytest.raises(ValueError, match=r"no faces|Cannot determine"):
-            mmgpy.read(no_surface_cells_mesh_file)
+            _read_mesh_internal(no_surface_cells_mesh_file)
 
     def test_2d_quad_file_is_triangulated(self, quad_2d_mesh_file: Path) -> None:
         """Test that 2D quad meshes from files are triangulated via mmg2d path."""
-        mesh = mmgpy.read(quad_2d_mesh_file)
+        mesh = _read_mesh_internal(quad_2d_mesh_file)
         assert mesh.kind == MeshKind.TRIANGULAR_2D
         triangles = mesh.get_triangles()
         assert triangles.shape[1] == 3

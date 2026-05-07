@@ -3,7 +3,8 @@
 import numpy as np
 import pytest
 
-from mmgpy import Mesh, Mmg2DOptions, Mmg3DOptions, MmgSOptions
+from mmgpy import Mmg2DOptions, Mmg3DOptions, MmgSOptions
+from mmgpy._mesh import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 

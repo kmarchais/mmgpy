@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from mmgpy import Mesh
+    from mmgpy._mesh import Mesh
 
 
 @dataclass(frozen=True, slots=True)
