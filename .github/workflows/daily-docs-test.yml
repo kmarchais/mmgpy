@@ -15,6 +15,9 @@ jobs:
           - "3.14"
 
     runs-on: ubuntu-latest
+    # Bound the whole job; individual example timeouts (below) still catch
+    # specific hangs without burning through the GitHub default 6h budget.
+    timeout-minutes: 30
 
     steps:
       - name: Get latest PyPI version
@@ -77,8 +80,10 @@ jobs:
               examples/ui/*) continue ;;
               examples/mmg2d/implicit_2d_domain_meshing.py) continue ;;
               examples/mmgs/implicit_surface_domain_meshing.py) continue ;;
+              # Trame-based viewer that calls app.run() and never returns under CI.
+              examples/mmg2d/interactive_remesh_preview.py) continue ;;
             esac
             echo "::group::Running $f"
-            python "$f"
+            timeout --signal=SIGTERM --kill-after=10s 5m python "$f"
             echo "::endgroup::"
           done

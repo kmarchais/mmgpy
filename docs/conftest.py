@@ -151,6 +151,20 @@ _tmp_dir = tempfile.mkdtemp(prefix="mmgpy_docs_")
 atexit.register(shutil.rmtree, _tmp_dir, ignore_errors=True)
 
 
+def _build_mesh(verts: np.ndarray, cells: np.ndarray) -> MeshType:
+    """Build a Mesh from raw arrays, compatible with both released and main APIs.
+
+    ``Mesh._from_arrays`` was added after v0.11.0 to bypass the deprecation
+    warning. The released package does not expose it, so the daily docs job
+    (which runs main's conftest against the PyPI build) must fall back to the
+    public constructor there.
+    """
+    factory = getattr(Mesh, "_from_arrays", None)
+    if factory is not None:
+        return factory(verts, cells)
+    return Mesh(verts, cells)
+
+
 def _fake_read(
     source: str | Path | pv.UnstructuredGrid | pv.PolyData,
     mesh_kind: MeshKind | None = None,
@@ -161,10 +175,10 @@ def _fake_read(
     name = str(source)
     kind = _classify_filename(name)
     if kind == "2d":
-        return Mesh._from_arrays(_VERTS_2D.copy(), _CELLS_2D.copy())  # noqa: SLF001
+        return _build_mesh(_VERTS_2D.copy(), _CELLS_2D.copy())
     if kind == "surface":
-        return Mesh._from_arrays(_VERTS_SURF.copy(), _CELLS_SURF.copy())  # noqa: SLF001
-    return Mesh._from_arrays(_VERTS_3D.copy(), _CELLS_3D.copy())  # noqa: SLF001
+        return _build_mesh(_VERTS_SURF.copy(), _CELLS_SURF.copy())
+    return _build_mesh(_VERTS_3D.copy(), _CELLS_3D.copy())
 
 
 def _patched_save(self: MeshType, filename: str | Path) -> None:
