@@ -54,16 +54,27 @@ def vertex_adjacency(
     return csr
 
 
-def two_ring_patches(adj: sparse.csr_matrix) -> list[NDArray[np.intp]]:
-    """For each vertex i, return its closed 2-ring (i and all 1- and 2-step neighbours).
+def two_ring_csr(adj: sparse.csr_matrix) -> sparse.csr_matrix:
+    """CSR sparsity pattern of the closed 2-ring (``I + A + A @ A``).
 
-    Computed as the nonzero pattern of ``I + A + A @ A``. The matrix product
-    runs in C and is dramatically cheaper than per-vertex Python set unions,
-    especially for high-order elements.
+    Each row ``i`` of the returned matrix lists vertex ``i`` together with all
+    of its 1- and 2-step neighbours. Computed via a sparse matmul in C, which
+    is dramatically cheaper than per-vertex Python set unions.
     """
     n = adj.shape[0]
     closed = (adj + adj @ adj + sparse.eye(n, format="csr")).tocsr()
     closed.eliminate_zeros()
+    return closed
+
+
+def two_ring_patches(adj: sparse.csr_matrix) -> list[NDArray[np.intp]]:
+    """For each vertex i, return its closed 2-ring as a Python list of arrays.
+
+    Convenience wrapper around :func:`two_ring_csr` for callers that want a
+    Python-iterable view; consumers that can stay in CSR land should use the
+    CSR helper directly to avoid the per-row slice.
+    """
+    closed = two_ring_csr(adj)
     indptr = closed.indptr
     indices = closed.indices
-    return [indices[indptr[i] : indptr[i + 1]] for i in range(n)]
+    return [indices[indptr[i] : indptr[i + 1]] for i in range(closed.shape[0])]

@@ -51,6 +51,9 @@ ui = [
     "trame-vtklocal>=0.16.0,<1",
     "trame-vuetify>=3.2.0,<4",
 ]
+adapt = [
+    "numba>=0.59,<1",
+]
 
 [tool.mmgpy]
 mmg_version = "5.8.0"
@@ -205,6 +208,7 @@ ignore = [
     "PLR2004", # magic values (2, 3, 6) are dimension constants in math code
     "C901",    # complex functions acceptable for mathematical algorithms
     "PLR0912", # many branches acceptable for 2D/3D dispatch
+    "PLR0915", # JIT'd Hessian inner loops fully unroll the AtA assembly
 ]
 "examples/**/*.py" = [
     "T201",    # print statements essential for example output
