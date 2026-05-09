@@ -20,6 +20,7 @@ htmlcov/
 *.sol
 *.stp
 *.png
+*.gif
 
 # But allow them in the assets folder
 !assets/**/*.vtk
@@ -30,8 +31,6 @@ htmlcov/
 
 # Allow images in docs/assets for the documentation site
 !docs/assets/**/*.png
+!docs/assets/**/*.gif
 
 wheelhouse/
-
-# No artifacts in examples/ - canonical copies live in docs/assets/
-examples/**/*.gif
