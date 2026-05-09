@@ -37,21 +37,22 @@ SKIP_RELATIVE = frozenset(
 # build-and-test; locally-generated baselines often exceed the 500-pixel
 # threshold across renderers.
 #
-# ``mmgs/ellipsoid_sdf.py`` is intentionally kept out: it runs MMG three
-# times with different extraction methods, and the compounded
-# non-determinism produces image diffs well above the regression
-# threshold across runs. Smoke-tested instead.
+# Examples kept out of the regression set:
+#   - ``mmgs/ellipsoid_sdf.py``: runs MMG three times with different
+#     extraction methods, producing compounded non-determinism above the
+#     regression threshold across runs.
+#   - ``mmg3d/hessian_adaptation.py``, ``mmg3d/lagrangian_motion.py``,
+#     ``mmg3d/mesh_quality_improvement.py``,
+#     ``mmgs/mechanical_piece_remeshing.py``: pending CI-rendered
+#     baselines via the ``update-image-baselines`` workflow (locally
+#     generated baselines exceeded the threshold under OSMesa).
 STATIC_PYVISTA = frozenset(
     {
         "mmg2d/levelset_discretization.py",
         "mmg2d/mesh_adaptation_to_a_solution.py",
         "mmg3d/ellipsoid_levelset.py",
-        "mmg3d/hessian_adaptation.py",
-        "mmg3d/lagrangian_motion.py",
         "mmg3d/levelset_discretization.py",
-        "mmg3d/mesh_quality_improvement.py",
         "mmg3d/open_boundary_remeshing.py",
-        "mmgs/mechanical_piece_remeshing.py",
         "mmgs/smooth_surface_remeshing.py",
     },
 )
