@@ -219,6 +219,25 @@ class TestWrappedRemeshIsoRouting:
             assert out.exists()
             assert pv.read(out).n_cells > 0
 
+    def test_mmg3d_iso_with_vtk_output(self) -> None:
+        """3D iso remesh with .mesh in and .vtk out."""
+        with TemporaryDirectory() as tmpdir:
+            out = Path(tmpdir) / "out.vtk"
+            ok = mmg3d.remesh(
+                input_mesh=_ASSETS / "cube.mesh",
+                input_sol=_ASSETS / "cube-ls.sol",
+                output_mesh=out,
+                options={"iso": 1, "ls": 0.0, "verbose": -1},
+            )
+            assert ok
+            assert out.exists()
+
+            result = pv.read(out)
+            # mmg3d in iso mode tags interior/exterior tetrahedra via "refs".
+            assert result.n_cells > 0
+            arrays = list(result.point_data) + list(result.cell_data)
+            assert "refs" in arrays
+
     def test_native_path_short_circuits(self) -> None:
         """Native in + native out goes straight to C++ remesh."""
         with TemporaryDirectory() as tmpdir:

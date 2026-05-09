@@ -265,9 +265,7 @@ void MmgMesh::load_sol(
   std::string fname = variant_to_string(filename);
 
   auto field = get_solution_field(channel);
-  MMG5_pSol *sol_ptr = const_cast<MMG5_pSol *>(field.sol_ptr);
-
-  if (MMG3D_loadSol(mesh, *sol_ptr, fname.c_str()) != 1) {
+  if (MMG3D_loadSol(mesh, *field.sol_ptr, fname.c_str()) != 1) {
     throw std::runtime_error("Failed to load solution file: " + fname);
   }
 }

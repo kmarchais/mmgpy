@@ -57,6 +57,25 @@ def make_multi_mat_levelset() -> None:
     print(f"wrote {rel}: range [{sol.min():.3f}, {sol.max():.3f}]")
 
 
+def make_cube_levelset() -> None:
+    """Signed distance to a sphere inside the 3D unit ``cube``.
+
+    The mesh covers ``[0, 1]^3``. A sphere of radius 0.3 centered at
+    ``(0.5, 0.5, 0.5)`` sits strictly inside the domain and gives mmg3d
+    a clean inside/outside partition for ``iso=1`` remeshing.
+    """
+    mesh = pv.read(ASSETS / "cube.mesh")
+    pts = np.asarray(mesh.points)
+    center = np.array([0.5, 0.5, 0.5])
+    radius = 0.3
+    sol = np.linalg.norm(pts - center, axis=1) - radius
+
+    out = ASSETS / "cube-ls.sol"
+    write_medit_sol(out, dim=3, scalar=sol)
+    rel = out.relative_to(ASSETS.parent)
+    print(f"wrote {rel}: range [{sol.min():.3f}, {sol.max():.3f}]")
+
+
 def make_teapot_levelset() -> None:
     """Plane level-set for the 3D ``teapot`` surface.
 
@@ -77,4 +96,5 @@ def make_teapot_levelset() -> None:
 
 if __name__ == "__main__":
     make_multi_mat_levelset()
+    make_cube_levelset()
     make_teapot_levelset()
