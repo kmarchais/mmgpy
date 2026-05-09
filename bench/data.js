@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778321603743,
+  "lastUpdate": 1778323965065,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -3746,6 +3746,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0005807277254030003",
             "extra": "mean: 69.81904706667214 msec\nrounds: 15"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevinmarchais@gmail.com",
+            "name": "Kevin Marchais",
+            "username": "kmarchais"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "970a5b214383b9176a2610dc717e85211c06def5",
+          "message": "switch screenshot examples to .show() and clarify CI skip-list comments (#241)",
+          "timestamp": "2026-05-09T12:46:08+02:00",
+          "tree_id": "b2eda0385442666a5dc8e5e43f88596d23620c72",
+          "url": "https://github.com/kmarchais/mmgpy/commit/970a5b214383b9176a2610dc717e85211c06def5"
+        },
+        "date": 1778323964381,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 36.788310160504,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002849867838237877",
+            "extra": "mean: 27.18254781578965 msec\nrounds: 38"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 18.637030596835015,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003926279146802409",
+            "extra": "mean: 53.6566163157892 msec\nrounds: 19"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 31.202480937340326,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00029000044813126994",
+            "extra": "mean: 32.04873362500127 msec\nrounds: 32"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3388.323066850478,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009741086184920105",
+            "extra": "mean: 295.131243470689 usec\nrounds: 3446"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 75.28680166856896,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00009548820194596065",
+            "extra": "mean: 13.282540602564662 msec\nrounds: 78"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 9194.356325656654,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000005859231130810063",
+            "extra": "mean: 108.76237167462408 usec\nrounds: 18005"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.13560864062459543,
+            "unit": "iter/sec",
+            "range": "stddev: 0.013752071410777868",
+            "extra": "mean: 7.374161376400002 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.10803150670401057,
+            "unit": "iter/sec",
+            "range": "stddev: 0.08295085462160007",
+            "extra": "mean: 9.25655885499999 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.4140211065048713,
+            "unit": "iter/sec",
+            "range": "stddev: 0.004434760883841354",
+            "extra": "mean: 2.4153357987999926 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.3676695616594925,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00011220088777368008",
+            "extra": "mean: 186.30058883334755 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.341158805155314,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004814678834665584",
+            "extra": "mean: 187.22528883335107 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.359048582667714,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00020549030669089676",
+            "extra": "mean: 186.60028633332595 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.2346445608164665,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0016193801174220943",
+            "extra": "mean: 191.03493816665681 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 2.122611476884483,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002008807189232512",
+            "extra": "mean: 471.1177768000084 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 2.127904300666972,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000977087679158824",
+            "extra": "mean: 469.945946200005 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.897813411712813,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006122242686414121",
+            "extra": "mean: 345.0877809999952 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 171.901599750404,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00011994622955992476",
+            "extra": "mean: 5.817281522987396 msec\nrounds: 174"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 14.295254448411038,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00015251529244636374",
+            "extra": "mean: 69.95328439999564 msec\nrounds: 15"
           }
         ]
       }
