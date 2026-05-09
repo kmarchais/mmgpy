@@ -28,8 +28,6 @@ After level-set discretization, MMG creates:
 For a surface-only mesh, see examples/mmgs/ellipsoid_sdf.py.
 """
 
-from pathlib import Path
-
 import numpy as np
 import pyvista as pv
 
@@ -176,7 +174,7 @@ def main() -> None:
     )
 
     # Visualization
-    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700), off_screen=True)
+    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
 
     # Left: Surface mesh
     pl.subplot(0, 0)
@@ -208,9 +206,7 @@ def main() -> None:
     pl.link_views()
     pl.camera_position = [(3, 2, 1.5), center, (0, 0, 1)]
 
-    output_path = Path(__file__).parent / "ellipsoid_levelset.png"
-    pl.screenshot(output_path)
-    print(f"\nImage saved to: {output_path}")
+    pl.show()
 
 
 if __name__ == "__main__":

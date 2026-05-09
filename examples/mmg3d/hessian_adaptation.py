@@ -23,13 +23,10 @@ initial uniform mesh, and runs anisotropic remeshing so the new mesh
 refines along the front and stays coarse elsewhere.
 
 A corner of the cube is clipped away so the interior refinement around
-the spherical front is visible. The script writes
-``hessian_adaptation.png`` next to itself.
+the spherical front is visible.
 """
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import numpy as np
 import pyvista as pv
@@ -93,7 +90,7 @@ def main() -> None:
         f"Adapted: {adapted.n_points} vertices, {n_tets_out} tetrahedra",
     )
 
-    pl = pv.Plotter(shape=(1, 2), off_screen=True, window_size=(1300, 650))
+    pl = pv.Plotter(shape=(1, 2), window_size=(1300, 650))
     sphere = pv.Sphere(radius=0.3, center=(0.5, 0.5, 0.5)).clip_box(
         bounds=(0.5, 1.05, 0.5, 1.05, 0.5, 1.05),
         invert=True,
@@ -135,9 +132,7 @@ def main() -> None:
     pl.link_views()
     pl.camera_position = [(2.6, 2.4, 2.6), (0.5, 0.5, 0.5), (0, 0, 1)]
 
-    out_path = Path(__file__).with_suffix(".png")
-    pl.show(screenshot=str(out_path))
-    print(f"Wrote {out_path}")
+    pl.show()
 
 
 if __name__ == "__main__":

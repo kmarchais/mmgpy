@@ -26,8 +26,6 @@ Key insight: After level-set discretization, MMG creates:
 To visualize the solid gyroid, extract the surface of ref=3 tetrahedra.
 """
 
-from pathlib import Path
-
 import numpy as np
 import pyvista as pv
 
@@ -154,7 +152,7 @@ def main() -> None:
     print(f"  Result: {n_tri} triangles, {n_pts} vertices")
 
     # Visualization
-    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700), off_screen=True)
+    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
 
     pl.subplot(0, 0)
     pl.add_mesh(
@@ -179,10 +177,7 @@ def main() -> None:
     pl.link_views()
     pl.camera_position = [(2.5, 2.5, 2.5), (0, 0, 0), (0, 0, 1)]
 
-    # Save image
-    output_path = Path(__file__).parent / "levelset_discretization.png"
-    pl.screenshot(output_path)
-    print(f"\nImage saved to: {output_path}")
+    pl.show()
 
 
 if __name__ == "__main__":
