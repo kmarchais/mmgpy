@@ -2,7 +2,6 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #     "mmgpy",
-#     "microgen",
 #     "numpy",
 #     "pyvista",
 # ]
@@ -10,7 +9,7 @@
 # [tool.uv.sources]
 # mmgpy = { path = "../.." }
 # ///
-"""Build a strictly periodic gyroid volume mesh.
+"""Build a strictly periodic gyroid volume mesh — pure pyvista, no CAD.
 
 The straight mmgpy path (``examples/mmg3d/gyroid_unit_cube.py``) is great
 for a single-cell mesh, but its boundary nodes drift independently on
@@ -18,28 +17,25 @@ opposite cube faces because mmg-LS isn't periodicity-aware. For an FEM
 problem with periodic boundary conditions, the boundary node positions
 on opposite faces have to match exactly under translation.
 
-The trick is to bypass mmg-LS for the volume creation: a *structured*
+The trick is to bypass mmg-LS for the volume creation. A *structured*
 grid of ``[0, 1]^3`` already has identical node positions on opposite
-faces, and clipping that grid by the gyroid level set preserves the
-property — both the grid and the level-set field are periodic with the
-cube's period, so opposite faces see identical clipping.
+faces, and clipping it by the gyroid level set preserves the property —
+both the grid and the level-set field are periodic with the cube's
+period, so opposite faces see identical clipping. Each new vertex
+inserted on a cell edge that crosses the iso lands at the same
+parametric position on its periodic counterpart edge, so the output's
+boundary node sets are byte-identical between opposite faces.
 
-That's exactly what ``microgen.Tpms.grid_sheet`` returns. This example:
-
-1. Calls ``Tpms(...).grid_sheet`` to get a periodic gyroid shell volume
-   on ``[-0.5, 0.5]^3``.
-2. Translates it to ``[0, 1]^3`` so it lines up with the rest of the
-   periodic-remesh recipes.
-3. Verifies strict periodicity with the inline copy of
-   ``microgen.mesh.is_periodic``.
+This recipe is one ``pv.ImageData(...).clip_scalar(...)`` call. No mmg
+involved for the periodic structure, no CAD dependency.
 
 If you then want to *refine* this mesh while keeping it periodic, the
 follow-up tool is ``mesh.mmg.remesh(..., required_triangles=...)`` from
-this PR — see ``examples/mmg3d/periodic_remesh.py`` for that recipe.
-(``grid_sheet`` produces mixed cell types — TETRA, HEXAHEDRON, WEDGE,
-PYRAMID — and a couple of non-manifold edges, so a direct mmg quality
-pass will not always succeed; in practice you triangulate, flip
-inverted tets, then quality-optimize.)
+this PR — see ``examples/mmg3d/periodic_remesh.py``. ``clip_scalar``
+emits mixed cell types (TETRA, HEXAHEDRON, WEDGE, PYRAMID), so a direct
+mmg quality pass needs a ``triangulate()`` + orientation fix first; the
+benchmark in ``examples/mmg3d/gyroid_benchmark.py`` walks through the
+caveats.
 
 Run::
 
@@ -50,14 +46,21 @@ from __future__ import annotations
 
 import numpy as np
 import pyvista as pv
-from microgen.shape import surface_functions
-from microgen.shape.tpms import Tpms
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 PERIOD = 1.0
 THICKNESS = 1.0
 HALF = THICKNESS / 2.0
+
+
+def gyroid_f(points: np.ndarray) -> np.ndarray:
+    """Evaluate the standard gyroid scalar field, period = ``PERIOD``."""
+    k = 2.0 * np.pi / PERIOD
+    sx, cx = np.sin(k * points[:, 0]), np.cos(k * points[:, 0])
+    sy, cy = np.sin(k * points[:, 1]), np.cos(k * points[:, 1])
+    sz, cz = np.sin(k * points[:, 2]), np.cos(k * points[:, 2])
+    return sx * cy + sy * cz + sz * cx
 
 
 def is_periodic(points: np.ndarray, tol: float = 1e-9) -> bool:
@@ -116,62 +119,63 @@ def face_node_counts(points: np.ndarray, tol: float = 1e-9) -> dict[str, int]:
 
 def main() -> None:
     """Build and verify a strictly periodic gyroid volume mesh."""
-    tpms = Tpms(
-        surface_function=surface_functions.gyroid,
-        offset=HALF,
-        cell_size=PERIOD,
-        repeat_cell=1,
-        resolution=30,
+    # Structured grid of [0, PERIOD]^3 with the gyroid shell scalar attached.
+    # f^2 - (t/2)^2 is negative inside the shell, positive outside.
+    n = 30
+    img = pv.ImageData(
+        dimensions=(n + 1,) * 3,
+        spacing=(PERIOD / n,) * 3,
     )
-    grid_sheet = tpms.grid_sheet
-    grid_sheet.points = np.asarray(grid_sheet.points) + np.array(
-        [PERIOD / 2, PERIOD / 2, PERIOD / 2],
+    f = gyroid_f(np.asarray(img.points))
+    img.point_data["shell_levelset"] = f * f - HALF * HALF
+
+    # Keep cells where the scalar is negative (inside the shell). The clip
+    # produces an UnstructuredGrid with mixed cell types — mostly TETRA from
+    # voxels fully inside the shell, plus HEXAHEDRON / WEDGE / PYRAMID from
+    # cells the iso-surface intersects.
+    shell = img.clip_scalar(
+        scalars="shell_levelset",
+        value=0.0,
+        invert=True,
     )
-    bounds = tuple(round(b, 3) for b in grid_sheet.bounds)
+    bounds = tuple(round(b, 3) for b in shell.bounds)
     print(
-        f"microgen.Tpms.grid_sheet: {grid_sheet.n_cells} cells, "
-        f"{grid_sheet.n_points} points, bounds {bounds}",
+        f"clip_scalar shell: {shell.n_cells} cells, "
+        f"{shell.n_points} points, bounds {bounds}",
     )
 
-    pts = np.asarray(grid_sheet.points)
+    pts = np.asarray(shell.points)
     counts = face_node_counts(pts)
     print("\nCube-face node counts (matched on opposite faces):")
     for axis in "xyz":
         m, p = counts[f"{axis}-"], counts[f"{axis}+"]
         print(f"  {axis}- : {m:4d}    {axis}+ : {p:4d}    delta {abs(m - p)}")
 
-    # is_periodic uses *tol* both to detect face nodes AND to compare opposite
-    # pairs; loosening it past the actual node-snap tolerance pulls in nearby
-    # interior points that have no twin, so the strict 1e-9 reading is the
-    # meaningful one for grid_sheet's exact grid coordinates.
     print(f"\nis_periodic(tol=1e-9) = {is_periodic(pts, 1e-9)}")
 
-    # Diagnostic: cell-type breakdown (grid_sheet produces mixed cells, not
-    # pure tets — the mesh is FEM-usable but won't pass through mmg.remesh
-    # cleanly without a triangulate + orientation-fix step).
-    celltypes = np.asarray(grid_sheet.celltypes)
+    celltypes = np.asarray(shell.celltypes)
     type_names = {10: "TETRA", 12: "HEXAHEDRON", 13: "WEDGE", 14: "PYRAMID"}
     bins = dict(zip(*np.unique(celltypes, return_counts=True), strict=True))
     print("\nCell-type breakdown:")
     for t, count in bins.items():
         print(f"  {type_names.get(int(t), f'type {t}')}: {count}")
 
-    surface = grid_sheet.extract_surface(algorithm="dataset_surface")
+    surface = shell.extract_surface(algorithm="dataset_surface")
     print(f"\nBoundary triangulation: {surface.n_cells} faces")
 
     pl = pv.Plotter(shape=(1, 2), window_size=(1500, 750))
 
     pl.subplot(0, 0)
-    pl.add_mesh(grid_sheet, show_edges=True, color="steelblue", line_width=0.3)
+    pl.add_mesh(shell, show_edges=True, color="steelblue", line_width=0.3)
     pl.add_mesh(
-        pv.Cube(center=(0.5, 0.5, 0.5)),
+        pv.Cube(center=(PERIOD / 2,) * 3),
         opacity=0.1,
         color="white",
         show_edges=True,
         edge_color="gray",
     )
     pl.add_title(
-        f"Periodic gyroid volume\n{grid_sheet.n_cells} cells",
+        f"Periodic gyroid volume\n{shell.n_cells} cells",
         font_size=10,
     )
 
