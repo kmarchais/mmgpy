@@ -26,7 +26,6 @@ For a volumetric mesh with tetrahedra, see examples/mmg3d/ellipsoid_levelset.py.
 
 import time
 from dataclasses import dataclass
-from pathlib import Path
 
 import numpy as np
 import pyvista as pv
@@ -136,7 +135,7 @@ def main() -> None:
         print()
 
     # Visualization: 3 rows (methods) x 2 columns (before/after)
-    pl = pv.Plotter(shape=(3, 2), window_size=(1200, 1400), off_screen=True)
+    pl = pv.Plotter(shape=(3, 2), window_size=(1200, 1400))
 
     for row, result in enumerate(results):
         # Left: Original extraction
@@ -170,9 +169,7 @@ def main() -> None:
     pl.link_views()
     pl.camera_position = [(3, 2, 1.5), center, (0, 0, 1)]
 
-    output_path = Path(__file__).parent / "ellipsoid_sdf.png"
-    pl.screenshot(output_path)
-    print(f"Image saved to: {output_path}")
+    pl.show()
 
     # Print summary table
     print("\n" + "=" * 70)
