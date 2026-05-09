@@ -1,7 +1,22 @@
 """Shared fixtures for mmgpy tests."""
 
+import os
+
+# Force interactive backends off before anything imports them, so example
+# smoke tests that call ``plt.show()`` / ``Plotter.show()`` don't pop windows.
+# CI sets these via the workflow env; locally, this conftest is the source of truth.
+os.environ.setdefault("PYVISTA_OFF_SCREEN", "true")
+os.environ.setdefault("MPLBACKEND", "Agg")
+
+import matplotlib as mpl
+
+mpl.use("Agg", force=True)
+
 import numpy as np
 import pytest
+import pyvista as pv
+
+pv.OFF_SCREEN = True
 
 
 @pytest.fixture

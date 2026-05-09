@@ -189,10 +189,15 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMesh &self, const py::object &path) {
              self.save(path_to_variant(path));
            })
-      .def("load_sol",
-           [](MmgMesh &self, const py::object &path) {
-             self.load_sol(path_to_variant(path));
-           })
+      .def(
+          "load_sol",
+          [](MmgMesh &self, const py::object &path,
+             const std::string &channel) {
+            self.load_sol(path_to_variant(path), channel);
+          },
+          py::arg("path"), py::arg("channel") = "metric",
+          "Load a Medit .sol/.solb file into the given channel "
+          "(\"metric\", \"levelset\", \"displacement\", or \"tensor\").")
       .def("save_sol",
            [](const MmgMesh &self, const py::object &path) {
              self.save_sol(path_to_variant(path));
@@ -336,10 +341,15 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMesh2D &self, const py::object &path) {
              self.save(path_to_variant(path));
            })
-      .def("load_sol",
-           [](MmgMesh2D &self, const py::object &path) {
-             self.load_sol(path_to_variant(path));
-           })
+      .def(
+          "load_sol",
+          [](MmgMesh2D &self, const py::object &path,
+             const std::string &channel) {
+            self.load_sol(path_to_variant(path), channel);
+          },
+          py::arg("path"), py::arg("channel") = "metric",
+          "Load a Medit .sol/.solb file into the given channel "
+          "(\"metric\", \"levelset\", \"displacement\", or \"tensor\").")
       .def("save_sol",
            [](const MmgMesh2D &self, const py::object &path) {
              self.save_sol(path_to_variant(path));
@@ -477,10 +487,15 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMeshS &self, const py::object &path) {
              self.save(path_to_variant(path));
            })
-      .def("load_sol",
-           [](MmgMeshS &self, const py::object &path) {
-             self.load_sol(path_to_variant(path));
-           })
+      .def(
+          "load_sol",
+          [](MmgMeshS &self, const py::object &path,
+             const std::string &channel) {
+            self.load_sol(path_to_variant(path), channel);
+          },
+          py::arg("path"), py::arg("channel") = "metric",
+          "Load a Medit .sol/.solb file into the given channel "
+          "(\"metric\", \"levelset\", or \"tensor\").")
       .def("save_sol",
            [](const MmgMeshS &self, const py::object &path) {
              self.save_sol(path_to_variant(path));

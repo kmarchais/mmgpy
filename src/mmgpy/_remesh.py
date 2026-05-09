@@ -32,13 +32,29 @@ def _is_native(path: str | Path | None) -> bool:
     return Path(path).suffix.lower() in NATIVE_MESH_EXTENSIONS
 
 
-def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
-    """Load a .sol/.solb file and set the appropriate field on *mesh*.
+def _load_sol(mesh: Mesh, sol_path: str | Path, channel: str = "metric") -> None:
+    """Load a .sol/.solb file into ``channel`` on *mesh*.
 
     Delegates to the C++ ``impl.load_sol()`` which handles both text
     (.sol) and binary (.solb) formats natively via the MMG library.
     """
-    mesh._impl.load_sol(str(sol_path))  # noqa: SLF001
+    mesh._impl.load_sol(str(sol_path), channel=channel)  # noqa: SLF001
+
+
+def _is_iso_mode(options: dict[str, Any] | None) -> bool:
+    if not options:
+        return False
+
+    def _truthy(value: object) -> bool:
+        # `bool("0")` is True, so coerce strings through int first.
+        if isinstance(value, str):
+            try:
+                return int(value) != 0
+            except ValueError:
+                return bool(value)
+        return bool(value)
+
+    return _truthy(options.get("iso")) or _truthy(options.get("isosurf"))
 
 
 def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
@@ -72,7 +88,8 @@ def _wrapped_remesh(
     mesh = _read(input_mesh)
 
     if input_sol is not None:
-        _load_sol(mesh, input_sol)
+        channel = "levelset" if _is_iso_mode(options) else "metric"
+        _load_sol(mesh, input_sol, channel=channel)
 
     result = mesh.remesh(
         progress=False,
