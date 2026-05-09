@@ -208,6 +208,27 @@ def _line_connectivity(
     return edges
 
 
+def _triangle_connectivity_unstructured(
+    mesh: pv.UnstructuredGrid,
+    cells_dict: CellsDict | None = None,
+) -> NDArray[np.int32] | None:
+    """Return TRIANGLE cell connectivity from an UnstructuredGrid, or None.
+
+    Used to round-trip explicit boundary triangles into MMG3D so that
+    ``set_required_triangles`` and other surface-anchored operations have
+    something to point at. ``cells_dict`` may be passed to skip the
+    O(n_cells) rebuild.
+    """
+    if cells_dict is None and hasattr(mesh, "cells_dict"):
+        cells_dict = mesh.cells_dict
+    if cells_dict is None or pv.CellType.TRIANGLE not in cells_dict:
+        return None
+    tris = cells_dict[pv.CellType.TRIANGLE].astype(np.int32)
+    if len(tris) == 0:
+        return None
+    return tris
+
+
 def _refs_for_unstructured_grid_cells(
     mesh: pv.UnstructuredGrid,
     cell_type: int,
@@ -354,6 +375,7 @@ def _from_pyvista_to_mmg3d(
     if is_all_tetra:
         elements = np.asarray(mesh.cell_connectivity).reshape(-1, 4).astype(np.int32)
         edges, edge_refs = None, None
+        triangles, tri_refs = None, None
     else:
         if cells_dict is None:
             cells_dict = mesh.cells_dict
@@ -362,6 +384,16 @@ def _from_pyvista_to_mmg3d(
             raise ValueError(msg)
         elements = cells_dict[pv.CellType.TETRA].astype(np.int32)
         edges, edge_refs = _extract_edges(mesh, cells_dict=cells_dict)
+        triangles = _triangle_connectivity_unstructured(mesh, cells_dict=cells_dict)
+        tri_refs = (
+            _refs_for_unstructured_grid_cells(
+                mesh,
+                pv.CellType.TRIANGLE,
+                len(triangles),
+            )
+            if triangles is not None
+            else None
+        )
 
     vertices = np.array(mesh.points, dtype=np.float64)
     elem_refs = _extract_element_refs(
@@ -370,15 +402,19 @@ def _from_pyvista_to_mmg3d(
         cell_type=pv.CellType.TETRA,
     )
 
-    if edges is None:
+    if edges is None and triangles is None:
         mmg_mesh = MmgMesh3D(vertices, elements)
     else:
         mmg_mesh = MmgMesh3D()
-        mmg_mesh.set_mesh_size(
-            vertices=len(vertices),
-            tetrahedra=len(elements),
-            edges=len(edges),
-        )
+        size_kwargs: dict[str, int] = {
+            "vertices": len(vertices),
+            "tetrahedra": len(elements),
+        }
+        if edges is not None:
+            size_kwargs["edges"] = len(edges)
+        if triangles is not None:
+            size_kwargs["triangles"] = len(triangles)
+        mmg_mesh.set_mesh_size(**size_kwargs)
         mmg_mesh.set_vertices(vertices)
         mmg_mesh.set_tetrahedra(elements)
 
@@ -387,6 +423,9 @@ def _from_pyvista_to_mmg3d(
 
     if edges is not None:
         mmg_mesh.set_edges(edges, edge_refs)
+
+    if triangles is not None:
+        mmg_mesh.set_triangles(triangles, tri_refs)
 
     return mmg_mesh
 

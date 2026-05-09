@@ -235,11 +235,31 @@ def _per_type_indices_marked(
     """Translate a length-n_cells bool mask to per-cell-type 0-indexed indices.
 
     PyVista numbers cells globally; MMG numbers each entity type separately
-    (triangles 1..nt, tets 1..ne, edges 1..na). For a cell of ``cell_type``
-    its per-type index equals its rank among cells of that type, which is
-    ``cumsum(types == cell_type) - 1`` evaluated at the cell.
+    (triangles 1..nt, tets 1..ne, edges 1..na). UnstructuredGrid carries
+    explicit per-cell types in ``celltypes``, so we reduce via
+    ``cumsum(types == cell_type) - 1``. PolyData stores cells in a fixed
+    section order (verts, lines, polys, strips) — pick the matching slice
+    of *mask* and return the local indices.
     """
     import numpy as np  # noqa: PLC0415
+
+    if isinstance(dataset, pv.PolyData):
+        n_verts = int(dataset.n_verts)
+        n_lines = int(dataset.n_lines)
+        n_strips = int(dataset.n_strips)
+        n_polys = int(dataset.n_cells) - n_verts - n_lines - n_strips
+        if cell_type == pv.CellType.LINE:
+            start, length = n_verts, n_lines
+        elif cell_type in (pv.CellType.TRIANGLE, pv.CellType.QUAD):
+            start, length = n_verts + n_lines, n_polys
+        elif cell_type == pv.CellType.VERTEX:
+            start, length = 0, n_verts
+        else:
+            return np.array([], dtype=np.int32)
+        if length <= 0:
+            return np.array([], dtype=np.int32)
+        section_mask = mask[start : start + length]
+        return np.where(section_mask)[0].astype(np.int32, copy=False)
 
     types = np.asarray(dataset.celltypes)
     of_type = types == cell_type
