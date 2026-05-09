@@ -12,6 +12,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
 from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
 from mmgpy._mmgpy import mmg3d as _mmg3d_cpp
 from mmgpy._mmgpy import mmgs as _mmgs_cpp
@@ -39,6 +41,34 @@ def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
     (.sol) and binary (.solb) formats natively via the MMG library.
     """
     mesh._impl.load_sol(str(sol_path))  # noqa: SLF001
+
+
+def _load_levelset(mesh: Mesh, sol_path: str | Path) -> None:
+    """Parse a Medit scalar sol and set it as the level-set field on *mesh*.
+
+    The C++ ``impl.load_sol()`` only populates the metric channel.
+    Level-set remeshing (``iso=1``) needs the values on the level-set
+    channel instead, so we parse the sol in Python and route through
+    ``set_field("levelset", ...)``.
+    """
+    from mmgpy._sol import parse_sol_file  # noqa: PLC0415
+
+    content = Path(sol_path).read_text()
+    fields = parse_sol_file(content)
+    sol = fields.get("solution@vertices")
+    if sol is None:
+        msg = f"No vertex-located solution found in {sol_path}"
+        raise ValueError(msg)
+    values = np.asarray(sol["data"], dtype=np.float64)
+    if values.ndim == 1:
+        values = values.reshape(-1, 1)
+    mesh._impl.set_field("levelset", values)  # noqa: SLF001
+
+
+def _is_iso_mode(options: dict[str, Any] | None) -> bool:
+    if not options:
+        return False
+    return bool(options.get("iso") or options.get("isosurf"))
 
 
 def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
@@ -72,7 +102,10 @@ def _wrapped_remesh(
     mesh = _read(input_mesh)
 
     if input_sol is not None:
-        _load_sol(mesh, input_sol)
+        if _is_iso_mode(options):
+            _load_levelset(mesh, input_sol)
+        else:
+            _load_sol(mesh, input_sol)
 
     result = mesh.remesh(
         progress=False,

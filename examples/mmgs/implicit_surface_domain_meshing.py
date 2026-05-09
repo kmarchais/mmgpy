@@ -18,14 +18,14 @@ import pyvista as pv
 from mmgpy import mmgs
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "teapot.mesh"
-SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "cube-distance.sol"
+SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "teapot-ls.sol"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
 mmgs.remesh(
     input_mesh=INPUT_FILE,
     input_sol=SOL_FILE,
     output_mesh=OUTPUT_FILE,
-    options={"ls": 0},
+    options={"iso": 1, "ls": 0.0},
 )
 
 pl = pv.Plotter()

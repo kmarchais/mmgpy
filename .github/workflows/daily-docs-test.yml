@@ -69,8 +69,6 @@ jobs:
           for f in examples/**/*.py; do
             case "$f" in
               examples/ui/*) continue ;;  # UI examples need a display server
-              examples/mmg2d/implicit_2d_domain_meshing.py) continue ;;  # references assets/multi-mat-rmc.sol which is not in the repo
-              examples/mmgs/implicit_surface_domain_meshing.py) continue ;;  # MMG analysis fails on this asset combination, needs investigation
             esac
             echo "::group::Running $f"
             timeout --signal=SIGTERM --kill-after=10s 5m python "$f"

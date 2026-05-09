@@ -25,8 +25,6 @@ EXAMPLES_DIR = REPO / "examples"
 SKIP_RELATIVE = frozenset(
     {
         "ui/basic_ui.py",
-        "mmg2d/implicit_2d_domain_meshing.py",
-        "mmgs/implicit_surface_domain_meshing.py",
     },
 )
 
