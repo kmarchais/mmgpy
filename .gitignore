@@ -33,4 +33,7 @@ htmlcov/
 !docs/assets/**/*.png
 !docs/assets/**/*.gif
 
+# Allow committed regression baselines for example tests
+!tests/image_cache/**/*.png
+
 wheelhouse/

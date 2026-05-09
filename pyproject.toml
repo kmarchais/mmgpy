@@ -120,6 +120,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "ruff>=0.14.10",
     "pytest-codeblocks>=0.17.0",
+    "pytest-pyvista>=0.2",
 ]
 docs = [
     "mike @ git+https://github.com/squidfunk/mike.git@0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3",
@@ -137,6 +138,7 @@ ui = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py", "bench_*.py"]
+image_cache_dir = "tests/image_cache"
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
