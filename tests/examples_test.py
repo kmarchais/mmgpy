@@ -33,21 +33,23 @@ SKIP_RELATIVE = frozenset(
 # Examples that produce a single static PyVista frame via ``Plotter.show()``.
 # These are diffed against committed baselines.
 #
-# ``mmgs/ellipsoid_sdf.py`` is intentionally kept out: it runs MMG three
-# times with different extraction methods, and the compounded
-# non-determinism produces image diffs well above the regression
-# threshold across runs. Smoke-tested instead.
+# Examples kept out of the regression set:
+#   - ``mmgs/ellipsoid_sdf.py``: runs MMG three times with different
+#     extraction methods; the compounded non-determinism produces image
+#     diffs well above the regression threshold across runs.
+#   - ``mmg3d/hessian_adaptation.py``, ``mmg3d/lagrangian_motion.py``,
+#     ``mmg3d/mesh_quality_improvement.py``,
+#     ``mmgs/mechanical_piece_remeshing.py``: pass locally but exceed the
+#     500-pixel threshold under the OSMesa software renderer used in CI.
+#     Baselines would need to be regenerated per-environment to make
+#     these robust; smoke-tested for now.
 STATIC_PYVISTA = frozenset(
     {
         "mmg2d/levelset_discretization.py",
         "mmg2d/mesh_adaptation_to_a_solution.py",
         "mmg3d/ellipsoid_levelset.py",
-        "mmg3d/hessian_adaptation.py",
-        "mmg3d/lagrangian_motion.py",
         "mmg3d/levelset_discretization.py",
-        "mmg3d/mesh_quality_improvement.py",
         "mmg3d/open_boundary_remeshing.py",
-        "mmgs/mechanical_piece_remeshing.py",
         "mmgs/smooth_surface_remeshing.py",
     },
 )
