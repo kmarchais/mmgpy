@@ -18,16 +18,15 @@ the natural follow-up is *preserving* them through a refinement: if MMG
 is allowed to coarsen, move, or drop the marked edges, the BC tags are
 lost and the FEM problem can no longer be reapplied.
 
-This example builds two meshes of ``[0, 1]^2``:
+This example builds two 2D meshes of ``[0, 1]^2``:
 
-- a **baseline** with only the four boundary edges (refs 1..4);
-- the same mesh **plus an interior horizontal interface** at ``y = 0.5``
-  with ``ref = 10`` — added as ``LINE`` cells *and* flagged via
-  ``cell_data["mmg_required_edges"]`` so MMG locks them.
-
-After remesh, the baseline only carries refs 1..4 (no interior
-interface), while the constrained mesh keeps every refined sub-segment
-of ref=10 — so an FEM solver still has the interface boundary it needs.
+- a **baseline** triangulation (no explicit edge cells) — refine and
+  observe that MMG infers boundary edges from the triangle skin only;
+- a **constrained** version that adds an interior interface at
+  ``y = 0.5`` as ``LINE`` cells with ``ref = 10`` and locks them via
+  ``cell_data["mmg_required_edges"]``. After remesh, every refined
+  sub-segment of the interface keeps its ref=10 tag, so an FEM solver
+  still has the interface boundary it needs.
 
 Run::
 
@@ -40,25 +39,17 @@ import numpy as np
 import pyvista as pv
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
+from mmgpy import polydata_from_2d_triangles
 
-_BOUNDARY_REFS = (1, 2, 3, 4)  # bottom, top, left, right
 _INTERFACE_REF = 10
 _PALETTE = ("#dddddd", "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#e377c2")
 
 
-def _build(n: int = 6, *, with_interface: bool) -> pv.PolyData:
-    """Build a regular n x n triangulation of ``[0, 1]^2`` with edge refs.
-
-    ``with_interface=False`` returns just the triangulation + four boundary
-    edges (refs 1..4). ``with_interface=True`` additionally adds n explicit
-    ``LINE`` cells along ``y = 0.5`` with ``ref = _INTERFACE_REF``; those
-    interior segments must be marked required when calling MMG, otherwise
-    mmg2d may abort on the unanchored interior edges.
-    """
+def _grid_points_and_triangles(n: int = 6) -> tuple[np.ndarray, np.ndarray]:
+    """Regular n x n triangulation of ``[0, 1]^2``."""
     coord = np.linspace(0.0, 1.0, n + 1)
     xs, ys = np.meshgrid(coord, coord, indexing="ij")
-    points = np.column_stack([xs.ravel(), ys.ravel(), np.zeros(xs.size)])
-
+    points = np.column_stack([xs.ravel(), ys.ravel()]).astype(np.float64)
     tris = []
     for i in range(n):
         for j in range(n):
@@ -68,54 +59,53 @@ def _build(n: int = 6, *, with_interface: bool) -> pv.PolyData:
             v11 = (i + 1) * (n + 1) + j + 1
             tris.append([v00, v10, v11])
             tris.append([v00, v11, v01])
-    tris = np.asarray(tris, dtype=np.int64)
+    return points, np.asarray(tris, dtype=np.int32)
 
-    edges: list[list[int]] = []
-    edge_refs: list[int] = []
-    for i in range(n):  # bottom (y = 0)
-        edges.append([i * (n + 1), (i + 1) * (n + 1)])
-        edge_refs.append(_BOUNDARY_REFS[0])
-    for i in range(n):  # top (y = 1)
-        edges.append([i * (n + 1) + n, (i + 1) * (n + 1) + n])
-        edge_refs.append(_BOUNDARY_REFS[1])
-    for j in range(n):  # left (x = 0)
-        edges.append([j, j + 1])
-        edge_refs.append(_BOUNDARY_REFS[2])
-    for j in range(n):  # right (x = 1)
-        edges.append([n * (n + 1) + j, n * (n + 1) + j + 1])
-        edge_refs.append(_BOUNDARY_REFS[3])
-    if with_interface:
-        j_int = n // 2
-        for i in range(n):
-            edges.append(
-                [i * (n + 1) + j_int, (i + 1) * (n + 1) + j_int],
-            )
-            edge_refs.append(_INTERFACE_REF)
 
-    edges = np.asarray(edges, dtype=np.int64)
-    edge_refs = np.asarray(edge_refs, dtype=np.int64)
+def _with_required_interface(
+    points: np.ndarray,
+    triangles: np.ndarray,
+    n: int,
+) -> pv.PolyData:
+    """Return ``pv.PolyData`` with horizontal interface lines marked required.
 
-    lines_flat = np.empty((len(edges), 3), dtype=np.int64)
-    lines_flat[:, 0] = 2
-    lines_flat[:, 1:] = edges
-    polys_flat = np.empty((len(tris), 4), dtype=np.int64)
-    polys_flat[:, 0] = 3
-    polys_flat[:, 1:] = tris
-
-    pd = pv.PolyData(
-        points,
-        faces=polys_flat.flatten(),
-        lines=lines_flat.flatten(),
+    The interface segments are added as ``LINE`` cells with
+    ``ref = _INTERFACE_REF``; the same indices are flagged in
+    ``cell_data["mmg_required_edges"]`` so the accessor routes them to
+    ``MmgMesh2D.set_required_edges`` before the remesh runs. mmg2d
+    aborts on unanchored interior edges, so the required tag is what
+    keeps the example portable.
+    """
+    j_int = n // 2
+    edges = np.array(
+        [[i * (n + 1) + j_int, (i + 1) * (n + 1) + j_int] for i in range(n)],
+        dtype=np.int64,
     )
-    # PolyData orders cells: verts (0) | lines | polys | strips.
+    lines_flat = np.column_stack(
+        [np.full(len(edges), 2, dtype=np.int64), edges],
+    ).ravel()
+
+    verts3d = np.column_stack([points, np.zeros(len(points))])
+    faces_flat = np.column_stack(
+        [np.full(len(triangles), 3, dtype=np.int32), triangles],
+    ).ravel()
+
+    pd = pv.PolyData(verts3d, faces=faces_flat, lines=lines_flat)
     pd.cell_data["refs"] = np.concatenate(
-        [edge_refs, np.zeros(len(tris), dtype=np.int64)],
+        [
+            np.full(len(edges), _INTERFACE_REF, dtype=np.int64),
+            np.zeros(len(triangles), dtype=np.int64),
+        ],
     )
+    # Lock every interface segment so mmg2d preserves them through the
+    # remesh (and they retain their ref=10 tag in the output).
+    mask = np.zeros(pd.n_cells, dtype=bool)
+    mask[: pd.n_lines] = True
+    pd.cell_data["mmg_required_edges"] = mask
     return pd
 
 
 def _interface_edge_count(mesh: pv.PolyData) -> int:
-    """Return the number of LINE cells with ref == _INTERFACE_REF."""
     refs = np.asarray(mesh.cell_data.get("refs", []))
     if refs.size == 0:
         return 0
@@ -124,36 +114,37 @@ def _interface_edge_count(mesh: pv.PolyData) -> int:
 
 def main() -> None:
     """Demonstrate FEM-edge preservation via ``mmg_required_edges``."""
-    # ----- Baseline: refine without any interior interface ------------
-    baseline = _build(n=6, with_interface=False)
+    n = 6
+    points, tris = _grid_points_and_triangles(n=n)
+
+    # ----- Baseline: no explicit LINE cells, just the triangulation. ----
+    baseline = polydata_from_2d_triangles(points, tris)
     baseline_out = baseline.mmg.remesh(hsiz=0.07, verbose=-1)
     print(
-        f"Baseline (boundary edges only): "
+        f"Baseline (triangulation only): "
         f"{baseline.n_cells} -> {baseline_out.n_cells} cells, "
         f"{_interface_edge_count(baseline_out)} ref={_INTERFACE_REF} segments",
     )
 
-    # ----- Constrained: same domain + interior interface, all required
-    pd = _build(n=6, with_interface=True)
-    n_int_in = _interface_edge_count(pd)
-
-    refs = np.asarray(pd.cell_data["refs"])
-    mask = np.zeros(pd.n_cells, dtype=bool)
-    mask[: pd.n_lines] = refs[: pd.n_lines] == _INTERFACE_REF
-    pd.cell_data["mmg_required_edges"] = mask
-
+    # ----- Constrained: same domain + interior interface, all required.
+    pd = _with_required_interface(points, tris, n=n)
     locked = pd.mmg.remesh(hsiz=0.07, verbose=-1)
     print(
         f"Constrained (interface required): "
         f"{pd.n_cells} -> {locked.n_cells} cells, "
-        f"{n_int_in} -> {_interface_edge_count(locked)} ref={_INTERFACE_REF} segments",
+        f"{_interface_edge_count(pd)} -> {_interface_edge_count(locked)} "
+        f"ref={_INTERFACE_REF} segments",
     )
 
     # ----- Visualization ----------------------------------------------
     pl = pv.Plotter(shape=(1, 3), window_size=(1800, 600))
     bar = {"title": "edge ref", "n_labels": 5, "fmt": "%d", "vertical": True}
     panels = [
-        (pd, f"Input (with interface)\n{n_int_in} ref={_INTERFACE_REF} segments"),
+        (
+            pd,
+            f"Input (with interface)\n"
+            f"{_interface_edge_count(pd)} ref={_INTERFACE_REF} segments",
+        ),
         (
             baseline_out,
             f"Baseline remesh\n0 ref={_INTERFACE_REF} (no interface)",
