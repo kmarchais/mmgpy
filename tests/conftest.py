@@ -1,7 +1,17 @@
 """Shared fixtures for mmgpy tests."""
 
+import os
+
+# Force PyVista into off-screen mode before it's imported anywhere else,
+# so example smoke tests that call ``Plotter.show()`` don't pop windows.
+# CI sets this via the workflow env; locally, this conftest is the source of truth.
+os.environ.setdefault("PYVISTA_OFF_SCREEN", "true")
+
 import numpy as np
 import pytest
+import pyvista as pv
+
+pv.OFF_SCREEN = True
 
 
 @pytest.fixture
