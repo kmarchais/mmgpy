@@ -1434,7 +1434,7 @@ class Mesh:
                 pv_mesh = pv_mesh.cast_to_unstructured_grid()
             pv_mesh.save(str(path))
 
-    def load_sol(self, filename: str | Path) -> None:
+    def load_sol(self, filename: str | Path, channel: str = "metric") -> None:
         """Load a Medit solution file (.sol/.solb) and set the field on the mesh.
 
         Both text (.sol) and binary (.solb) formats are supported via the
@@ -1444,11 +1444,15 @@ class Mesh:
         ----------
         filename : str or Path
             Path to a .sol or .solb file.
+        channel : str, default "metric"
+            Target sol channel: ``"metric"``, ``"levelset"``,
+            ``"displacement"``, or ``"tensor"``. Use ``"levelset"`` when
+            preparing the mesh for ``iso=1`` remeshing.
 
         """
         from mmgpy._remesh import _load_sol  # noqa: PLC0415
 
-        _load_sol(self, filename)
+        _load_sol(self, filename, channel=channel)
 
     def save_sol(self, filename: str | Path) -> None:
         """Save the solution/metric field to a Medit .sol file.

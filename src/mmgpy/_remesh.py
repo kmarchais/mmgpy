@@ -12,8 +12,6 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
-
 from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
 from mmgpy._mmgpy import mmg3d as _mmg3d_cpp
 from mmgpy._mmgpy import mmgs as _mmgs_cpp
@@ -34,41 +32,29 @@ def _is_native(path: str | Path | None) -> bool:
     return Path(path).suffix.lower() in NATIVE_MESH_EXTENSIONS
 
 
-def _load_sol(mesh: Mesh, sol_path: str | Path) -> None:
-    """Load a .sol/.solb file and set the appropriate field on *mesh*.
+def _load_sol(mesh: Mesh, sol_path: str | Path, channel: str = "metric") -> None:
+    """Load a .sol/.solb file into ``channel`` on *mesh*.
 
     Delegates to the C++ ``impl.load_sol()`` which handles both text
     (.sol) and binary (.solb) formats natively via the MMG library.
     """
-    mesh._impl.load_sol(str(sol_path))  # noqa: SLF001
-
-
-def _load_levelset(mesh: Mesh, sol_path: str | Path) -> None:
-    """Parse a Medit scalar sol and set it as the level-set field on *mesh*.
-
-    The C++ ``impl.load_sol()`` only populates the metric channel.
-    Level-set remeshing (``iso=1``) needs the values on the level-set
-    channel instead, so we parse the sol in Python and route through
-    ``set_field("levelset", ...)``.
-    """
-    from mmgpy._sol import parse_sol_file  # noqa: PLC0415
-
-    content = Path(sol_path).read_text()
-    fields = parse_sol_file(content)
-    sol = fields.get("solution@vertices")
-    if sol is None:
-        msg = f"No vertex-located solution found in {sol_path}"
-        raise ValueError(msg)
-    values = np.asarray(sol["data"], dtype=np.float64)
-    if values.ndim == 1:
-        values = values.reshape(-1, 1)
-    mesh._impl.set_field("levelset", values)  # noqa: SLF001
+    mesh._impl.load_sol(str(sol_path), channel=channel)  # noqa: SLF001
 
 
 def _is_iso_mode(options: dict[str, Any] | None) -> bool:
     if not options:
         return False
-    return bool(options.get("iso") or options.get("isosurf"))
+
+    def _truthy(value: object) -> bool:
+        # `bool("0")` is True, so coerce strings through int first.
+        if isinstance(value, str):
+            try:
+                return int(value) != 0
+            except ValueError:
+                return bool(value)
+        return bool(value)
+
+    return _truthy(options.get("iso")) or _truthy(options.get("isosurf"))
 
 
 def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
@@ -102,10 +88,8 @@ def _wrapped_remesh(
     mesh = _read(input_mesh)
 
     if input_sol is not None:
-        if _is_iso_mode(options):
-            _load_levelset(mesh, input_sol)
-        else:
-            _load_sol(mesh, input_sol)
+        channel = "levelset" if _is_iso_mode(options) else "metric"
+        _load_sol(mesh, input_sol, channel=channel)
 
     result = mesh.remesh(
         progress=False,

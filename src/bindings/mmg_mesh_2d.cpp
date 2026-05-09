@@ -973,11 +973,15 @@ void MmgMesh2D::save(
 }
 
 void MmgMesh2D::load_sol(
-    const std::variant<std::string, std::filesystem::path> &filename) {
+    const std::variant<std::string, std::filesystem::path> &filename,
+    const std::string &channel) {
   check_not_corrupted("load_sol");
   std::string fname = variant_to_string(filename);
 
-  if (MMG2D_loadSol(mesh, met, fname.c_str()) != 1) {
+  auto field = get_solution_field(channel);
+  MMG5_pSol *sol_ptr = const_cast<MMG5_pSol *>(field.sol_ptr);
+
+  if (MMG2D_loadSol(mesh, *sol_ptr, fname.c_str()) != 1) {
     throw std::runtime_error("Failed to load solution file: " + fname);
   }
 }

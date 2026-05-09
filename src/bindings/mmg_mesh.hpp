@@ -140,7 +140,8 @@ public:
   void
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
   void
-  load_sol(const std::variant<std::string, std::filesystem::path> &filename);
+  load_sol(const std::variant<std::string, std::filesystem::path> &filename,
+           const std::string &channel = "metric");
   void save_sol(
       const std::variant<std::string, std::filesystem::path> &filename) const;
 

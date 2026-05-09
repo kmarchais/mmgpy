@@ -1114,13 +1114,17 @@ class MmgMesh3D:
 
         """
 
-    def load_sol(self, filename: str | Path) -> None:
-        """Load a solution file (.sol/.solb).
+    def load_sol(self, filename: str | Path, channel: str = "metric") -> None:
+        """Load a solution file (.sol/.solb) into the given channel.
 
         Parameters
         ----------
         filename : str | Path
             Path to a .sol or .solb file.
+        channel : str, default "metric"
+            Target sol channel: ``"metric"``, ``"levelset"``,
+            ``"displacement"``, or ``"tensor"``. ``"displacement"`` is not
+            available on ``MmgMeshS``.
 
         Raises
         ------
@@ -1915,13 +1919,17 @@ class MmgMesh2D:
 
         """
 
-    def load_sol(self, filename: str | Path) -> None:
-        """Load a solution file (.sol/.solb).
+    def load_sol(self, filename: str | Path, channel: str = "metric") -> None:
+        """Load a solution file (.sol/.solb) into the given channel.
 
         Parameters
         ----------
         filename : str | Path
             Path to a .sol or .solb file.
+        channel : str, default "metric"
+            Target sol channel: ``"metric"``, ``"levelset"``,
+            ``"displacement"``, or ``"tensor"``. ``"displacement"`` is not
+            available on ``MmgMeshS``.
 
         Raises
         ------
@@ -2646,13 +2654,17 @@ class MmgMeshS:
 
         """
 
-    def load_sol(self, filename: str | Path) -> None:
-        """Load a solution file (.sol/.solb).
+    def load_sol(self, filename: str | Path, channel: str = "metric") -> None:
+        """Load a solution file (.sol/.solb) into the given channel.
 
         Parameters
         ----------
         filename : str | Path
             Path to a .sol or .solb file.
+        channel : str, default "metric"
+            Target sol channel: ``"metric"``, ``"levelset"``,
+            ``"displacement"``, or ``"tensor"``. ``"displacement"`` is not
+            available on ``MmgMeshS``.
 
         Raises
         ------
