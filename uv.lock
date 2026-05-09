@@ -1516,6 +1516,7 @@ dev = [
     { name = "pytest-benchmark" },
     { name = "pytest-codeblocks" },
     { name = "pytest-cov" },
+    { name = "pytest-pyvista" },
     { name = "ruff" },
     { name = "scikit-build-core" },
 ]
@@ -1562,6 +1563,7 @@ dev = [
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-codeblocks", specifier = ">=0.17.0" },
     { name = "pytest-cov", specifier = ">=4.1.0" },
+    { name = "pytest-pyvista", specifier = ">=0.2" },
     { name = "ruff", specifier = ">=0.14.10" },
     { name = "scikit-build-core", specifier = ">=0.11.5" },
 ]
@@ -2522,6 +2524,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5e/f7/c933acc76f5208b3b00089573cf6a2bc26dc80a8aece8f52bb7d6b1855ca/pytest_cov-7.0.0.tar.gz", hash = "sha256:33c97eda2e049a0c5298e91f519302a1334c26ac65c1a483d6206fd458361af1", size = 54328, upload-time = "2025-09-09T10:57:02.113Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ee/49/1377b49de7d0c1ce41292161ea0f721913fa8722c19fb9c1e3aa0367eecb/pytest_cov-7.0.0-py3-none-any.whl", hash = "sha256:3b8e9558b16cc1479da72058bdecf8073661c7f57f7d3c5f22a1c23507f2d861", size = 22424, upload-time = "2025-09-09T10:57:00.695Z" },
+]
+
+[[package]]
+name = "pytest-pyvista"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a1/2a/95ac7bf300a037b8412a91d261d479bf27bc7ee04d55e6fef19d5236a682/pytest_pyvista-0.3.3.tar.gz", hash = "sha256:0a8da0ccbacc35261a28613a99fc1a3dfd4bd474558e7a0a6ea014bfb3b93de7", size = 32772, upload-time = "2026-04-13T00:40:58.229Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/8e/72860c980fffa10aa86a2ecab62d7f6a93248328ea23af5fe887bdf211b5/pytest_pyvista-0.3.3-py3-none-any.whl", hash = "sha256:3342371bda4da54503b2ac627df5b6906989622afc1c843c496d17e2b65a099e", size = 28672, upload-time = "2026-04-13T00:40:56.72Z" },
 ]
 
 [[package]]

@@ -1,0 +1,58 @@
+name: Update image baselines
+
+# Regenerate the example regression baselines under the same renderer
+# (OSMesa, Python 3.14) used by the build-and-test job, and commit the
+# results back to the triggering branch. Manual trigger only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Reset all baselines or only fill in missing ones"
+        type: choice
+        default: missing
+        options: [missing, reset]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: astral-sh/setup-uv@v8.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Install GL libraries for offscreen rendering
+        run: sudo apt-get update && sudo apt-get install -y libosmesa6-dev libgl1-mesa-dev
+
+      - run: uv sync --extra fem -v
+
+      - name: Regenerate baselines
+        env:
+          MPLBACKEND: Agg
+          PYVISTA_OFF_SCREEN: "true"
+        run: |
+          flag="--add_missing_images"
+          if [ "${{ inputs.mode }}" = "reset" ]; then
+            flag="--reset_image_cache"
+          fi
+          uv run pytest tests/examples_test.py $flag -v
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests/image_cache/
+          if git diff --cached --quiet; then
+            echo "No baseline changes."
+          else
+            git commit -m "ci: regenerate example image baselines"
+            git push
+          fi
