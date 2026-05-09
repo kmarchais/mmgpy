@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: "0 6 * * *" # 6 AM UTC daily
   workflow_dispatch: # Allow manual triggering
-  pull_request: # TEMPORARY: verify fix in PR, revert before merge
 
 jobs:
   test-released-docs:
@@ -30,9 +29,7 @@ jobs:
 
       - uses: actions/checkout@v6
         with:
-          # On PRs, check out the PR HEAD so we exercise the proposed examples
-          # against the released package. On schedule/dispatch, use the released tag.
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || format('v{0}', steps.version.outputs.version) }}
+          ref: v${{ steps.version.outputs.version }}
 
       - uses: astral-sh/setup-uv@v8.0.0
         with:
