@@ -416,7 +416,7 @@ def test_generate_unit_square() -> None:
 
     assert isinstance(mesh, pv.PolyData)
     assert mesh.n_points >= len(verts)
-    assert mesh.n_faces > 0
+    assert (mesh.n_cells - mesh.n_lines) > 0
     triangles = np.asarray(mesh.regular_faces)
     assert triangles.shape[1] == 3
     assert mesh.area == pytest.approx(1.0, rel=0.01)
@@ -461,7 +461,7 @@ def test_generate_with_refs() -> None:
     assert "refs" in mesh.cell_data
     cell_refs = np.asarray(mesh.cell_data["refs"])
     line_refs = cell_refs[: mesh.n_lines]
-    assert set(np.unique(line_refs)).issubset({1, 2, 3, 4})
+    assert set(np.unique(line_refs)) == {1, 2, 3, 4}
 
 
 def test_generate_input_validation() -> None:
@@ -487,11 +487,11 @@ def test_accessor_routes_line_only_polydata() -> None:
     poly = pv.PolyData(verts_3d, lines=lines)
 
     assert poly.n_lines == len(edges)
-    assert poly.n_faces == 0
+    assert (poly.n_cells - poly.n_lines) == 0
 
     out = poly.mmg.remesh(hmax=0.2, verbose=-1)
     assert isinstance(out, pv.PolyData)
-    assert out.n_faces > 0
+    assert (out.n_cells - out.n_lines) > 0
     assert out.area == pytest.approx(1.0, rel=0.01)
 
 
@@ -508,4 +508,4 @@ def test_accessor_mixed_polydata_uses_remesh() -> None:
     assert poly.n_lines == 0
     out = poly.mmg.remesh(hmax=0.3, verbose=-1)
     assert isinstance(out, pv.PolyData)
-    assert out.n_faces > 0
+    assert (out.n_cells - out.n_lines) > 0

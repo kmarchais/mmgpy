@@ -46,7 +46,7 @@ def naca_airfoil(n: int = 80, thickness: float = 0.12) -> np.ndarray:
             - 0.1260 * x
             - 0.3516 * x**2
             + 0.2843 * x**3
-            - 0.1015 * x**4
+            - 0.1036 * x**4
         )
     )
     upper = np.column_stack([x, yt])

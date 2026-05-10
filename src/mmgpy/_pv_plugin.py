@@ -159,6 +159,14 @@ def _generate_from_line_polydata(
         raise ValueError(msg)
     refs = _refs_for_polydata_lines(dataset, len(edges))
     points = np.asarray(dataset.points, dtype=np.float64)
+    z_span = float(np.ptp(points[:, 2]))
+    xy_span = float(np.ptp(points[:, :2]))
+    if z_span > max(1e-9, 1e-6 * xy_span):
+        msg = (
+            "mmg2d.generate routing requires a planar (z=const) PolyData; "
+            f"got z range {z_span:.3g} over xy span {xy_span:.3g}"
+        )
+        raise ValueError(msg)
     vertices = points[:, :2]
     return generate(vertices, edges, refs=refs, **options)
 
@@ -607,6 +615,13 @@ class MmgAccessor:
             2D and surface results as ``PolyData``. Element references
             survive in ``cell_data["refs"]`` and MMG edges in ``LINE``
             cells.
+
+        Notes
+        -----
+        If the dataset is a ``PolyData`` carrying only ``LINE`` cells,
+        ``remesh()`` is auto-routed through :func:`mmgpy.mmg2d.generate`
+        to triangulate the outline. The dataset must be planar
+        (constant ``z``); ``local_sizing`` is not supported on this path.
 
         """
         if isinstance(self._dataset, pv.PolyData) and _is_line_only_polydata(
