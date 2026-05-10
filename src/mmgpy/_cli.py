@@ -135,6 +135,7 @@ _FLAGS_WITH_VALUE = {
     "-lag",
     "-ar",
     "-nr",  # consumed but intentionally unhandled (MMG no-ridge flag)
+    "-rn",  # renum (0/1) → routed to mmgpy.reorder_cuthill_mckee
     "-hmin",
     "-hmax",
     "-hsiz",
@@ -216,6 +217,11 @@ def _parse_args(args: list[str]) -> _ParsedArgs:
                 parsed.remesh_options["verbose"] = int(value)
             elif arg == "-m":
                 parsed.remesh_options["mem"] = int(value)
+            elif arg == "-rn":
+                # MMG's -rn 0/1 toggles SCOTCH renumbering. The bundled MMG
+                # has no SCOTCH; mmgpy reroutes the kwarg to a Python-side
+                # reverse Cuthill-McKee in _pop_renum_redirect.
+                parsed.remesh_options["renum"] = int(value)
             elif arg in _NUMERIC_OPTION_FLAGS:
                 key = arg.lstrip("-")
                 parsed.remesh_options[key] = float(value)
@@ -289,6 +295,7 @@ def _run_mmg() -> None:  # pragma: no cover
             "  -nomove         Disable point relocation\n"
             "  -nosurf         Disable surface modifications\n"
             "  -optim          Optimization mode (no topology changes)\n"
+            "  -rn <0|1>       Renumber vertices (reverse Cuthill-McKee)\n"
             "  -h, --help      Show this help message\n"
             "  -V, --version   Show version information",
         )

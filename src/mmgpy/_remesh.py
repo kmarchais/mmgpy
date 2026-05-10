@@ -62,6 +62,23 @@ def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
     mesh._impl.save_sol(str(sol_path))  # noqa: SLF001
 
 
+def _renum_is_truthy(raw: object) -> bool:
+    """Peek at the ``renum`` kwarg without consuming it or warning.
+
+    The pop + ``FutureWarning`` happens inside ``Mesh.remesh`` via
+    ``_pop_renum_redirect``; here we only need to decide whether the native
+    fast path is safe to take. Bad strings fall through to ``False`` and
+    the precise ``ValueError`` is raised by ``_pop_renum_redirect`` once
+    the kwarg actually reaches ``Mesh.remesh``.
+    """
+    if isinstance(raw, str):
+        try:
+            return int(raw) != 0
+        except ValueError:
+            return False
+    return bool(raw)
+
+
 def _wrapped_remesh(
     cpp_remesh: Callable[..., bool],
     input_mesh: str | Path,
@@ -71,16 +88,24 @@ def _wrapped_remesh(
     options: dict[str, Any] | None = None,
     transfer_fields: FieldTransferParam = False,
 ) -> bool:
+    forwarded = dict(options or {})
+    do_rcm = _renum_is_truthy(forwarded.get("renum"))
+
     input_native = _is_native(input_mesh)
     output_native = _is_native(output_mesh)
 
-    if input_native and output_native:
+    # Native fast path is only safe when no RCM is requested. With RCM the
+    # reordering must run on the in-memory Mesh so the saved .sol stays
+    # consistent with the saved mesh and no MMG-specific data is lost via
+    # a pv.read round-trip.
+    if not do_rcm and input_native and output_native:
+        forwarded.pop("renum", None)  # cpp bindings do not accept renum
         return cpp_remesh(
             input_mesh=input_mesh,
             input_sol=input_sol,
             output_mesh=output_mesh,
             output_sol=output_sol,
-            options=options or {},
+            options=forwarded,
         )
 
     from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
@@ -91,10 +116,12 @@ def _wrapped_remesh(
         channel = "levelset" if _is_iso_mode(options) else "metric"
         _load_sol(mesh, input_sol, channel=channel)
 
+    # Leave ``renum`` in forwarded so Mesh.remesh pops it (and emits the
+    # one-time FutureWarning) and applies RCM in place.
     result = mesh.remesh(
         progress=False,
         transfer_fields=transfer_fields,
-        **(options or {}),
+        **forwarded,
     )
 
     if output_mesh is not None:

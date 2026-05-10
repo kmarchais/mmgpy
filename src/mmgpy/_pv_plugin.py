@@ -569,6 +569,9 @@ class MmgAccessor:
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time
+        # FutureWarning + in-place reverse Cuthill-McKee). Forwarding it
+        # through here keeps the PyVista-side path single-pass.
         if opts is not None:
             if options:
                 msg = "pass either an options object or kwargs, not both"
@@ -817,6 +820,20 @@ class MmgAccessor:
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_vertex_neighbors(idx)
+
+    def reorder_cuthill_mckee(
+        self,
+        *,
+        symmetric_mode: bool = True,
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Return a copy of the dataset reordered via reverse Cuthill-McKee.
+
+        Replaces MMG's SCOTCH-based ``renum=1``, which the bundled MMG
+        cannot run. See :func:`mmgpy.reorder_cuthill_mckee` for details.
+        """
+        from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
+
+        return reorder_cuthill_mckee(self._dataset, symmetric_mode=symmetric_mode)
 
     def center_of_mass(self) -> NDArray[np.float64]:
         """Return the volume-weighted (3D) or area-weighted (2D/surface) centroid.
