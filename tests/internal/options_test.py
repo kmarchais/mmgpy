@@ -1,5 +1,7 @@
 """Tests for options dataclasses and convenience methods."""
 
+from dataclasses import fields
+
 import numpy as np
 import pytest
 
@@ -212,8 +214,6 @@ class TestMmg2DPromotedFlags:
 
     def test_no_optim_les(self) -> None:
         """optim_les is 3D-only and absent on Mmg2DOptions."""
-        from dataclasses import fields
-
         names = [f.name for f in fields(Mmg2DOptions)]
         assert "optim_les" not in names
 
@@ -241,34 +241,25 @@ class TestMmgSPromotedFlags:
 
     def test_no_opnbdy_nofem(self) -> None:
         """Opnbdy / nofem are not exposed by MMGS, so absent on MmgSOptions."""
-        from dataclasses import fields
-
         names = [f.name for f in fields(MmgSOptions)]
         assert "opnbdy" not in names
         assert "nofem" not in names
 
-    def test_no_renum_field(self) -> None:
-        """Renum is not promoted to a typed option."""
-        from dataclasses import fields
-
-        names = [f.name for f in fields(MmgSOptions)]
-        assert "renum" not in names
-
 
 class TestNoRenumField:
-    """renum is intentionally not a typed option (see PR 1)."""
+    """renum is not a typed option (#248 replaced it with reorder_cuthill_mckee)."""
 
     def test_3d(self) -> None:
         """Renum is absent from Mmg3DOptions."""
-        from dataclasses import fields
-
         assert "renum" not in {f.name for f in fields(Mmg3DOptions)}
 
     def test_2d(self) -> None:
         """Renum is absent from Mmg2DOptions."""
-        from dataclasses import fields
-
         assert "renum" not in {f.name for f in fields(Mmg2DOptions)}
+
+    def test_s(self) -> None:
+        """Renum is absent from MmgSOptions."""
+        assert "renum" not in {f.name for f in fields(MmgSOptions)}
 
 
 class TestMmg2DOptions:

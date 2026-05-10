@@ -175,7 +175,7 @@ class _MmgOptionsBase:
     """Use vertex normals to smooth the mesh (normal regularization)."""
 
     anisosize: bool = False
-    """Enable anisotropic size map handling (otherwise treated isotropically)."""
+    """Treat the size map as anisotropic. Requires a tensor solution field."""
 
     def to_dict(self) -> dict[str, float | int]:
         """Convert options to dictionary for passing to remesh().
