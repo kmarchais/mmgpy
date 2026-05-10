@@ -194,16 +194,13 @@ jobs:
           # examples_test.py discovers examples via `git ls-files`, so the
           # checkout must include the .git directory.
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v8.0.0
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
-      - run: uv python install 3.12
-      - name: Install GL + Xvfb
+      - name: Install GL and start Xvfb
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-dev libosmesa6-dev xvfb
-      - name: Start Xvfb
-        run: |
           Xvfb :99 -screen 0 1024x768x24 &
           echo "DISPLAY=:99" >> $GITHUB_ENV
       - name: Download linux x86_64 wheels
@@ -213,11 +210,11 @@ jobs:
           path: wheelhouse/
       - name: Create venv and install the freshly built wheel
         run: |
-          uv venv -p 3.12 .venv
-          # Install the cp312 manylinux wheel built for this release. We
-          # deliberately do NOT `uv sync` here, which would build mmgpy from
-          # source and shadow the wheel under test.
-          uv pip install --python .venv/bin/python wheelhouse/mmgpy-*-cp312-cp312-manylinux*_x86_64.whl
+          uv venv .venv
+          # Let uv pick the matching wheel for the venv's Python from
+          # wheelhouse/. We deliberately do NOT `uv sync` here, which would
+          # build mmgpy from source and shadow the wheel under test.
+          uv pip install --python .venv/bin/python --no-index --find-links wheelhouse mmgpy
           # fedoo is needed for the elasticity_propagation example.
           uv pip install --python .venv/bin/python pytest pytest-codeblocks pytest-pyvista fedoo
       - name: Verify the installed mmgpy is the wheel
@@ -421,7 +418,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v8.0.0
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
       - run: uv python install 3.12
