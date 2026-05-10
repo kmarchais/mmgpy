@@ -219,9 +219,9 @@ def _triangle_connectivity_unstructured(
     something to point at. ``cells_dict`` may be passed to skip the
     O(n_cells) rebuild.
     """
-    if cells_dict is None and hasattr(mesh, "cells_dict"):
+    if cells_dict is None:
         cells_dict = mesh.cells_dict
-    if cells_dict is None or pv.CellType.TRIANGLE not in cells_dict:
+    if pv.CellType.TRIANGLE not in cells_dict:
         return None
     tris = cells_dict[pv.CellType.TRIANGLE].astype(np.int32)
     if len(tris) == 0:
@@ -367,6 +367,12 @@ def _from_pyvista_to_mmg3d(
     cell types (e.g. a tet mesh with LINE ridges). Callers that already
     hold a ``cells_dict`` may pass it via the keyword to skip the
     rebuild on the mixed path.
+
+    For mixed-cell inputs, TRIANGLE cells are also forwarded to
+    ``MmgMesh3D.set_triangles`` (with their refs) so that surface-anchored
+    operations like ``set_required_triangles`` have something to bind to.
+    Inputs that happen to carry stray triangles will see them treated as
+    MMG boundary triangles.
     """
     celltypes = np.asarray(mesh.celltypes)
     tetra_type = int(pv.CellType.TETRA)

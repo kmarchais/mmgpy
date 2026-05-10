@@ -288,9 +288,23 @@ def _collect_constraints_from_data(
             raise ValueError(msg)
         out[kwarg_name] = np.where(mask)[0].astype(np.int32, copy=False)
 
-    for tag_name, (kwarg_name, cell_type) in _CELL_TAG_TO_KWARG.items():
-        if tag_name not in dataset.cell_data:
-            continue
+    cell_tags_present = [
+        (tag_name, kwarg_name, cell_type)
+        for tag_name, (kwarg_name, cell_type) in _CELL_TAG_TO_KWARG.items()
+        if tag_name in dataset.cell_data
+    ]
+    if not cell_tags_present:
+        return out
+
+    # For UnstructuredGrid we cache `celltypes` and per-cell-type cumsums
+    # across all cell tags (the loop visits up to 6 tags but at most 3
+    # distinct cell types). PolyData stays on the per-tag fast path in
+    # `_per_type_indices_marked` since its slicing is already O(1) lookups.
+    is_unstructured = isinstance(dataset, pv.UnstructuredGrid)
+    types_arr = np.asarray(dataset.celltypes) if is_unstructured else None
+    per_type_cache: dict[int, tuple[NDArray[np.bool_], NDArray[np.intp]]] = {}
+
+    for tag_name, kwarg_name, cell_type in cell_tags_present:
         mask = np.asarray(dataset.cell_data[tag_name]).astype(bool, copy=False)
         if mask.shape[0] != dataset.n_cells:
             msg = (
@@ -298,7 +312,20 @@ def _collect_constraints_from_data(
                 f"match dataset.n_cells {dataset.n_cells}"
             )
             raise ValueError(msg)
-        out[kwarg_name] = _per_type_indices_marked(dataset, cell_type, mask)
+
+        if types_arr is None:
+            out[kwarg_name] = _per_type_indices_marked(dataset, cell_type, mask)
+            continue
+
+        cached = per_type_cache.get(int(cell_type))
+        if cached is None:
+            of_type = types_arr == cell_type
+            per_type_idx = np.cumsum(of_type) - 1
+            cached = (of_type, per_type_idx)
+            per_type_cache[int(cell_type)] = cached
+        of_type, per_type_idx = cached
+        matching = mask & of_type
+        out[kwarg_name] = per_type_idx[matching].astype(np.int32, copy=False)
 
     return out
 
@@ -338,6 +365,10 @@ def _apply_constraint_markers(
 
     impl = mesh._impl  # noqa: SLF001
     for name, idx in combined.items():
+        # Empty array clears the constraint: an explicit ``required_X=array([])``
+        # in `explicit` overrides any tag in `combined` after the merge above,
+        # then falls through to skipping the setter. Must run AFTER
+        # `combined.update(explicit)` so the override semantics hold.
         if idx.size == 0:
             continue
         setter = getattr(impl, f"set_{name}", None)
