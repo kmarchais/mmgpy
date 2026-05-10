@@ -9,6 +9,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Promoted six high-value MMG flags to typed fields on the options dataclasses: `nreg` and `anisosize` on all three (`Mmg3DOptions`, `Mmg2DOptions`, `MmgSOptions`); `opnbdy` and `nofem` on `Mmg3DOptions` / `Mmg2DOptions`; `optim_les` on `Mmg3DOptions` (forwarded as `optimLES`); `keep_ref` on `MmgSOptions` (forwarded as `keepRef`). Niche options (`octree`, `numsubdomain`, `isoref`, `nosizreq`, `xreg`, `xreg_val`, `rmc`, `3dmedit`) remain as `**kwargs` on `remesh(...)`.
+
 ### Removed
 
 - `mmg2d`, `mmg3d`, `mmgs` CLI commands — use the unified `mmg` command instead

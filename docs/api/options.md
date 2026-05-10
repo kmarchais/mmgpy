@@ -60,13 +60,35 @@ members: - **init** - fine - coarse - optimize_only - to_dict
 
 ### Control Parameters
 
-| Parameter  | Type  | Description                                       |
-| ---------- | ----- | ------------------------------------------------- |
-| `optim`    | `int` | Optimization mode: 1 = optimize only              |
-| `noinsert` | `int` | Disable vertex insertion: 1 = no new vertices     |
-| `nosurf`   | `int` | Preserve surface: 1 = don't move surface vertices |
-| `nomove`   | `int` | Disable vertex motion: 1 = no vertex smoothing    |
-| `noswap`   | `int` | Disable edge swapping: 1 = no topology changes    |
+| Parameter   | Type   | Description                                                         |
+| ----------- | ------ | ------------------------------------------------------------------- |
+| `optim`     | `bool` | Optimize element quality without other topology changes             |
+| `optim_les` | `bool` | (3D only) Optimize for LES anisotropic boundary layers (`optimLES`) |
+| `noinsert`  | `bool` | Disable vertex insertion (no new vertices)                          |
+| `nosurf`    | `bool` | (3D / 2D) Preserve surface or boundary, don't move them             |
+| `nomove`    | `bool` | Disable vertex motion (no smoothing)                                |
+| `noswap`    | `bool` | Disable edge swapping (no topology changes)                         |
+| `opnbdy`    | `bool` | (3D / 2D) Preserve open boundaries / non-manifold edges             |
+| `nofem`     | `bool` | (3D / 2D) Skip the final FEM-friendly element-quality cleanup pass  |
+| `nreg`      | `bool` | Use vertex normals to smooth the mesh (normal regularization)       |
+| `anisosize` | `bool` | Treat the size map as anisotropic (otherwise treated as isotropic)  |
+| `keep_ref`  | `bool` | (Surface only) Keep edge references in the output (`keepRef`)       |
+
+### Niche Parameters (kwargs only)
+
+These are accepted as keyword arguments to `remesh(...)` but are not
+exposed as fields on the dataclasses:
+
+| Parameter      | Mesh kinds | Description                                        |
+| -------------- | ---------- | -------------------------------------------------- |
+| `octree`       | 3D         | Octree-based search (advanced)                     |
+| `numsubdomain` | all        | Restrict remeshing to a subdomain by reference     |
+| `isoref`       | all        | Reference value for the implicit-domain interface  |
+| `nosizreq`     | all        | Disable required-entity size enforcement           |
+| `xreg`         | all        | Enable coordinate-field regularization             |
+| `xreg_val`     | all        | Strength of `xreg` regularization                  |
+| `rmc`          | all        | Remove small connected components (level-set mode) |
+| `3dmedit`      | 2D         | Toggle the 3D-Medit file-format flag               |
 
 ### Output Parameters
 
