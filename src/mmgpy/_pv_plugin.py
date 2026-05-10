@@ -175,6 +175,215 @@ def _to_pyvista_with_user_fields(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Constraint markers (required entities, corners, ridges, parallel)
+# ---------------------------------------------------------------------------
+#
+# MMG's constraint API locks specific vertices / edges / triangles / tetrahedra
+# in place during remeshing (the analogue of microgen's ``RequiredTriangles``
+# trick used by ``remesh_keeping_boundaries_for_fem``). The C++ bindings expose
+# these on ``MmgMesh`` / ``MmgMesh2D`` / ``MmgMeshS`` as ``set_required_*`` /
+# ``set_corners`` / ``set_ridge_edges`` / ``set_parallel_*`` methods. The
+# accessor surfaces them two ways:
+#
+# 1. **Per-call kwargs** on ``remesh()``, ``remesh_levelset()``, etc. — pass a
+#    1D int array of 0-indexed entity ids (the binding does the +1 conversion
+#    to MMG's 1-based indexing).
+# 2. **Reserved data tags** on the dataset — set
+#    ``dataset.point_data["mmg_required_vertices"]`` (etc.) to a length-N bool
+#    array; the accessor reads these tags at remesh time. Useful for keeping
+#    constraints with the mesh through ``copy()`` / file round-trip.
+#
+# Kwargs override tags, so a user can locally clear a tag with
+# ``remesh(required_triangles=np.array([], dtype=np.int32))``.
+
+# Reserved kwarg names; each maps to the matching ``MmgMesh*.set_<name>`` call.
+_CONSTRAINT_KWARGS: tuple[str, ...] = (
+    "required_vertices",
+    "required_triangles",
+    "required_edges",
+    "required_tetrahedra",
+    "corners",
+    "ridge_edges",
+    "parallel_triangles",
+    "parallel_edges",
+)
+
+# Reserved point_data tag names → kwarg name (length-n_points bool arrays).
+_POINT_TAG_TO_KWARG: dict[str, str] = {
+    "mmg_required_vertices": "required_vertices",
+    "mmg_corners": "corners",
+}
+
+# Reserved cell_data tag names → (kwarg name, cell type filter).
+# Length-n_cells bool arrays; only the matching cell-type rows count.
+_CELL_TAG_TO_KWARG: dict[str, tuple[str, pv.CellType]] = {
+    "mmg_required_triangles": ("required_triangles", pv.CellType.TRIANGLE),
+    "mmg_required_edges": ("required_edges", pv.CellType.LINE),
+    "mmg_required_tetrahedra": ("required_tetrahedra", pv.CellType.TETRA),
+    "mmg_ridge_edges": ("ridge_edges", pv.CellType.LINE),
+    "mmg_parallel_triangles": ("parallel_triangles", pv.CellType.TRIANGLE),
+    "mmg_parallel_edges": ("parallel_edges", pv.CellType.LINE),
+}
+
+
+def _per_type_indices_marked(
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+    cell_type: int,
+    mask: NDArray[np.bool_],
+) -> NDArray[np.int32]:
+    """Translate a length-n_cells bool mask to per-cell-type 0-indexed indices.
+
+    PyVista numbers cells globally; MMG numbers each entity type separately
+    (triangles 1..nt, tets 1..ne, edges 1..na). UnstructuredGrid carries
+    explicit per-cell types in ``celltypes``, so we reduce via
+    ``cumsum(types == cell_type) - 1``. PolyData stores cells in a fixed
+    section order (verts, lines, polys, strips) — pick the matching slice
+    of *mask* and return the local indices.
+    """
+    import numpy as np  # noqa: PLC0415
+
+    if isinstance(dataset, pv.PolyData):
+        n_verts = int(dataset.n_verts)
+        n_lines = int(dataset.n_lines)
+        n_strips = int(dataset.n_strips)
+        n_polys = int(dataset.n_cells) - n_verts - n_lines - n_strips
+        if cell_type == pv.CellType.LINE:
+            start, length = n_verts, n_lines
+        elif cell_type in (pv.CellType.TRIANGLE, pv.CellType.QUAD):
+            start, length = n_verts + n_lines, n_polys
+        elif cell_type == pv.CellType.VERTEX:
+            start, length = 0, n_verts
+        else:
+            return np.array([], dtype=np.int32)
+        if length <= 0:
+            return np.array([], dtype=np.int32)
+        section_mask = mask[start : start + length]
+        return np.where(section_mask)[0].astype(np.int32, copy=False)
+
+    types = np.asarray(dataset.celltypes)
+    of_type = types == cell_type
+    per_type_idx = np.cumsum(of_type) - 1
+    matching = mask & of_type
+    return per_type_idx[matching].astype(np.int32, copy=False)
+
+
+def _collect_constraints_from_data(
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+) -> dict[str, NDArray[np.int32]]:
+    """Read reserved point_data / cell_data tags into kwarg-name → index map."""
+    import numpy as np  # noqa: PLC0415
+
+    out: dict[str, NDArray[np.int32]] = {}
+
+    for tag_name, kwarg_name in _POINT_TAG_TO_KWARG.items():
+        if tag_name not in dataset.point_data:
+            continue
+        mask = np.asarray(dataset.point_data[tag_name]).astype(bool, copy=False)
+        if mask.shape[0] != dataset.n_points:
+            msg = (
+                f"point_data[{tag_name!r}] length {mask.shape[0]} does not "
+                f"match dataset.n_points {dataset.n_points}"
+            )
+            raise ValueError(msg)
+        out[kwarg_name] = np.where(mask)[0].astype(np.int32, copy=False)
+
+    cell_tags_present = [
+        (tag_name, kwarg_name, cell_type)
+        for tag_name, (kwarg_name, cell_type) in _CELL_TAG_TO_KWARG.items()
+        if tag_name in dataset.cell_data
+    ]
+    if not cell_tags_present:
+        return out
+
+    # For UnstructuredGrid we cache `celltypes` and per-cell-type cumsums
+    # across all cell tags (the loop visits up to 6 tags but at most 3
+    # distinct cell types). PolyData stays on the per-tag fast path in
+    # `_per_type_indices_marked` since its slicing is already O(1) lookups.
+    is_unstructured = isinstance(dataset, pv.UnstructuredGrid)
+    types_arr = np.asarray(dataset.celltypes) if is_unstructured else None
+    per_type_cache: dict[int, tuple[NDArray[np.bool_], NDArray[np.intp]]] = {}
+
+    for tag_name, kwarg_name, cell_type in cell_tags_present:
+        mask = np.asarray(dataset.cell_data[tag_name]).astype(bool, copy=False)
+        if mask.shape[0] != dataset.n_cells:
+            msg = (
+                f"cell_data[{tag_name!r}] length {mask.shape[0]} does not "
+                f"match dataset.n_cells {dataset.n_cells}"
+            )
+            raise ValueError(msg)
+
+        if types_arr is None:
+            out[kwarg_name] = _per_type_indices_marked(dataset, cell_type, mask)
+            continue
+
+        cached = per_type_cache.get(int(cell_type))
+        if cached is None:
+            of_type = types_arr == cell_type
+            per_type_idx = np.cumsum(of_type) - 1
+            cached = (of_type, per_type_idx)
+            per_type_cache[int(cell_type)] = cached
+        of_type, per_type_idx = cached
+        matching = mask & of_type
+        out[kwarg_name] = per_type_idx[matching].astype(np.int32, copy=False)
+
+    return out
+
+
+def _split_constraint_kwargs(
+    options: dict[str, Any],
+) -> dict[str, NDArray[np.int32]]:
+    """Pop reserved constraint kwargs from ``options`` and normalize to int32."""
+    import numpy as np  # noqa: PLC0415
+
+    out: dict[str, NDArray[np.int32]] = {}
+    for name in _CONSTRAINT_KWARGS:
+        if name not in options:
+            continue
+        val = options.pop(name)
+        if val is None:
+            continue
+        arr = np.ascontiguousarray(np.asarray(val).ravel(), dtype=np.int32)
+        out[name] = arr
+    return out
+
+
+def _apply_constraint_markers(
+    mesh: _Mesh,
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+    explicit: dict[str, NDArray[np.int32]],
+) -> None:
+    """Apply MMG constraint markers from data tags + explicit kwargs.
+
+    Tags on ``dataset`` are read first; ``explicit`` overrides them. Each
+    marker is forwarded to the matching ``MmgMesh*.set_<name>`` binding.
+    """
+    combined = _collect_constraints_from_data(dataset)
+    combined.update(explicit)
+    if not combined:
+        return
+
+    impl = mesh._impl  # noqa: SLF001
+    for name, idx in combined.items():
+        # Empty array clears the constraint: an explicit ``required_X=array([])``
+        # in `explicit` overrides any tag in `combined` after the merge above,
+        # then falls through to skipping the setter. Must run AFTER
+        # `combined.update(explicit)` so the override semantics hold.
+        if idx.size == 0:
+            continue
+        setter = getattr(impl, f"set_{name}", None)
+        if setter is None:
+            available = ", ".join(
+                n for n in _CONSTRAINT_KWARGS if hasattr(impl, f"set_{n}")
+            )
+            msg = (
+                f"Constraint {name!r} is not supported for this mesh kind "
+                f"(available: {available})"
+            )
+            raise ValueError(msg)
+        setter(idx)
+
+
 def _apply_local_sizing_specs(
     mesh: _Mesh,
     specs: list[Mapping[str, Any]] | None,
@@ -336,7 +545,16 @@ class MmgAccessor:
             ``Mesh.set_size_*`` method.
         **options : object
             Forwarded to :meth:`mmgpy.Mesh.remesh`. Common knobs include
-            ``hmin``, ``hmax``, ``hsiz``, and ``hausd``.
+            ``hmin``, ``hmax``, ``hsiz``, and ``hausd``. The reserved
+            kwargs ``required_vertices``, ``required_triangles``,
+            ``required_edges``, ``required_tetrahedra``, ``corners``,
+            ``ridge_edges``, ``parallel_triangles``, ``parallel_edges``
+            (each a 1D int array of 0-indexed entity ids) lock the
+            corresponding entities in place during remeshing. Equivalent
+            tags can be set on the dataset via
+            ``point_data["mmg_required_vertices"]``,
+            ``cell_data["mmg_required_triangles"]``, etc. — bool arrays
+            of the matching length. Kwargs override tags.
 
         Returns
         -------
@@ -347,7 +565,9 @@ class MmgAccessor:
             cells.
 
         """
+        constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
         if opts is not None:
             if options:
@@ -399,10 +619,14 @@ class MmgAccessor:
         local_sizing : list of dict, optional
             Sizing constraints; see :meth:`remesh`.
         **options : object
-            Forwarded to :meth:`mmgpy.Mesh.remesh_levelset`.
+            Forwarded to :meth:`mmgpy.Mesh.remesh_levelset`. The reserved
+            constraint kwargs documented on :meth:`remesh` are honored
+            here as well.
 
         """
+        constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
         mesh.remesh_levelset(levelset, **options)
         return _to_pyvista_with_user_fields(mesh)
@@ -414,9 +638,12 @@ class MmgAccessor:
         """Quality optimization without topology changes.
 
         No vertices are inserted or removed; only positions move to improve
-        element quality. Equivalent to ``remesh(optim=1, noinsert=1)``.
+        element quality. Equivalent to ``remesh(optim=1, noinsert=1)``. The
+        reserved constraint kwargs documented on :meth:`remesh` are honored.
         """
+        constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _apply_constraint_markers(mesh, self._dataset, constraints)
         mesh.remesh_optimize(**options)
         return _to_pyvista_with_user_fields(mesh)
 
@@ -432,10 +659,13 @@ class MmgAccessor:
         size : float
             Target edge length applied uniformly across the mesh.
         **options : object
-            Forwarded to :meth:`mmgpy.Mesh.remesh_uniform`.
+            Forwarded to :meth:`mmgpy.Mesh.remesh_uniform`. The reserved
+            constraint kwargs documented on :meth:`remesh` are honored.
 
         """
+        constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
+        _apply_constraint_markers(mesh, self._dataset, constraints)
         mesh.remesh_uniform(size, **options)
         return _to_pyvista_with_user_fields(mesh)
 
