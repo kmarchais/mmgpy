@@ -29,6 +29,7 @@ import pyvista as pv
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from typing import TypeGuard
 
     import numpy as np
     from numpy.typing import NDArray
@@ -117,6 +118,57 @@ def _attach_sol_fields(
 
 _LOCAL_SIZING_SHAPES = ("sphere", "box", "cylinder", "from_point")
 _MMG_FIELD_NAMES = ("metric", "displacement", "levelset", "tensor")
+
+
+def _is_line_only_polydata(
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+) -> TypeGuard[pv.PolyData]:
+    """Return True if *dataset* is a PolyData carrying only LINE cells.
+
+    Used by the ``.mmg.remesh`` accessor to detect inputs that should go
+    through the mmg2d edge-triangulation path
+    (:func:`mmgpy.mmg2d.generate`) instead of the standard remesh pipeline.
+    """
+    if not isinstance(dataset, pv.PolyData):
+        return False
+    n_lines = int(dataset.n_lines)
+    if n_lines == 0:
+        return False
+    n_polys = (
+        int(dataset.n_cells) - int(dataset.n_verts) - n_lines - int(dataset.n_strips)
+    )
+    return n_polys == 0
+
+
+def _generate_from_line_polydata(
+    dataset: pv.PolyData,
+    options: dict[str, Any],
+) -> pv.PolyData:
+    """Run :func:`mmgpy.mmg2d.generate` on a line-only PolyData."""
+    import numpy as np  # noqa: PLC0415
+
+    from mmgpy._generate import generate  # noqa: PLC0415
+    from mmgpy._pyvista import (  # noqa: PLC0415
+        _extract_lines_from_polydata,
+        _refs_for_polydata_lines,
+    )
+
+    edges = _extract_lines_from_polydata(dataset)
+    if edges is None:
+        msg = "PolyData has line cells but no extractable LINE pairs"
+        raise ValueError(msg)
+    refs = _refs_for_polydata_lines(dataset, len(edges))
+    points = np.asarray(dataset.points, dtype=np.float64)
+    z_span = float(np.ptp(points[:, 2]))
+    xy_span = float(np.ptp(points[:, :2]))
+    if z_span > max(1e-9, 1e-6 * xy_span):
+        msg = (
+            "mmg2d.generate routing requires a planar (z=const) PolyData; "
+            f"got z range {z_span:.3g} over xy span {xy_span:.3g}"
+        )
+        raise ValueError(msg)
+    vertices = points[:, :2]
+    return generate(vertices, edges, refs=refs, **options)
 
 
 def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _Mesh:
@@ -564,7 +616,30 @@ class MmgAccessor:
             survive in ``cell_data["refs"]`` and MMG edges in ``LINE``
             cells.
 
+        Notes
+        -----
+        If the dataset is a ``PolyData`` carrying only ``LINE`` cells,
+        ``remesh()`` is auto-routed through :func:`mmgpy.mmg2d.generate`
+        to triangulate the outline. The dataset must be planar
+        (constant ``z``); ``local_sizing`` is not supported on this path.
+
         """
+        if isinstance(self._dataset, pv.PolyData) and _is_line_only_polydata(
+            self._dataset,
+        ):
+            if opts is not None:
+                if options:
+                    msg = "pass either an options object or kwargs, not both"
+                    raise TypeError(msg)
+                options = dict(opts.to_dict())
+            if local_sizing:
+                msg = (
+                    "local_sizing is not supported when generating a 2D mesh "
+                    "from a line-only PolyData"
+                )
+                raise ValueError(msg)
+            return _generate_from_line_polydata(self._dataset, options)
+
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)

@@ -107,6 +107,32 @@ remeshed_torus = torus.mmg.remesh(hmax=0.1)
 remeshed_torus.save("torus.mesh")
 ```
 
+## Generating a 2D Mesh from Boundary Edges
+
+`mmgpy.mmg2d.generate` triangulates a 2D domain described by a vertex+edge outline. Internally it drives the same `MMG2D_mmg2dmesh` entry point that the standalone executable uses when fed a `.mesh` file with no triangles.
+
+```python
+import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers the accessor
+from mmgpy import mmg2d
+
+verts = np.array(
+    [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+    dtype=np.float64,
+)
+edges = np.array([[0, 1], [1, 2], [2, 3], [3, 0]], dtype=np.int32)
+
+mesh = mmg2d.generate(verts, edges, hmax=0.1)
+
+# Equivalent via the .mmg accessor: a line-only PolyData is auto-routed
+# through the same generation path.
+verts_3d = np.column_stack([verts, np.zeros(len(verts))])
+lines = np.column_stack([np.full(len(edges), 2), edges]).ravel()
+outline = pv.PolyData(verts_3d, lines=lines)
+mesh = outline.mmg.remesh(hmax=0.1)
+```
+
 ## Tips
 
 1. **MMG native format**: Use `.mesh` for fastest I/O with MMG (mmgpy's reader plugin handles ridges and reference markers natively).

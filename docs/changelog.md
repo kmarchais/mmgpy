@@ -11,6 +11,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `mmgpy.mmg2d.generate(boundary_vertices, boundary_edges, ...)` triangulates a 2D domain from a vertex+edge outline via MMG2D's mesh-generation path. The `.mmg` accessor auto-routes line-only `pv.PolyData` through the same path so `outline.mmg.remesh(hmax=...)` produces a triangulation directly.
 - Promoted six high-value MMG flags to typed fields on the options dataclasses: `nreg` and `anisosize` on all three (`Mmg3DOptions`, `Mmg2DOptions`, `MmgSOptions`); `opnbdy` and `nofem` on `Mmg3DOptions` / `Mmg2DOptions`; `optim_les` on `Mmg3DOptions` (forwarded as `optimLES`); `keep_ref` on `MmgSOptions` (forwarded as `keepRef`). Niche options (`octree`, `numsubdomain`, `isoref`, `nosizreq`, `xreg`, `xreg_val`, `rmc`, `3dmedit`) remain as `**kwargs` on `remesh(...)`.
 
 ### Removed
