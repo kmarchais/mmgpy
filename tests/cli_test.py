@@ -152,6 +152,13 @@ class TestParseArgs:
         assert result.remesh_options["noswap"] == 1
         assert result.remesh_options["nomove"] == 1
 
+    def test_renum_flag(self, test_mesh_3d: Path) -> None:
+        """The -rn flag maps to the renum kwarg (RCM redirect)."""
+        result = _parse_args([str(test_mesh_3d), "-rn", "1"])
+        assert result.remesh_options["renum"] == 1
+        result_zero = _parse_args([str(test_mesh_3d), "-rn", "0"])
+        assert result_zero.remesh_options["renum"] == 0
+
     def test_levelset_flag(self, test_mesh_3d: Path) -> None:
         """The -ls flag triggers level-set mode."""
         result = _parse_args([str(test_mesh_3d), "-ls", "0.5"])
