@@ -565,6 +565,9 @@ class MmgAccessor:
             cells.
 
         """
+        from mmgpy._mesh import _pop_renum_redirect  # noqa: PLC0415
+
+        do_rcm = _pop_renum_redirect(options)
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
@@ -576,7 +579,12 @@ class MmgAccessor:
             mesh.remesh(opts)
         else:
             mesh.remesh(**options)
-        return _to_pyvista_with_user_fields(mesh)
+        result = _to_pyvista_with_user_fields(mesh)
+        if do_rcm:
+            from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
+
+            result = reorder_cuthill_mckee(result)
+        return result
 
     def remesh_lagrangian(
         self,
@@ -817,6 +825,20 @@ class MmgAccessor:
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_vertex_neighbors(idx)
+
+    def reorder_cuthill_mckee(
+        self,
+        *,
+        symmetric_mode: bool = True,
+    ) -> pv.UnstructuredGrid | pv.PolyData:
+        """Return a copy of the dataset reordered via reverse Cuthill-McKee.
+
+        Replaces MMG's SCOTCH-based ``renum=1``, which the bundled MMG
+        cannot run. See :func:`mmgpy.reorder_cuthill_mckee` for details.
+        """
+        from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
+
+        return reorder_cuthill_mckee(self._dataset, symmetric_mode=symmetric_mode)
 
     def center_of_mass(self) -> NDArray[np.float64]:
         """Return the volume-weighted (3D) or area-weighted (2D/surface) centroid.

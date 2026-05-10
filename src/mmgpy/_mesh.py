@@ -52,6 +52,42 @@ _EDGE_VERTS = 2
 _2D_DETECTION_TOLERANCE = 1e-8
 
 
+def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
+    """Pop the deprecated ``renum`` kwarg and return whether to reorder.
+
+    The bundled MMG is built without SCOTCH, so ``renum=1`` was a silent
+    no-op. The kwarg now redirects to a Python-side reverse Cuthill-McKee
+    reordering applied after the remesh; non-truthy values are stripped
+    silently. Callers that hold a PyVista dataset (the accessor, the
+    file-based wrappers) are expected to apply
+    :func:`mmgpy.reorder_cuthill_mckee` to the result when this returns
+    ``True``.
+    """
+    if "renum" not in kwargs:
+        return False
+    raw = kwargs.pop("renum")
+    if isinstance(raw, str):
+        try:
+            truthy = int(raw) != 0
+        except ValueError:
+            truthy = bool(raw)
+    else:
+        truthy = bool(raw)
+    if truthy:
+        warnings.warn(
+            "The 'renum' option is deprecated. The bundled MMG is built "
+            "without SCOTCH, so the kwarg was a silent no-op; it now "
+            "redirects to mmgpy.reorder_cuthill_mckee, a Python-side "
+            "reverse Cuthill-McKee reordering applied after the remesh. "
+            "Call mmgpy.reorder_cuthill_mckee(dataset) (or "
+            "dataset.mmg.reorder_cuthill_mckee()) directly to silence "
+            "this warning.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+    return truthy
+
+
 def _is_interactive_terminal() -> bool:  # pragma: no cover
     """Check if we're running in an interactive terminal.
 
@@ -1661,6 +1697,11 @@ class Mesh:
                 raise TypeError(msg)
             kwargs.update(options.to_dict())
 
+        # Strip the deprecated renum kwarg before forwarding to MMG. The
+        # accessor / file-based wrappers re-apply RCM at their layer where a
+        # PyVista dataset is in hand; here we just consume the warning.
+        _pop_renum_redirect(kwargs)
+
         # Apply sizing constraints before remeshing
         if self._sizing_constraints:
             self._apply_sizing_to_metric()
@@ -1764,6 +1805,8 @@ class Mesh:
 
         """
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+
+        _pop_renum_redirect(kwargs)
 
         callback, reporter_ctx = _resolve_progress_callback(progress)
         if reporter_ctx is not None:  # pragma: no cover

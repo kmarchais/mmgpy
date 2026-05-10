@@ -71,39 +71,71 @@ def _wrapped_remesh(
     options: dict[str, Any] | None = None,
     transfer_fields: FieldTransferParam = False,
 ) -> bool:
+    from mmgpy._mesh import _pop_renum_redirect  # noqa: PLC0415
+
+    forwarded = dict(options or {})
+    do_rcm = _pop_renum_redirect(forwarded)
+
     input_native = _is_native(input_mesh)
     output_native = _is_native(output_mesh)
 
     if input_native and output_native:
-        return cpp_remesh(
+        success = cpp_remesh(
             input_mesh=input_mesh,
             input_sol=input_sol,
             output_mesh=output_mesh,
             output_sol=output_sol,
-            options=options or {},
+            options=forwarded,
+        )
+    else:
+        from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
+
+        mesh = _read(input_mesh)
+
+        if input_sol is not None:
+            channel = "levelset" if _is_iso_mode(options) else "metric"
+            _load_sol(mesh, input_sol, channel=channel)
+
+        result = mesh.remesh(
+            progress=False,
+            transfer_fields=transfer_fields,
+            **forwarded,
         )
 
-    from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
+        if output_mesh is not None:
+            mesh.save(output_mesh)
 
-    mesh = _read(input_mesh)
+        if output_sol is not None:
+            _save_sol(mesh, output_sol)
 
-    if input_sol is not None:
-        channel = "levelset" if _is_iso_mode(options) else "metric"
-        _load_sol(mesh, input_sol, channel=channel)
+        success = result.success
 
-    result = mesh.remesh(
-        progress=False,
-        transfer_fields=transfer_fields,
-        **(options or {}),
-    )
+    if success and do_rcm and output_mesh is not None:
+        _reorder_output_file(output_mesh)
 
-    if output_mesh is not None:
-        mesh.save(output_mesh)
+    return success
 
-    if output_sol is not None:
-        _save_sol(mesh, output_sol)
 
-    return result.success
+def _reorder_output_file(output_mesh: str | Path) -> None:
+    """Round-trip *output_mesh* through PyVista to apply RCM reordering.
+
+    The companion ``.sol`` (if any) is left as-written by MMG. Users who
+    need the metric/solution reordered alongside the mesh should call
+    :func:`mmgpy.reorder_cuthill_mckee` on a dataset they own.
+    """
+    import pyvista as pv  # noqa: PLC0415
+
+    from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
+
+    dataset = pv.read(str(output_mesh))
+    if not isinstance(dataset, (pv.UnstructuredGrid, pv.PolyData)):
+        msg = (
+            f"Cannot reorder {type(dataset).__name__} loaded from "
+            f"{output_mesh}; expected UnstructuredGrid or PolyData."
+        )
+        raise TypeError(msg)
+    reordered = reorder_cuthill_mckee(dataset)
+    reordered.save(str(output_mesh))
 
 
 class mmg3d:
