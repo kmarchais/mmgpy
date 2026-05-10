@@ -393,3 +393,119 @@ def test_mesh_topology_consistency(
     assert all(ct > 0 for ct in ref_cell_types), (
         f"Reference mesh has invalid cell type values: {ref_cell_types}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Mesh generation from boundary edges (mmg2d.generate)
+# ---------------------------------------------------------------------------
+
+
+def _unit_square_outline() -> tuple[np.ndarray, np.ndarray]:
+    verts = np.array(
+        [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+        dtype=np.float64,
+    )
+    edges = np.array([[0, 1], [1, 2], [2, 3], [3, 0]], dtype=np.int32)
+    return verts, edges
+
+
+def test_generate_unit_square() -> None:
+    """generate() produces a non-empty triangulation of the unit square."""
+    verts, edges = _unit_square_outline()
+    mesh = mmg2d.generate(verts, edges, hmax=0.2, verbose=-1)
+
+    assert isinstance(mesh, pv.PolyData)
+    assert mesh.n_points >= len(verts)
+    assert mesh.n_faces > 0
+    triangles = np.asarray(mesh.regular_faces)
+    assert triangles.shape[1] == 3
+    assert mesh.area == pytest.approx(1.0, rel=0.01)
+
+
+def test_generate_preserves_boundary_edges() -> None:
+    """All input boundary edges are present in the output as LINE cells."""
+    verts, edges = _unit_square_outline()
+    mesh = mmg2d.generate(verts, edges, hmax=0.5, verbose=-1)
+
+    assert mesh.n_lines >= len(edges)
+    points_2d = np.asarray(mesh.points[:, :2])
+
+    def edge_endpoints(line_pair: np.ndarray) -> set[tuple[float, float]]:
+        return {
+            tuple(np.round(points_2d[line_pair[0]], 8)),
+            tuple(np.round(points_2d[line_pair[1]], 8)),
+        }
+
+    raw_lines = np.asarray(mesh.lines).reshape(-1, 3)
+    line_pairs = raw_lines[:, 1:]
+    line_segments = [edge_endpoints(p) for p in line_pairs]
+
+    for v0, v1 in edges:
+        seg = {
+            tuple(np.round(verts[v0], 8)),
+            tuple(np.round(verts[v1], 8)),
+        }
+        # Each input edge endpoint pair should be the boundary of at least
+        # one output LINE cell (output edges may subdivide, so we only
+        # require both input vertices to appear among the boundary nodes).
+        endpoints = {pt for seg_pts in line_segments for pt in seg_pts}
+        assert seg.issubset(endpoints), f"input edge {(v0, v1)} not on boundary"
+
+
+def test_generate_with_refs() -> None:
+    """Per-edge refs survive into cell_data['refs']."""
+    verts, edges = _unit_square_outline()
+    refs = np.array([1, 2, 3, 4], dtype=np.int64)
+    mesh = mmg2d.generate(verts, edges, refs=refs, hmax=0.5, verbose=-1)
+
+    assert "refs" in mesh.cell_data
+    cell_refs = np.asarray(mesh.cell_data["refs"])
+    line_refs = cell_refs[: mesh.n_lines]
+    assert set(np.unique(line_refs)).issubset({1, 2, 3, 4})
+
+
+def test_generate_input_validation() -> None:
+    """Bad inputs raise ValueError with informative messages."""
+    verts, edges = _unit_square_outline()
+    with pytest.raises(ValueError, match="boundary_vertices"):
+        mmg2d.generate(verts.reshape(-1), edges, verbose=-1)
+    with pytest.raises(ValueError, match="boundary_edges"):
+        mmg2d.generate(verts, edges.reshape(-1), verbose=-1)
+    with pytest.raises(ValueError, match="at least one edge"):
+        mmg2d.generate(verts, np.empty((0, 2), dtype=np.int32), verbose=-1)
+    with pytest.raises(ValueError, match="refs must have shape"):
+        mmg2d.generate(verts, edges, refs=np.array([1, 2]), verbose=-1)
+
+
+def test_accessor_routes_line_only_polydata() -> None:
+    """A line-only PolyData routed through .mmg.remesh() triggers generate()."""
+    verts, edges = _unit_square_outline()
+    verts_3d = np.column_stack([verts, np.zeros(len(verts))])
+    lines = np.column_stack(
+        [np.full(len(edges), 2, dtype=np.int32), edges],
+    ).ravel()
+    poly = pv.PolyData(verts_3d, lines=lines)
+
+    assert poly.n_lines == len(edges)
+    assert poly.n_faces == 0
+
+    out = poly.mmg.remesh(hmax=0.2, verbose=-1)
+    assert isinstance(out, pv.PolyData)
+    assert out.n_faces > 0
+    assert out.area == pytest.approx(1.0, rel=0.01)
+
+
+def test_accessor_mixed_polydata_uses_remesh() -> None:
+    """A PolyData with triangles still goes through the regular remesh path."""
+    verts, _ = _unit_square_outline()
+    verts_3d = np.column_stack([verts, np.zeros(len(verts))])
+    triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+    faces = np.column_stack(
+        [np.full(len(triangles), 3, dtype=np.int32), triangles],
+    ).ravel()
+    poly = pv.PolyData(verts_3d, faces=faces)
+
+    assert poly.n_lines == 0
+    out = poly.mmg.remesh(hmax=0.3, verbose=-1)
+    assert isinstance(out, pv.PolyData)
+    assert out.n_faces > 0

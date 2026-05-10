@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from mmgpy._generate import generate as _generate_2d
 from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
 from mmgpy._mmgpy import mmg3d as _mmg3d_cpp
 from mmgpy._mmgpy import mmgs as _mmgs_cpp
@@ -182,6 +183,8 @@ class mmg3d:
 
 class mmg2d:
     """2D mesh remeshing."""
+
+    generate = staticmethod(_generate_2d)
 
     @staticmethod
     def remesh(
