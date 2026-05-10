@@ -30,6 +30,7 @@ from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import CancellationError, ProgressEvent, rich_progress
 from ._pyvista import from_pyvista, polydata_from_2d_triangles, to_pyvista
 from ._remesh import mmg2d, mmg3d, mmgs  # noqa: F401
+from ._reorder import reorder_cuthill_mckee
 from ._result import RemeshResult
 from ._transfer import interpolate_field, transfer_fields
 from ._validation import (
@@ -92,6 +93,7 @@ __all__ = [
     "propagate_displacement",
     "propagate_displacement_elasticity",
     "read",
+    "reorder_cuthill_mckee",
     "repair",
     "rich_progress",
     "set_log_file",
