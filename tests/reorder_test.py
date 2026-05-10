@@ -146,30 +146,32 @@ def test_accessor_method_routes_to_reorder() -> None:
     assert out.n_cells == ug.n_cells
 
 
-def test_renum_kwarg_is_deprecated_and_redirects() -> None:
-    """``renum=1`` warns and applies RCM after the remesh."""
+def test_renum_kwarg_routes_to_rcm_silently() -> None:
+    """``renum=1`` runs without warnings and produces a valid reordered mesh."""
     ug = _make_3d_grid(n=4)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         out = ug.mmg.remesh(renum=1, hsiz=0.5)
-    assert any(issubclass(w.category, DeprecationWarning) for w in caught), (
-        "expected DeprecationWarning for renum kwarg"
+    # Library-emitted warnings are not expected; user code shouldn't get nagged
+    # for using an MMG-compatible option that mmgpy implements Python-side.
+    library_warnings = [
+        w
+        for w in caught
+        if issubclass(w.category, DeprecationWarning)
+        and "renum" in str(w.message).lower()
+    ]
+    assert not library_warnings, (
+        f"renum=1 should not emit a DeprecationWarning: {library_warnings}"
     )
-    # Result should still be a valid mesh; bandwidth check is per-mesh-shape so
-    # we just ensure the redirect ran without error.
     assert out.n_points > 0
     assert out.n_cells > 0
 
 
-def test_renum_zero_does_not_warn() -> None:
-    """``renum=0`` is silently dropped without a deprecation warning."""
+def test_renum_zero_is_a_noop() -> None:
+    """``renum=0`` is silently dropped (matches MMG's flag semantics)."""
     ug = _make_3d_grid(n=4)
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        ug.mmg.remesh(renum=0, hsiz=0.5)
-    assert not any(issubclass(w.category, DeprecationWarning) for w in caught), (
-        "renum=0 should be silently dropped, not warned"
-    )
+    # Should not raise, should not warn — same as not passing the kwarg at all.
+    ug.mmg.remesh(renum=0, hsiz=0.5)
 
 
 def test_empty_dataset_returns_copy() -> None:

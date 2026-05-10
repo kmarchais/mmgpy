@@ -53,13 +53,14 @@ _2D_DETECTION_TOLERANCE = 1e-8
 
 
 def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
-    """Pop the deprecated ``renum`` kwarg and return whether to reorder.
+    """Pop the ``renum`` kwarg and return whether to reorder the result.
 
-    The bundled MMG is built without SCOTCH, so ``renum=1`` was a silent
-    no-op. The kwarg now redirects to a Python-side reverse Cuthill-McKee
-    reordering applied after the remesh; non-truthy values are stripped
-    silently. Callers that hold a PyVista dataset (the accessor, the
-    file-based wrappers) are expected to apply
+    MMG's own ``renum`` flag invokes SCOTCH renumbering, but the bundled
+    MMG is built without SCOTCH, so the kwarg would otherwise be a silent
+    no-op. mmgpy keeps the option name for compatibility and routes it to
+    a Python-side reverse Cuthill-McKee reordering (no extra deps,
+    available on every platform). Callers that hold a PyVista dataset
+    (the accessor, the file-based wrappers) apply
     :func:`mmgpy.reorder_cuthill_mckee` to the result when this returns
     ``True``.
     """
@@ -68,24 +69,10 @@ def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
     raw = kwargs.pop("renum")
     if isinstance(raw, str):
         try:
-            truthy = int(raw) != 0
+            return int(raw) != 0
         except ValueError:
-            truthy = bool(raw)
-    else:
-        truthy = bool(raw)
-    if truthy:
-        warnings.warn(
-            "The 'renum' option is deprecated. The bundled MMG is built "
-            "without SCOTCH, so the kwarg was a silent no-op; it now "
-            "redirects to mmgpy.reorder_cuthill_mckee, a Python-side "
-            "reverse Cuthill-McKee reordering applied after the remesh. "
-            "Call mmgpy.reorder_cuthill_mckee(dataset) (or "
-            "dataset.mmg.reorder_cuthill_mckee()) directly to silence "
-            "this warning.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-    return truthy
+            return bool(raw)
+    return bool(raw)
 
 
 def _is_interactive_terminal() -> bool:  # pragma: no cover
