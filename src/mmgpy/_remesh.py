@@ -62,6 +62,23 @@ def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
     mesh._impl.save_sol(str(sol_path))  # noqa: SLF001
 
 
+def _renum_is_truthy(raw: object) -> bool:
+    """Peek at the ``renum`` kwarg without consuming it or warning.
+
+    The pop + ``FutureWarning`` happens inside ``Mesh.remesh`` via
+    ``_pop_renum_redirect``; here we only need to decide whether the native
+    fast path is safe to take. Bad strings fall through to ``False`` and
+    the precise ``ValueError`` is raised by ``_pop_renum_redirect`` once
+    the kwarg actually reaches ``Mesh.remesh``.
+    """
+    if isinstance(raw, str):
+        try:
+            return int(raw) != 0
+        except ValueError:
+            return False
+    return bool(raw)
+
+
 def _wrapped_remesh(
     cpp_remesh: Callable[..., bool],
     input_mesh: str | Path,
@@ -71,71 +88,49 @@ def _wrapped_remesh(
     options: dict[str, Any] | None = None,
     transfer_fields: FieldTransferParam = False,
 ) -> bool:
-    from mmgpy._mesh import _pop_renum_redirect  # noqa: PLC0415
-
     forwarded = dict(options or {})
-    do_rcm = _pop_renum_redirect(forwarded)
+    do_rcm = _renum_is_truthy(forwarded.get("renum"))
 
     input_native = _is_native(input_mesh)
     output_native = _is_native(output_mesh)
 
-    if input_native and output_native:
-        success = cpp_remesh(
+    # Native fast path is only safe when no RCM is requested. With RCM the
+    # reordering must run on the in-memory Mesh so the saved .sol stays
+    # consistent with the saved mesh and no MMG-specific data is lost via
+    # a pv.read round-trip.
+    if not do_rcm and input_native and output_native:
+        forwarded.pop("renum", None)  # cpp bindings do not accept renum
+        return cpp_remesh(
             input_mesh=input_mesh,
             input_sol=input_sol,
             output_mesh=output_mesh,
             output_sol=output_sol,
             options=forwarded,
         )
-    else:
-        from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
 
-        mesh = _read(input_mesh)
+    from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
 
-        if input_sol is not None:
-            channel = "levelset" if _is_iso_mode(options) else "metric"
-            _load_sol(mesh, input_sol, channel=channel)
+    mesh = _read(input_mesh)
 
-        result = mesh.remesh(
-            progress=False,
-            transfer_fields=transfer_fields,
-            **forwarded,
-        )
+    if input_sol is not None:
+        channel = "levelset" if _is_iso_mode(options) else "metric"
+        _load_sol(mesh, input_sol, channel=channel)
 
-        if output_mesh is not None:
-            mesh.save(output_mesh)
+    # Leave ``renum`` in forwarded so Mesh.remesh pops it (and emits the
+    # one-time FutureWarning) and applies RCM in place.
+    result = mesh.remesh(
+        progress=False,
+        transfer_fields=transfer_fields,
+        **forwarded,
+    )
 
-        if output_sol is not None:
-            _save_sol(mesh, output_sol)
+    if output_mesh is not None:
+        mesh.save(output_mesh)
 
-        success = result.success
+    if output_sol is not None:
+        _save_sol(mesh, output_sol)
 
-    if success and do_rcm and output_mesh is not None:
-        _reorder_output_file(output_mesh)
-
-    return success
-
-
-def _reorder_output_file(output_mesh: str | Path) -> None:
-    """Round-trip *output_mesh* through PyVista to apply RCM reordering.
-
-    The companion ``.sol`` (if any) is left as-written by MMG. Users who
-    need the metric/solution reordered alongside the mesh should call
-    :func:`mmgpy.reorder_cuthill_mckee` on a dataset they own.
-    """
-    import pyvista as pv  # noqa: PLC0415
-
-    from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
-
-    dataset = pv.read(str(output_mesh))
-    if not isinstance(dataset, (pv.UnstructuredGrid, pv.PolyData)):
-        msg = (
-            f"Cannot reorder {type(dataset).__name__} loaded from "
-            f"{output_mesh}; expected UnstructuredGrid or PolyData."
-        )
-        raise TypeError(msg)
-    reordered = reorder_cuthill_mckee(dataset)
-    reordered.save(str(output_mesh))
+    return result.success
 
 
 class mmg3d:

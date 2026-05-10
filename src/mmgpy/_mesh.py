@@ -52,27 +52,52 @@ _EDGE_VERTS = 2
 _2D_DETECTION_TOLERANCE = 1e-8
 
 
+_RENUM_FUTURE_WARNED = False
+
+
 def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
     """Pop the ``renum`` kwarg and return whether to reorder the result.
 
     MMG's own ``renum`` flag invokes SCOTCH renumbering, but the bundled
     MMG is built without SCOTCH, so the kwarg would otherwise be a silent
     no-op. mmgpy keeps the option name for compatibility and routes it to
-    a Python-side reverse Cuthill-McKee reordering (no extra deps,
-    available on every platform). Callers that hold a PyVista dataset
-    (the accessor, the file-based wrappers) apply
-    :func:`mmgpy.reorder_cuthill_mckee` to the result when this returns
-    ``True``.
+    a Python-side reverse Cuthill-McKee. Every entry point that consumes
+    this helper applies the reordering when the return is ``True``: the
+    PyVista accessor, the file-based ``mmgpy.mmg{2d,3d,s}.remesh``
+    wrappers, and ``Mesh.remesh`` / ``Mesh.remesh_levelset``.
+
+    A one-time :class:`FutureWarning` is emitted on first truthy use so
+    callers migrating from the old SCOTCH semantics can notice the change.
+    Non-numeric strings are rejected with :class:`ValueError`.
     """
     if "renum" not in kwargs:
         return False
     raw = kwargs.pop("renum")
     if isinstance(raw, str):
         try:
-            return int(raw) != 0
-        except ValueError:
-            return bool(raw)
-    return bool(raw)
+            do_rcm = int(raw) != 0
+        except ValueError as err:
+            msg = (
+                f"renum must be 0/1 or a numeric string, got {raw!r}; pass "
+                "an int or call mmgpy.reorder_cuthill_mckee() explicitly."
+            )
+            raise ValueError(msg) from err
+    else:
+        do_rcm = bool(raw)
+    if do_rcm:
+        global _RENUM_FUTURE_WARNED  # noqa: PLW0603
+        if not _RENUM_FUTURE_WARNED:
+            _RENUM_FUTURE_WARNED = True
+            warnings.warn(
+                "renum=1 no longer invokes SCOTCH renumbering (the bundled "
+                "MMG is built without it); mmgpy now applies reverse "
+                "Cuthill-McKee instead. Call "
+                "mmgpy.reorder_cuthill_mckee() directly for explicit "
+                "control over the reordering.",
+                FutureWarning,
+                stacklevel=3,
+            )
+    return do_rcm
 
 
 def _is_interactive_terminal() -> bool:  # pragma: no cover
@@ -1684,10 +1709,7 @@ class Mesh:
                 raise TypeError(msg)
             kwargs.update(options.to_dict())
 
-        # Strip the deprecated renum kwarg before forwarding to MMG. The
-        # accessor / file-based wrappers re-apply RCM at their layer where a
-        # PyVista dataset is in hand; here we just consume the warning.
-        _pop_renum_redirect(kwargs)
+        do_rcm = _pop_renum_redirect(kwargs)
 
         # Apply sizing constraints before remeshing
         if self._sizing_constraints:
@@ -1741,6 +1763,11 @@ class Mesh:
                     self._lazy_source.invalidate()
                     self._lazy_source = None
 
+            if do_rcm:
+                from mmgpy._reorder import _apply_rcm_to_mesh  # noqa: PLC0415
+
+                _apply_rcm_to_mesh(self)
+
             _emit_event(
                 callback,
                 "remesh",
@@ -1793,7 +1820,7 @@ class Mesh:
         """
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
-        _pop_renum_redirect(kwargs)
+        do_rcm = _pop_renum_redirect(kwargs)
 
         callback, reporter_ctx = _resolve_progress_callback(progress)
         if reporter_ctx is not None:  # pragma: no cover
@@ -1821,6 +1848,11 @@ class Mesh:
 
             stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
             final_vertices = len(self._impl.get_vertices())
+
+            if do_rcm:
+                from mmgpy._reorder import _apply_rcm_to_mesh  # noqa: PLC0415
+
+                _apply_rcm_to_mesh(self)
 
             _emit_event(
                 callback,

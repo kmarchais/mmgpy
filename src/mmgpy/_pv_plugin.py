@@ -565,13 +565,13 @@ class MmgAccessor:
             cells.
 
         """
-        from mmgpy._mesh import _pop_renum_redirect  # noqa: PLC0415
-
-        do_rcm = _pop_renum_redirect(options)
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time
+        # FutureWarning + in-place reverse Cuthill-McKee). Forwarding it
+        # through here keeps the PyVista-side path single-pass.
         if opts is not None:
             if options:
                 msg = "pass either an options object or kwargs, not both"
@@ -579,12 +579,7 @@ class MmgAccessor:
             mesh.remesh(opts)
         else:
             mesh.remesh(**options)
-        result = _to_pyvista_with_user_fields(mesh)
-        if do_rcm:
-            from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
-
-            result = reorder_cuthill_mckee(result)
-        return result
+        return _to_pyvista_with_user_fields(mesh)
 
     def remesh_lagrangian(
         self,

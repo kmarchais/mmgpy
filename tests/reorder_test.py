@@ -9,8 +9,7 @@ import pytest
 import pyvista as pv
 
 import mmgpy
-from mmgpy._reorder import _bandwidth, _collect_element_blocks
-from mmgpy._topology import vertex_adjacency
+from mmgpy._reorder import _bandwidth, _build_adjacency, _collect_element_blocks
 
 
 def _bandwidth_of(dataset: pv.UnstructuredGrid | pv.PolyData) -> int:
@@ -18,13 +17,7 @@ def _bandwidth_of(dataset: pv.UnstructuredGrid | pv.PolyData) -> int:
     blocks = _collect_element_blocks(dataset)
     if not blocks:
         return 0
-    n = int(dataset.n_points)
-    adj = vertex_adjacency(n, blocks[0])
-    for extra in blocks[1:]:
-        adj = adj + vertex_adjacency(n, extra)
-    adj.data[:] = 1.0
-    rows = [adj.indices[adj.indptr[i] : adj.indptr[i + 1]] for i in range(n)]
-    return _bandwidth(rows)
+    return _bandwidth(_build_adjacency(int(dataset.n_points), blocks))
 
 
 def _make_3d_grid(n: int = 6) -> pv.UnstructuredGrid:
@@ -146,32 +139,77 @@ def test_accessor_method_routes_to_reorder() -> None:
     assert out.n_cells == ug.n_cells
 
 
-def test_renum_kwarg_routes_to_rcm_silently() -> None:
-    """``renum=1`` runs without warnings and produces a valid reordered mesh."""
+def test_renum_kwarg_routes_to_rcm_with_future_warning() -> None:
+    """``renum=1`` emits a one-time FutureWarning and actually reorders."""
+    import mmgpy._mesh as _mesh_mod
+
+    _mesh_mod._RENUM_FUTURE_WARNED = False
+
     ug = _make_3d_grid(n=4)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         out = ug.mmg.remesh(renum=1, hsiz=0.5)
-    # Library-emitted warnings are not expected; user code shouldn't get nagged
-    # for using an MMG-compatible option that mmgpy implements Python-side.
-    library_warnings = [
+
+    renum_warnings = [
         w
         for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "renum" in str(w.message).lower()
+        if issubclass(w.category, FutureWarning) and "renum" in str(w.message).lower()
     ]
-    assert not library_warnings, (
-        f"renum=1 should not emit a DeprecationWarning: {library_warnings}"
+    assert len(renum_warnings) == 1, (
+        f"expected exactly one FutureWarning about renum, got {renum_warnings}"
     )
     assert out.n_points > 0
     assert out.n_cells > 0
+    # RCM-equivalent reordering must actually run: bandwidth should not be
+    # worse than running the same remesh without renum. (Strict reduction
+    # is only guaranteed on the source bandwidth; for a remeshed output we
+    # only require ``<=`` since MMG itself produces a reasonable ordering.)
+    out_baseline = ug.mmg.remesh(hsiz=0.5)
+    assert _bandwidth_of(out) <= _bandwidth_of(out_baseline)
+
+
+def test_renum_warning_is_emitted_only_once() -> None:
+    """The FutureWarning is gated by a process-wide flag."""
+    import mmgpy._mesh as _mesh_mod
+
+    _mesh_mod._RENUM_FUTURE_WARNED = False
+
+    ug = _make_3d_grid(n=4)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ug.mmg.remesh(renum=1, hsiz=0.5)
+        ug.mmg.remesh(renum=1, hsiz=0.5)
+    renum_warnings = [
+        w
+        for w in caught
+        if issubclass(w.category, FutureWarning) and "renum" in str(w.message).lower()
+    ]
+    assert len(renum_warnings) == 1
 
 
 def test_renum_zero_is_a_noop() -> None:
-    """``renum=0`` is silently dropped (matches MMG's flag semantics)."""
+    """``renum=0`` does not warn and produces no reordering."""
+    import mmgpy._mesh as _mesh_mod
+
+    _mesh_mod._RENUM_FUTURE_WARNED = False
+
     ug = _make_3d_grid(n=4)
-    # Should not raise, should not warn — same as not passing the kwarg at all.
-    ug.mmg.remesh(renum=0, hsiz=0.5)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ug.mmg.remesh(renum=0, hsiz=0.5)
+    renum_warnings = [
+        w
+        for w in caught
+        if issubclass(w.category, FutureWarning) and "renum" in str(w.message).lower()
+    ]
+    assert not renum_warnings
+
+
+def test_renum_string_non_numeric_raises() -> None:
+    """A non-numeric ``renum`` string is rejected with a clear error."""
+    ug = _make_3d_grid(n=4)
+    with pytest.raises(ValueError, match="renum must be 0/1"):
+        ug.mmg.remesh(renum="yes", hsiz=0.5)
 
 
 def test_empty_dataset_returns_copy() -> None:

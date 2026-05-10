@@ -8,26 +8,25 @@ producing a permutation that minimizes vertex-vertex bandwidth.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pyvista as pv
-from scipy.sparse import csgraph
+from scipy.sparse import csgraph, csr_matrix
 
 from mmgpy._topology import vertex_adjacency
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+    from mmgpy._mesh import Mesh
+    from mmgpy._mmgpy import MmgMesh3D
+
 
 def _split_legacy_cells(
     flat: NDArray[np.integer],
 ) -> list[NDArray[np.int32]]:
-    """Split a legacy ``[n0, v0, ..., v0_{n0-1}, n1, ...]`` array by cell width.
-
-    Cells of identical width go into the same ``(k, n_per_cell)`` block. Used
-    to feed PolyData's per-section cell arrays into :func:`vertex_adjacency`.
-    """
+    """Split a legacy ``[n0, v0, ..., v0_{n0-1}, n1, ...]`` array by cell width."""
     if flat.size == 0:
         return []
     arr = np.asarray(flat, dtype=np.int64)
@@ -45,11 +44,7 @@ def _split_legacy_cells(
 def _collect_element_blocks(
     dataset: pv.UnstructuredGrid | pv.PolyData,
 ) -> list[NDArray[np.int32]]:
-    """Return per-cell-type ``(n_cells_of_type, n_per_cell)`` connectivity blocks.
-
-    Used as input to :func:`vertex_adjacency`. Cells of fewer than two vertices
-    are skipped — they contribute no edges to the adjacency graph.
-    """
+    """Return per-cell-type ``(n_cells_of_type, n_per_cell)`` connectivity blocks."""
     if isinstance(dataset, pv.PolyData):
         blocks: list[NDArray[np.int32]] = []
         for section in (dataset.lines, dataset.faces, dataset.strips):
@@ -66,15 +61,47 @@ def _collect_element_blocks(
     return out
 
 
-def _bandwidth(adj_indices_per_row: list[NDArray[np.intp]]) -> int:
-    """Maximum ``|i - j|`` over all (i, j) edges in the adjacency."""
-    bw = 0
-    for i, neighbors in enumerate(adj_indices_per_row):
-        if neighbors.size == 0:
-            continue
-        diff = int(np.max(np.abs(neighbors - i)))
-        bw = max(bw, diff)
-    return bw
+def _build_adjacency(
+    n_vertices: int,
+    blocks: list[NDArray[np.int32]],
+) -> csr_matrix:
+    """Symmetric vertex-vertex adjacency from one or more element blocks."""
+    adj = vertex_adjacency(n_vertices, blocks[0])
+    for extra in blocks[1:]:
+        adj = adj + vertex_adjacency(n_vertices, extra)
+    adj.data[:] = 1.0
+    return adj
+
+
+def _compute_rcm_permutation(
+    n_vertices: int,
+    blocks: list[NDArray[np.int32]],
+    *,
+    symmetric_mode: bool = True,
+) -> tuple[NDArray[np.int64], NDArray[np.int64]]:
+    """Return ``(perm, inv_perm)`` for the merged adjacency of *blocks*.
+
+    ``perm[i]`` is the original index of the vertex now at position ``i``;
+    ``inv_perm`` is its inverse and is what cell connectivity must be
+    indexed with to remap from old to new vertex IDs.
+    """
+    adj = _build_adjacency(n_vertices, blocks)
+    perm = np.asarray(
+        csgraph.reverse_cuthill_mckee(adj, symmetric_mode=symmetric_mode),
+        dtype=np.int64,
+    )
+    inv_perm = np.empty_like(perm)
+    inv_perm[perm] = np.arange(perm.size, dtype=perm.dtype)
+    return perm, inv_perm
+
+
+def _bandwidth(adj: csr_matrix) -> int:
+    """Maximum ``|i - j|`` over all (i, j) edges in the CSR adjacency."""
+    if adj.nnz == 0:
+        return 0
+    n = adj.shape[0]
+    rows = np.repeat(np.arange(n, dtype=np.int64), np.diff(adj.indptr))
+    return int(np.abs(adj.indices.astype(np.int64) - rows).max(initial=0))
 
 
 def reorder_cuthill_mckee(
@@ -133,22 +160,11 @@ def reorder_cuthill_mckee(
     if not blocks:
         return mesh.copy()
 
-    # Build a single (n_vertices, k_max) connectivity table by stacking each
-    # block padded to the widest cell; vertex_adjacency only reads edges via
-    # triu_indices, so duplicate entries from padding never become edges as
-    # long as we mark them as self-edges. Easier: just call vertex_adjacency
-    # per block and OR the matrices together.
-    adj = vertex_adjacency(n_vertices, blocks[0])
-    for extra in blocks[1:]:
-        adj = adj + vertex_adjacency(n_vertices, extra)
-    adj.data[:] = 1.0  # collapse duplicates from overlapping element types
-
-    perm = np.asarray(
-        csgraph.reverse_cuthill_mckee(adj, symmetric_mode=symmetric_mode),
-        dtype=np.int64,
+    perm, inv_perm = _compute_rcm_permutation(
+        n_vertices,
+        blocks,
+        symmetric_mode=symmetric_mode,
     )
-    inv_perm = np.empty_like(perm)
-    inv_perm[perm] = np.arange(perm.size, dtype=perm.dtype)
 
     out = mesh.copy(deep=True)
     out.points = np.asarray(mesh.points)[perm]
@@ -165,8 +181,11 @@ def _remap_connectivity(
     dataset: pv.UnstructuredGrid | pv.PolyData,
     inv_perm: NDArray[np.int64],
 ) -> None:
-    """Rewrite vertex indices in *dataset*'s VTK cell arrays in place."""
-    from vtkmodules.util.numpy_support import vtk_to_numpy  # noqa: PLC0415
+    """Rewrite vertex indices in *dataset*'s VTK cell arrays."""
+    from vtkmodules.util.numpy_support import (  # noqa: PLC0415
+        numpy_to_vtk,
+        vtk_to_numpy,
+    )
 
     if isinstance(dataset, pv.UnstructuredGrid):
         cell_arrays = [dataset.GetCells()]
@@ -181,10 +200,109 @@ def _remap_connectivity(
     for ca in cell_arrays:
         if ca is None or ca.GetNumberOfCells() == 0:
             continue
-        conn = vtk_to_numpy(ca.GetConnectivityArray())
-        # vtk_to_numpy returns a writable view onto the VTK buffer; mutating
-        # conn[:] propagates back to the dataset without a re-set call.
-        conn[:] = inv_perm[conn]
+        conn_vtk = ca.GetConnectivityArray()
+        conn = np.asarray(vtk_to_numpy(conn_vtk)).copy()
+        remapped = inv_perm[conn].astype(conn.dtype, copy=False)
+        new_vtk = numpy_to_vtk(remapped, deep=True, array_type=conn_vtk.GetDataType())
+        new_vtk.SetName(conn_vtk.GetName() or "")
+        conn_vtk.DeepCopy(new_vtk)
+
+
+def _collect_mesh_element_blocks(
+    mesh: Mesh,
+) -> tuple[
+    list[NDArray[np.int32]],
+    tuple[NDArray[np.int32], NDArray[np.int64]] | None,
+    tuple[NDArray[np.int32], NDArray[np.int64]] | None,
+    tuple[NDArray[np.int32], NDArray[np.int64]],
+]:
+    """Pull element blocks needed for both adjacency and re-application."""
+    from mmgpy._mesh import MeshKind  # noqa: PLC0415
+
+    blocks: list[NDArray[np.int32]] = []
+    tets: tuple[NDArray[np.int32], NDArray[np.int64]] | None = None
+    tris: tuple[NDArray[np.int32], NDArray[np.int64]] | None = None
+
+    if mesh.kind == MeshKind.TETRAHEDRAL:
+        tetrahedra, tetrahedra_refs = mesh.get_tetrahedra_with_refs()
+        if tetrahedra.size:
+            tets = (tetrahedra, tetrahedra_refs)
+            blocks.append(tetrahedra)
+
+    triangles, triangle_refs = mesh.get_triangles_with_refs()
+    if triangles.size:
+        tris = (triangles, triangle_refs)
+        blocks.append(triangles)
+
+    edges, edge_refs = mesh.get_edges_with_refs()
+    if edges.size:
+        blocks.append(edges)
+
+    return blocks, tets, tris, (edges, edge_refs)
+
+
+def _snapshot_permuted_fields(
+    mesh: Mesh,
+    perm: NDArray[np.int64],
+    n_vertices: int,
+) -> tuple[dict[str, NDArray[np.float64]], dict[str, NDArray[np.float64]]]:
+    """Snapshot + permute all fields before any in-place mutation."""
+    mmg_snapshots: dict[str, NDArray[np.float64]] = {}
+    for name in mesh._MMG_FIELDS:  # noqa: SLF001
+        data = mesh._try_get_field(name)  # noqa: SLF001
+        if data is not None and len(data) == n_vertices:
+            mmg_snapshots[name] = np.asarray(data)[perm]
+
+    user_snapshots = {
+        name: np.asarray(values)[perm]
+        for name, values in mesh._user_fields.items()  # noqa: SLF001
+        if len(values) == n_vertices
+    }
+    return mmg_snapshots, user_snapshots
+
+
+def _apply_rcm_to_mesh(mesh: Mesh) -> None:
+    """In-place reverse Cuthill-McKee reordering of a :class:`Mesh`.
+
+    Permutes vertices, every element block (tetrahedra / triangles / edges),
+    every MMG-known field stored on the C++ side (metric, displacement,
+    levelset, tensor), and every user field. Sizes are preserved.
+    """
+    from mmgpy._mesh import MeshKind  # noqa: PLC0415
+
+    vertices, vertex_refs = mesh.get_vertices_with_refs()
+    n_vertices = len(vertices)
+    if n_vertices == 0:
+        return
+
+    blocks, tets, tris, (edges, edge_refs) = _collect_mesh_element_blocks(mesh)
+    if not blocks:
+        return
+
+    perm, inv_perm = _compute_rcm_permutation(n_vertices, blocks)
+    inv_perm32 = inv_perm.astype(np.int32, copy=False)
+
+    mmg_snapshots, user_snapshots = _snapshot_permuted_fields(mesh, perm, n_vertices)
+
+    mesh.set_vertices(vertices[perm], vertex_refs[perm])
+    if mesh.kind == MeshKind.TETRAHEDRAL and tets is not None:
+        tetrahedra, tetrahedra_refs = tets
+        impl_3d = cast("MmgMesh3D", mesh._impl)  # noqa: SLF001
+        impl_3d.set_tetrahedra(inv_perm32[tetrahedra], tetrahedra_refs)
+    if tris is not None:
+        triangles, triangle_refs = tris
+        mesh.set_triangles(inv_perm32[triangles], triangle_refs)
+    if edges.size:
+        mesh.set_edges(inv_perm32[edges], edge_refs)
+
+    for name, permuted in mmg_snapshots.items():
+        mesh._impl.set_field(name, permuted)  # noqa: SLF001
+    for name, permuted in user_snapshots.items():
+        mesh._user_fields[name] = permuted  # noqa: SLF001
+
+    if mesh._lazy_source is not None:  # noqa: SLF001
+        mesh._lazy_source.invalidate()  # noqa: SLF001
+        mesh._lazy_source = None  # noqa: SLF001
 
 
 __all__ = ["reorder_cuthill_mckee"]
