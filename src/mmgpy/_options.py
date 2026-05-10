@@ -20,7 +20,7 @@ Example:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -86,6 +86,10 @@ def _options_to_dict(
 ) -> dict[str, float | int]:
     """Convert options to dictionary for passing to remesh().
 
+    Field metadata key ``mmg_name`` overrides the kwarg name when the
+    Python field name differs from the MMG kwarg (e.g. ``optim_les`` ->
+    ``optimLES``).
+
     Parameters
     ----------
     opts : _MmgOptionsBase
@@ -102,11 +106,12 @@ def _options_to_dict(
         value = getattr(opts, f.name)
         if value is None:
             continue
+        key = f.metadata.get("mmg_name", f.name)
         if isinstance(value, bool):
             if value:
-                result[f.name] = 1
+                result[key] = 1
         else:
-            result[f.name] = value
+            result[key] = value
     return result
 
 
@@ -165,6 +170,12 @@ class _MmgOptionsBase:
 
     nomove: bool = False
     """Disable point relocation."""
+
+    nreg: bool = False
+    """Use vertex normals to smooth the mesh (normal regularization)."""
+
+    anisosize: bool = False
+    """Treat the size map as anisotropic. Requires a tensor solution field."""
 
     def to_dict(self) -> dict[str, float | int]:
         """Convert options to dictionary for passing to remesh().
@@ -233,12 +244,19 @@ class Mmg3DOptions(_MmgOptionsBase):
 
     Inherits from _MmgOptionsBase:
         hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
-        optim, noinsert, noswap, nomove
+        optim, noinsert, noswap, nomove, nreg, anisosize
 
     Additional Attributes
     ---------------------
     nosurf : bool
         Disable surface modifications (3D only).
+    opnbdy : bool
+        Preserve open boundaries (no closing at non-manifold edges).
+    nofem : bool
+        Skip the final FEM-friendly element-quality cleanup pass.
+    optim_les : bool
+        Optimize mesh for LES (Large-Eddy Simulation) anisotropic
+        boundary layers.
 
     Example:
     -------
@@ -249,6 +267,15 @@ class Mmg3DOptions(_MmgOptionsBase):
 
     nosurf: bool = False
     """Disable surface modifications (3D only)."""
+
+    opnbdy: bool = False
+    """Preserve open boundaries (no closing at non-manifold edges)."""
+
+    nofem: bool = False
+    """Skip the final FEM-friendly element-quality cleanup pass."""
+
+    optim_les: bool = field(default=False, metadata={"mmg_name": "optimLES"})
+    """Optimize for LES anisotropic boundary layers."""
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
@@ -264,17 +291,27 @@ class Mmg2DOptions(_MmgOptionsBase):
 
     Inherits from _MmgOptionsBase:
         hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
-        optim, noinsert, noswap, nomove
+        optim, noinsert, noswap, nomove, nreg, anisosize
 
     Additional Attributes
     ---------------------
     nosurf : bool
         Disable boundary modifications.
+    opnbdy : bool
+        Preserve open boundaries.
+    nofem : bool
+        Skip the final FEM-friendly element-quality cleanup pass.
 
     """
 
     nosurf: bool = False
     """Disable boundary modifications."""
+
+    opnbdy: bool = False
+    """Preserve open boundaries."""
+
+    nofem: bool = False
+    """Skip the final FEM-friendly element-quality cleanup pass."""
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
@@ -290,11 +327,19 @@ class MmgSOptions(_MmgOptionsBase):
 
     Inherits from _MmgOptionsBase:
         hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
-        optim, noinsert, noswap, nomove
+        optim, noinsert, noswap, nomove, nreg, anisosize
 
     Note: Surface remeshing (MMGS) does not have a nosurf option.
 
+    Additional Attributes
+    ---------------------
+    keep_ref : bool
+        Keep edge references in the output (forwarded as ``keepRef``).
+
     """
+
+    keep_ref: bool = field(default=False, metadata={"mmg_name": "keepRef"})
+    """Keep edge references in the output (forwarded as ``keepRef``)."""
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""

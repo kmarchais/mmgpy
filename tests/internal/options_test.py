@@ -1,5 +1,7 @@
 """Tests for options dataclasses and convenience methods."""
 
+from dataclasses import fields
+
 import numpy as np
 import pytest
 
@@ -157,6 +159,107 @@ class TestMmg3DOptions:
         assert opts.optim is True
         assert opts.noinsert is True
         assert opts.verbose == 1
+
+
+class TestMmg3DPromotedFlags:
+    """Tests for the promoted boolean flags on Mmg3DOptions."""
+
+    def test_default_values(self) -> None:
+        """All promoted 3D flags default to False."""
+        opts = Mmg3DOptions()
+        assert opts.optim_les is False
+        assert opts.opnbdy is False
+        assert opts.nofem is False
+        assert opts.nreg is False
+        assert opts.anisosize is False
+
+    def test_optim_les_renames_to_camel_case(self) -> None:
+        """optim_les serializes as the MMG kwarg optimLES."""
+        d = Mmg3DOptions(optim_les=True).to_dict()
+        assert d == {"optimLES": 1}
+        assert "optim_les" not in d
+
+    def test_other_3d_flags_keep_name(self) -> None:
+        """opnbdy, nofem, nreg, anisosize keep their names in to_dict."""
+        d = Mmg3DOptions(opnbdy=True, nofem=True, nreg=True, anisosize=True).to_dict()
+        assert d == {"opnbdy": 1, "nofem": 1, "nreg": 1, "anisosize": 1}
+
+    def test_false_flags_excluded(self) -> None:
+        """False flags are dropped from to_dict like the existing booleans."""
+        d = Mmg3DOptions(
+            optim_les=False,
+            opnbdy=False,
+            nofem=False,
+            nreg=False,
+            anisosize=False,
+        ).to_dict()
+        assert d == {}
+
+
+class TestMmg2DPromotedFlags:
+    """Tests for the promoted boolean flags on Mmg2DOptions."""
+
+    def test_default_values(self) -> None:
+        """All promoted 2D flags default to False."""
+        opts = Mmg2DOptions()
+        assert opts.opnbdy is False
+        assert opts.nofem is False
+        assert opts.nreg is False
+        assert opts.anisosize is False
+
+    def test_to_dict(self) -> None:
+        """All promoted 2D flags survive to_dict round-trip."""
+        d = Mmg2DOptions(opnbdy=True, nofem=True, nreg=True, anisosize=True).to_dict()
+        assert d == {"opnbdy": 1, "nofem": 1, "nreg": 1, "anisosize": 1}
+
+    def test_no_optim_les(self) -> None:
+        """optim_les is 3D-only and absent on Mmg2DOptions."""
+        names = [f.name for f in fields(Mmg2DOptions)]
+        assert "optim_les" not in names
+
+
+class TestMmgSPromotedFlags:
+    """Tests for the promoted boolean flags on MmgSOptions."""
+
+    def test_default_values(self) -> None:
+        """All promoted surface flags default to False."""
+        opts = MmgSOptions()
+        assert opts.keep_ref is False
+        assert opts.nreg is False
+        assert opts.anisosize is False
+
+    def test_keep_ref_renames_to_camel_case(self) -> None:
+        """keep_ref serializes as the MMG kwarg keepRef."""
+        d = MmgSOptions(keep_ref=True).to_dict()
+        assert d == {"keepRef": 1}
+        assert "keep_ref" not in d
+
+    def test_to_dict_combined(self) -> None:
+        """All promoted surface flags survive to_dict round-trip."""
+        d = MmgSOptions(keep_ref=True, nreg=True, anisosize=True).to_dict()
+        assert d == {"keepRef": 1, "nreg": 1, "anisosize": 1}
+
+    def test_no_opnbdy_nofem(self) -> None:
+        """Opnbdy / nofem are not exposed by MMGS, so absent on MmgSOptions."""
+        names = [f.name for f in fields(MmgSOptions)]
+        assert "opnbdy" not in names
+        assert "nofem" not in names
+
+
+class TestNoRenumField:
+    """renum is not a typed option (#248 replaced it with reorder_cuthill_mckee)."""
+
+    def test_3d(self) -> None:
+        """Renum is absent from Mmg3DOptions."""
+        assert "renum" not in {f.name for f in fields(Mmg3DOptions)}
+
+    def test_2d(self) -> None:
+        """Renum is absent from Mmg2DOptions."""
+        assert "renum" not in {f.name for f in fields(Mmg2DOptions)}
+
+    def test_s(self) -> None:
+        """Renum is absent from MmgSOptions."""
+        assert "renum" not in {f.name for f in fields(MmgSOptions)}
 
 
 class TestMmg2DOptions:
