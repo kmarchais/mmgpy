@@ -6,8 +6,8 @@ PyVista frame are checked against committed baselines in
 pytest-pyvista. The remaining examples (matplotlib-only, interactive
 animations, widget-based) are smoke-tested only.
 
-The skip set matches ``build-and-test.yml`` and ``daily-docs-test.yml``:
-examples that need missing assets or a display server.
+The skip set matches ``build-and-test.yml``: examples that need missing
+assets or a display server.
 """
 
 from __future__ import annotations

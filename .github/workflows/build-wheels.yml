@@ -177,6 +177,60 @@ jobs:
           path: dist/*.tar.gz
           retention-days: 30
 
+  validate-release:
+    # Release gate: install the freshly built wheel and run docs codeblocks +
+    # examples against it before any PyPI / TestPyPI upload. This is what
+    # catches a release shipping with broken examples or doc snippets, which
+    # is exactly how v0.12.0 went out with two crashing implicit-domain
+    # examples.
+    needs: [build-wheels-linux-x86_64, build-sdist]
+    runs-on: ubuntu-latest
+    name: Validate release (docs codeblocks + examples)
+    if: (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # examples_test.py discovers examples via `git ls-files`, so the
+          # checkout must include the .git directory.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Install GL and start Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libosmesa6-dev xvfb
+          Xvfb :99 -screen 0 1024x768x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+      - name: Download linux x86_64 wheels
+        uses: actions/download-artifact@v8
+        with:
+          name: wheels-linux-x86_64
+          path: wheelhouse/
+      - name: Create venv and install the freshly built wheel
+        run: |
+          uv venv .venv
+          # Let uv pick the matching wheel for the venv's Python from
+          # wheelhouse/. We deliberately do NOT `uv sync` here, which would
+          # build mmgpy from source and shadow the wheel under test.
+          uv pip install --python .venv/bin/python --no-index --find-links wheelhouse mmgpy
+          # fedoo is needed for the elasticity_propagation example.
+          uv pip install --python .venv/bin/python pytest pytest-codeblocks pytest-pyvista fedoo
+      - name: Verify the installed mmgpy is the wheel
+        run: |
+          .venv/bin/python -c "import mmgpy; print(mmgpy.__version__, mmgpy.__file__); assert 'site-packages' in mmgpy.__file__"
+      - name: Test documentation code blocks
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: .venv/bin/pytest --codeblocks docs/ -v
+      - name: Run examples (smoke; image-regression diffs are a build-and-test concern)
+        env:
+          PYVISTA_OFF_SCREEN: "true"
+          MPLBACKEND: Agg
+        run: .venv/bin/pytest tests/examples_test.py -v -k "not test_pyvista_example"
+
   publish-to-pypi:
     needs:
       [
@@ -185,6 +239,7 @@ jobs:
         build-wheels-windows,
         build-wheels-macos,
         build-sdist,
+        validate-release,
       ]
     runs-on: ubuntu-latest
     name: Publish to PyPI
@@ -226,6 +281,7 @@ jobs:
         build-wheels-windows,
         build-wheels-macos,
         build-sdist,
+        validate-release,
       ]
     runs-on: ubuntu-latest
     name: Publish to TestPyPI
@@ -344,3 +400,41 @@ jobs:
           echo "- **uvx mmgpy --help:** Passed" >> $GITHUB_STEP_SUMMARY
           echo "- **uvx mmgpy --version:** Passed" >> $GITHUB_STEP_SUMMARY
           echo "- **python -m mmgpy:** Passed" >> $GITHUB_STEP_SUMMARY
+
+  deploy-versioned-docs:
+    # Versioned docs deploy is gated on a successful PyPI upload so we never
+    # publish docs for a release whose wheel never made it to PyPI. Pre-release
+    # tags skip this step (matches the previous behaviour in docs.yml).
+    needs: publish-to-pypi
+    runs-on: ubuntu-latest
+    name: Deploy versioned docs
+    if: github.event_name == 'release' && github.event.action == 'published' && !github.event.release.prerelease
+    permissions:
+      contents: write
+    concurrency:
+      group: docs-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - run: uv python install 3.12
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          version: 1.0
+      - run: uv sync --group docs
+      - name: Configure Git for mike
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Deploy versioned docs with mike
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          MINOR_VERSION=$(echo "$VERSION" | cut -d. -f1-2)
+          uv run mike deploy "$MINOR_VERSION" latest --update-aliases --push
+          # Idempotent: ensures root URL always redirects to latest.
+          uv run mike set-default latest --push
