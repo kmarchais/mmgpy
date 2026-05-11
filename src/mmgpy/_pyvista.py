@@ -54,21 +54,14 @@ _LINE_VERTS = 2
 
 # Substring hints used by MMG's VTK reader to auto-route point_data arrays
 # into solution slots. See mmg-src/src/common/vtkparser.cpp (strstr matches
-# on `:metric` and `:ls`). First key matching a hint wins; users can still
-# override by assigning `mmg_mesh["metric"] = ...` after `from_pyvista`.
-_METRIC_HINTS = (":metric",)
-_LS_HINTS = (":ls",)
-
-
-def _find_solution_array(
-    point_data: Any,  # noqa: ANN401 - pyvista.DataSetAttributes is not a Mapping
-    hints: tuple[str, ...],
-) -> tuple[str, NDArray[np.float64]] | None:
-    """Return the first ``(key, array)`` whose key contains any hint."""
-    for key in point_data:
-        if any(hint in key for hint in hints):
-            return key, np.asarray(point_data[key], dtype=np.float64)
-    return None
+# on `:metric` and `:ls`). Substrings are intentionally narrow to mirror
+# upstream; widening them would diverge from MMG's behaviour. First key
+# matching a hint wins; users can still override by assigning
+# `mmg_mesh["metric"] = ...` after `from_pyvista`.
+_SOLUTION_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("metric", (":metric",)),
+    ("levelset", (":ls",)),
+)
 
 
 def _apply_solution_aliases(
@@ -83,15 +76,20 @@ def _apply_solution_aliases(
     """
     if not point_data:
         return
-    for slot, hints in (("metric", _METRIC_HINTS), ("levelset", _LS_HINTS)):
-        found = _find_solution_array(point_data, hints)
-        if found is None:
-            continue
-        key, arr = found
-        if arr.ndim == 1:
-            arr = arr.reshape(-1, 1)
+    matches: dict[str, tuple[str, NDArray[np.float64]]] = {}
+    for key in point_data:
+        for slot, hints in _SOLUTION_HINTS:
+            if slot in matches:
+                continue
+            if any(hint in key for hint in hints):
+                matches[slot] = (key, np.asarray(point_data[key], dtype=np.float64))
+                break
+        if len(matches) == len(_SOLUTION_HINTS):
+            break
+    for slot, (key, arr) in matches.items():
+        shaped = arr.reshape(-1, 1) if arr.ndim == 1 else arr
         try:
-            mmg_mesh[slot] = arr
+            mmg_mesh[slot] = shaped
         except (RuntimeError, ValueError) as exc:
             logger.warning(
                 "Skipping point_data[%r] for %s slot: %s",
@@ -489,6 +487,10 @@ def _from_pyvista_to_mmg3d(
 def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
     """Convert PolyData with 2D triangles to MmgMesh2D."""
     edges, edge_refs = _extract_edges(mesh)
+    # Capture point_data before triangulation: PyVista's triangulate() can
+    # reset attached arrays. If triangulation adds points (rare for n-gons),
+    # row counts may mismatch the final mesh — _apply_solution_aliases will
+    # log and skip rather than crash.
     source_point_data = mesh.point_data
 
     mesh, was_triangulated = _triangulate_if_needed(mesh)
@@ -529,6 +531,7 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
 def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
     """Convert PolyData with 3D surface triangles to MmgMeshS."""
     edges, edge_refs = _extract_edges(mesh)
+    # See _from_pyvista_to_mmg2d for why we snapshot point_data pre-triangulate.
     source_point_data = mesh.point_data
 
     mesh, was_triangulated = _triangulate_if_needed(mesh)

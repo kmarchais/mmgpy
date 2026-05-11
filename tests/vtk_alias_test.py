@@ -233,20 +233,21 @@ class TestNoMatch:
 class TestSizeMismatch:
     """Bad-shape point_data is skipped with a warning, not a hard error."""
 
-    def test_wrong_length_emits_warning(
+    def test_wrong_inner_dim_emits_warning(
         self,
         tetra_grid: pv.UnstructuredGrid,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """A mismatched-length point_data array is logged and skipped."""
-        bogus = np.zeros(tetra_grid.n_points + 5)
-        # PyVista refuses to attach mismatched-length point_data, so we hit
-        # the runtime path by attaching it as field_data and aliasing — skip
-        # if pyvista enforces the length here.
-        try:
-            tetra_grid.point_data["sol:metric"] = bogus
-        except (ValueError, RuntimeError):
-            pytest.skip("pyvista rejected mismatched point_data length")
+        """An (N, k) array with unsupported ``k`` is logged and skipped."""
+        # MmgMesh3D["metric"] accepts (N, 1) or (N, 6); (N, 7) is rejected by
+        # the C++ setter, which is exactly the runtime path we want to cover.
+        bogus = np.zeros((tetra_grid.n_points, 7), dtype=np.float64)
+        tetra_grid.point_data["sol:metric"] = bogus
 
         with caplog.at_level(logging.WARNING, logger="mmgpy"):
-            from_pyvista(tetra_grid)
+            mesh = from_pyvista(tetra_grid)
+
+        assert "sol:metric" in caplog.text
+        assert "metric" in caplog.text
+        # Slot remained at its default (N, 1) instead of being overwritten.
+        assert mesh["metric"].shape == (tetra_grid.n_points, 1)
