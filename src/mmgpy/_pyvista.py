@@ -52,6 +52,54 @@ _TRIANGULATION_WARNING = (
 _REF_FIELDS = ("refs", "gmsh:physical", "medit:ref")
 _LINE_VERTS = 2
 
+# Substring hints used by MMG's VTK reader to auto-route point_data arrays
+# into solution slots. See mmg-src/src/common/vtkparser.cpp (strstr matches
+# on `:metric` and `:ls`). First key matching a hint wins; users can still
+# override by assigning `mmg_mesh["metric"] = ...` after `from_pyvista`.
+_METRIC_HINTS = (":metric",)
+_LS_HINTS = (":ls",)
+
+
+def _find_solution_array(
+    point_data: Any,  # noqa: ANN401 - pyvista.DataSetAttributes is not a Mapping
+    hints: tuple[str, ...],
+) -> tuple[str, NDArray[np.float64]] | None:
+    """Return the first ``(key, array)`` whose key contains any hint."""
+    for key in point_data:
+        if any(hint in key for hint in hints):
+            return key, np.asarray(point_data[key], dtype=np.float64)
+    return None
+
+
+def _apply_solution_aliases(
+    mmg_mesh: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    point_data: Any,  # noqa: ANN401 - pyvista.DataSetAttributes is not a Mapping
+) -> None:
+    """Auto-populate ``metric`` / ``levelset`` from VTK-style array names.
+
+    Mirrors MMG's own VTK reader: any ``point_data`` key containing
+    ``":metric"`` or ``":ls"`` is forwarded to the matching solution slot.
+    On multiple matches, the first key wins (insertion order).
+    """
+    if not point_data:
+        return
+    for slot, hints in (("metric", _METRIC_HINTS), ("levelset", _LS_HINTS)):
+        found = _find_solution_array(point_data, hints)
+        if found is None:
+            continue
+        key, arr = found
+        if arr.ndim == 1:
+            arr = arr.reshape(-1, 1)
+        try:
+            mmg_mesh[slot] = arr
+        except (RuntimeError, ValueError) as exc:
+            logger.warning(
+                "Skipping point_data[%r] for %s slot: %s",
+                key,
+                slot,
+                exc,
+            )
+
 
 def _all_faces_are_triangles(mesh: pv.PolyData) -> bool:
     """Return True if every polygonal face in the mesh has 3 vertices."""
@@ -433,12 +481,15 @@ def _from_pyvista_to_mmg3d(
     if triangles is not None:
         mmg_mesh.set_triangles(triangles, tri_refs)
 
+    _apply_solution_aliases(mmg_mesh, mesh.point_data)
+
     return mmg_mesh
 
 
 def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
     """Convert PolyData with 2D triangles to MmgMesh2D."""
     edges, edge_refs = _extract_edges(mesh)
+    source_point_data = mesh.point_data
 
     mesh, was_triangulated = _triangulate_if_needed(mesh)
     if was_triangulated:
@@ -470,12 +521,15 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
     if edges is not None:
         mmg_mesh.set_edges(edges, edge_refs)
 
+    _apply_solution_aliases(mmg_mesh, source_point_data)
+
     return mmg_mesh
 
 
 def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
     """Convert PolyData with 3D surface triangles to MmgMeshS."""
     edges, edge_refs = _extract_edges(mesh)
+    source_point_data = mesh.point_data
 
     mesh, was_triangulated = _triangulate_if_needed(mesh)
     if was_triangulated:
@@ -502,6 +556,8 @@ def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
 
     if edges is not None:
         mmg_mesh.set_edges(edges, edge_refs)
+
+    _apply_solution_aliases(mmg_mesh, source_point_data)
 
     return mmg_mesh
 
