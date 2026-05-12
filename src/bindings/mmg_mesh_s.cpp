@@ -1124,12 +1124,34 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
   return build_remesh_result(before, after, duration, ret, warnings);
 }
 
-py::array_t<double> MmgMeshS::build_size_map() {
+py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
   check_not_corrupted("build_size_map");
 
-  // MMGS_doSol is a function pointer initialized by MMGS_setfunc. The
-  // selector reads mesh->info.ani and met->size to pick the iso or aniso
-  // implementation.
+  if (aniso) {
+    // MMGS_doSol_ani needs the surface mesh to have been analyzed
+    // (ridges, normals, manifold tags), which MMGS_analys does as part
+    // of remeshing entry points. We do not run analys from here because
+    // it mutates the mesh state in ways callers may not expect. Use the
+    // volumetric or 2D variants for now, or run a full remesh.
+    throw std::runtime_error(
+        "build_size_map(aniso=True) is not implemented for surface meshes "
+        "(MMGS_doSol_ani requires a pre-analyzed mesh).");
+  }
+
+  // MMGS_doSol is a function pointer initialized by MMGS_setfunc, which
+  // dispatches on mesh->info.ani and met->size. Clear info.ani so a prior
+  // anisosize toggle elsewhere does not cause MMGS_setfunc to pick the aniso
+  // entry point against a scalar buffer.
+  if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_anisosize, 0)) {
+    throw std::runtime_error(
+        "Failed to clear MMGS_IPARAM_anisosize for build_size_map");
+  }
+  // Set_solSize frees and re-allocates the buffer, so skip it on the fast
+  // path where the channel is already scalar.
+  if (met->size != 1 &&
+      !MMGS_Set_solSize(mesh, met, MMG5_Vertex, mesh->np, MMG5_Scalar)) {
+    throw std::runtime_error("Failed to resize metric for build_size_map");
+  }
   MMGS_setfunc(mesh, met);
   if (MMGS_doSol == nullptr) {
     throw std::runtime_error(
@@ -1145,7 +1167,7 @@ py::array_t<double> MmgMeshS::build_size_map() {
     throw std::runtime_error("MMGS_doSol failed to build size map");
   }
 
-  return get_field("metric");
+  return get_field(aniso ? "tensor" : "metric");
 }
 
 void MmgMeshS::clean_iso_surface() {

@@ -25,13 +25,13 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+import numpy as np
 import pyvista as pv
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import TypeGuard
 
-    import numpy as np
     from numpy.typing import NDArray
 
     from mmgpy._mesh import Mesh as _Mesh
@@ -146,8 +146,6 @@ def _generate_from_line_polydata(
     options: dict[str, Any],
 ) -> pv.PolyData:
     """Run :func:`mmgpy.mmg2d.generate` on a line-only PolyData."""
-    import numpy as np  # noqa: PLC0415
-
     from mmgpy._generate import generate  # noqa: PLC0415
     from mmgpy._pyvista import (  # noqa: PLC0415
         _extract_lines_from_polydata,
@@ -183,8 +181,6 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
     those fields through ``Mesh.__setitem__``, which routes them to the C++
     layer.
     """
-    import numpy as np  # noqa: PLC0415
-
     from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
     mesh = _read_mesh(dataset)
@@ -294,8 +290,6 @@ def _per_type_indices_marked(
     section order (verts, lines, polys, strips) — pick the matching slice
     of *mask* and return the local indices.
     """
-    import numpy as np  # noqa: PLC0415
-
     if isinstance(dataset, pv.PolyData):
         n_verts = int(dataset.n_verts)
         n_lines = int(dataset.n_lines)
@@ -325,8 +319,6 @@ def _collect_constraints_from_data(
     dataset: pv.UnstructuredGrid | pv.PolyData,
 ) -> dict[str, NDArray[np.int32]]:
     """Read reserved point_data / cell_data tags into kwarg-name → index map."""
-    import numpy as np  # noqa: PLC0415
-
     out: dict[str, NDArray[np.int32]] = {}
 
     for tag_name, kwarg_name in _POINT_TAG_TO_KWARG.items():
@@ -387,8 +379,6 @@ def _split_constraint_kwargs(
     options: dict[str, Any],
 ) -> dict[str, NDArray[np.int32]]:
     """Pop reserved constraint kwargs from ``options`` and normalize to int32."""
-    import numpy as np  # noqa: PLC0415
-
     out: dict[str, NDArray[np.int32]] = {}
     for name in _CONSTRAINT_KWARGS:
         if name not in options:
@@ -566,8 +556,6 @@ def write_mesh(
 
 def _is_numeric_sol_array(arr: NDArray[Any]) -> bool:
     """Return True if *arr* is a numeric, non-boolean ndarray usable as a sol block."""
-    import numpy as np  # noqa: PLC0415
-
     return np.issubdtype(arr.dtype, np.number) and not np.issubdtype(
         arr.dtype,
         np.bool_,
@@ -602,8 +590,6 @@ def _auto_collect_sol_arrays(
     layout for ``dim``; skips ``mmg_*`` constraint tags and PyVista-reserved
     arrays (``Normals``, ``TCoords``).
     """
-    import numpy as np  # noqa: PLC0415
-
     out: dict[str, NDArray[np.float64]] = {}
     if n_entities <= 0:
         return out
@@ -632,8 +618,6 @@ def _explicit_collect_sol_arrays(
     Raises on any mismatch (missing key, wrong length, non-numeric dtype,
     bad shape) so the caller's intent is honored exactly.
     """
-    import numpy as np  # noqa: PLC0415
-
     if n_entities <= 0:
         msg = (
             f"save_all_sols: dataset has no entities of the matching kind "
@@ -684,8 +668,6 @@ def _primary_cell_count(dataset: pv.UnstructuredGrid | pv.PolyData) -> int:
     assumes a homogeneous mesh, so callers should split mixed datasets
     before going through the .sol path.
     """
-    import numpy as np  # noqa: PLC0415
-
     if isinstance(dataset, pv.UnstructuredGrid):
         types = np.asarray(dataset.celltypes)
         tet_count = int(np.sum(types == pv.CellType.TETRA))
@@ -704,6 +686,35 @@ def _primary_cell_count(dataset: pv.UnstructuredGrid | pv.PolyData) -> int:
         if n_polys > 0:
             return n_polys
     return int(dataset.n_cells)
+
+
+def _coerce_metric_kwarg(
+    metric: NDArray[np.float64],
+    n_points: int,
+) -> NDArray[np.float64]:
+    """Validate and coerce a user-supplied metric to ``(n_points, k)``.
+
+    Accepts a 1D scalar array of length ``n_points`` (reshaped to ``(n, 1)``)
+    or a 2D array with last dimension 1 (scalar), 3 (2D tensor), or 6 (3D
+    tensor). Raises ``ValueError`` on any other shape.
+    """
+    arr = np.asarray(metric, dtype=np.float64)
+    if arr.ndim == 1:
+        arr = arr.reshape(-1, 1)
+    if arr.ndim != 2 or arr.shape[0] != n_points:  # noqa: PLR2004
+        msg = (
+            f"metric must have shape (n_points,), (n_points, 1), "
+            f"(n_points, 3) or (n_points, 6); got shape "
+            f"{tuple(np.asarray(metric).shape)} for n_points={n_points}"
+        )
+        raise ValueError(msg)
+    if arr.shape[1] not in (1, 3, 6):
+        msg = (
+            f"metric last dimension must be 1 (scalar), 3 (2D tensor) "
+            f"or 6 (3D tensor); got {arr.shape[1]}"
+        )
+        raise ValueError(msg)
+    return arr
 
 
 # ---------------------------------------------------------------------------
@@ -750,6 +761,7 @@ class MmgAccessor:
         self,
         opts: MmgOptions | None = None,
         *,
+        metric: NDArray[np.float64] | None = None,
         local_sizing: list[Mapping[str, Any]] | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
     ) -> pv.UnstructuredGrid | pv.PolyData:
@@ -759,6 +771,12 @@ class MmgAccessor:
         ----------
         opts : Mmg2DOptions | Mmg3DOptions | MmgSOptions, optional
             Typed options object. Mutually exclusive with ``**options``.
+        metric : ndarray, optional
+            Per-vertex size map driving the remeshing. Shape ``(n, 1)``
+            (or ``(n,)``) for an isotropic scalar target, or ``(n, 3)`` /
+            ``(n, 6)`` for an anisotropic tensor (2D / 3D). Overrides any
+            ``point_data["metric"]`` on the dataset; the dataset itself
+            is not mutated.
         local_sizing : list of dict, optional
             Sizing constraints applied before remeshing. Each dict has a
             ``"shape"`` key (``"sphere"``, ``"box"``, ``"cylinder"``, or
@@ -807,10 +825,24 @@ class MmgAccessor:
                     "from a line-only PolyData"
                 )
                 raise ValueError(msg)
+            if metric is not None:
+                msg = (
+                    "metric is not supported when generating a 2D mesh "
+                    "from a line-only PolyData"
+                )
+                raise ValueError(msg)
             return _generate_from_line_polydata(self._dataset, options)
 
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
+        if metric is not None:
+            # Smart routing in Mesh.__setitem__ dispatches to the scalar or
+            # tensor channel based on shape; overrides any metric loaded
+            # from point_data above without mutating self._dataset.
+            mesh["metric"] = _coerce_metric_kwarg(
+                metric,
+                int(self._dataset.n_points),
+            )
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
         # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time
@@ -975,17 +1007,27 @@ class MmgAccessor:
         )
         return _to_pyvista_with_user_fields(mesh)
 
-    def build_size_map(self) -> NDArray[np.float64]:
-        """Build an isotropic size map from mean incident edge lengths.
+    def build_size_map(self, *, aniso: bool = False) -> NDArray[np.float64]:
+        """Build a size map from edges incident to each vertex.
 
-        Wraps MMG's ``doSol`` entry point. The returned ``(n_points, 1)``
-        array is also stored on the dataset as
-        ``point_data["metric"]`` so subsequent ``remesh()`` calls pick it
-        up as the target sizemap.
+        Wraps MMG's ``doSol`` entry point. The result is also stored on
+        the dataset as ``point_data["metric"]`` so subsequent ``remesh()``
+        calls pick it up as the target sizemap.
+
+        Parameters
+        ----------
+        aniso : bool, default False
+            If False, build an isotropic size map of shape
+            ``(n_points, 1)``. If True, build the anisotropic
+            mesh-implied metric tensor (shape ``(n_points, 6)`` for 3D /
+            surface meshes, ``(n_points, 3)`` for 2D meshes). Scaling
+            the tensor by ``c`` rescales target edge lengths by
+            ``1/sqrt(c)``.
+
         """
         mesh = _build_mesh_with_mmg_fields(self._dataset)
-        sizes = mesh.build_size_map()
-        self._dataset.point_data["metric"] = sizes.reshape(-1)
+        sizes = mesh.build_size_map(aniso=aniso)
+        self._dataset.point_data["metric"] = sizes if aniso else sizes.reshape(-1)
         return sizes
 
     def clean_iso_surface(self) -> pv.UnstructuredGrid | pv.PolyData:
@@ -1115,8 +1157,6 @@ class MmgAccessor:
             so cell_keys for a ``.solb`` target raises.
 
         """
-        import numpy as np  # noqa: PLC0415
-
         from mmgpy._mesh import MeshKind  # noqa: PLC0415
         from mmgpy._sol import write_sol_file  # noqa: PLC0415
 

@@ -1,8 +1,10 @@
 """Tests for ``build_size_map`` and ``clean_iso_surface`` bindings.
 
-``build_size_map`` wraps MMG's ``doSol`` entry point (isotropic size map
-from mean incident edge length). ``clean_iso_surface`` wraps
-``MMG{3D,S}_Clean_isoSurf`` (no 2D equivalent).
+``build_size_map`` wraps MMG's ``doSol`` entry point. With ``aniso=False``
+it builds an isotropic size map from mean incident edge length; with
+``aniso=True`` it builds the mesh-implied anisotropic metric tensor.
+``clean_iso_surface`` wraps ``MMG{3D,S}_Clean_isoSurf`` (no 2D
+equivalent).
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ import pyvista as pv
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy._mesh import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy.metrics import validate_metric_tensor
 
 
 class TestBuildSizeMap3D:
@@ -124,6 +127,121 @@ class TestBuildSizeMapSurface:
         assert np.all(sizes > 0)
 
 
+class TestBuildSizeMapAniso3D:
+    """Tests for ``MmgMesh3D.build_size_map(aniso=True)``."""
+
+    def test_returns_spd_tensor_per_vertex(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Anisotropic ``doSol`` returns ``(N, 6)`` SPD tensors."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+
+        metric = mesh.build_size_map(aniso=True)
+
+        assert metric.shape == (len(vertices), 6)
+        assert metric.dtype == np.float64
+        assert np.all(np.isfinite(metric))
+        assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
+
+    def test_populates_metric_channel(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """The returned tensor is also written to the mesh metric channel."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+
+        metric = mesh.build_size_map(aniso=True)
+        stored = mesh.get_field("tensor")
+
+        np.testing.assert_array_equal(metric, stored)
+
+    def test_scaling_metric_refines_mesh(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Multiplying the metric by c > 1 should refine the mesh on remesh."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+
+        metric = mesh.build_size_map(aniso=True)
+        mesh.set_field("tensor", metric * 4.0)  # halve target edge length
+        mesh.remesh(verbose=-1)
+
+        assert mesh.get_vertices().shape[0] > len(vertices)
+
+
+class TestBuildSizeMapAniso2D:
+    """Tests for ``MmgMesh2D.build_size_map(aniso=True)``."""
+
+    def test_returns_spd_tensor_per_vertex(
+        self,
+        square_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Anisotropic ``doSol`` returns ``(N, 3)`` SPD tensors."""
+        vertices, triangles = square_mesh
+        mesh = MmgMesh2D(vertices, triangles)
+
+        metric = mesh.build_size_map(aniso=True)
+
+        assert metric.shape == (len(vertices), 3)
+        assert np.all(np.isfinite(metric))
+        assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
+
+
+class TestBuildSizeMapAnisoSurface:
+    """``aniso=True`` raises on surface meshes.
+
+    ``MMGS_doSol_ani`` needs an analyzed mesh, which is not part of the
+    lightweight ``build_size_map`` contract.
+    """
+
+    def test_aniso_raises_on_surface(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Surface ``build_size_map(aniso=True)`` is not implemented yet."""
+        vertices, triangles = tetrahedron_surface_mesh
+        mesh = MmgMeshS(vertices, triangles)
+
+        with pytest.raises(RuntimeError, match="not implemented for surface"):
+            mesh.build_size_map(aniso=True)
+
+
+class TestBuildSizeMapAnisoToggle:
+    """``aniso`` should be toggleable on the same mesh without leaking state."""
+
+    def test_iso_then_aniso(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Calling ``aniso=False`` then ``aniso=True`` resizes the channel."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+
+        iso = mesh.build_size_map(aniso=False)
+        assert iso.shape == (len(vertices), 1)
+
+        aniso = mesh.build_size_map(aniso=True)
+        assert aniso.shape == (len(vertices), 6)
+
+    def test_aniso_then_iso(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Calling ``aniso=True`` then ``aniso=False`` shrinks the channel."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+
+        aniso = mesh.build_size_map(aniso=True)
+        assert aniso.shape == (len(vertices), 6)
+
+        iso = mesh.build_size_map(aniso=False)
+        assert iso.shape == (len(vertices), 1)
+
+
 class TestCleanIsoSurface3D:
     """Tests for ``MmgMesh3D.clean_iso_surface``."""
 
@@ -191,6 +309,19 @@ class TestMeshWrapper:
 
         assert sizes.shape == (len(vertices), 1)
         assert np.all(sizes > 0)
+
+    def test_build_size_map_3d_aniso(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """High-level wrapper forwards the ``aniso`` flag through to MMG."""
+        vertices, elements = dense_3d_mesh
+        mesh = Mesh(vertices, elements)
+
+        metric = mesh.build_size_map(aniso=True)
+
+        assert metric.shape == (len(vertices), 6)
+        assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
 
     def test_clean_iso_surface_rejects_2d(
         self,

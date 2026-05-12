@@ -125,7 +125,7 @@ public:
                            const py::dict &options = py::dict());
 
   // Sizemap utility (MMG2D has no Clean_isoSurf equivalent)
-  py::array_t<double> build_size_map();
+  py::array_t<double> build_size_map(bool aniso = false);
 
   bool is_corrupted() const { return corrupted_; }
 
