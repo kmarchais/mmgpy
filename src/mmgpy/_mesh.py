@@ -453,10 +453,21 @@ def _normalize_multi_materials(
         if missing:
             msg = f"materials[{i}] missing keys: {missing}"
             raise ValueError(msg)
+        split_raw = raw["split"]
+        if not isinstance(split_raw, (bool, int)) or isinstance(split_raw, float):
+            msg = (
+                f"materials[{i}]['split'] must be bool or int (0/1), "
+                f"got {type(split_raw).__name__}"
+            )
+            raise ValueError(msg)  # noqa: TRY004
+        split = int(split_raw)
+        if split not in (0, 1):
+            msg = f"materials[{i}]['split'] must be 0 or 1, got {split}"
+            raise ValueError(msg)
         normalized.append(
             {
                 "ref": int(raw["ref"]),
-                "split": int(bool(raw["split"])),
+                "split": split,
                 "ref_minus": int(raw["ref_minus"]),
                 "ref_plus": int(raw["ref_plus"]),
             },
@@ -2387,7 +2398,8 @@ class Mesh:
               level-set; ``False`` / ``0`` to leave it unsplit.
             - ``"ref_minus"`` / ``"ref_plus"``: output references for the
               negative and positive sides of the level-set inside this
-              material. Ignored when ``split`` is false.
+              material. Required keys (use ``0`` as a placeholder when
+              ``split`` is false; the values are then ignored by MMG).
 
         Raises
         ------

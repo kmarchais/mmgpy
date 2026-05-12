@@ -71,7 +71,7 @@ class TestMeshLocalParameters:
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
-        """Configure triangle-level params on a surface mesh."""
+        """Configure triangle-level params on a surface mesh and remesh."""
         vertices, triangles = tetrahedron_surface_mesh
         mesh = Mesh(vertices, triangles)
         mesh.set_local_parameters(
@@ -85,6 +85,8 @@ class TestMeshLocalParameters:
                 },
             ],
         )
+        mesh.remesh(verbose=False)
+        assert mesh.get_vertices().shape[0] > 0
 
     def test_local_parameters_drives_refinement(
         self,
@@ -229,6 +231,26 @@ class TestMeshMultiMaterials:
         mesh = Mesh(vertices, elements)
         with pytest.raises(ValueError, match="must be a mapping"):
             mesh.set_multi_materials([(1, True, 10, 20)])  # type: ignore[list-item]
+
+    def test_invalid_split_type_raises_value_error(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Non-bool/int ``split`` values are rejected upfront."""
+        vertices, elements = dense_3d_mesh
+        mesh = Mesh(vertices, elements)
+        with pytest.raises(ValueError, match="must be bool or int"):
+            mesh.set_multi_materials(
+                [{"ref": 1, "split": "yes", "ref_minus": 10, "ref_plus": 20}],
+            )
+        with pytest.raises(ValueError, match="must be bool or int"):
+            mesh.set_multi_materials(
+                [{"ref": 1, "split": 1.5, "ref_minus": 10, "ref_plus": 20}],
+            )
+        with pytest.raises(ValueError, match="must be 0 or 1"):
+            mesh.set_multi_materials(
+                [{"ref": 1, "split": 2, "ref_minus": 10, "ref_plus": 20}],
+            )
 
 
 class TestMeshLsBaseReferences:

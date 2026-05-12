@@ -439,20 +439,21 @@ def _apply_pending_mmg_config(
     """Push multi-material / local-parameter / LS config from user_dict into MMG.
 
     The accessor methods ``set_multi_materials`` / ``set_local_parameters`` /
-    ``set_ls_base_references`` stash their specs in ``dataset.user_dict`` so
-    the configuration survives the fresh ``Mesh`` built on every accessor
-    call. This helper transfers them into the C++ side before remeshing.
+    ``set_ls_base_references`` stash their already-normalized specs in
+    ``dataset.user_dict`` so the configuration survives the fresh ``Mesh``
+    built on every accessor call. The data was validated when stashed, so we
+    forward directly to the C++ binding without re-normalizing.
     """
     user_dict = dataset.user_dict
     materials = user_dict.get(_MMG_CONFIG_KEY_MULTI_MATERIALS)
-    if materials:
-        mesh.set_multi_materials(list(materials))
+    if materials is not None:
+        mesh._impl.set_multi_materials(list(materials))  # noqa: SLF001
     parameters = user_dict.get(_MMG_CONFIG_KEY_LOCAL_PARAMETERS)
-    if parameters:
-        mesh.set_local_parameters(list(parameters))
+    if parameters is not None:
+        mesh._impl.set_local_parameters(list(parameters))  # noqa: SLF001
     references = user_dict.get(_MMG_CONFIG_KEY_LS_BASE_REFERENCES)
-    if references:
-        mesh.set_ls_base_references(list(references))
+    if references is not None:
+        mesh._impl.set_ls_base_references(list(references))  # noqa: SLF001
 
 
 def _apply_local_sizing_specs(
