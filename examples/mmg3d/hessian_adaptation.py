@@ -17,21 +17,14 @@ on a 2-ring patch around each vertex, and ``create_metric_from_hessian``
 turns the Hessian into an anisotropic metric that MMG can use for
 adaptive remeshing.
 
-This example uses an analytic field with a sharp spherical front,
-``f(p) = tanh(40 * (||p - 0.5|| - 0.3))``, and proceeds in two phases:
-
-1. **Adapt.** Recover the Hessian on the initial uniform mesh and run
-   anisotropic remeshing so the new mesh refines along the front and
-   stays coarse elsewhere.
-2. **Refinement family.** Recover the mesh-implied metric tensor from
-   the adapted mesh via ``build_size_map(aniso=True)`` and rescale it
-   by factors ``c in {1/4, 4}``. Multiplying the metric by ``c``
-   rescales target edge lengths by ``1/sqrt(c)``, producing coarser
-   and finer variants that *preserve* the front-aligned anisotropy
-   (issue #255).
-
-Each panel is cut at ``z = 0.5`` so the full top face cross-section
-through the spherical front is visible.
+The script adapts a uniform mesh to a sharp spherical front,
+``f(p) = tanh(40 * (||p - 0.5|| - 0.3))``, then recovers the
+mesh-implied metric tensor of the adapted mesh via
+``build_size_map(aniso=True)`` and rescales it by ``c in {1/4, 4}``.
+Multiplying the metric by ``c`` rescales target edge lengths by
+``1/sqrt(c)`` (``c > 1`` refines, ``c < 1`` coarsens) while preserving
+the front-aligned anisotropy. Each panel is cut at ``z = 0.5`` so the
+top-face cross-section through the front is visible.
 """
 
 from __future__ import annotations
@@ -59,12 +52,18 @@ def front_field(points: np.ndarray) -> np.ndarray:
     return np.tanh(40.0 * (r - 0.3))
 
 
-def adapt_to_field(base: pv.UnstructuredGrid) -> pv.UnstructuredGrid:
-    """Hessian-recover a metric from the front field and remesh ``base``."""
+def _tet_count(grid: pv.UnstructuredGrid) -> int:
+    return grid.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
+
+
+def main() -> None:
+    """Adapt to the front, then rescale the implied metric."""
+    base = make_unit_cube()
+
+    # Hessian-adapt to the front.
     vertices = np.asarray(base.points, dtype=np.float64)
     elements = base.cells_dict[pv.CellType.TETRA].astype(np.int32)
-    field = front_field(vertices)
-    hessian = compute_hessian(vertices, elements, field)
+    hessian = compute_hessian(vertices, elements, front_field(vertices))
     metric = create_metric_from_hessian(
         hessian,
         target_error=1e-2,
@@ -73,65 +72,23 @@ def adapt_to_field(base: pv.UnstructuredGrid) -> pv.UnstructuredGrid:
     )
     src = base.copy(deep=True)
     src.point_data["metric"] = metric
-    return src.mmg.remesh(hgrad=2.0, verbose=False)
+    source = src.mmg.remesh(hgrad=2.0, verbose=False)
 
-
-def family_from_source(
-    source: pv.UnstructuredGrid,
-    factors: tuple[float, ...],
-) -> list[tuple[float, pv.UnstructuredGrid]]:
-    """Recover the implied metric of ``source`` and remesh under each scale."""
-    metric = source.mmg.build_size_map(aniso=True)
-    family: list[tuple[float, pv.UnstructuredGrid]] = []
-    for c in factors:
+    # Recover the implied metric and remesh at rescaled versions.
+    implied = source.mmg.build_size_map(aniso=True)
+    scaled: list[tuple[float, pv.UnstructuredGrid]] = []
+    for c in (0.25, 4.0):
         grid = source.copy(deep=True)
-        grid.point_data["metric"] = metric * c
-        family.append((c, grid.mmg.remesh(hgrad=2.0, verbose=False)))
-    return family
-
-
-def _tet_count(grid: pv.UnstructuredGrid) -> int:
-    return grid.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
-
-
-def _clip_half(grid: pv.UnstructuredGrid) -> pv.UnstructuredGrid:
-    """Cut at ``z = 0.5`` and keep the lower half so a full face is exposed."""
-    return grid.clip(normal="z", origin=(0.5, 0.5, 0.5), crinkle=True)
-
-
-def main() -> None:
-    """Adapt to the front, then build a refinement family by rescaling."""
-    base = make_unit_cube()
-    print(
-        f"Uniform base:        {base.n_points:>6d} verts, {_tet_count(base):>6d} tets",
-    )
-
-    source = adapt_to_field(base)
-    print(
-        f"Hessian-adapted src: {source.n_points:>6d} verts, "
-        f"{_tet_count(source):>6d} tets",
-    )
-
-    factors = (0.25, 4.0)
-    family = family_from_source(source, factors)
-    print()
-    for c, grid in family:
-        print(
-            f"  implied metric x {c:<5.2g}  ->  {grid.n_points:>6d} verts, "
-            f"{_tet_count(grid):>6d} tets",
-        )
+        grid.point_data["metric"] = implied * c
+        scaled.append((c, grid.mmg.remesh(hgrad=2.0, verbose=False)))
 
     panels: list[tuple[str, pv.UnstructuredGrid]] = [
-        (f"Uniform base\n({base.n_points} verts)", base),
-        (f"Hessian-adapted source\n({source.n_points} verts)", source),
-        *[
-            (
-                f"Implied metric x {c}\n({grid.n_points} verts)",
-                grid,
-            )
-            for c, grid in family
-        ],
+        ("Uniform", base),
+        ("Hessian-adapted", source),
+        *[(f"Implied x {c}", g) for c, g in scaled],
     ]
+    for name, g in panels:
+        print(f"{name:>20s}: {g.n_points:>6d} verts, {_tet_count(g):>6d} tets")
 
     sphere = pv.Sphere(radius=0.3, center=(0.5, 0.5, 0.5)).clip(
         normal="z",
@@ -140,7 +97,7 @@ def main() -> None:
 
     pl = pv.Plotter(shape=(1, len(panels)), window_size=(1900, 600))
     for col, (name, grid) in enumerate(panels):
-        clipped = _clip_half(grid)
+        clipped = grid.clip(normal="z", origin=(0.5, 0.5, 0.5), crinkle=True)
         clipped.point_data["solution"] = front_field(np.asarray(clipped.points))
         pl.subplot(0, col)
         pl.add_mesh(
@@ -154,7 +111,7 @@ def main() -> None:
             scalar_bar_args={"title": "front", "vertical": True},
         )
         pl.add_mesh(sphere, color="white", opacity=0.2, show_edges=False)
-        pl.add_text(name, font_size=10)
+        pl.add_text(f"{name} ({grid.n_points} verts)", font_size=10)
         pl.show_axes()
     pl.link_views()
     pl.camera_position = [(2.4, 2.6, 2.4), (0.5, 0.5, 0.3), (0, 0, 1)]
