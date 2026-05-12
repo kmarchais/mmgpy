@@ -93,6 +93,8 @@ ui = "mmgpy.ui:run_ui"
 [project.entry-points."pyvista.readers"]
 mesh = "mmgpy._pv_plugin:read_mesh"
 meshb = "mmgpy._pv_plugin:read_mesh"
+node = "mmgpy._pv_plugin:read_tetgen"
+ele = "mmgpy._pv_plugin:read_tetgen"
 
 [project.entry-points."pyvista.writers"]
 mesh = "mmgpy._pv_plugin:write_mesh"
