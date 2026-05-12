@@ -2895,14 +2895,20 @@ class MmgMeshS:
         """Build a size map from edges incident to each vertex.
 
         Wraps ``MMGS_doSol``. Populates the mesh metric channel and
-        returns the result as a NumPy array of shape ``(n_vertices, 1)``.
+        returns the result as a NumPy array.
 
         Args:
-            aniso: Not implemented for surface meshes
-                (``MMGS_doSol_ani`` requires a pre-analyzed mesh).
-                Raises ``RuntimeError`` if True. Use :class:`MmgMesh3D`
-                or :class:`MmgMesh2D` for the anisotropic mesh-implied
-                metric.
+            aniso: If ``False`` (default), build an isotropic size map
+                from the mean incident edge length (shape
+                ``(n_vertices, 1)``). If ``True``, build the anisotropic
+                mesh-implied metric tensor (shape ``(n_vertices, 6)``,
+                components ``[m11, m12, m13, m22, m23, m33]``). The
+                aniso path runs ``MMGS_analys`` first to populate
+                ridges, normals and manifold tags; any later remesh
+                would have run analys anyway, so this only changes
+                timing. Raises ``RuntimeError`` on Windows: the
+                underlying ``MMGS_analys`` symbol is not exported from
+                ``libmmgs.dll``.
 
         """
 

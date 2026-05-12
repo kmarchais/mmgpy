@@ -610,12 +610,17 @@ PYBIND11_MODULE(_mmgpy, m) {
            "Build a size map from the edges incident to each vertex (wraps "
            "MMGS_doSol).\n\n"
            "Populates the mesh metric channel and returns it as a NumPy "
-           "array of shape (N, 1).\n\n"
+           "array.\n\n"
            "Args:\n"
-           "    aniso: Not implemented for surface meshes "
-           "(``MMGS_doSol_ani`` requires a pre-analyzed mesh). Raises a "
-           "RuntimeError if True; use MmgMesh3D or MmgMesh2D for the "
-           "anisotropic mesh-implied metric.")
+           "    aniso: If False (default), build an isotropic size map "
+           "from the mean incident edge length (shape (N, 1)). If True, "
+           "build the anisotropic mesh-implied metric tensor (shape (N, 6), "
+           "components [m11, m12, m13, m22, m23, m33]). The aniso path "
+           "first runs MMGS_analys to populate ridges, normals and "
+           "manifold tags; any subsequent remesh would have run analys "
+           "anyway, so this only changes the timing of work that would "
+           "have happened. Not supported on Windows: the underlying "
+           "MMGS_analys symbol is not exported from libmmgs.dll.")
       .def("clean_iso_surface", &MmgMeshS::clean_iso_surface,
            "Remove isolated triangles / edges left after a level-set "
            "discretization (wraps MMGS_Clean_isoSurf).");
