@@ -1150,17 +1150,15 @@ py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
 py::array_t<double> MmgMesh2D::build_size_map(bool aniso) {
   check_not_corrupted("build_size_map");
 
-  // MMG2D_doSol is a function pointer initialized by MMG2D_setfunc. The
-  // selector reads mesh->info.ani and met->size to pick the iso or aniso
-  // implementation, so toggle anisosize and re-size the metric channel before
-  // dispatching.
+  // MMG2D_doSol is a function pointer initialized by MMG2D_setfunc, which
+  // dispatches on mesh->info.ani and met->size. Set_iparameter only flips
+  // info.ani; the metric buffer has to be resized separately via Set_solSize.
   if (!MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_anisosize, aniso ? 1 : 0)) {
     throw std::runtime_error(
         "Failed to set MMG2D_IPARAM_anisosize for build_size_map");
   }
-  // Resize only when the channel does not already match the requested mode:
-  // Set_solSize frees and re-allocates the buffer, which is wasted work on
-  // repeat calls with the same `aniso` value.
+  // Set_solSize frees and re-allocates the buffer, so skip it on the fast
+  // path where the channel already matches the requested mode.
   const int target_size = aniso ? 3 : 1;
   if (met->size != target_size &&
       !MMG2D_Set_solSize(mesh, met, MMG5_Vertex, mesh->np,

@@ -1138,9 +1138,16 @@ py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
         "(MMGS_doSol_ani requires a pre-analyzed mesh).");
   }
 
-  // MMGS_doSol is a function pointer initialized by MMGS_setfunc. Resize
-  // only when the metric channel is not already scalar to avoid the free /
-  // calloc inside Set_solSize on the iso fast path.
+  // MMGS_doSol is a function pointer initialized by MMGS_setfunc, which
+  // dispatches on mesh->info.ani and met->size. Clear info.ani so a prior
+  // anisosize toggle elsewhere does not cause MMGS_setfunc to pick the aniso
+  // entry point against a scalar buffer.
+  if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_anisosize, 0)) {
+    throw std::runtime_error(
+        "Failed to clear MMGS_IPARAM_anisosize for build_size_map");
+  }
+  // Set_solSize frees and re-allocates the buffer, so skip it on the fast
+  // path where the channel is already scalar.
   if (met->size != 1 &&
       !MMGS_Set_solSize(mesh, met, MMG5_Vertex, mesh->np, MMG5_Scalar)) {
     throw std::runtime_error("Failed to resize metric for build_size_map");
