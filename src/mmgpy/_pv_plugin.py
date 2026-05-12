@@ -29,7 +29,7 @@ import numpy as np
 import pyvista as pv
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
     from typing import TypeGuard
 
     from numpy.typing import NDArray
@@ -425,6 +425,34 @@ def _apply_constraint_markers(
             )
             raise ValueError(msg)
         setter(idx)
+
+
+_MMG_CONFIG_KEY_MULTI_MATERIALS = "mmg_multi_materials"
+_MMG_CONFIG_KEY_LOCAL_PARAMETERS = "mmg_local_parameters"
+_MMG_CONFIG_KEY_LS_BASE_REFERENCES = "mmg_ls_base_references"
+
+
+def _apply_pending_mmg_config(
+    mesh: _Mesh,
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+) -> None:
+    """Push multi-material / local-parameter / LS config from user_dict into MMG.
+
+    The accessor methods ``set_multi_materials`` / ``set_local_parameters`` /
+    ``set_ls_base_references`` stash their specs in ``dataset.user_dict`` so
+    the configuration survives the fresh ``Mesh`` built on every accessor
+    call. This helper transfers them into the C++ side before remeshing.
+    """
+    user_dict = dataset.user_dict
+    materials = user_dict.get(_MMG_CONFIG_KEY_MULTI_MATERIALS)
+    if materials:
+        mesh.set_multi_materials(list(materials))
+    parameters = user_dict.get(_MMG_CONFIG_KEY_LOCAL_PARAMETERS)
+    if parameters:
+        mesh.set_local_parameters(list(parameters))
+    references = user_dict.get(_MMG_CONFIG_KEY_LS_BASE_REFERENCES)
+    if references:
+        mesh.set_ls_base_references(list(references))
 
 
 def _apply_local_sizing_specs(
@@ -845,6 +873,7 @@ class MmgAccessor:
             )
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_pending_mmg_config(mesh, self._dataset)
         # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time
         # FutureWarning + in-place reverse Cuthill-McKee). Forwarding it
         # through here keeps the PyVista-side path single-pass.
@@ -907,6 +936,7 @@ class MmgAccessor:
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_pending_mmg_config(mesh, self._dataset)
         mesh.remesh_levelset(levelset, **options)
         return _to_pyvista_with_user_fields(mesh)
 
@@ -923,6 +953,7 @@ class MmgAccessor:
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
+        _apply_pending_mmg_config(mesh, self._dataset)
         mesh.remesh_optimize(**options)
         return _to_pyvista_with_user_fields(mesh)
 
@@ -945,6 +976,7 @@ class MmgAccessor:
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
+        _apply_pending_mmg_config(mesh, self._dataset)
         mesh.remesh_uniform(size, **options)
         return _to_pyvista_with_user_fields(mesh)
 
@@ -1006,6 +1038,61 @@ class MmgAccessor:
             **remesh_options,
         )
         return _to_pyvista_with_user_fields(mesh)
+
+    def set_local_parameters(
+        self,
+        parameters: Sequence[Mapping[str, Any]],
+    ) -> None:
+        """Stash region-specific sizing parameters for the next ``remesh()``.
+
+        Mirrors :meth:`mmgpy.Mesh.set_local_parameters`. The spec list is
+        stored in ``dataset.user_dict["mmg_local_parameters"]`` and applied
+        to the underlying ``MmgMesh`` at the start of every subsequent
+        ``remesh`` / ``remesh_levelset`` / ``remesh_optimize`` /
+        ``remesh_uniform`` call. Pass an empty list to clear.
+        """
+        from mmgpy._mesh import _normalize_local_parameters  # noqa: PLC0415
+
+        if parameters:
+            normalized = _normalize_local_parameters(parameters, self.kind)
+            self._dataset.user_dict[_MMG_CONFIG_KEY_LOCAL_PARAMETERS] = normalized
+        elif _MMG_CONFIG_KEY_LOCAL_PARAMETERS in self._dataset.user_dict:
+            del self._dataset.user_dict[_MMG_CONFIG_KEY_LOCAL_PARAMETERS]
+
+    def set_multi_materials(
+        self,
+        materials: Sequence[Mapping[str, Any]],
+    ) -> None:
+        """Stash multi-material configuration for the next ``remesh_levelset()``.
+
+        Mirrors :meth:`mmgpy.Mesh.set_multi_materials`. The spec list is
+        stored in ``dataset.user_dict["mmg_multi_materials"]`` and applied
+        to the underlying ``MmgMesh`` at the start of every subsequent
+        accessor remesh call. Pass an empty list to clear.
+        """
+        from mmgpy._mesh import _normalize_multi_materials  # noqa: PLC0415
+
+        if materials:
+            normalized = _normalize_multi_materials(materials)
+            self._dataset.user_dict[_MMG_CONFIG_KEY_MULTI_MATERIALS] = normalized
+        elif _MMG_CONFIG_KEY_MULTI_MATERIALS in self._dataset.user_dict:
+            del self._dataset.user_dict[_MMG_CONFIG_KEY_MULTI_MATERIALS]
+
+    def set_ls_base_references(self, references: Sequence[int]) -> None:
+        """Restrict level-set splitting to the given references on the next call.
+
+        Mirrors :meth:`mmgpy.Mesh.set_ls_base_references`. The list is
+        stored in ``dataset.user_dict["mmg_ls_base_references"]`` and applied
+        to the underlying ``MmgMesh`` at the start of every subsequent
+        accessor remesh call. Pass an empty list to clear.
+        """
+        from mmgpy._mesh import _normalize_ls_base_references  # noqa: PLC0415
+
+        if references:
+            normalized = _normalize_ls_base_references(references)
+            self._dataset.user_dict[_MMG_CONFIG_KEY_LS_BASE_REFERENCES] = normalized
+        elif _MMG_CONFIG_KEY_LS_BASE_REFERENCES in self._dataset.user_dict:
+            del self._dataset.user_dict[_MMG_CONFIG_KEY_LS_BASE_REFERENCES]
 
     def build_size_map(self, *, aniso: bool = False) -> NDArray[np.float64]:
         """Build a size map from edges incident to each vertex.
