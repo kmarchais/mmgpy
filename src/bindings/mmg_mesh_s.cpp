@@ -9,6 +9,18 @@
 #include <cmath>
 #endif
 
+#ifndef _WIN32
+// MMGS_analys is declared in libmmgs_private.h, which is not in the installed
+// public headers, but the symbol has default visibility in the .so on Linux
+// and macOS (verified via nm). Forward-declare here so we can call it without
+// pulling in the private header. Required for surface anisotropic doSol,
+// which dispatches through MMGS_setfunc and needs the mesh to be analyzed
+// (ridges, normals, manifold tags) first. On Windows the symbol lacks
+// __declspec(dllexport) in MMG's build, so the aniso surface path stays
+// disabled there.
+extern "C" int MMGS_analys(MMG5_pMesh mesh);
+#endif
+
 namespace {
 
 // Wrapper for MMGS_Get_triangleQuality.
@@ -1127,31 +1139,57 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
 py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
   check_not_corrupted("build_size_map");
 
+#ifdef _WIN32
   if (aniso) {
-    // MMGS_doSol_ani needs the surface mesh to have been analyzed
-    // (ridges, normals, manifold tags), which MMGS_analys does as part
-    // of remeshing entry points. We do not run analys from here because
-    // it mutates the mesh state in ways callers may not expect. Use the
-    // volumetric or 2D variants for now, or run a full remesh.
+    // MMGS_analys is not exported from libmmgs.dll (missing
+    // __declspec(dllexport) on MMG's side), so we cannot prepare the surface
+    // for the aniso dispatch on Windows. Same family of issue as the
+    // get_triangle_quality workaround above. Keep the explicit failure here
+    // so users get a clear message rather than a link-time crash.
     throw std::runtime_error(
         "build_size_map(aniso=True) is not implemented for surface meshes "
-        "(MMGS_doSol_ani requires a pre-analyzed mesh).");
+        "on Windows (MMGS_analys is not exported from libmmgs.dll).");
   }
+#endif
 
   // MMGS_doSol is a function pointer initialized by MMGS_setfunc, which
-  // dispatches on mesh->info.ani and met->size. Clear info.ani so a prior
-  // anisosize toggle elsewhere does not cause MMGS_setfunc to pick the aniso
-  // entry point against a scalar buffer.
-  if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_anisosize, 0)) {
+  // dispatches on mesh->info.ani and met->size. Set info.ani to the
+  // requested mode and resize the metric buffer to match before letting
+  // setfunc pick the iso or aniso entry point.
+  if (!MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_anisosize, aniso ? 1 : 0)) {
     throw std::runtime_error(
-        "Failed to clear MMGS_IPARAM_anisosize for build_size_map");
+        "Failed to set MMGS_IPARAM_anisosize for build_size_map");
   }
   // Set_solSize frees and re-allocates the buffer, so skip it on the fast
-  // path where the channel is already scalar.
-  if (met->size != 1 &&
-      !MMGS_Set_solSize(mesh, met, MMG5_Vertex, mesh->np, MMG5_Scalar)) {
+  // path where the channel already matches the requested mode.
+  const int target_size = aniso ? 6 : 1;
+  if (met->size != target_size &&
+      !MMGS_Set_solSize(mesh, met, MMG5_Vertex, mesh->np,
+                        aniso ? MMG5_Tensor : MMG5_Scalar)) {
     throw std::runtime_error("Failed to resize metric for build_size_map");
   }
+
+#ifndef _WIN32
+  if (aniso) {
+    // MMGS_doSol_ani reads ridge tags, normals and manifold flags off the
+    // mesh, all of which are populated by MMGS_analys. The expensive part
+    // (vertex normal computation in norver) is guarded by !mesh->xp inside
+    // MMG, so calling analys again on an already-analyzed mesh short-
+    // circuits the heavy work. Any later remesh would also call analys
+    // internally, so running it here only changes the timing of work that
+    // would have happened anyway.
+    int ret_analys;
+    {
+      py::gil_scoped_release release;
+      ret_analys = MMGS_analys(mesh);
+    }
+    if (ret_analys != 1) {
+      throw std::runtime_error(
+          "MMGS_analys failed; cannot build anisotropic size map");
+    }
+  }
+#endif
+
   MMGS_setfunc(mesh, met);
   if (MMGS_doSol == nullptr) {
     throw std::runtime_error(
