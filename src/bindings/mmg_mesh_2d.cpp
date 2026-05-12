@@ -1,5 +1,6 @@
 #include "mmg_mesh_2d.hpp"
 #include "mmg_common.hpp"
+#include "mmg_multisol.hpp"
 #include <chrono>
 #include <set>
 #include <stdexcept>
@@ -992,6 +993,34 @@ void MmgMesh2D::save_sol(
   if (MMG2D_saveSol(mesh, met, fname.c_str()) != 1) {
     throw std::runtime_error("Failed to save solution file: " + fname);
   }
+}
+
+namespace {
+constexpr MultiSolApi MMG2D_MULTISOL_API = {
+    &MMG2D_Set_solsAtVerticesSize,
+    &MMG2D_Get_solsAtVerticesSize,
+    &MMG2D_Set_ithSols_inSolsAtVertices,
+    &MMG2D_Get_ithSols_inSolsAtVertices,
+    &MMG2D_loadAllSols,
+    &MMG2D_saveAllSols,
+    &MMG2D_Free_allSols,
+    /*dim=*/2,
+};
+}
+
+py::list MmgMesh2D::load_all_sols(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("load_all_sols");
+  return load_all_sols_vertices(mesh, variant_to_string(filename),
+                                MMG2D_MULTISOL_API);
+}
+
+void MmgMesh2D::save_all_sols(
+    const std::variant<std::string, std::filesystem::path> &filename,
+    const py::list &sols) const {
+  check_not_corrupted("save_all_sols");
+  save_all_sols_vertices(mesh, mesh->np, variant_to_string(filename), sols,
+                         MMG2D_MULTISOL_API);
 }
 
 MmgMesh2D::SolutionField

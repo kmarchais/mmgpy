@@ -1,10 +1,30 @@
-"""Parser for Medit .sol solution files."""
+"""Parser and writer for Medit .sol solution files."""
 
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
+
+    from numpy.typing import NDArray
+
+Location = Literal["vertices", "triangles", "tetrahedra"]
+
+_LOCATION_TO_KEYWORD: dict[Location, str] = {
+    "vertices": "SolAtVertices",
+    "triangles": "SolAtTriangles",
+    "tetrahedra": "SolAtTetrahedra",
+}
+
+# MMG5_type enum values; mirror libmmgtypes.h. 0 = MMG5_Notype (unused).
+_TYPE_SCALAR = 1
+_TYPE_VECTOR = 2
+_TYPE_TENSOR = 3
 
 
 def parse_sol_file(content: str) -> dict[str, dict]:
@@ -139,3 +159,123 @@ def parse_sol_file(content: str) -> dict[str, dict]:
         i += 1
 
     return fields
+
+
+def infer_sol_type(array: NDArray[np.float64], dimension: int) -> int:
+    """Return the MMG5_type code (1/2/3) inferred from *array*'s shape.
+
+    A 1D array is scalar (type 1). A 2D ``(N, k)`` array is a vector when
+    ``k == dimension`` and a symmetric tensor when ``k == dim * (dim + 1) / 2``.
+    Anything else raises ``ValueError`` with a message that names the
+    expected shapes so callers can surface it directly.
+    """
+    if array.ndim == 1:
+        return _TYPE_SCALAR
+    if array.ndim != 2:
+        msg = (
+            f"Sol arrays must be 1D (scalar) or 2D (vector/tensor); "
+            f"got shape {array.shape}"
+        )
+        raise ValueError(msg)
+    n_cols = array.shape[1]
+    if n_cols == 1:
+        return _TYPE_SCALAR
+    tensor_size = dimension * (dimension + 1) // 2
+    if n_cols == dimension and n_cols != tensor_size:
+        return _TYPE_VECTOR
+    if n_cols == tensor_size and n_cols != dimension:
+        return _TYPE_TENSOR
+    # In 2D, vector (2) and tensor (3) are disjoint so the branches above settle
+    # it. In 3D, vector (3) and tensor (6) are also disjoint. Any other column
+    # count (4, 5, 7+) is invalid; flag it with both expected shapes so the
+    # caller can correct the input.
+    msg = (
+        f"Cannot infer sol type from shape {array.shape} at dim={dimension}: "
+        f"expected ({array.shape[0]},), ({array.shape[0]}, {dimension}) for "
+        f"vector, or ({array.shape[0]}, {tensor_size}) for tensor"
+    )
+    raise ValueError(msg)
+
+
+def write_sol_file(
+    path: str | Path,
+    fields: Sequence[tuple[str, NDArray[np.float64], Location]],
+    dimension: int,
+) -> None:
+    """Write a Medit ``.sol`` text file with one or more solution blocks.
+
+    Parameters
+    ----------
+    path : str | Path
+        Destination file. The extension is expected to be ``.sol`` (the
+        text format). ``.solb`` (binary) is not supported by this writer;
+        route binary writes through the C++ binding.
+    fields : sequence of (name, array, location) tuples
+        Each tuple describes one solution block. ``name`` is preserved as
+        a comment for human readability (the Medit format itself doesn't
+        carry names) and used in error messages. ``array`` is the numeric
+        data (1D for scalar, 2D ``(N, k)`` for vector/tensor). ``location``
+        is ``"vertices"``, ``"triangles"``, or ``"tetrahedra"``; all
+        blocks sharing one location must agree on ``N``.
+    dimension : int
+        Mesh dimension (2 or 3). Determines vector / tensor widths.
+
+    Raises
+    ------
+    ValueError
+        If shapes are inconsistent within a location group, or if a
+        column count doesn't match a valid scalar / vector / tensor
+        layout for the given dimension.
+
+    """
+    if dimension not in (2, 3):
+        msg = f"dimension must be 2 or 3, got {dimension}"
+        raise ValueError(msg)
+    if not fields:
+        msg = "write_sol_file: no fields to write"
+        raise ValueError(msg)
+
+    by_location: dict[Location, list[tuple[str, NDArray[np.float64], int]]] = {}
+    for name, raw, location in fields:
+        if location not in _LOCATION_TO_KEYWORD:
+            msg = (
+                f"Unknown location {location!r} for field {name!r}; expected "
+                f"one of {sorted(_LOCATION_TO_KEYWORD)}"
+            )
+            raise ValueError(msg)
+        arr = np.ascontiguousarray(raw, dtype=np.float64)
+        sol_type = infer_sol_type(arr, dimension)
+        by_location.setdefault(location, []).append((name, arr, sol_type))
+
+    lines: list[str] = ["MeshVersionFormatted 2", "", f"Dimension {dimension}", ""]
+
+    for location, group in by_location.items():
+        keyword = _LOCATION_TO_KEYWORD[location]
+        n_entities = group[0][1].shape[0]
+        for name, arr, _ in group:
+            if arr.shape[0] != n_entities:
+                msg = (
+                    f"All sol blocks at {location!r} must share length "
+                    f"{n_entities}; field {name!r} has length {arr.shape[0]}"
+                )
+                raise ValueError(msg)
+        lines.append(keyword)
+        lines.append(str(n_entities))
+        type_header = [str(len(group))] + [str(t) for _, _, t in group]
+        lines.append(" ".join(type_header))
+
+        # Concatenate each row across all blocks. This is the per-vertex
+        # "all values" layout Medit expects.
+        per_row_chunks = [
+            arr if arr.ndim == 2 else arr.reshape(-1, 1) for _, arr, _ in group
+        ]
+        joined = np.concatenate(per_row_chunks, axis=1)
+        lines.extend(" ".join(f"{v!r}" for v in row.tolist()) for row in joined)
+        lines.append("")
+
+    lines.append("End")
+    lines.append("")
+
+    from pathlib import Path as _Path  # noqa: PLC0415
+
+    _Path(path).write_text("\n".join(lines), encoding="utf-8")

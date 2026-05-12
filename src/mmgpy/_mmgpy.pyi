@@ -1148,6 +1148,28 @@ class MmgMesh3D:
 
         """
 
+    def load_all_sols(
+        self,
+        path: str | Path,
+    ) -> list[tuple[int, NDArray[np.float64]]]:
+        """Load every vertex-located solution block from a Medit .sol/.solb file.
+
+        Returns a list of ``(mmg_type, ndarray)`` tuples in file order;
+        ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. Scalar
+        arrays are 1D; vector and tensor arrays are 2D.
+        """
+
+    def save_all_sols(
+        self,
+        path: str | Path,
+        sols: list[tuple[int, NDArray[np.float64]]],
+    ) -> None:
+        """Write a list of ``(mmg_type, ndarray)`` tuples as a multi-block file.
+
+        ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. All
+        arrays must share the vertex count.
+        """
+
     def remesh(
         self,
         *,
@@ -1966,6 +1988,28 @@ class MmgMesh2D:
 
         """
 
+    def load_all_sols(
+        self,
+        path: str | Path,
+    ) -> list[tuple[int, NDArray[np.float64]]]:
+        """Load every vertex-located solution block from a Medit .sol/.solb file.
+
+        Returns a list of ``(mmg_type, ndarray)`` tuples in file order;
+        ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. Scalar
+        arrays are 1D; vector and tensor arrays are 2D.
+        """
+
+    def save_all_sols(
+        self,
+        path: str | Path,
+        sols: list[tuple[int, NDArray[np.float64]]],
+    ) -> None:
+        """Write a list of ``(mmg_type, ndarray)`` tuples as a multi-block file.
+
+        ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. All
+        arrays must share the vertex count.
+        """
+
     def remesh(
         self,
         *,
@@ -2706,6 +2750,28 @@ class MmgMeshS:
         RuntimeError
             If the file cannot be saved.
 
+        """
+
+    def load_all_sols(
+        self,
+        path: str | Path,
+    ) -> list[tuple[int, NDArray[np.float64]]]:
+        """Load every vertex-located solution block from a Medit .sol/.solb file.
+
+        Returns a list of ``(mmg_type, ndarray)`` tuples in file order;
+        ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. Scalar
+        arrays are 1D; vector and tensor arrays are 2D.
+        """
+
+    def save_all_sols(
+        self,
+        path: str | Path,
+        sols: list[tuple[int, NDArray[np.float64]]],
+    ) -> None:
+        """Write a list of ``(mmg_type, ndarray)`` tuples as a multi-block file.
+
+        ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. All
+        arrays must share the vertex count.
         """
 
     def remesh(

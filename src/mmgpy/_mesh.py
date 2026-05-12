@@ -1518,6 +1518,116 @@ class Mesh:
 
         _save_sol(self, filename)
 
+    def _solution_dim(self) -> int:
+        """Return the dimension MMG uses when allocating sol blocks (2 or 3)."""
+        return 2 if self.kind == MeshKind.TRIANGULAR_2D else 3
+
+    def load_all_sols(
+        self,
+        filename: str | Path,
+    ) -> dict[str, NDArray[np.float64]]:
+        """Read every vertex-located solution block from a Medit .sol file.
+
+        Returns a dict keyed by type-prefixed positional names
+        (``solution_0``, ``vector_1``, ``tensor_2``, ...) in file order.
+        The Medit format does not carry user-defined names, so positional
+        naming is the only round-trip-safe convention.
+
+        For cell-located blocks (``SolAtTriangles`` / ``SolAtTetrahedra``)
+        in text ``.sol`` files, use :meth:`mmgpy.MmgAccessor.load_all_sols`
+        which routes through the Python parser; MMG's multi-sol C API only
+        covers vertex blocks.
+
+        Binary ``.solb`` is not supported: MMG's binary writer interleaves
+        stray newlines that desynchronize the reader, so even single-channel
+        ``.solb`` round-trips return garbage.
+
+        Parameters
+        ----------
+        filename : str or Path
+            Source path; ``.sol`` text format.
+
+        Returns
+        -------
+        dict[str, NDArray[np.float64]]
+            Mapping from generated name to numpy array. Scalar blocks are
+            ``(N,)``; vector blocks are ``(N, dim)``; tensor blocks are
+            ``(N, dim*(dim+1)/2)``.
+
+        """
+        from pathlib import Path as _Path  # noqa: PLC0415
+
+        if _Path(filename).suffix.lower() == ".solb":
+            msg = (
+                "Binary .solb is not supported: MMG's multi-sol .solb "
+                "round-trip is broken at the library level."
+            )
+            raise NotImplementedError(msg)
+        raw = self._impl.load_all_sols(filename)
+        out: dict[str, NDArray[np.float64]] = {}
+        type_counts = {1: 0, 2: 0, 3: 0}
+        type_prefix = {1: "solution", 2: "vector", 3: "tensor"}
+        for type_int, arr in raw:
+            prefix = type_prefix[type_int]
+            idx = type_counts[type_int]
+            type_counts[type_int] += 1
+            out[f"{prefix}_{idx}"] = np.asarray(arr, dtype=np.float64)
+        return out
+
+    def save_all_sols(
+        self,
+        filename: str | Path,
+        arrays: dict[str, NDArray[np.float64]],
+    ) -> None:
+        """Write multiple vertex-located solution blocks to a Medit .sol file.
+
+        Block types are inferred from each array's shape: 1D or ``(N, 1)``
+        is scalar; ``(N, dim)`` is vector; ``(N, dim*(dim+1)/2)`` is tensor.
+        All arrays must share the vertex count ``N``. Names are passed to
+        the file order but Medit doesn't record them, so on round-trip the
+        reader regenerates positional names.
+
+        For cell-located blocks, use
+        :meth:`mmgpy.MmgAccessor.save_all_sols`; MMG's multi-sol C API
+        covers vertices only.
+
+        Binary ``.solb`` is not supported: MMG's writer interleaves stray
+        newlines into the binary stream that break the reader.
+
+        Parameters
+        ----------
+        filename : str or Path
+            Destination path; ``.sol`` text format.
+        arrays : dict[str, NDArray[np.float64]]
+            Solution blocks to write. Insertion order determines block
+            order in the file.
+
+        """
+        from pathlib import Path as _Path  # noqa: PLC0415
+
+        from mmgpy._sol import infer_sol_type  # noqa: PLC0415
+
+        if _Path(filename).suffix.lower() == ".solb":
+            msg = (
+                "Binary .solb is not supported: MMG's multi-sol .solb "
+                "round-trip is broken at the library level."
+            )
+            raise NotImplementedError(msg)
+        if not arrays:
+            msg = "save_all_sols: arrays must contain at least one block"
+            raise ValueError(msg)
+        dim = self._solution_dim()
+        sols: list[tuple[int, NDArray[np.float64]]] = []
+        for name, raw in arrays.items():
+            arr = np.ascontiguousarray(raw, dtype=np.float64)
+            try:
+                t = infer_sol_type(arr, dim)
+            except ValueError as exc:
+                msg = f"save_all_sols: field {name!r}: {exc}"
+                raise ValueError(msg) from exc
+            sols.append((t, arr))
+        self._impl.save_all_sols(filename, sols)
+
     # =========================================================================
     # Remeshing operations
     # =========================================================================
