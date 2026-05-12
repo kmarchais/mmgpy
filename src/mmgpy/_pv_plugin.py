@@ -750,6 +750,7 @@ class MmgAccessor:
         self,
         opts: MmgOptions | None = None,
         *,
+        metric: NDArray[np.float64] | None = None,
         local_sizing: list[Mapping[str, Any]] | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
     ) -> pv.UnstructuredGrid | pv.PolyData:
@@ -759,6 +760,12 @@ class MmgAccessor:
         ----------
         opts : Mmg2DOptions | Mmg3DOptions | MmgSOptions, optional
             Typed options object. Mutually exclusive with ``**options``.
+        metric : ndarray, optional
+            Per-vertex size map driving the remeshing. Shape ``(n, 1)``
+            (or ``(n,)``) for an isotropic scalar target, or ``(n, 3)`` /
+            ``(n, 6)`` for an anisotropic tensor (2D / 3D). Overrides any
+            ``point_data["metric"]`` on the dataset; the dataset itself
+            is not mutated.
         local_sizing : list of dict, optional
             Sizing constraints applied before remeshing. Each dict has a
             ``"shape"`` key (``"sphere"``, ``"box"``, ``"cylinder"``, or
@@ -807,10 +814,26 @@ class MmgAccessor:
                     "from a line-only PolyData"
                 )
                 raise ValueError(msg)
+            if metric is not None:
+                msg = (
+                    "metric is not supported when generating a 2D mesh "
+                    "from a line-only PolyData"
+                )
+                raise ValueError(msg)
             return _generate_from_line_polydata(self._dataset, options)
 
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
+        if metric is not None:
+            import numpy as np  # noqa: PLC0415
+
+            # Smart routing in Mesh.__setitem__ dispatches to the scalar or
+            # tensor channel based on shape; overrides any metric loaded
+            # from point_data above without mutating self._dataset.
+            metric_arr = np.asarray(metric, dtype=np.float64)
+            if metric_arr.ndim == 1:
+                metric_arr = metric_arr.reshape(-1, 1)
+            mesh["metric"] = metric_arr
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
         # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time

@@ -77,17 +77,18 @@ def build_panels() -> list[Panel]:
         hmin=1e-2,
         hmax=0.15,
     )
-    src = base.copy(deep=True)
-    src.point_data["metric"] = metric
-    source = src.mmg.remesh(hgrad=2.0, verbose=False)
+    source = base.mmg.remesh(metric=metric, hgrad=2.0, verbose=False)
 
     # Recover the implied metric and remesh at rescaled versions.
     implied = source.mmg.build_size_map(aniso=True)
     scaled: list[Panel] = []
     for c in (0.25, 4.0):
-        grid = source.copy(deep=True)
-        grid.point_data["metric"] = implied * c
-        scaled.append((f"Implied x {c}", grid.mmg.remesh(hgrad=2.0, verbose=False)))
+        scaled.append(
+            (
+                f"Implied x {c}",
+                source.mmg.remesh(metric=implied * c, hgrad=2.0, verbose=False),
+            ),
+        )
 
     return [
         ("Uniform", base),

@@ -160,6 +160,44 @@ def test_accessor_remesh_on_tetrahedral_mesh() -> None:
     assert pv.CellType.TETRA in remeshed.cells_dict
 
 
+def test_accessor_remesh_metric_kwarg_aniso() -> None:
+    """``remesh(metric=tensor)`` drives aniso remeshing without point_data dance."""
+    pytest.importorskip("scipy")
+    cube_pts = pv.ImageData(
+        dimensions=(5, 5, 5),
+        spacing=(0.25, 0.25, 0.25),
+    ).cast_to_unstructured_grid()
+    tets = cube_pts.delaunay_3d()
+
+    # Recover the implied metric on a separate copy so the source stays clean,
+    # then drive the remesh purely through the metric= kwarg.
+    implied = tets.copy(deep=True).mmg.build_size_map(aniso=True)
+    n_pts_before = tets.n_points
+    finer = tets.mmg.remesh(metric=implied * 4.0, verbose=-1)
+
+    assert finer.n_points > n_pts_before
+    # The remesh kwarg path must not mutate the caller's dataset.
+    assert "metric" not in tets.point_data
+
+
+def test_accessor_remesh_metric_kwarg_overrides_point_data() -> None:
+    """An explicit ``metric=`` overrides any pre-existing point_data["metric"]."""
+    pytest.importorskip("scipy")
+    cube_pts = pv.ImageData(
+        dimensions=(5, 5, 5),
+        spacing=(0.25, 0.25, 0.25),
+    ).cast_to_unstructured_grid()
+    tets = cube_pts.delaunay_3d()
+
+    tets.point_data["metric"] = np.full(tets.n_points, 0.5)  # coarse
+    fine_metric = np.full((tets.n_points, 1), 0.05)  # fine override
+    out = tets.mmg.remesh(metric=fine_metric, verbose=-1)
+
+    # The fine override should produce many more points than the coarse default.
+    coarse_out = tets.mmg.remesh(verbose=-1)
+    assert out.n_points > coarse_out.n_points
+
+
 def test_accessor_load_sol_populates_point_data(tmp_path: Path) -> None:
     """mesh.mmg.load_sol attaches .sol fields to point_data in place."""
     grid = _make_tet_mesh()

@@ -81,8 +81,7 @@ def build_panels() -> list[Panel]:
         hmax=0.08,
     )
     pv_mesh = polydata_from_2d_triangles(base_v, base_t)
-    pv_mesh.point_data["metric"] = metric
-    adapted = pv_mesh.mmg.remesh(hgrad=2.0, verbose=False)
+    adapted = pv_mesh.mmg.remesh(metric=metric, hgrad=2.0, verbose=False)
     src_v = np.asarray(adapted.points[:, :2])
     src_t = adapted.regular_faces
 
@@ -91,9 +90,7 @@ def build_panels() -> list[Panel]:
     implied = src_pv.mmg.build_size_map(aniso=True)
     scaled: list[Panel] = []
     for c in (0.25, 4.0):
-        grid_pv = polydata_from_2d_triangles(src_v, src_t)
-        grid_pv.point_data["metric"] = implied * c
-        out = grid_pv.mmg.remesh(hgrad=2.0, verbose=False)
+        out = src_pv.mmg.remesh(metric=implied * c, hgrad=2.0, verbose=False)
         scaled.append(
             (f"Implied x {c}", np.asarray(out.points[:, :2]), out.regular_faces),
         )
