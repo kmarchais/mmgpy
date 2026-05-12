@@ -198,6 +198,36 @@ def test_accessor_remesh_metric_kwarg_overrides_point_data() -> None:
     assert out.n_points > coarse_out.n_points
 
 
+def test_accessor_remesh_metric_kwarg_1d_scalar() -> None:
+    """A 1D scalar ``metric=`` array is reshaped to ``(n, 1)`` before dispatch."""
+    pytest.importorskip("scipy")
+    cube_pts = pv.ImageData(
+        dimensions=(5, 5, 5),
+        spacing=(0.25, 0.25, 0.25),
+    ).cast_to_unstructured_grid()
+    tets = cube_pts.delaunay_3d()
+
+    out = tets.mmg.remesh(metric=np.full(tets.n_points, 0.1), verbose=-1)
+    assert out.n_points > 0
+
+
+def test_accessor_remesh_metric_rejected_on_line_only_polydata() -> None:
+    """``metric=`` is not supported on the line-only PolyData generate() path."""
+    verts_2d = np.array(
+        [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+        dtype=np.float64,
+    )
+    verts_3d = np.column_stack([verts_2d, np.zeros(len(verts_2d))])
+    edges = np.array([[0, 1], [1, 2], [2, 3], [3, 0]], dtype=np.int32)
+    lines = np.column_stack(
+        [np.full(len(edges), 2, dtype=np.int32), edges],
+    ).ravel()
+    poly = pv.PolyData(verts_3d, lines=lines)
+
+    with pytest.raises(ValueError, match="metric is not supported"):
+        poly.mmg.remesh(metric=np.full(len(verts_2d), 0.1), verbose=-1)
+
+
 def test_accessor_load_sol_populates_point_data(tmp_path: Path) -> None:
     """mesh.mmg.load_sol attaches .sol fields to point_data in place."""
     grid = _make_tet_mesh()
