@@ -824,7 +824,15 @@ class MmgAccessor:
 
         Wraps ``MMG3D_Clean_isoSurf`` / ``MMGS_Clean_isoSurf``. Returns a
         fresh dataset; the input is not modified. Not available on 2D
-        meshes — MMG2D has no equivalent entry point.
+        meshes, MMG2D has no equivalent entry point.
+
+        Notes
+        -----
+        The vertex set is preserved, so ``point_data`` flows through to the
+        returned dataset. ``cell_data`` is dropped: ``Clean_isoSurf`` removes
+        triangles/edges, so any positional cell array on the input would no
+        longer align with the cleaned topology. A warning is emitted when
+        the input carries ``cell_data`` so the loss is not silent.
 
         Raises
         ------
@@ -832,6 +840,15 @@ class MmgAccessor:
             If the dataset's mesh kind is ``TRIANGULAR_2D``.
 
         """
+        if len(self._dataset.cell_data) > 0:
+            warnings.warn(
+                "clean_iso_surface() drops cell_data: Clean_isoSurf removes "
+                "triangles/edges, so positional cell arrays would no longer "
+                f"align with the cleaned mesh. Lost keys: "
+                f"{sorted(self._dataset.cell_data.keys())}.",
+                UserWarning,
+                stacklevel=2,
+            )
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         mesh.clean_iso_surface()
         return _to_pyvista_with_user_fields(mesh)

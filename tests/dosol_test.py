@@ -38,7 +38,7 @@ class TestBuildSizeMap3D:
         self,
         cube_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
-        """Sizes should be in the same ballpark as the mean incident edge."""
+        """Sizes track the mean incident edge length in scale and ordering."""
         vertices, elements = cube_mesh
         mesh = MmgMesh3D(vertices, elements)
 
@@ -62,9 +62,17 @@ class TestBuildSizeMap3D:
             counts[b] += 1
         expected /= np.maximum(counts, 1)
 
-        # MMG truncates / clamps with hmin / hmax bookkeeping, so we only
-        # assert the same order of magnitude rather than equality.
-        assert np.allclose(sizes, expected, rtol=0.5)
+        # Same computation in principle; MMG dedupes shared edges and applies
+        # its own hmin/hmax bookkeeping, so check the median ratio sits near 1
+        # rather than asserting per-vertex equality.
+        ratio = sizes / expected
+        assert 0.8 <= np.median(ratio) <= 1.25, (
+            f"median size/expected ratio {np.median(ratio):.3f} out of [0.8, 1.25]"
+        )
+        # Extremes must line up: the vertex with the smallest mean incident
+        # edge should also get the smallest size, and likewise for the largest.
+        assert np.argmin(sizes) == np.argmin(expected)
+        assert np.argmax(sizes) == np.argmax(expected)
 
     def test_populates_metric_channel(
         self,
@@ -123,7 +131,7 @@ class TestCleanIsoSurface3D:
         self,
         dense_3d_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
-        """No-op on a mesh with no level-set artifacts — should just succeed."""
+        """No-op on a mesh with no level-set artifacts, should just succeed."""
         vertices, elements = dense_3d_mesh
         mesh = MmgMesh3D(vertices, elements)
 
@@ -159,7 +167,7 @@ class TestCleanIsoSurfaceSurface:
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
-        """No-op on a mesh with no level-set artifacts — should just succeed."""
+        """No-op on a mesh with no level-set artifacts, should just succeed."""
         vertices, triangles = tetrahedron_surface_mesh
         mesh = MmgMeshS(vertices, triangles)
 
@@ -188,12 +196,36 @@ class TestMeshWrapper:
         self,
         square_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
-        """MMG2D has no Clean_isoSurf entry point — the wrapper rejects 2D."""
+        """MMG2D has no Clean_isoSurf entry point, the wrapper rejects 2D."""
         vertices, triangles = square_mesh
         mesh = Mesh(vertices, triangles)
 
         with pytest.raises(ValueError, match="not available for TRIANGULAR_2D"):
             mesh.clean_iso_surface()
+
+    def test_clean_iso_surface_3d(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """High-level wrapper forwards ``clean_iso_surface`` for 3D meshes."""
+        vertices, elements = dense_3d_mesh
+        mesh = Mesh(vertices, elements)
+
+        mesh.clean_iso_surface()
+
+        assert mesh.get_vertices().shape[0] == len(vertices)
+
+    def test_clean_iso_surface_surface(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """High-level wrapper forwards ``clean_iso_surface`` for surface meshes."""
+        vertices, triangles = tetrahedron_surface_mesh
+        mesh = Mesh(vertices, triangles)
+
+        mesh.clean_iso_surface()
+
+        assert mesh.get_vertices().shape[0] == len(vertices)
 
 
 class TestPyVistaAccessor:
@@ -235,3 +267,23 @@ class TestPyVistaAccessor:
 
         assert cleaned is not ug
         assert cleaned.n_points > 0
+
+    def test_clean_iso_surface_warns_on_cell_data(
+        self,
+        cube_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """``cell_data`` is dropped by Clean_isoSurf; the accessor warns."""
+        vertices, elements = cube_mesh
+        ug = pv.UnstructuredGrid(
+            np.column_stack([np.full(len(elements), 4), elements]).ravel(),
+            np.full(len(elements), pv.CellType.TETRA, dtype=np.uint8),
+            vertices,
+        )
+        ug.cell_data["region"] = np.arange(len(elements), dtype=np.float64)
+
+        with pytest.warns(UserWarning, match="drops cell_data"):
+            cleaned = ug.mmg.clean_iso_surface()
+
+        assert "region" not in cleaned.cell_data
+        # Original input is not mutated.
+        assert "region" in ug.cell_data

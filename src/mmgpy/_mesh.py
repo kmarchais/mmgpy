@@ -1954,7 +1954,7 @@ class Mesh:
         """Remove isolated triangles / edges left after a level-set discretization.
 
         Wraps ``MMG3D_Clean_isoSurf`` / ``MMGS_Clean_isoSurf``. Modifies
-        the mesh in place. Not available on 2D meshes — MMG2D has no
+        the mesh in place. Not available on 2D meshes, MMG2D has no
         equivalent entry point.
 
         Raises
