@@ -585,48 +585,63 @@ def _is_valid_sol_shape(arr: NDArray[Any], dim: int) -> bool:
     return n_cols in {1, dim, tensor_size}
 
 
-def _collect_sol_arrays(
+# PyVista-reserved point/cell arrays that match valid sol shapes but aren't
+# physics solutions; skipped during auto-collection.
+_PV_RESERVED_ARRAYS = frozenset({"Normals", "TCoords"})
+
+
+def _auto_collect_sol_arrays(
     data: Mapping[str, NDArray[Any]],
     n_entities: int,
-    keys: list[str] | None,
     *,
-    skip_prefixes: tuple[str, ...] = (),
     dim: int,
 ) -> dict[str, NDArray[np.float64]]:
-    """Pull eligible numeric arrays from ``point_data`` / ``cell_data``.
+    """Auto-collect numeric arrays matching ``n_entities`` and a sol shape.
 
-    When ``keys`` is None, returns every numeric array of the right length
-    AND a shape that maps to a valid scalar / vector / tensor layout for
-    ``dim``, skipping anything else (PyVista datasets routinely carry
-    auxiliary arrays like ``Normals`` or ``TCoords`` that don't belong in
-    a .sol file). When ``keys`` is a list, the same shape check applies
-    but a mismatch raises instead of silently dropping.
+    Keeps only arrays whose shape maps to a valid scalar / vector / tensor
+    layout for ``dim``; skips ``mmg_*`` constraint tags and PyVista-reserved
+    arrays (``Normals``, ``TCoords``).
     """
     import numpy as np  # noqa: PLC0415
 
     out: dict[str, NDArray[np.float64]] = {}
     if n_entities <= 0:
-        if keys:
-            msg = (
-                f"save_all_sols: dataset has no entities of the matching kind "
-                f"but {keys!r} were requested"
-            )
-            raise ValueError(msg)
         return out
+    for name, raw in data.items():
+        if name in _PV_RESERVED_ARRAYS or name.startswith("mmg_"):
+            continue
+        arr = np.asarray(raw)
+        if (
+            arr.shape[0] == n_entities
+            and _is_numeric_sol_array(arr)
+            and _is_valid_sol_shape(arr, dim)
+        ):
+            out[name] = arr.astype(np.float64, copy=False)
+    return out
 
-    if keys is None:
-        for name, raw in data.items():
-            if any(name.startswith(p) for p in skip_prefixes):
-                continue
-            arr = np.asarray(raw)
-            if (
-                arr.shape[0] == n_entities
-                and _is_numeric_sol_array(arr)
-                and _is_valid_sol_shape(arr, dim)
-            ):
-                out[name] = arr.astype(np.float64, copy=False)
-        return out
 
+def _explicit_collect_sol_arrays(
+    data: Mapping[str, NDArray[Any]],
+    n_entities: int,
+    keys: list[str],
+    *,
+    dim: int,
+) -> dict[str, NDArray[np.float64]]:
+    """Validate and pull each named key from ``data``.
+
+    Raises on any mismatch (missing key, wrong length, non-numeric dtype,
+    bad shape) so the caller's intent is honored exactly.
+    """
+    import numpy as np  # noqa: PLC0415
+
+    if n_entities <= 0:
+        msg = (
+            f"save_all_sols: dataset has no entities of the matching kind "
+            f"but {keys!r} were requested"
+        )
+        raise ValueError(msg)
+
+    out: dict[str, NDArray[np.float64]] = {}
     for name in keys:
         if name not in data:
             msg = f"save_all_sols: requested key {name!r} not found"
@@ -636,6 +651,20 @@ def _collect_sol_arrays(
             msg = (
                 f"save_all_sols: requested key {name!r} has length "
                 f"{arr.shape[0]}, expected {n_entities}"
+            )
+            raise ValueError(msg)
+        if not _is_numeric_sol_array(arr):
+            msg = (
+                f"save_all_sols: requested key {name!r} has dtype {arr.dtype}; "
+                f"sol blocks must be numeric (non-boolean)"
+            )
+            raise ValueError(msg)
+        if not _is_valid_sol_shape(arr, dim):
+            tensor_size = dim * (dim + 1) // 2
+            msg = (
+                f"save_all_sols: requested key {name!r} has shape {arr.shape}; "
+                f"expected scalar (N,) / (N,1), vector (N,{dim}), or tensor "
+                f"(N,{tensor_size}) at dim={dim}"
             )
             raise ValueError(msg)
         out[name] = arr.astype(np.float64, copy=False)
@@ -649,6 +678,11 @@ def _primary_cell_count(dataset: pv.UnstructuredGrid | pv.PolyData) -> int:
     mmg round-trip); for a ``PolyData`` we count its polys (triangles in
     every mmg surface / 2D context). Falls back to total cell count when
     no specific signal exists so the caller's length check still works.
+
+    Mixed-cell grids (tets + tris in one UnstructuredGrid) are not
+    supported: only the dominant type's cell_data round-trips. MMG itself
+    assumes a homogeneous mesh, so callers should split mixed datasets
+    before going through the .sol path.
     """
     import numpy as np  # noqa: PLC0415
 
@@ -1096,23 +1130,26 @@ class MmgAccessor:
             raise NotImplementedError(msg)
 
         mesh = _build_mesh_with_mmg_fields(self._dataset)
-        dim = mesh._solution_dim()  # noqa: SLF001
+        dim = mesh.solution_dim
         # PyVista's DataSetAttributes is dict-like but doesn't formally
         # implement Mapping; the cast keeps the helper's static type intact.
-        point_arrays = _collect_sol_arrays(
-            cast("Mapping[str, NDArray[Any]]", self._dataset.point_data),
-            self._dataset.n_points,
-            point_keys,
-            skip_prefixes=("mmg_",),
-            dim=dim,
-        )
+        point_data = cast("Mapping[str, NDArray[Any]]", self._dataset.point_data)
+        cell_data = cast("Mapping[str, NDArray[Any]]", self._dataset.cell_data)
         cell_count = _primary_cell_count(self._dataset)
-        cell_arrays = _collect_sol_arrays(
-            cast("Mapping[str, NDArray[Any]]", self._dataset.cell_data),
-            cell_count,
-            cell_keys,
-            skip_prefixes=("mmg_",),
-            dim=dim,
+        point_arrays = (
+            _explicit_collect_sol_arrays(
+                point_data,
+                self._dataset.n_points,
+                point_keys,
+                dim=dim,
+            )
+            if point_keys is not None
+            else _auto_collect_sol_arrays(point_data, self._dataset.n_points, dim=dim)
+        )
+        cell_arrays = (
+            _explicit_collect_sol_arrays(cell_data, cell_count, cell_keys, dim=dim)
+            if cell_keys is not None
+            else _auto_collect_sol_arrays(cell_data, cell_count, dim=dim)
         )
 
         if not point_arrays and not cell_arrays:

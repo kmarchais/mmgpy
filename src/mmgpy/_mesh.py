@@ -1518,8 +1518,9 @@ class Mesh:
 
         _save_sol(self, filename)
 
-    def _solution_dim(self) -> int:
-        """Return the dimension MMG uses when allocating sol blocks (2 or 3)."""
+    @property
+    def solution_dim(self) -> int:
+        """Dimension MMG uses when allocating sol blocks: 2 for 2D, 3 otherwise."""
         return 2 if self.kind == MeshKind.TRIANGULAR_2D else 3
 
     def load_all_sols(
@@ -1616,7 +1617,7 @@ class Mesh:
         if not arrays:
             msg = "save_all_sols: arrays must contain at least one block"
             raise ValueError(msg)
-        dim = self._solution_dim()
+        dim = self.solution_dim
         sols: list[tuple[int, NDArray[np.float64]]] = []
         for name, raw in arrays.items():
             arr = np.ascontiguousarray(raw, dtype=np.float64)

@@ -181,14 +181,12 @@ def infer_sol_type(array: NDArray[np.float64], dimension: int) -> int:
     if n_cols == 1:
         return _TYPE_SCALAR
     tensor_size = dimension * (dimension + 1) // 2
-    if n_cols == dimension and n_cols != tensor_size:
+    # Vector width (dim) and tensor width (dim*(dim+1)/2) are disjoint for
+    # dim in {2, 3}, so a plain equality check suffices for each.
+    if n_cols == dimension:
         return _TYPE_VECTOR
-    if n_cols == tensor_size and n_cols != dimension:
+    if n_cols == tensor_size:
         return _TYPE_TENSOR
-    # In 2D, vector (2) and tensor (3) are disjoint so the branches above settle
-    # it. In 3D, vector (3) and tensor (6) are also disjoint. Any other column
-    # count (4, 5, 7+) is invalid; flag it with both expected shapes so the
-    # caller can correct the input.
     msg = (
         f"Cannot infer sol type from shape {array.shape} at dim={dimension}: "
         f"expected ({array.shape[0]},), ({array.shape[0]}, {dimension}) for "
@@ -270,7 +268,9 @@ def write_sol_file(
             arr if arr.ndim == 2 else arr.reshape(-1, 1) for _, arr, _ in group
         ]
         joined = np.concatenate(per_row_chunks, axis=1)
-        lines.extend(" ".join(f"{v!r}" for v in row.tolist()) for row in joined)
+        # %.17g is the shortest round-trip-safe double format and matches
+        # Medit's expectation of plain decimal / scientific notation.
+        lines.extend(" ".join(f"{v:.17g}" for v in row.tolist()) for row in joined)
         lines.append("")
 
     lines.append("End")
