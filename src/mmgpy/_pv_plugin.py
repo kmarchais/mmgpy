@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pyvista as pv
 
@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from mmgpy._mesh import Mesh as _Mesh
     from mmgpy._mesh import MeshKind
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
+    from mmgpy._sol import Location as _SolLocation
     from mmgpy._validation import ValidationReport
 
     MmgOptions = Mmg2DOptions | Mmg3DOptions | MmgSOptions
@@ -559,6 +560,153 @@ def write_mesh(
 
 
 # ---------------------------------------------------------------------------
+# Multi-sol field collection helpers
+# ---------------------------------------------------------------------------
+
+
+def _is_numeric_sol_array(arr: NDArray[Any]) -> bool:
+    """Return True if *arr* is a numeric, non-boolean ndarray usable as a sol block."""
+    import numpy as np  # noqa: PLC0415
+
+    return np.issubdtype(arr.dtype, np.number) and not np.issubdtype(
+        arr.dtype,
+        np.bool_,
+    )
+
+
+def _is_valid_sol_shape(arr: NDArray[Any], dim: int) -> bool:
+    """Return True if *arr*'s shape matches scalar / vector / tensor for *dim*."""
+    if arr.ndim == 1:
+        return True
+    if arr.ndim != 2:  # noqa: PLR2004  -- sol arrays are 1D scalar or 2D
+        return False
+    n_cols = arr.shape[1]
+    tensor_size = dim * (dim + 1) // 2
+    return n_cols in {1, dim, tensor_size}
+
+
+# PyVista-reserved point/cell arrays that match valid sol shapes but aren't
+# physics solutions; skipped during auto-collection.
+_PV_RESERVED_ARRAYS = frozenset({"Normals", "TCoords"})
+
+
+def _auto_collect_sol_arrays(
+    data: Mapping[str, NDArray[Any]],
+    n_entities: int,
+    *,
+    dim: int,
+) -> dict[str, NDArray[np.float64]]:
+    """Auto-collect numeric arrays matching ``n_entities`` and a sol shape.
+
+    Keeps only arrays whose shape maps to a valid scalar / vector / tensor
+    layout for ``dim``; skips ``mmg_*`` constraint tags and PyVista-reserved
+    arrays (``Normals``, ``TCoords``).
+    """
+    import numpy as np  # noqa: PLC0415
+
+    out: dict[str, NDArray[np.float64]] = {}
+    if n_entities <= 0:
+        return out
+    for name, raw in data.items():
+        if name in _PV_RESERVED_ARRAYS or name.startswith("mmg_"):
+            continue
+        arr = np.asarray(raw)
+        if (
+            arr.shape[0] == n_entities
+            and _is_numeric_sol_array(arr)
+            and _is_valid_sol_shape(arr, dim)
+        ):
+            out[name] = arr.astype(np.float64, copy=False)
+    return out
+
+
+def _explicit_collect_sol_arrays(
+    data: Mapping[str, NDArray[Any]],
+    n_entities: int,
+    keys: list[str],
+    *,
+    dim: int,
+) -> dict[str, NDArray[np.float64]]:
+    """Validate and pull each named key from ``data``.
+
+    Raises on any mismatch (missing key, wrong length, non-numeric dtype,
+    bad shape) so the caller's intent is honored exactly.
+    """
+    import numpy as np  # noqa: PLC0415
+
+    if n_entities <= 0:
+        msg = (
+            f"save_all_sols: dataset has no entities of the matching kind "
+            f"but {keys!r} were requested"
+        )
+        raise ValueError(msg)
+
+    out: dict[str, NDArray[np.float64]] = {}
+    for name in keys:
+        if name not in data:
+            msg = f"save_all_sols: requested key {name!r} not found"
+            raise ValueError(msg)
+        arr = np.asarray(data[name])
+        if arr.shape[0] != n_entities:
+            msg = (
+                f"save_all_sols: requested key {name!r} has length "
+                f"{arr.shape[0]}, expected {n_entities}"
+            )
+            raise ValueError(msg)
+        if not _is_numeric_sol_array(arr):
+            msg = (
+                f"save_all_sols: requested key {name!r} has dtype {arr.dtype}; "
+                f"sol blocks must be numeric (non-boolean)"
+            )
+            raise ValueError(msg)
+        if not _is_valid_sol_shape(arr, dim):
+            tensor_size = dim * (dim + 1) // 2
+            msg = (
+                f"save_all_sols: requested key {name!r} has shape {arr.shape}; "
+                f"expected scalar (N,) / (N,1), vector (N,{dim}), or tensor "
+                f"(N,{tensor_size}) at dim={dim}"
+            )
+            raise ValueError(msg)
+        out[name] = arr.astype(np.float64, copy=False)
+    return out
+
+
+def _primary_cell_count(dataset: pv.UnstructuredGrid | pv.PolyData) -> int:
+    """Return the count of the dataset's primary cell type.
+
+    For an ``UnstructuredGrid`` we count TETRA cells (3D meshes after the
+    mmg round-trip); for a ``PolyData`` we count its polys (triangles in
+    every mmg surface / 2D context). Falls back to total cell count when
+    no specific signal exists so the caller's length check still works.
+
+    Mixed-cell grids (tets + tris in one UnstructuredGrid) are not
+    supported: only the dominant type's cell_data round-trips. MMG itself
+    assumes a homogeneous mesh, so callers should split mixed datasets
+    before going through the .sol path.
+    """
+    import numpy as np  # noqa: PLC0415
+
+    if isinstance(dataset, pv.UnstructuredGrid):
+        types = np.asarray(dataset.celltypes)
+        tet_count = int(np.sum(types == pv.CellType.TETRA))
+        if tet_count > 0:
+            return tet_count
+        tri_count = int(np.sum(types == pv.CellType.TRIANGLE))
+        if tri_count > 0:
+            return tri_count
+    if isinstance(dataset, pv.PolyData):
+        n_polys = (
+            int(dataset.n_cells)
+            - int(dataset.n_verts)
+            - int(dataset.n_lines)
+            - int(dataset.n_strips)
+        )
+        if n_polys > 0:
+            return n_polys
+    return int(dataset.n_cells)
+
+
+# ---------------------------------------------------------------------------
 # .mmg dataset accessor
 # ---------------------------------------------------------------------------
 
@@ -900,6 +1048,129 @@ class MmgAccessor:
         MMG C library, which handles both text and binary formats.
         """
         _build_mesh_with_mmg_fields(self._dataset).save_sol(path)
+
+    def load_all_sols(self, path: str | Path) -> None:
+        """Read every solution block from a Medit ``.sol`` file.
+
+        Modifies the dataset in place. ``SolAtVertices`` blocks land in
+        ``point_data``; ``SolAtTriangles`` / ``SolAtTetrahedra`` blocks
+        land in ``cell_data``.
+
+        Generated key names follow the existing single-channel reader:
+        ``solution_i`` for scalar blocks, ``vector_i`` / ``tensor_i`` for
+        vector / tensor blocks, and a ``@vertices`` / ``@triangles`` /
+        ``@tetrahedra`` suffix to disambiguate location.
+
+        Binary ``.solb`` is not supported here. MMG's binary writer
+        interleaves stray newlines between values (see Mmg #commit-list),
+        so even single-channel ``.solb`` round-trips return garbage; the
+        multi-sol path inherits the same defect. Route binary I/O through
+        the lower-level ``Mesh.load_all_sols`` if you must, but expect
+        broken data on the way back in.
+
+        Parameters
+        ----------
+        path : str or Path
+            Source ``.sol`` text file.
+
+        """
+        sol_path = Path(path)
+        if sol_path.suffix.lower() == ".solb":
+            msg = (
+                "Binary .solb files are not supported via "
+                "mesh.mmg.load_all_sols() — MMG's .solb round-trip is "
+                "broken at the library level."
+            )
+            raise NotImplementedError(msg)
+        _attach_sol_fields(self._dataset, sol_path)
+
+    def save_all_sols(
+        self,
+        path: str | Path,
+        *,
+        point_keys: list[str] | None = None,
+        cell_keys: list[str] | None = None,
+    ) -> None:
+        """Write multiple solution blocks to a Medit ``.sol``/``.solb`` file.
+
+        Each numeric ``point_data`` array becomes a ``SolAtVertices`` block;
+        each numeric ``cell_data`` array becomes a ``SolAtTriangles`` /
+        ``SolAtTetrahedra`` block. Block type (scalar / vector / tensor)
+        is inferred from each array's shape against the mesh dimension.
+
+        Parameters
+        ----------
+        path : str or Path
+            Destination file; ``.sol`` (text) or ``.solb`` (binary).
+        point_keys : list of str, optional
+            Restrict to these ``point_data`` keys. Defaults to every
+            numeric array of length ``n_points`` whose name doesn't start
+            with ``mmg_`` (reserved constraint tags).
+        cell_keys : list of str, optional
+            Restrict to these ``cell_data`` keys. Defaults to every
+            numeric array whose length matches the count of the mesh's
+            primary cell type (triangles for 2D / surface, tetrahedra
+            for 3D). Cell blocks require a text ``.sol`` destination —
+            ``.solb`` only carries vertex blocks through MMG's C API,
+            so cell_keys for a ``.solb`` target raises.
+
+        """
+        import numpy as np  # noqa: PLC0415
+
+        from mmgpy._mesh import MeshKind  # noqa: PLC0415
+        from mmgpy._sol import write_sol_file  # noqa: PLC0415
+
+        sol_path = Path(path)
+        if sol_path.suffix.lower() == ".solb":
+            msg = (
+                "Binary .solb files are not supported via "
+                "mesh.mmg.save_all_sols() — MMG's .solb writer interleaves "
+                "stray newlines that break round-trip. Use .sol (text)."
+            )
+            raise NotImplementedError(msg)
+
+        mesh = _build_mesh_with_mmg_fields(self._dataset)
+        dim = mesh.solution_dim
+        # PyVista's DataSetAttributes is dict-like but doesn't formally
+        # implement Mapping; the cast keeps the helper's static type intact.
+        point_data = cast("Mapping[str, NDArray[Any]]", self._dataset.point_data)
+        cell_data = cast("Mapping[str, NDArray[Any]]", self._dataset.cell_data)
+        cell_count = _primary_cell_count(self._dataset)
+        point_arrays = (
+            _explicit_collect_sol_arrays(
+                point_data,
+                self._dataset.n_points,
+                point_keys,
+                dim=dim,
+            )
+            if point_keys is not None
+            else _auto_collect_sol_arrays(point_data, self._dataset.n_points, dim=dim)
+        )
+        cell_arrays = (
+            _explicit_collect_sol_arrays(cell_data, cell_count, cell_keys, dim=dim)
+            if cell_keys is not None
+            else _auto_collect_sol_arrays(cell_data, cell_count, dim=dim)
+        )
+
+        if not point_arrays and not cell_arrays:
+            msg = (
+                "save_all_sols: no eligible point_data or cell_data arrays "
+                "to write; populate the dataset or pass point_keys/cell_keys."
+            )
+            raise ValueError(msg)
+
+        primary_location: _SolLocation = (
+            "tetrahedra" if mesh.kind == MeshKind.TETRAHEDRAL else "triangles"
+        )
+        fields: list[tuple[str, NDArray[np.float64], _SolLocation]] = [
+            (name, np.ascontiguousarray(arr, dtype=np.float64), "vertices")
+            for name, arr in point_arrays.items()
+        ]
+        fields.extend(
+            (name, np.ascontiguousarray(arr, dtype=np.float64), primary_location)
+            for name, arr in cell_arrays.items()
+        )
+        write_sol_file(sol_path, fields, dim)
 
     def validate(  # noqa: PLR0913
         self,

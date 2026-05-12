@@ -1,5 +1,6 @@
 #include "mmg_mesh_s.hpp"
 #include "mmg_common.hpp"
+#include "mmg_multisol.hpp"
 #include <chrono>
 #include <set>
 #include <stdexcept>
@@ -980,6 +981,34 @@ void MmgMeshS::save_sol(
   if (MMGS_saveSol(mesh, met, fname.c_str()) != 1) {
     throw std::runtime_error("Failed to save solution file: " + fname);
   }
+}
+
+namespace {
+constexpr MultiSolApi MMGS_MULTISOL_API = {
+    &MMGS_Set_solsAtVerticesSize,
+    &MMGS_Get_solsAtVerticesSize,
+    &MMGS_Set_ithSols_inSolsAtVertices,
+    &MMGS_Get_ithSols_inSolsAtVertices,
+    &MMGS_loadAllSols,
+    &MMGS_saveAllSols,
+    &MMGS_Free_allSols,
+    /*dim=*/3,
+};
+}
+
+py::list MmgMeshS::load_all_sols(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("load_all_sols");
+  return load_all_sols_vertices(mesh, variant_to_string(filename),
+                                MMGS_MULTISOL_API);
+}
+
+void MmgMeshS::save_all_sols(
+    const std::variant<std::string, std::filesystem::path> &filename,
+    const py::list &sols) const {
+  check_not_corrupted("save_all_sols");
+  save_all_sols_vertices(mesh, mesh->np, variant_to_string(filename), sols,
+                         MMGS_MULTISOL_API);
 }
 
 MmgMeshS::SolutionField

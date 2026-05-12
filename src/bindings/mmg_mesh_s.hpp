@@ -109,6 +109,12 @@ public:
   void save_sol(
       const std::variant<std::string, std::filesystem::path> &filename) const;
 
+  py::list load_all_sols(
+      const std::variant<std::string, std::filesystem::path> &filename);
+  void save_all_sols(
+      const std::variant<std::string, std::filesystem::path> &filename,
+      const py::list &sols) const;
+
   // In-memory remeshing
   py::dict remesh(const py::dict &options = py::dict());
   py::dict remesh_levelset(const py::array_t<double> &levelset,

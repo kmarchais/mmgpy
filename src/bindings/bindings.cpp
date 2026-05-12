@@ -202,6 +202,24 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMesh &self, const py::object &path) {
              self.save_sol(path_to_variant(path));
            })
+      .def(
+          "load_all_sols",
+          [](MmgMesh &self, const py::object &path) {
+            return self.load_all_sols(path_to_variant(path));
+          },
+          py::arg("path"),
+          "Load every solution block from a Medit .sol/.solb file. Returns a "
+          "list of (mmg_type, ndarray) tuples in file order. "
+          "mmg_type is 1=scalar, 2=vector, 3=tensor.")
+      .def(
+          "save_all_sols",
+          [](const MmgMesh &self, const py::object &path,
+             const py::list &sols) {
+            self.save_all_sols(path_to_variant(path), sols);
+          },
+          py::arg("path"), py::arg("sols"),
+          "Write a list of (mmg_type, ndarray) tuples as a multi-block "
+          ".sol/.solb file. mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def_property_readonly("is_corrupted", &MmgMesh::is_corrupted)
       .def(
           "remesh",
@@ -362,6 +380,24 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMesh2D &self, const py::object &path) {
              self.save_sol(path_to_variant(path));
            })
+      .def(
+          "load_all_sols",
+          [](MmgMesh2D &self, const py::object &path) {
+            return self.load_all_sols(path_to_variant(path));
+          },
+          py::arg("path"),
+          "Load every solution block from a Medit .sol/.solb file. Returns a "
+          "list of (mmg_type, ndarray) tuples in file order. "
+          "mmg_type is 1=scalar, 2=vector, 3=tensor.")
+      .def(
+          "save_all_sols",
+          [](const MmgMesh2D &self, const py::object &path,
+             const py::list &sols) {
+            self.save_all_sols(path_to_variant(path), sols);
+          },
+          py::arg("path"), py::arg("sols"),
+          "Write a list of (mmg_type, ndarray) tuples as a multi-block "
+          ".sol/.solb file. mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def_property_readonly("is_corrupted", &MmgMesh2D::is_corrupted)
       .def(
           "remesh",
@@ -513,6 +549,24 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMeshS &self, const py::object &path) {
              self.save_sol(path_to_variant(path));
            })
+      .def(
+          "load_all_sols",
+          [](MmgMeshS &self, const py::object &path) {
+            return self.load_all_sols(path_to_variant(path));
+          },
+          py::arg("path"),
+          "Load every solution block from a Medit .sol/.solb file. Returns a "
+          "list of (mmg_type, ndarray) tuples in file order. "
+          "mmg_type is 1=scalar, 2=vector, 3=tensor.")
+      .def(
+          "save_all_sols",
+          [](const MmgMeshS &self, const py::object &path,
+             const py::list &sols) {
+            self.save_all_sols(path_to_variant(path), sols);
+          },
+          py::arg("path"), py::arg("sols"),
+          "Write a list of (mmg_type, ndarray) tuples as a multi-block "
+          ".sol/.solb file. mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def_property_readonly("is_corrupted", &MmgMeshS::is_corrupted)
       .def(
           "remesh",
