@@ -43,6 +43,13 @@ import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
+Panel = tuple[str, np.ndarray, np.ndarray]
+
+
+# ---------------------------------------------------------------------------
+# Mesh processing
+# ---------------------------------------------------------------------------
+
 
 def make_unit_square(n: int = 30) -> tuple[np.ndarray, np.ndarray]:
     """Structured triangulation of [0, 1]^2 with n x n vertices."""
@@ -59,6 +66,48 @@ def front_field(vertices: np.ndarray) -> np.ndarray:
     dy = vertices[:, 1] - 0.5
     r = np.sqrt(dx * dx + dy * dy)
     return np.tanh(40.0 * (r - 0.3))
+
+
+def build_panels() -> list[Panel]:
+    """Adapt to the front, then rescale the implied metric."""
+    base_v, base_t = make_unit_square(n=30)
+
+    # Hessian-adapt to the front.
+    hessian = compute_hessian(base_v, base_t, front_field(base_v))
+    metric = create_metric_from_hessian(
+        hessian,
+        target_error=5e-3,
+        hmin=3e-3,
+        hmax=0.08,
+    )
+    pv_mesh = polydata_from_2d_triangles(base_v, base_t)
+    pv_mesh.point_data["metric"] = metric
+    adapted = pv_mesh.mmg.remesh(hgrad=2.0, verbose=False)
+    src_v = np.asarray(adapted.points[:, :2])
+    src_t = adapted.regular_faces
+
+    # Recover the adapted mesh's implied metric and remesh at rescaled versions.
+    src_pv = polydata_from_2d_triangles(src_v, src_t)
+    implied = src_pv.mmg.build_size_map(aniso=True)
+    scaled: list[Panel] = []
+    for c in (0.25, 4.0):
+        grid_pv = polydata_from_2d_triangles(src_v, src_t)
+        grid_pv.point_data["metric"] = implied * c
+        out = grid_pv.mmg.remesh(hgrad=2.0, verbose=False)
+        scaled.append(
+            (f"Implied x {c}", np.asarray(out.points[:, :2]), out.regular_faces),
+        )
+
+    return [
+        ("Uniform", base_v, base_t),
+        ("Hessian-adapted", src_v, src_t),
+        *scaled,
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Visualization
+# ---------------------------------------------------------------------------
 
 
 def _colored_edges(
@@ -108,42 +157,8 @@ def _add_pill_labels(
     return canvas
 
 
-def main() -> None:
-    """Adapt to the front, then rescale the implied metric."""
-    base_v, base_t = make_unit_square(n=30)
-
-    # Hessian-adapt to the front.
-    hessian = compute_hessian(base_v, base_t, front_field(base_v))
-    metric = create_metric_from_hessian(
-        hessian,
-        target_error=5e-3,
-        hmin=3e-3,
-        hmax=0.08,
-    )
-    pv_mesh = polydata_from_2d_triangles(base_v, base_t)
-    pv_mesh.point_data["metric"] = metric
-    adapted = pv_mesh.mmg.remesh(hgrad=2.0, verbose=False)
-    src_v = np.asarray(adapted.points[:, :2])
-    src_t = adapted.regular_faces
-
-    # Recover the adapted mesh's implied metric and remesh at rescaled versions.
-    src_pv = polydata_from_2d_triangles(src_v, src_t)
-    implied = src_pv.mmg.build_size_map(aniso=True)
-    scaled: list[tuple[float, np.ndarray, np.ndarray]] = []
-    for c in (0.25, 4.0):
-        grid_pv = polydata_from_2d_triangles(src_v, src_t)
-        grid_pv.point_data["metric"] = implied * c
-        out = grid_pv.mmg.remesh(hgrad=2.0, verbose=False)
-        scaled.append((c, np.asarray(out.points[:, :2]), out.regular_faces))
-
-    panels: list[tuple[str, np.ndarray, np.ndarray]] = [
-        ("Uniform", base_v, base_t),
-        ("Hessian-adapted", src_v, src_t),
-        *[(f"Implied x {c}", v, t) for c, v, t in scaled],
-    ]
-    for name, v, t in panels:
-        print(f"{name:>20s}: {len(v):>6d} verts, {len(t):>6d} triangles")
-
+def render(panels: list[Panel], out_path: Path) -> None:
+    """Render ``panels`` as a horizontal strip and save to ``out_path``."""
     fig, axes = plt.subplots(1, len(panels), figsize=(4.0 * len(panels), 4.2))
     fig.patch.set_alpha(0.0)
     for ax, (_, v, t) in zip(axes, panels, strict=True):
@@ -162,8 +177,17 @@ def main() -> None:
     rendered = Image.open(buffer).convert("RGBA")
 
     labels = [f"{name}  ({len(v)} v, {len(t)} t)" for name, v, t in panels]
-    out_path = Path(__file__).with_suffix(".png")
     _add_pill_labels(rendered, labels=labels).save(out_path, format="PNG")
+
+
+def main() -> None:
+    """Build the mesh panels and render them to a PNG next to this script."""
+    panels = build_panels()
+    for name, v, t in panels:
+        print(f"{name:>20s}: {len(v):>6d} verts, {len(t):>6d} triangles")
+
+    out_path = Path(__file__).with_suffix(".png")
+    render(panels, out_path)
     print(f"Wrote {out_path}")
 
 

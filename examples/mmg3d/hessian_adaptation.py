@@ -35,6 +35,13 @@ import pyvista as pv
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
+Panel = tuple[str, pv.UnstructuredGrid]
+
+
+# ---------------------------------------------------------------------------
+# Mesh processing
+# ---------------------------------------------------------------------------
+
 
 def make_unit_cube(n: int = 21) -> pv.UnstructuredGrid:
     """Tetrahedralized unit cube on [0, 1]^3 with a regular n^3 grid."""
@@ -56,7 +63,7 @@ def _tet_count(grid: pv.UnstructuredGrid) -> int:
     return grid.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
 
 
-def main() -> None:
+def build_panels() -> list[Panel]:
     """Adapt to the front, then rescale the implied metric."""
     base = make_unit_cube()
 
@@ -76,20 +83,26 @@ def main() -> None:
 
     # Recover the implied metric and remesh at rescaled versions.
     implied = source.mmg.build_size_map(aniso=True)
-    scaled: list[tuple[float, pv.UnstructuredGrid]] = []
+    scaled: list[Panel] = []
     for c in (0.25, 4.0):
         grid = source.copy(deep=True)
         grid.point_data["metric"] = implied * c
-        scaled.append((c, grid.mmg.remesh(hgrad=2.0, verbose=False)))
+        scaled.append((f"Implied x {c}", grid.mmg.remesh(hgrad=2.0, verbose=False)))
 
-    panels: list[tuple[str, pv.UnstructuredGrid]] = [
+    return [
         ("Uniform", base),
         ("Hessian-adapted", source),
-        *[(f"Implied x {c}", g) for c, g in scaled],
+        *scaled,
     ]
-    for name, g in panels:
-        print(f"{name:>20s}: {g.n_points:>6d} verts, {_tet_count(g):>6d} tets")
 
+
+# ---------------------------------------------------------------------------
+# Visualization
+# ---------------------------------------------------------------------------
+
+
+def render(panels: list[Panel]) -> None:
+    """Render ``panels`` side-by-side, clipped at z = 0.5."""
     sphere = pv.Sphere(radius=0.3, center=(0.5, 0.5, 0.5)).clip(
         normal="z",
         origin=(0.5, 0.5, 0.5),
@@ -116,6 +129,14 @@ def main() -> None:
     pl.link_views()
     pl.camera_position = [(2.4, 2.6, 2.4), (0.5, 0.5, 0.3), (0, 0, 1)]
     pl.show()
+
+
+def main() -> None:
+    """Build the mesh panels and open an interactive comparison view."""
+    panels = build_panels()
+    for name, g in panels:
+        print(f"{name:>20s}: {g.n_points:>6d} verts, {_tet_count(g):>6d} tets")
+    render(panels)
 
 
 if __name__ == "__main__":
