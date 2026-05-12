@@ -975,17 +975,32 @@ class MmgAccessor:
         )
         return _to_pyvista_with_user_fields(mesh)
 
-    def build_size_map(self) -> NDArray[np.float64]:
-        """Build an isotropic size map from mean incident edge lengths.
+    def build_size_map(self, *, aniso: bool = False) -> NDArray[np.float64]:
+        """Build a size map from edges incident to each vertex.
 
-        Wraps MMG's ``doSol`` entry point. The returned ``(n_points, 1)``
-        array is also stored on the dataset as
-        ``point_data["metric"]`` so subsequent ``remesh()`` calls pick it
-        up as the target sizemap.
+        Wraps MMG's ``doSol`` entry point. The result is also stored on
+        the dataset as ``point_data["metric"]`` so subsequent ``remesh()``
+        calls pick it up as the target sizemap.
+
+        Parameters
+        ----------
+        aniso : bool, default False
+            If False, build an isotropic size map of shape
+            ``(n_points, 1)``. If True, build the anisotropic
+            mesh-implied metric tensor (shape ``(n_points, 6)`` for 3D /
+            surface meshes, ``(n_points, 3)`` for 2D meshes). Scaling
+            the tensor by ``c`` rescales target edge lengths by
+            ``1/sqrt(c)``.
+
         """
         mesh = _build_mesh_with_mmg_fields(self._dataset)
-        sizes = mesh.build_size_map()
-        self._dataset.point_data["metric"] = sizes.reshape(-1)
+        sizes = mesh.build_size_map(aniso=aniso)
+        # MMG returns Nx1 for the iso case and Nx{3,6} for the aniso case.
+        # PyVista users expect scalar metrics flattened to 1D point_data.
+        if sizes.shape[-1] == 1:
+            self._dataset.point_data["metric"] = sizes.reshape(-1)
+        else:
+            self._dataset.point_data["metric"] = sizes
         return sizes
 
     def clean_iso_surface(self) -> pv.UnstructuredGrid | pv.PolyData:

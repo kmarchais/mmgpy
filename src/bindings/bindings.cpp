@@ -241,11 +241,19 @@ PYBIND11_MODULE(_mmgpy, m) {
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
-      .def("build_size_map", &MmgMesh::build_size_map,
-           "Build an isotropic size map from the mean edge length passing "
-           "through each vertex (wraps MMG3D_doSol).\n\n"
-           "Populates the mesh metric channel and returns the resulting "
-           "Nx1 array of per-vertex sizes.")
+      .def("build_size_map", &MmgMesh::build_size_map, py::arg("aniso") = false,
+           "Build a size map from the edges incident to each vertex (wraps "
+           "MMG3D_doSol).\n\n"
+           "Populates the mesh metric channel and returns it as a NumPy "
+           "array.\n\n"
+           "Args:\n"
+           "    aniso: If False (default), build an isotropic size map "
+           "from the mean incident edge length (shape (N, 1)). If True, "
+           "build the anisotropic mesh-implied metric tensor from the "
+           "tensor product of incident edge vectors (shape (N, 6), "
+           "components [m11, m12, m13, m22, m23, m33]). Scaling the "
+           "returned tensor by a factor c rescales target edge lengths "
+           "by 1/sqrt(c), so c > 1 refines and c < 1 coarsens.")
       .def("clean_iso_surface", &MmgMesh::clean_iso_surface,
            "Remove isolated triangles / edges left after a level-set "
            "discretization (wraps MMG3D_Clean_isoSurf).");
@@ -420,10 +428,19 @@ PYBIND11_MODULE(_mmgpy, m) {
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
       .def("build_size_map", &MmgMesh2D::build_size_map,
-           "Build an isotropic size map from the mean edge length passing "
-           "through each vertex (wraps MMG2D_doSol).\n\n"
-           "Populates the mesh metric channel and returns the resulting "
-           "Nx1 array of per-vertex sizes.");
+           py::arg("aniso") = false,
+           "Build a size map from the edges incident to each vertex (wraps "
+           "MMG2D_doSol).\n\n"
+           "Populates the mesh metric channel and returns it as a NumPy "
+           "array.\n\n"
+           "Args:\n"
+           "    aniso: If False (default), build an isotropic size map "
+           "from the mean incident edge length (shape (N, 1)). If True, "
+           "build the anisotropic mesh-implied metric tensor from the "
+           "tensor product of incident edge vectors (shape (N, 3), "
+           "components [m11, m12, m22]). Scaling the returned tensor by "
+           "a factor c rescales target edge lengths by 1/sqrt(c), so c "
+           "> 1 refines and c < 1 coarsens.");
 
   // Phase 4: MmgMeshS class for surface meshes
   py::class_<MmgMeshS>(m, "MmgMeshS")
@@ -589,10 +606,16 @@ PYBIND11_MODULE(_mmgpy, m) {
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
       .def("build_size_map", &MmgMeshS::build_size_map,
-           "Build an isotropic size map from the mean edge length passing "
-           "through each vertex (wraps MMGS_doSol).\n\n"
-           "Populates the mesh metric channel and returns the resulting "
-           "Nx1 array of per-vertex sizes.")
+           py::arg("aniso") = false,
+           "Build a size map from the edges incident to each vertex (wraps "
+           "MMGS_doSol).\n\n"
+           "Populates the mesh metric channel and returns it as a NumPy "
+           "array of shape (N, 1).\n\n"
+           "Args:\n"
+           "    aniso: Not implemented for surface meshes "
+           "(``MMGS_doSol_ani`` requires a pre-analyzed mesh). Raises a "
+           "RuntimeError if True; use MmgMesh3D or MmgMesh2D for the "
+           "anisotropic mesh-implied metric.")
       .def("clean_iso_surface", &MmgMeshS::clean_iso_surface,
            "Remove isolated triangles / edges left after a level-set "
            "discretization (wraps MMGS_Clean_isoSurf).");

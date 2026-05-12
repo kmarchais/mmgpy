@@ -1271,11 +1271,22 @@ class MmgMesh3D:
 
         """
 
-    def build_size_map(self) -> NDArray[np.float64]:
-        """Build an isotropic size map from mean incident edge lengths.
+    def build_size_map(self, aniso: bool = False) -> NDArray[np.float64]:
+        """Build a size map from edges incident to each vertex.
 
         Wraps ``MMG3D_doSol``. Populates the mesh metric channel and
-        returns a ``(n_vertices, 1)`` array of per-vertex sizes.
+        returns the result as a NumPy array.
+
+        Args:
+            aniso: If False (default), build an isotropic size map from
+                the mean incident edge length, shape ``(n_vertices, 1)``.
+                If True, build the anisotropic mesh-implied metric tensor
+                from the tensor product of incident edge vectors, shape
+                ``(n_vertices, 6)`` with components
+                ``[m11, m12, m13, m22, m23, m33]``. Scaling the returned
+                tensor by a factor ``c`` rescales target edge lengths by
+                ``1/sqrt(c)`` (``c > 1`` refines, ``c < 1`` coarsens).
+
         """
 
     def clean_iso_surface(self) -> None:
@@ -2105,11 +2116,22 @@ class MmgMesh2D:
 
         """
 
-    def build_size_map(self) -> NDArray[np.float64]:
-        """Build an isotropic size map from mean incident edge lengths.
+    def build_size_map(self, aniso: bool = False) -> NDArray[np.float64]:
+        """Build a size map from edges incident to each vertex.
 
         Wraps ``MMG2D_doSol``. Populates the mesh metric channel and
-        returns a ``(n_vertices, 1)`` array of per-vertex sizes.
+        returns the result as a NumPy array.
+
+        Args:
+            aniso: If False (default), build an isotropic size map from
+                the mean incident edge length, shape ``(n_vertices, 1)``.
+                If True, build the anisotropic mesh-implied metric tensor
+                from the tensor product of incident edge vectors, shape
+                ``(n_vertices, 3)`` with components ``[m11, m12, m22]``.
+                Scaling the returned tensor by a factor ``c`` rescales
+                target edge lengths by ``1/sqrt(c)`` (``c > 1`` refines,
+                ``c < 1`` coarsens).
+
         """
 
 class MmgMeshS:
@@ -2869,11 +2891,19 @@ class MmgMeshS:
 
         """
 
-    def build_size_map(self) -> NDArray[np.float64]:
-        """Build an isotropic size map from mean incident edge lengths.
+    def build_size_map(self, aniso: bool = False) -> NDArray[np.float64]:
+        """Build an isotropic size map from edges incident to each vertex.
 
         Wraps ``MMGS_doSol``. Populates the mesh metric channel and
         returns a ``(n_vertices, 1)`` array of per-vertex sizes.
+
+        Args:
+            aniso: Not implemented for surface meshes
+                (``MMGS_doSol_ani`` requires a pre-analyzed mesh).
+                Raises ``RuntimeError`` if True. Use :class:`MmgMesh3D`
+                or :class:`MmgMesh2D` for the anisotropic mesh-implied
+                metric.
+
         """
 
     def clean_iso_surface(self) -> None:

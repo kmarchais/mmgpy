@@ -1563,12 +1563,21 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
   return build_remesh_result(before, after, duration, ret, warnings);
 }
 
-py::array_t<double> MmgMesh::build_size_map() {
+py::array_t<double> MmgMesh::build_size_map(bool aniso) {
   check_not_corrupted("build_size_map");
 
   // MMG3D_doSol is a function pointer initialized by MMG3D_setfunc. The
   // selector reads mesh->info.ani and met->size to pick the iso or aniso
-  // implementation.
+  // implementation, so toggle anisosize and re-size the metric channel before
+  // dispatching.
+  if (!MMG3D_Set_iparameter(mesh, met, MMG3D_IPARAM_anisosize, aniso ? 1 : 0)) {
+    throw std::runtime_error(
+        "Failed to set MMG3D_IPARAM_anisosize for build_size_map");
+  }
+  if (!MMG3D_Set_solSize(mesh, met, MMG5_Vertex, mesh->np,
+                         aniso ? MMG5_Tensor : MMG5_Scalar)) {
+    throw std::runtime_error("Failed to resize metric for build_size_map");
+  }
   MMG3D_setfunc(mesh, met);
   if (MMG3D_doSol == nullptr) {
     throw std::runtime_error(
@@ -1584,7 +1593,7 @@ py::array_t<double> MmgMesh::build_size_map() {
     throw std::runtime_error("MMG3D_doSol failed to build size map");
   }
 
-  return get_field("metric");
+  return get_field(aniso ? "tensor" : "metric");
 }
 
 void MmgMesh::clean_iso_surface() {

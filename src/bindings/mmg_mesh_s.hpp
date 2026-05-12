@@ -121,7 +121,7 @@ public:
                            const py::dict &options = py::dict());
 
   // Sizemap and level-set utilities
-  py::array_t<double> build_size_map();
+  py::array_t<double> build_size_map(bool aniso = false);
   void clean_iso_surface();
 
   bool is_corrupted() const { return corrupted_; }

@@ -2046,20 +2046,31 @@ class Mesh:
             opts["verbose"] = verbose
         return self.remesh(progress=progress, **opts)
 
-    def build_size_map(self) -> NDArray[np.float64]:
-        """Build an isotropic size map from mean incident edge lengths.
+    def build_size_map(self, *, aniso: bool = False) -> NDArray[np.float64]:
+        """Build a size map from the edges incident to each vertex.
 
         Wraps MMG's ``doSol`` entry point on each mesh kind. The resulting
-        per-vertex sizes are stored on the underlying metric channel and
-        also returned for direct inspection.
+        size map is stored on the underlying metric channel and also
+        returned for direct inspection.
+
+        Parameters
+        ----------
+        aniso : bool, default False
+            If False, build an isotropic size map from the mean incident
+            edge length (shape ``(n_vertices, 1)``). If True, build the
+            anisotropic mesh-implied metric tensor (shape ``(n_vertices,
+            6)`` for 3D / surface meshes, ``(n_vertices, 3)`` for 2D
+            meshes). Scaling the returned tensor by a factor ``c``
+            rescales target edge lengths by ``1/sqrt(c)``, so ``c > 1``
+            refines and ``c < 1`` coarsens.
 
         Returns
         -------
         ndarray
-            ``(n_vertices, 1)`` array of per-vertex isotropic sizes.
+            Per-vertex size map. See ``aniso`` for shape conventions.
 
         """
-        return self._impl.build_size_map()
+        return self._impl.build_size_map(aniso=aniso)
 
     def clean_iso_surface(self) -> None:
         """Remove isolated triangles / edges left after a level-set discretization.
