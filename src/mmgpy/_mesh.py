@@ -1935,6 +1935,42 @@ class Mesh:
             opts["verbose"] = verbose
         return self.remesh(progress=progress, **opts)
 
+    def build_size_map(self) -> NDArray[np.float64]:
+        """Build an isotropic size map from mean incident edge lengths.
+
+        Wraps MMG's ``doSol`` entry point on each mesh kind. The resulting
+        per-vertex sizes are stored on the underlying metric channel and
+        also returned for direct inspection.
+
+        Returns
+        -------
+        ndarray
+            ``(n_vertices, 1)`` array of per-vertex isotropic sizes.
+
+        """
+        return self._impl.build_size_map()
+
+    def clean_iso_surface(self) -> None:
+        """Remove isolated triangles / edges left after a level-set discretization.
+
+        Wraps ``MMG3D_Clean_isoSurf`` / ``MMGS_Clean_isoSurf``. Modifies
+        the mesh in place. Not available on 2D meshes — MMG2D has no
+        equivalent entry point.
+
+        Raises
+        ------
+        ValueError
+            If called on a ``TRIANGULAR_2D`` mesh.
+
+        """
+        if self._kind == MeshKind.TRIANGULAR_2D:
+            msg = (
+                "clean_iso_surface() is not available for TRIANGULAR_2D meshes; "
+                "MMG2D has no Clean_isoSurf entry point"
+            )
+            raise ValueError(msg)
+        cast("MmgMesh3D | MmgMeshS", self._impl).clean_iso_surface()
+
     # =========================================================================
     # Local sizing constraints
     # =========================================================================

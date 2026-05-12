@@ -1533,3 +1533,40 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
 
   return build_remesh_result(before, after, duration, ret, warnings);
 }
+
+py::array_t<double> MmgMesh::build_size_map() {
+  check_not_corrupted("build_size_map");
+
+  // MMG3D_doSol is a function pointer initialized by MMG3D_setfunc. The
+  // selector reads mesh->info.ani and met->size to pick the iso or aniso
+  // implementation.
+  MMG3D_setfunc(mesh, met);
+  if (MMG3D_doSol == nullptr) {
+    throw std::runtime_error(
+        "MMG3D_doSol is null after MMG3D_setfunc; cannot build size map");
+  }
+
+  int ret;
+  {
+    py::gil_scoped_release release;
+    ret = MMG3D_doSol(mesh, met);
+  }
+  if (ret != 1) {
+    throw std::runtime_error("MMG3D_doSol failed to build size map");
+  }
+
+  return get_field("metric");
+}
+
+void MmgMesh::clean_iso_surface() {
+  check_not_corrupted("clean_iso_surface");
+
+  int ret;
+  {
+    py::gil_scoped_release release;
+    ret = MMG3D_Clean_isoSurf(mesh);
+  }
+  if (ret != 1) {
+    throw std::runtime_error("MMG3D_Clean_isoSurf failed");
+  }
+}

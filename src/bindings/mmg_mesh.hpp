@@ -150,6 +150,10 @@ public:
   py::dict remesh_levelset(const py::array_t<double> &levelset,
                            const py::dict &options = py::dict());
 
+  // Sizemap and level-set utilities
+  py::array_t<double> build_size_map();
+  void clean_iso_surface();
+
   bool is_corrupted() const { return corrupted_; }
 
   // Delete copy constructor and assignment operator
