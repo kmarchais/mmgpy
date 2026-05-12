@@ -18,12 +18,20 @@ turns the Hessian into an anisotropic metric that MMG can use for
 adaptive remeshing.
 
 This example uses an analytic field with a sharp spherical front,
-``f(p) = tanh(40 * (||p - 0.5|| - 0.3))``, computes the Hessian on the
-initial uniform mesh, and runs anisotropic remeshing so the new mesh
-refines along the front and stays coarse elsewhere.
+``f(p) = tanh(40 * (||p - 0.5|| - 0.3))``, and proceeds in two phases:
 
-A corner of the cube is clipped away so the interior refinement around
-the spherical front is visible.
+1. **Adapt.** Recover the Hessian on the initial uniform mesh and run
+   anisotropic remeshing so the new mesh refines along the front and
+   stays coarse elsewhere.
+2. **Refinement family.** Recover the mesh-implied metric tensor from
+   the adapted mesh via ``build_size_map(aniso=True)`` and rescale it
+   by factors ``c in {1/4, 4}``. Multiplying the metric by ``c``
+   rescales target edge lengths by ``1/sqrt(c)``, producing coarser
+   and finer variants that *preserve* the front-aligned anisotropy
+   (issue #255).
+
+Each panel is cut at ``z = 0.5`` so the full top face cross-section
+through the spherical front is visible.
 """
 
 from __future__ import annotations
@@ -35,39 +43,27 @@ import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
 
-def make_unit_cube(n: int = 19) -> tuple[np.ndarray, np.ndarray]:
+def make_unit_cube(n: int = 21) -> pv.UnstructuredGrid:
     """Tetrahedralized unit cube on [0, 1]^3 with a regular n^3 grid."""
     rg = pv.RectilinearGrid(
         np.linspace(0.0, 1.0, n),
         np.linspace(0.0, 1.0, n),
         np.linspace(0.0, 1.0, n),
     )
-    tetra = rg.cast_to_unstructured_grid().triangulate()
-    vertices = np.asarray(tetra.points, dtype=np.float64)
-    elements = tetra.cells_dict[pv.CellType.TETRA].astype(np.int32)
-    return vertices, elements
+    return rg.cast_to_unstructured_grid().triangulate()
 
 
-def front_field(vertices: np.ndarray) -> np.ndarray:
+def front_field(points: np.ndarray) -> np.ndarray:
     """Analytic field with a thin transition along a sphere of radius 0.3."""
-    r = np.linalg.norm(vertices - 0.5, axis=1)
+    r = np.linalg.norm(points - 0.5, axis=1)
     return np.tanh(40.0 * (r - 0.3))
 
 
-def clip_corner(grid: pv.UnstructuredGrid) -> pv.UnstructuredGrid:
-    """Carve away the +x +y +z corner so the interior is visible."""
-    return grid.clip_box(
-        bounds=(0.5, 1.05, 0.5, 1.05, 0.5, 1.05),
-        invert=True,
-        crinkle=True,
-    )
-
-
-def main() -> None:
-    """Build a uniform mesh, recover the Hessian, and remesh adaptively."""
-    vertices, elements = make_unit_cube()
+def adapt_to_field(base: pv.UnstructuredGrid) -> pv.UnstructuredGrid:
+    """Hessian-recover a metric from the front field and remesh ``base``."""
+    vertices = np.asarray(base.points, dtype=np.float64)
+    elements = base.cells_dict[pv.CellType.TETRA].astype(np.int32)
     field = front_field(vertices)
-
     hessian = compute_hessian(vertices, elements, field)
     metric = create_metric_from_hessian(
         hessian,
@@ -75,63 +71,93 @@ def main() -> None:
         hmin=1e-2,
         hmax=0.15,
     )
+    src = base.copy(deep=True)
+    src.point_data["metric"] = metric
+    return src.mmg.remesh(hgrad=2.0, verbose=False)
 
-    original = pv.UnstructuredGrid({pv.CellType.TETRA: elements}, vertices)
-    original.point_data["solution"] = field
-    original.point_data["metric"] = metric
 
-    adapted = original.mmg.remesh(hgrad=2.0, verbose=False)
-    adapted.point_data["solution"] = front_field(np.asarray(adapted.points))
+def family_from_source(
+    source: pv.UnstructuredGrid,
+    factors: tuple[float, ...],
+) -> list[tuple[float, pv.UnstructuredGrid]]:
+    """Recover the implied metric of ``source`` and remesh under each scale."""
+    metric = source.mmg.build_size_map(aniso=True)
+    family: list[tuple[float, pv.UnstructuredGrid]] = []
+    for c in factors:
+        grid = source.copy(deep=True)
+        grid.point_data["metric"] = metric * c
+        family.append((c, grid.mmg.remesh(hgrad=2.0, verbose=False)))
+    return family
 
-    n_tets_in = elements.shape[0]
-    n_tets_out = adapted.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
+
+def _tet_count(grid: pv.UnstructuredGrid) -> int:
+    return grid.cells_dict.get(pv.CellType.TETRA, np.empty((0, 4))).shape[0]
+
+
+def _clip_half(grid: pv.UnstructuredGrid) -> pv.UnstructuredGrid:
+    """Cut at ``z = 0.5`` and keep the lower half so a full face is exposed."""
+    return grid.clip(normal="z", origin=(0.5, 0.5, 0.5), crinkle=True)
+
+
+def main() -> None:
+    """Adapt to the front, then build a refinement family by rescaling."""
+    base = make_unit_cube()
     print(
-        f"Initial: {len(vertices)} vertices, {n_tets_in} tetrahedra\n"
-        f"Adapted: {adapted.n_points} vertices, {n_tets_out} tetrahedra",
+        f"Uniform base:        {base.n_points:>6d} verts, {_tet_count(base):>6d} tets",
     )
 
-    pl = pv.Plotter(shape=(1, 2), window_size=(1300, 650))
-    sphere = pv.Sphere(radius=0.3, center=(0.5, 0.5, 0.5)).clip_box(
-        bounds=(0.5, 1.05, 0.5, 1.05, 0.5, 1.05),
-        invert=True,
+    source = adapt_to_field(base)
+    print(
+        f"Hessian-adapted src: {source.n_points:>6d} verts, "
+        f"{_tet_count(source):>6d} tets",
     )
 
-    pl.subplot(0, 0)
-    pl.add_mesh(
-        clip_corner(original),
-        scalars="solution",
-        cmap="RdBu_r",
-        show_edges=True,
-        edge_color="black",
-        line_width=0.4,
-        scalar_bar_args={"title": "f(p)"},
-    )
-    pl.add_mesh(sphere, color="white", opacity=0.25, show_edges=False)
-    pl.add_text(
-        f"Uniform mesh ({len(vertices)} verts, {n_tets_in} tets)",
-        font_size=10,
-    )
-    pl.show_axes()
+    factors = (0.25, 4.0)
+    family = family_from_source(source, factors)
+    print()
+    for c, grid in family:
+        print(
+            f"  implied metric x {c:<5.2g}  ->  {grid.n_points:>6d} verts, "
+            f"{_tet_count(grid):>6d} tets",
+        )
 
-    pl.subplot(0, 1)
-    pl.add_mesh(
-        clip_corner(adapted),
-        scalars="solution",
-        cmap="RdBu_r",
-        show_edges=True,
-        edge_color="black",
-        line_width=0.4,
-        show_scalar_bar=False,
+    panels: list[tuple[str, pv.UnstructuredGrid]] = [
+        (f"Uniform base\n({base.n_points} verts)", base),
+        (f"Hessian-adapted source\n({source.n_points} verts)", source),
+        *[
+            (
+                f"Implied metric x {c}\n({grid.n_points} verts)",
+                grid,
+            )
+            for c, grid in family
+        ],
+    ]
+
+    sphere = pv.Sphere(radius=0.3, center=(0.5, 0.5, 0.5)).clip(
+        normal="z",
+        origin=(0.5, 0.5, 0.5),
     )
-    pl.add_mesh(sphere, color="white", opacity=0.25, show_edges=False)
-    pl.add_text(
-        f"Hessian-adapted mesh ({adapted.n_points} verts, {n_tets_out} tets)",
-        font_size=10,
-    )
-    pl.show_axes()
+
+    pl = pv.Plotter(shape=(1, len(panels)), window_size=(1900, 600))
+    for col, (name, grid) in enumerate(panels):
+        clipped = _clip_half(grid)
+        clipped.point_data["solution"] = front_field(np.asarray(clipped.points))
+        pl.subplot(0, col)
+        pl.add_mesh(
+            clipped,
+            scalars="solution",
+            cmap="RdBu_r",
+            show_edges=True,
+            edge_color="black",
+            line_width=0.4,
+            show_scalar_bar=col == 0,
+            scalar_bar_args={"title": "front", "vertical": True},
+        )
+        pl.add_mesh(sphere, color="white", opacity=0.2, show_edges=False)
+        pl.add_text(name, font_size=10)
+        pl.show_axes()
     pl.link_views()
-    pl.camera_position = [(2.6, 2.4, 2.6), (0.5, 0.5, 0.5), (0, 0, 1)]
-
+    pl.camera_position = [(2.4, 2.6, 2.4), (0.5, 0.5, 0.3), (0, 0, 1)]
     pl.show()
 
 

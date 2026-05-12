@@ -18,10 +18,20 @@ recovers the Hessian by least-squares on a patch around each vertex, and
 metric that MMG can use for adaptive remeshing.
 
 This example uses an analytic field with a sharp circular front,
-``f(x, y) = tanh(40 * (sqrt((x-0.5)^2 + (y-0.5)^2) - 0.3))``, computes the
-Hessian on the initial mesh, and runs anisotropic remeshing so the new
-mesh refines along the front and stays coarse elsewhere. The script
-writes ``hessian_adaptation.png`` next to itself.
+``f(x, y) = tanh(40 * (sqrt((x-0.5)^2 + (y-0.5)^2) - 0.3))``, and
+proceeds in two phases:
+
+1. **Adapt.** Recover the Hessian on the initial uniform mesh and run
+   anisotropic remeshing so the new mesh refines along the front and
+   stays coarse elsewhere.
+2. **Refinement family.** Recover the mesh-implied metric tensor from
+   the adapted mesh via ``build_size_map(aniso=True)`` and rescale it
+   by factors ``c in {1/4, 4}``. Multiplying the metric by ``c``
+   rescales target edge lengths by ``1/sqrt(c)``, producing coarser
+   and finer variants that *preserve* the front-aligned anisotropy
+   (issue #255).
+
+The script writes ``hessian_adaptation.png`` next to itself.
 """
 
 from __future__ import annotations
@@ -73,9 +83,9 @@ def _colored_edges(
     cmap: str,
     vmin: float,
     vmax: float,
-    linewidth: float = 0.9,
+    linewidth: float = 0.7,
 ) -> LineCollection:
-    """Edge segments coloured by the average of their endpoints' field values."""
+    """Edge segments coloured by the mean of their endpoints' field values."""
     edges = _unique_edges(triangles)
     segments = vertices[edges]
     values = 0.5 * (field[edges[:, 0]] + field[edges[:, 1]])
@@ -120,11 +130,12 @@ def _add_pill_labels(
     return canvas
 
 
-def main() -> None:
-    """Build a uniform mesh, recover the Hessian, and remesh adaptively."""
-    vertices, triangles = make_unit_square(n=30)
+def adapt_to_field(
+    vertices: np.ndarray,
+    triangles: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Hessian-recover a metric from the front field and remesh."""
     field = front_field(vertices)
-
     hessian = compute_hessian(vertices, triangles, field)
     metric = create_metric_from_hessian(
         hessian,
@@ -132,50 +143,77 @@ def main() -> None:
         hmin=3e-3,
         hmax=0.08,
     )
-
     pv_mesh = polydata_from_2d_triangles(vertices, triangles)
-    pv_mesh.point_data["solution"] = field
     pv_mesh.point_data["metric"] = metric
-
     adapted = pv_mesh.mmg.remesh(hgrad=2.0, verbose=False)
-    adapted_pts = np.asarray(adapted.points[:, :2])
-    adapted_tris = adapted.regular_faces
-    adapted_field = front_field(adapted_pts)
+    return np.asarray(adapted.points[:, :2]), adapted.regular_faces
 
+
+def remesh_with_scaled_metric(
+    vertices: np.ndarray,
+    triangles: np.ndarray,
+    metric: np.ndarray,
+    factor: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Scale a recovered metric tensor and remesh the same source mesh."""
+    pv_mesh = polydata_from_2d_triangles(vertices, triangles)
+    pv_mesh.point_data["metric"] = metric * factor
+    grid = pv_mesh.mmg.remesh(hgrad=2.0, verbose=False)
+    return np.asarray(grid.points[:, :2]), grid.regular_faces
+
+
+def main() -> None:
+    """Adapt to the front, then build a refinement family by rescaling."""
+    base_vertices, base_triangles = make_unit_square(n=30)
     print(
-        f"Initial: {len(vertices)} vertices, {len(triangles)} triangles\n"
-        f"Adapted: {adapted.n_points} vertices, {len(adapted_tris)} triangles",
+        f"Uniform base:        {len(base_vertices):>6d} verts, "
+        f"{len(base_triangles):>6d} triangles",
     )
 
-    vmin, vmax = float(field.min()), float(field.max())
-    cmap = "RdBu_r"
+    src_vertices, src_triangles = adapt_to_field(base_vertices, base_triangles)
+    print(
+        f"Hessian-adapted src: {len(src_vertices):>6d} verts, "
+        f"{len(src_triangles):>6d} triangles",
+    )
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 5.2))
+    # Recover the source's mesh-implied anisotropic metric tensor.
+    src_pv = polydata_from_2d_triangles(src_vertices, src_triangles)
+    src_metric = src_pv.mmg.build_size_map(aniso=True)
+
+    factors = (0.25, 4.0)
+    family: list[tuple[float, np.ndarray, np.ndarray]] = []
+    for c in factors:
+        v, t = remesh_with_scaled_metric(src_vertices, src_triangles, src_metric, c)
+        family.append((c, v, t))
+    print()
+    for c, v, t in family:
+        print(
+            f"  implied metric x {c:<5.2g}  ->  {len(v):>6d} verts, "
+            f"{len(t):>6d} triangles",
+        )
+
+    panels: list[tuple[str, np.ndarray, np.ndarray]] = [
+        ("Uniform base", base_vertices, base_triangles),
+        ("Hessian-adapted source", src_vertices, src_triangles),
+        *[(f"Implied metric x {c}", v, t) for c, v, t in family],
+    ]
+
+    cmap = "RdBu_r"
+    vmin, vmax = -1.0, 1.0
+
+    fig, axes = plt.subplots(1, len(panels), figsize=(4.0 * len(panels), 4.2))
     fig.patch.set_alpha(0.0)
-    for ax in axes:
+    for ax, (_, v, t) in zip(axes, panels, strict=True):
         ax.set_aspect("equal")
         ax.set_xlim(0.0, 1.0)
         ax.set_ylim(0.0, 1.0)
         ax.set_axis_off()
         ax.patch.set_alpha(0.0)
-
-    axes[0].add_collection(
-        _colored_edges(vertices, triangles, field, cmap=cmap, vmin=vmin, vmax=vmax),
-    )
-    axes[1].add_collection(
-        _colored_edges(
-            adapted_pts,
-            adapted_tris,
-            adapted_field,
-            cmap=cmap,
-            vmin=vmin,
-            vmax=vmax,
-            linewidth=0.7,
-        ),
-    )
+        ax.add_collection(
+            _colored_edges(v, t, front_field(v), cmap=cmap, vmin=vmin, vmax=vmax),
+        )
 
     fig.tight_layout()
-    out_path = Path(__file__).with_suffix(".png")
 
     buffer = io.BytesIO()
     fig.savefig(buffer, format="png", dpi=140, bbox_inches="tight", transparent=True)
@@ -183,15 +221,12 @@ def main() -> None:
     buffer.seek(0)
     rendered = Image.open(buffer).convert("RGBA")
 
-    labelled = _add_pill_labels(
-        rendered,
-        labels=[
-            f"Uniform mesh ({len(vertices)} vertices)",
-            f"Hessian-adapted mesh ({adapted.n_points} vertices)",
-        ],
-    )
+    labels = [f"{name}  ({len(v)} v, {len(t)} t)" for name, v, t in panels]
+    labelled = _add_pill_labels(rendered, labels=labels)
+
+    out_path = Path(__file__).with_suffix(".png")
     labelled.save(out_path, format="PNG")
-    print(f"Wrote {out_path}")
+    print(f"\nWrote {out_path}")
 
 
 if __name__ == "__main__":
