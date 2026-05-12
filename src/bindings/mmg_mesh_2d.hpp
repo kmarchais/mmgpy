@@ -118,6 +118,9 @@ public:
   py::dict remesh_levelset(const py::array_t<double> &levelset,
                            const py::dict &options = py::dict());
 
+  // Sizemap utility (MMG2D has no Clean_isoSurf equivalent)
+  py::array_t<double> build_size_map();
+
   bool is_corrupted() const { return corrupted_; }
 
   // Delete copy constructor and assignment operator

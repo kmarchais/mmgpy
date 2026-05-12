@@ -1249,6 +1249,19 @@ class MmgMesh3D:
 
         """
 
+    def build_size_map(self) -> NDArray[np.float64]:
+        """Build an isotropic size map from mean incident edge lengths.
+
+        Wraps ``MMG3D_doSol``. Populates the mesh metric channel and
+        returns a ``(n_vertices, 1)`` array of per-vertex sizes.
+        """
+
+    def clean_iso_surface(self) -> None:
+        """Remove isolated triangles / edges left after a level-set discretization.
+
+        Wraps ``MMG3D_Clean_isoSurf``. Modifies the mesh in place.
+        """
+
 class MmgMesh2D:
     """2D triangular mesh class for in-memory remeshing.
 
@@ -2048,6 +2061,13 @@ class MmgMesh2D:
 
         """
 
+    def build_size_map(self) -> NDArray[np.float64]:
+        """Build an isotropic size map from mean incident edge lengths.
+
+        Wraps ``MMG2D_doSol``. Populates the mesh metric channel and
+        returns a ``(n_vertices, 1)`` array of per-vertex sizes.
+        """
+
 class MmgMeshS:
     """Surface mesh class for in-memory remeshing.
 
@@ -2781,4 +2801,17 @@ class MmgMeshS:
         dict[str, Any]
             Statistics dictionary with before/after metrics.
 
+        """
+
+    def build_size_map(self) -> NDArray[np.float64]:
+        """Build an isotropic size map from mean incident edge lengths.
+
+        Wraps ``MMGS_doSol``. Populates the mesh metric channel and
+        returns a ``(n_vertices, 1)`` array of per-vertex sizes.
+        """
+
+    def clean_iso_surface(self) -> None:
+        """Remove isolated triangles / edges left after a level-set discretization.
+
+        Wraps ``MMGS_Clean_isoSurf``. Modifies the mesh in place.
         """

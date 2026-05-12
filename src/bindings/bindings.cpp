@@ -222,7 +222,15 @@ PYBIND11_MODULE(_mmgpy, m) {
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
-          "              iso: Enable level-set mode (default=1).");
+          "              iso: Enable level-set mode (default=1).")
+      .def("build_size_map", &MmgMesh::build_size_map,
+           "Build an isotropic size map from the mean edge length passing "
+           "through each vertex (wraps MMG3D_doSol).\n\n"
+           "Populates the mesh metric channel and returns the resulting "
+           "Nx1 array of per-vertex sizes.")
+      .def("clean_iso_surface", &MmgMesh::clean_iso_surface,
+           "Remove isolated triangles / edges left after a level-set "
+           "discretization (wraps MMG3D_Clean_isoSurf).");
 
   // Phase 4: MmgMesh2D class for 2D planar meshes
   py::class_<MmgMesh2D>(m, "MmgMesh2D")
@@ -374,7 +382,12 @@ PYBIND11_MODULE(_mmgpy, m) {
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
-          "              iso: Enable level-set mode (default=1).");
+          "              iso: Enable level-set mode (default=1).")
+      .def("build_size_map", &MmgMesh2D::build_size_map,
+           "Build an isotropic size map from the mean edge length passing "
+           "through each vertex (wraps MMG2D_doSol).\n\n"
+           "Populates the mesh metric channel and returns the resulting "
+           "Nx1 array of per-vertex sizes.");
 
   // Phase 4: MmgMeshS class for surface meshes
   py::class_<MmgMeshS>(m, "MmgMeshS")
@@ -520,7 +533,15 @@ PYBIND11_MODULE(_mmgpy, m) {
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
-          "              iso: Enable level-set mode (default=1).");
+          "              iso: Enable level-set mode (default=1).")
+      .def("build_size_map", &MmgMeshS::build_size_map,
+           "Build an isotropic size map from the mean edge length passing "
+           "through each vertex (wraps MMGS_doSol).\n\n"
+           "Populates the mesh metric channel and returns the resulting "
+           "Nx1 array of per-vertex sizes.")
+      .def("clean_iso_surface", &MmgMeshS::clean_iso_surface,
+           "Remove isolated triangles / edges left after a level-set "
+           "discretization (wraps MMGS_Clean_isoSurf).");
 
   py::class_<mmg3d>(m, "mmg3d")
       .def_static("remesh", remesh_3d, py::arg("input_mesh"),
