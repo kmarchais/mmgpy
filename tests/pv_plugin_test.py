@@ -211,6 +211,32 @@ def test_accessor_remesh_metric_kwarg_1d_scalar() -> None:
     assert out.n_points > 0
 
 
+def test_accessor_remesh_metric_wrong_n_points_raises() -> None:
+    """``metric=`` with mismatched first dim raises a clear ValueError."""
+    pytest.importorskip("scipy")
+    cube_pts = pv.ImageData(
+        dimensions=(5, 5, 5),
+        spacing=(0.25, 0.25, 0.25),
+    ).cast_to_unstructured_grid()
+    tets = cube_pts.delaunay_3d()
+
+    with pytest.raises(ValueError, match="n_points"):
+        tets.mmg.remesh(metric=np.full((tets.n_points + 1, 1), 0.1), verbose=-1)
+
+
+def test_accessor_remesh_metric_wrong_n_components_raises() -> None:
+    """``metric=`` with an unsupported last dim raises a clear ValueError."""
+    pytest.importorskip("scipy")
+    cube_pts = pv.ImageData(
+        dimensions=(5, 5, 5),
+        spacing=(0.25, 0.25, 0.25),
+    ).cast_to_unstructured_grid()
+    tets = cube_pts.delaunay_3d()
+
+    with pytest.raises(ValueError, match="last dimension"):
+        tets.mmg.remesh(metric=np.full((tets.n_points, 4), 0.1), verbose=-1)
+
+
 def test_accessor_remesh_metric_rejected_on_line_only_polydata() -> None:
     """``metric=`` is not supported on the line-only PolyData generate() path."""
     verts_2d = np.array(

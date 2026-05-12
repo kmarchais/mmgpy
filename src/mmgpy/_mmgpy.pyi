@@ -2892,10 +2892,10 @@ class MmgMeshS:
         """
 
     def build_size_map(self, aniso: bool = False) -> NDArray[np.float64]:
-        """Build an isotropic size map from edges incident to each vertex.
+        """Build a size map from edges incident to each vertex.
 
         Wraps ``MMGS_doSol``. Populates the mesh metric channel and
-        returns a ``(n_vertices, 1)`` array of per-vertex sizes.
+        returns the result as a NumPy array of shape ``(n_vertices, 1)``.
 
         Args:
             aniso: Not implemented for surface meshes
