@@ -16,6 +16,7 @@ import pyvista as pv
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy._mesh import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy.metrics import validate_metric_tensor
 
 
 class TestBuildSizeMap3D:
@@ -126,31 +127,6 @@ class TestBuildSizeMapSurface:
         assert np.all(sizes > 0)
 
 
-def _is_spd_3d(tensors: np.ndarray) -> np.ndarray:
-    """Return a per-vertex boolean mask of SPD 3x3 tensors stored as ``(N, 6)``."""
-    a, b, c, d, e, f = (tensors[:, i] for i in range(6))
-    mats = np.empty((len(tensors), 3, 3), dtype=np.float64)
-    mats[:, 0, 0] = a
-    mats[:, 0, 1] = mats[:, 1, 0] = b
-    mats[:, 0, 2] = mats[:, 2, 0] = c
-    mats[:, 1, 1] = d
-    mats[:, 1, 2] = mats[:, 2, 1] = e
-    mats[:, 2, 2] = f
-    eigvals = np.linalg.eigvalsh(mats)
-    return np.all(eigvals > 0, axis=1)
-
-
-def _is_spd_2d(tensors: np.ndarray) -> np.ndarray:
-    """Return a per-vertex boolean mask of SPD 2x2 tensors stored as ``(N, 3)``."""
-    a, b, c = (tensors[:, i] for i in range(3))
-    mats = np.empty((len(tensors), 2, 2), dtype=np.float64)
-    mats[:, 0, 0] = a
-    mats[:, 0, 1] = mats[:, 1, 0] = b
-    mats[:, 1, 1] = c
-    eigvals = np.linalg.eigvalsh(mats)
-    return np.all(eigvals > 0, axis=1)
-
-
 class TestBuildSizeMapAniso3D:
     """Tests for ``MmgMesh3D.build_size_map(aniso=True)``."""
 
@@ -167,7 +143,7 @@ class TestBuildSizeMapAniso3D:
         assert metric.shape == (len(vertices), 6)
         assert metric.dtype == np.float64
         assert np.all(np.isfinite(metric))
-        assert np.all(_is_spd_3d(metric))
+        assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
 
     def test_populates_metric_channel(
         self,
@@ -212,7 +188,7 @@ class TestBuildSizeMapAniso2D:
 
         assert metric.shape == (len(vertices), 3)
         assert np.all(np.isfinite(metric))
-        assert np.all(_is_spd_2d(metric))
+        assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
 
 
 class TestBuildSizeMapAnisoSurface:
@@ -345,7 +321,7 @@ class TestMeshWrapper:
         metric = mesh.build_size_map(aniso=True)
 
         assert metric.shape == (len(vertices), 6)
-        assert np.all(_is_spd_3d(metric))
+        assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
 
     def test_clean_iso_surface_rejects_2d(
         self,

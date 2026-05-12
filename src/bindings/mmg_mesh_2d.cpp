@@ -1158,7 +1158,12 @@ py::array_t<double> MmgMesh2D::build_size_map(bool aniso) {
     throw std::runtime_error(
         "Failed to set MMG2D_IPARAM_anisosize for build_size_map");
   }
-  if (!MMG2D_Set_solSize(mesh, met, MMG5_Vertex, mesh->np,
+  // Resize only when the channel does not already match the requested mode:
+  // Set_solSize frees and re-allocates the buffer, which is wasted work on
+  // repeat calls with the same `aniso` value.
+  const int target_size = aniso ? 3 : 1;
+  if (met->size != target_size &&
+      !MMG2D_Set_solSize(mesh, met, MMG5_Vertex, mesh->np,
                          aniso ? MMG5_Tensor : MMG5_Scalar)) {
     throw std::runtime_error("Failed to resize metric for build_size_map");
   }

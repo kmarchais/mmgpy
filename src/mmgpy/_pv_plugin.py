@@ -995,12 +995,7 @@ class MmgAccessor:
         """
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         sizes = mesh.build_size_map(aniso=aniso)
-        # MMG returns Nx1 for the iso case and Nx{3,6} for the aniso case.
-        # PyVista users expect scalar metrics flattened to 1D point_data.
-        if sizes.shape[-1] == 1:
-            self._dataset.point_data["metric"] = sizes.reshape(-1)
-        else:
-            self._dataset.point_data["metric"] = sizes
+        self._dataset.point_data["metric"] = sizes if aniso else sizes.reshape(-1)
         return sizes
 
     def clean_iso_surface(self) -> pv.UnstructuredGrid | pv.PolyData:
