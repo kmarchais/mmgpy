@@ -49,7 +49,7 @@ _TRIANGULATION_WARNING = (
     "as MMG only supports triangular elements."
 )
 
-_REF_FIELDS = ("refs", "gmsh:physical", "medit:ref")
+_REF_FIELDS = ("refs", "gmsh:physical", "medit:ref", "tetgen:ref")
 _LINE_VERTS = 2
 
 # Substring hints used by MMG's VTK reader to auto-route point_data arrays
