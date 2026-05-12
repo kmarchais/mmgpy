@@ -12,6 +12,7 @@ dataset instead.
 from __future__ import annotations
 
 import warnings
+from collections.abc import Mapping
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
@@ -388,6 +389,102 @@ def _create_impl(  # noqa: PLR0913
     if edges_arr is not None:
         impl.set_edges(edges_arr, e_refs)
     return impl
+
+
+_LOCAL_PARAM_KEYS = ("type", "ref", "hmin", "hmax", "hausd")
+_VALID_ENTITY_TYPES_3D = frozenset({"vertex", "edge", "triangle", "tetrahedron"})
+_VALID_ENTITY_TYPES_2D_S = frozenset({"vertex", "edge", "triangle"})
+_MULTI_MATERIAL_KEYS = ("ref", "split", "ref_minus", "ref_plus")
+
+
+def _normalize_local_parameters(
+    parameters: Sequence[Mapping[str, Any]],
+    kind: MeshKind,
+) -> list[dict[str, Any]]:
+    """Validate local-parameter specs at the Python boundary.
+
+    The binding raises a generic ``RuntimeError`` deep in MMG for malformed
+    input; routing through this helper turns shape errors into a clear
+    ``ValueError`` before the C call.
+    """
+    valid_types = (
+        _VALID_ENTITY_TYPES_3D
+        if kind == MeshKind.TETRAHEDRAL
+        else _VALID_ENTITY_TYPES_2D_S
+    )
+    normalized: list[dict[str, Any]] = []
+    for i, raw in enumerate(parameters):
+        if not isinstance(raw, Mapping):
+            msg = f"parameters[{i}] must be a mapping, got {type(raw).__name__}"
+            raise ValueError(msg)  # noqa: TRY004
+        missing = [k for k in _LOCAL_PARAM_KEYS if k not in raw]
+        if missing:
+            msg = f"parameters[{i}] missing keys: {missing}"
+            raise ValueError(msg)
+        type_str = str(raw["type"])
+        if type_str not in valid_types:
+            msg = (
+                f"parameters[{i}]['type'] must be one of "
+                f"{sorted(valid_types)}, got {type_str!r}"
+            )
+            raise ValueError(msg)
+        normalized.append(
+            {
+                "type": type_str,
+                "ref": int(raw["ref"]),
+                "hmin": float(raw["hmin"]),
+                "hmax": float(raw["hmax"]),
+                "hausd": float(raw["hausd"]),
+            },
+        )
+    return normalized
+
+
+def _normalize_multi_materials(
+    materials: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Validate multi-material specs at the Python boundary."""
+    normalized: list[dict[str, Any]] = []
+    for i, raw in enumerate(materials):
+        if not isinstance(raw, Mapping):
+            msg = f"materials[{i}] must be a mapping, got {type(raw).__name__}"
+            raise ValueError(msg)  # noqa: TRY004
+        missing = [k for k in _MULTI_MATERIAL_KEYS if k not in raw]
+        if missing:
+            msg = f"materials[{i}] missing keys: {missing}"
+            raise ValueError(msg)
+        split_raw = raw["split"]
+        if not isinstance(split_raw, (bool, int)) or isinstance(split_raw, float):
+            msg = (
+                f"materials[{i}]['split'] must be bool or int (0/1), "
+                f"got {type(split_raw).__name__}"
+            )
+            raise ValueError(msg)  # noqa: TRY004
+        split = int(split_raw)
+        if split not in (0, 1):
+            msg = f"materials[{i}]['split'] must be 0 or 1, got {split}"
+            raise ValueError(msg)
+        normalized.append(
+            {
+                "ref": int(raw["ref"]),
+                "split": split,
+                "ref_minus": int(raw["ref_minus"]),
+                "ref_plus": int(raw["ref_plus"]),
+            },
+        )
+    return normalized
+
+
+def _normalize_ls_base_references(references: Sequence[int]) -> list[int]:
+    """Validate LS base reference list at the Python boundary."""
+    normalized: list[int] = []
+    for i, raw in enumerate(references):
+        try:
+            normalized.append(int(raw))
+        except (TypeError, ValueError) as exc:  # noqa: PERF203
+            msg = f"references[{i}] is not an integer: {raw!r}"
+            raise ValueError(msg) from exc
+    return normalized
 
 
 class Mesh:
@@ -2240,6 +2337,102 @@ class Mesh:
 
         # apply_sizing_constraints expects a mesh object and sets the field directly
         apply_sizing_constraints(self._impl, self._sizing_constraints)
+
+    # =========================================================================
+    # Multi-material / local parameters / level-set base references
+    # =========================================================================
+
+    def set_local_parameters(
+        self,
+        parameters: Sequence[Mapping[str, Any]],
+    ) -> None:
+        """Set region-specific sizing parameters per reference.
+
+        Wraps ``MMG{3D,2D,S}_Set_localParameter``. Each entry overrides the
+        global ``hmin`` / ``hmax`` / ``hausd`` for entities carrying the
+        matching reference, so the next ``remesh()`` call refines or
+        coarsens that region differently from the rest of the mesh.
+
+        Parameters
+        ----------
+        parameters : sequence of dict
+            Each dict must carry:
+
+            - ``"type"``: ``"vertex"``, ``"edge"``, ``"triangle"``, or
+              ``"tetrahedron"`` (the latter only valid on 3D meshes).
+            - ``"ref"``: reference number to target.
+            - ``"hmin"`` / ``"hmax"``: local sizing bounds.
+            - ``"hausd"``: local Hausdorff distance.
+
+        Raises
+        ------
+        ValueError
+            If any entry is missing a required key, has the wrong type, or
+            uses an entity type incompatible with this mesh's kind.
+
+        """
+        normalized = _normalize_local_parameters(parameters, self._kind)
+        # The stub types this as list[LocalParameter] (a TypedDict); our
+        # normalized dicts satisfy the same shape, only with broader value
+        # types. Cast to silence mypy without losing the runtime check.
+        self._impl.set_local_parameters(cast("list[Any]", normalized))
+
+    def set_multi_materials(
+        self,
+        materials: Sequence[Mapping[str, Any]],
+    ) -> None:
+        """Configure multi-material discretization for level-set remeshing.
+
+        Wraps ``MMG{3D,2D,S}_Set_multiMat``. Used together with
+        ``remesh_levelset()`` to discretize an interface that separates more
+        than two materials: each material specifies which interior reference
+        gets assigned to its negative and positive sides.
+
+        Parameters
+        ----------
+        materials : sequence of dict
+            Each dict must carry:
+
+            - ``"ref"``: material reference number on the input mesh.
+            - ``"split"``: ``True`` / ``1`` to split this material along the
+              level-set; ``False`` / ``0`` to leave it unsplit.
+            - ``"ref_minus"`` / ``"ref_plus"``: output references for the
+              negative and positive sides of the level-set inside this
+              material. Required keys (use ``0`` as a placeholder when
+              ``split`` is false; the values are then ignored by MMG).
+
+        Raises
+        ------
+        ValueError
+            If any entry is missing a required key or has the wrong type.
+
+        """
+        normalized = _normalize_multi_materials(materials)
+        self._impl.set_multi_materials(normalized)
+
+    def set_ls_base_references(
+        self,
+        references: Sequence[int],
+    ) -> None:
+        """Restrict level-set discretization to a subset of references.
+
+        Wraps ``MMG{3D,2D,S}_Set_lsBaseReference``. Only the references in
+        the list are eligible for splitting along the level-set during the
+        next ``remesh_levelset()`` call; all others are preserved as-is.
+
+        Parameters
+        ----------
+        references : sequence of int
+            Reference numbers eligible for level-set splitting.
+
+        Raises
+        ------
+        ValueError
+            If any entry cannot be coerced to an integer.
+
+        """
+        normalized = _normalize_ls_base_references(references)
+        self._impl.set_ls_base_references(normalized)
 
     # =========================================================================
     # PyVista conversion
