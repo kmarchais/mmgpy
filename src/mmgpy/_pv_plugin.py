@@ -521,7 +521,7 @@ def read_tetgen(
     Registered for the ``.node`` and ``.ele`` extensions via the
     ``pyvista.readers`` entry point group. Tetgen stores nodes and
     elements in two sibling files; meshio handles the pairing
-    transparently — point markers come back as ``point_data["tetgen:ref"]``
+    transparently. Point markers come back as ``point_data["tetgen:ref"]``
     and tet region attributes as ``cell_data["tetgen:ref"]``, both of
     which mmgpy's ``from_pyvista`` recognises as reference markers.
 

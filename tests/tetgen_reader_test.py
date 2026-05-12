@@ -80,6 +80,15 @@ def test_pv_read_ele_returns_same_mesh(tetgen_pair: Path) -> None:
 
     assert via_node.n_points == via_ele.n_points
     assert via_node.n_cells == via_ele.n_cells
+    np.testing.assert_array_equal(via_node.points, via_ele.points)
+    np.testing.assert_array_equal(
+        np.asarray(via_node.point_data["tetgen:ref"]),
+        np.asarray(via_ele.point_data["tetgen:ref"]),
+    )
+    np.testing.assert_array_equal(
+        np.asarray(via_node.cell_data["tetgen:ref"]),
+        np.asarray(via_ele.cell_data["tetgen:ref"]),
+    )
 
 
 def test_tetgen_refs_preserved(tetgen_pair: Path) -> None:
@@ -108,7 +117,9 @@ def test_tetgen_refs_route_into_remesh(tetgen_pair: Path) -> None:
 
     The cube tets all carry ref 42; after a remesh that preserves the
     domain, the output's cell refs are still 42 (no zeros introduced
-    from missing-ref defaults).
+    from missing-ref defaults). The output also contains boundary
+    triangles (MMG emits them alongside the tets), so the assertion
+    filters on TETRA cells only.
     """
     loaded = pv.read(str(tetgen_pair))
 
