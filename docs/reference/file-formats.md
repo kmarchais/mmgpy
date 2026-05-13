@@ -1,6 +1,6 @@
 # File Formats
 
-mmgpy supports numerous file formats through its integration with meshio.
+mmgpy supports numerous file formats: the native Medit `.mesh`/`.meshb` reader is registered with PyVista at import; other formats are handled by PyVista directly. Formats not natively supported by VTK (e.g. `.msh`, `.med`, `.inp`) require `pip install pyvista[io]`, which pulls in meshio.
 
 ## Native MMG Format
 
@@ -195,7 +195,7 @@ mesh = mmgpy.read("domain.msh")
 If a format is not recognized:
 
 1. Check the extension is correct
-2. Ensure meshio supports the format
+2. Install `pyvista[io]` if the format is meshio-backed (`.msh`, `.med`, `.inp`, ...)
 3. Try converting to `.mesh` or `.vtk` first
 
 ### Lost Data

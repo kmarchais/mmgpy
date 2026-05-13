@@ -1480,7 +1480,6 @@ name = "mmgpy"
 version = "0.13.0.dev0"
 source = { editable = "." }
 dependencies = [
-    { name = "meshio" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "patchelf", marker = "sys_platform == 'linux'" },
@@ -1507,6 +1506,7 @@ ui = [
 dev = [
     { name = "build" },
     { name = "imageio" },
+    { name = "meshio" },
     { name = "mypy" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1536,7 +1536,6 @@ ui = [
 [package.metadata]
 requires-dist = [
     { name = "fedoo", marker = "extra == 'fem'", specifier = ">=0.8.3,<1" },
-    { name = "meshio", specifier = ">=5.3.5,<6" },
     { name = "numpy", specifier = ">=2.0.2,<3" },
     { name = "patchelf", marker = "sys_platform == 'linux'", specifier = ">=0.17.2.4,<1" },
     { name = "pyvista", specifier = ">=0.48,<1" },
@@ -1555,6 +1554,7 @@ provides-extras = ["fem", "ui"]
 dev = [
     { name = "build", specifier = ">=1.4.0" },
     { name = "imageio", specifier = ">=2.37.2" },
+    { name = "meshio", specifier = ">=5.3.5,<6" },
     { name = "mypy", specifier = ">=1.19.1" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pre-commit", specifier = ">=4.0.1" },

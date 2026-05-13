@@ -131,13 +131,11 @@ print(f"Created mesh with {mesh.n_points} vertices ({mesh.mmg.kind.name})")
 
 mmgpy works with several visualization and mesh I/O libraries:
 
-| Package | Purpose                              |
-| ------- | ------------------------------------ |
-| pyvista | 3D visualization and mesh conversion |
-| meshio  | Extended file format support         |
-| rich    | Progress bars and formatted output   |
-
-These are installed automatically with mmgpy.
+| Package     | Purpose                                                        |
+| ----------- | -------------------------------------------------------------- |
+| pyvista     | 3D visualization and mesh conversion (installed with mmgpy)    |
+| pyvista[io] | Pulls in meshio for extended file format support (`.msh`, ...) |
+| rich        | Progress bars and formatted output                             |
 
 ## Troubleshooting
 
