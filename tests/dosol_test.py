@@ -9,8 +9,6 @@ equivalent).
 
 from __future__ import annotations
 
-import sys
-
 import numpy as np
 import pytest
 import pyvista as pv
@@ -20,12 +18,32 @@ from mmgpy._mesh import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 from mmgpy.metrics import validate_metric_tensor
 
-# MMGS_analys is not exported from libmmgs.dll on Windows, so the surface
-# aniso path stays disabled there. Skip those tests instead of running them.
-_SURFACE_ANISO_UNSUPPORTED = sys.platform == "win32"
+
+def _surface_aniso_available() -> bool:
+    """Return False on builds where MMGS_analys is not callable (conda Windows)."""
+    try:
+        mesh = MmgMeshS(
+            np.array(
+                [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            ),
+            np.array([[1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4]]),
+        )
+        mesh.build_size_map(aniso=True)
+    except RuntimeError as exc:
+        if "MMGS_analys" in str(exc):
+            return False
+        raise
+    return True
+
+
+_SURFACE_ANISO_AVAILABLE = _surface_aniso_available()
 _skip_if_no_surface_aniso = pytest.mark.skipif(
-    _SURFACE_ANISO_UNSUPPORTED,
-    reason="MMGS_analys is not exported from libmmgs.dll on Windows",
+    not _SURFACE_ANISO_AVAILABLE,
+    reason="MMGS_analys not exported in this build (conda Windows)",
+)
+_skip_if_surface_aniso_available = pytest.mark.skipif(
+    _SURFACE_ANISO_AVAILABLE,
+    reason="surface aniso works in this build; RuntimeError path is conda-Windows only",
 )
 
 
@@ -267,22 +285,22 @@ class TestBuildSizeMapAnisoSurface:
         assert mesh.get_vertices().shape[0] > len(vertices)
 
 
-@pytest.mark.skipif(
-    not _SURFACE_ANISO_UNSUPPORTED,
-    reason="Windows-only: verifies the explicit RuntimeError stays in place",
-)
-class TestBuildSizeMapAnisoSurfaceWindows:
-    """On Windows, the surface aniso path still raises with a clear message."""
+@_skip_if_surface_aniso_available
+class TestBuildSizeMapAnisoSurfaceUnsupported:
+    """Builds where ``MMGS_analys`` is hidden must raise with a clear message."""
 
-    def test_aniso_raises_on_windows(
+    def test_aniso_raises_with_clear_message(
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
-        """``aniso=True`` raises until MMG exports ``MMGS_analys`` on Windows."""
+        """``aniso=True`` raises mentioning ``MMGS_analys`` on conda Windows."""
         vertices, triangles = tetrahedron_surface_mesh
         mesh = MmgMeshS(vertices, triangles)
 
-        with pytest.raises(RuntimeError, match="not implemented for surface"):
+        with pytest.raises(
+            RuntimeError,
+            match=r"not implemented for surface.*MMGS_analys",
+        ):
             mesh.build_size_map(aniso=True)
 
 

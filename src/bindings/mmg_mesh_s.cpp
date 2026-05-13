@@ -5,31 +5,26 @@
 #include <set>
 #include <stdexcept>
 
-#ifdef _WIN32
+// MMG v5.8.0 ships two MMGS symbols without LIBMMGS_EXPORT:
+//   - MMGS_Get_triangleQuality (public header drops the macro)
+//   - MMGS_analys (only in libmmgs_private.h)
+// On Linux/macOS both have default ELF visibility. Wheel builds on Windows
+// enable WINDOWS_EXPORT_ALL_SYMBOLS on libmmgs_so (see extern/CMakeLists.txt)
+// so the DLL exports them too. Conda links against the prebuilt mmgsuite
+// package, where the symbols stay hidden; src/CMakeLists.txt sets
+// MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN on that path so we fall back to a manual
+// triangle-quality formula and refuse the aniso-surface path.
+#ifdef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
 #include <cmath>
-#endif
-
-#ifndef _WIN32
-// MMGS_analys is declared in libmmgs_private.h, which is not in the installed
-// public headers, but the symbol has default visibility in the .so on Linux
-// and macOS (verified via nm). Forward-declare here so we can call it without
-// pulling in the private header. Required for surface anisotropic doSol,
-// which dispatches through MMGS_setfunc and needs the mesh to be analyzed
-// (ridges, normals, manifold tags) first. On Windows the symbol lacks
-// __declspec(dllexport) in MMG's build, so the aniso surface path stays
-// disabled there.
+#else
 extern "C" int MMGS_analys(MMG5_pMesh mesh);
 #endif
 
 namespace {
 
-// Wrapper for MMGS_Get_triangleQuality.
-// On Windows, the symbol is not exported from the MMG DLL (missing
-// LIBMMGS_EXPORT in MMG v5.8.0 header), so we compute the quality manually.
-// On other platforms we call the C API directly.
 double get_triangle_quality([[maybe_unused]] MMG5_pMesh mesh,
                             [[maybe_unused]] MMG5_pSol met, MMG5_int k) {
-#ifdef _WIN32
+#ifdef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
   MMG5_pTria pt = &mesh->tria[k];
   MMG5_pPoint p0 = &mesh->point[pt->v[0]];
   MMG5_pPoint p1 = &mesh->point[pt->v[1]];
@@ -1139,16 +1134,15 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
 py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
   check_not_corrupted("build_size_map");
 
-#ifdef _WIN32
+#ifdef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
   if (aniso) {
-    // MMGS_analys is not exported from libmmgs.dll (missing
-    // __declspec(dllexport) on MMG's side), so we cannot prepare the surface
-    // for the aniso dispatch on Windows. Same family of issue as the
-    // get_triangle_quality workaround above. Keep the explicit failure here
-    // so users get a clear message rather than a link-time crash.
+    // MMGS_analys is not callable from this build (conda mmgsuite hides
+    // the symbol). The surface aniso path needs the analyzed mesh state,
+    // so refuse with a clear message rather than producing zero metrics.
     throw std::runtime_error(
         "build_size_map(aniso=True) is not implemented for surface meshes "
-        "on Windows (MMGS_analys is not exported from libmmgs.dll).");
+        "in conda Windows builds (MMGS_analys is not exported from the "
+        "mmgsuite mmgs.dll).");
   }
 #endif
 
@@ -1169,7 +1163,7 @@ py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
     throw std::runtime_error("Failed to resize metric for build_size_map");
   }
 
-#ifndef _WIN32
+#ifndef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
   if (aniso) {
     // MMGS_doSol_ani reads ridge tags, normals and manifold flags off the
     // mesh, all of which are populated by MMGS_analys. The expensive part

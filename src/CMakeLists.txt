@@ -35,6 +35,16 @@ target_link_libraries(${PROJECT_NAME}
         ${MMG_LIBRARIES}
 )
 
+# MMG v5.8.0 ships two MMGS symbols without LIBMMGS_EXPORT:
+# MMGS_Get_triangleQuality (public header drops the macro) and MMGS_analys
+# (only in the private header). On wheel builds, extern/CMakeLists.txt
+# enables WINDOWS_EXPORT_ALL_SYMBOLS on libmmgs_so to surface both. Conda
+# links against the prebuilt mmgsuite package, where neither workaround is
+# available, so the bindings need a manual fallback on that path only.
+if(WIN32 AND MMGPY_CONDA_BUILD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN)
+endif()
+
 # Handle compiler warnings
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)

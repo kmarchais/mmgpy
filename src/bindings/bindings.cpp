@@ -619,8 +619,9 @@ PYBIND11_MODULE(_mmgpy, m) {
            "first runs MMGS_analys to populate ridges, normals and "
            "manifold tags; any subsequent remesh would have run analys "
            "anyway, so this only changes the timing of work that would "
-           "have happened. Not supported on Windows: the underlying "
-           "MMGS_analys symbol is not exported from libmmgs.dll.")
+           "have happened. Conda Windows builds link against the prebuilt "
+           "mmgsuite package, which does not export MMGS_analys, so "
+           "aniso=True raises there.")
       .def("clean_iso_surface", &MmgMeshS::clean_iso_surface,
            "Remove isolated triangles / edges left after a level-set "
            "discretization (wraps MMGS_Clean_isoSurf).");
