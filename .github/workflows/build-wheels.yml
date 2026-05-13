@@ -214,7 +214,9 @@ jobs:
           # Let uv pick the matching wheel for the venv's Python from
           # wheelhouse/. We deliberately do NOT `uv sync` here, which would
           # build mmgpy from source and shadow the wheel under test.
-          uv pip install --python .venv/bin/python --no-index --find-links wheelhouse mmgpy
+          # --find-links makes the local wheel win for mmgpy; PyPI is still
+          # used for transitive deps (numpy, pyvista, ...).
+          uv pip install --python .venv/bin/python --find-links wheelhouse mmgpy
           # fedoo is needed for the elasticity_propagation example.
           uv pip install --python .venv/bin/python pytest pytest-codeblocks pytest-pyvista fedoo
       - name: Verify the installed mmgpy is the wheel
