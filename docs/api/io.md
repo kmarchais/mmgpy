@@ -2,7 +2,7 @@
 
 This page documents how to load and save meshes with mmgpy.
 
-mmgpy registers a Medit reader/writer plugin with PyVista on import, so `pv.read("foo.mesh")` and `dataset.save("foo.mesh")` both go through MMG's native I/O. Other formats are handled by PyVista directly (which uses meshio under the hood).
+mmgpy registers a Medit reader/writer plugin with PyVista on import, so `pv.read("foo.mesh")` and `dataset.save("foo.mesh")` both go through MMG's native I/O. Other formats are handled by PyVista directly; formats not natively supported by VTK require `pip install pyvista[io]` (which pulls in meshio).
 
 ## Reading Meshes
 
@@ -14,21 +14,21 @@ show_root_heading: true
 
 ### Supported Formats
 
-| Format           | Extensions        | Notes                          |
-| ---------------- | ----------------- | ------------------------------ |
-| MMG native       | `.mesh`, `.meshb` | Recommended for MMG            |
-| VTK Legacy       | `.vtk`            | Universal, ParaView compatible |
-| VTK XML          | `.vtu`, `.vtp`    | Modern VTK format              |
-| STL              | `.stl`            | Surface meshes only            |
-| OBJ              | `.obj`            | Surface meshes only            |
-| PLY              | `.ply`            | Point cloud / mesh             |
-| GMSH             | `.msh`            | Popular for FEM                |
-| Abaqus           | `.inp`            | FEM format                     |
-| CGNS             | `.cgns`           | CFD format                     |
-| Exodus II        | `.e`, `.exo`      | Sandia format                  |
-| ANSYS            | `.ansys`          | FEM format                     |
-| MED              | `.med`            | Salome format                  |
-| And many more... |                   | See meshio documentation       |
+| Format           | Extensions        | Notes                                           |
+| ---------------- | ----------------- | ----------------------------------------------- |
+| MMG native       | `.mesh`, `.meshb` | Recommended for MMG                             |
+| VTK Legacy       | `.vtk`            | Universal, ParaView compatible                  |
+| VTK XML          | `.vtu`, `.vtp`    | Modern VTK format                               |
+| STL              | `.stl`            | Surface meshes only                             |
+| OBJ              | `.obj`            | Surface meshes only                             |
+| PLY              | `.ply`            | Point cloud / mesh                              |
+| GMSH             | `.msh`            | Popular for FEM                                 |
+| Abaqus           | `.inp`            | FEM format                                      |
+| CGNS             | `.cgns`           | CFD format                                      |
+| Exodus II        | `.e`, `.exo`      | Sandia format                                   |
+| ANSYS            | `.ansys`          | FEM format                                      |
+| MED              | `.med`            | Salome format                                   |
+| And many more... |                   | Install `pyvista[io]` for meshio-backed formats |
 
 ### Usage
 

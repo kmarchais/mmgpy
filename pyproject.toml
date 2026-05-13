@@ -16,7 +16,6 @@ description = "Python bindings for the MMG software"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "meshio>=5.3.5,<6",
     "numpy>=2.0.2,<3",
     "patchelf>=0.17.2.4,<1; sys_platform == 'linux'",
     "pyvista>=0.48,<1",
@@ -93,8 +92,6 @@ ui = "mmgpy.ui:run_ui"
 [project.entry-points."pyvista.readers"]
 mesh = "mmgpy._pv_plugin:read_mesh"
 meshb = "mmgpy._pv_plugin:read_mesh"
-node = "mmgpy._pv_plugin:read_tetgen"
-ele = "mmgpy._pv_plugin:read_tetgen"
 
 [project.entry-points."pyvista.writers"]
 mesh = "mmgpy._pv_plugin:write_mesh"
@@ -115,6 +112,7 @@ dev = [
     # Dev tools
     "build>=1.4.0",
     "imageio>=2.37.2",
+    "meshio>=5.3.5,<6",
     "mypy>=1.19.1",
     "pre-commit>=4.0.1",
     "pytest>=9.0.3",

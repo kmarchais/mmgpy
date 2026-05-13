@@ -260,7 +260,7 @@ print(f"Mean quality: {qualities.mean():.3f}")
 
 ## File Formats
 
-mmgpy supports 40+ file formats through PyVista (which uses meshio under the hood):
+mmgpy supports 40+ file formats through PyVista. VTK-native formats (`.vtk`, `.vtu`, `.vtp`, `.stl`, `.ply`, ...) work out of the box; install `pyvista[io]` for meshio-backed formats (`.msh`, `.med`, `.inp`, ...):
 
 | Format     | Extension      | Notes                                          |
 | ---------- | -------------- | ---------------------------------------------- |

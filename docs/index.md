@@ -9,17 +9,17 @@ Python bindings for the [MMG](https://www.mmgtools.org) remeshing library.
 
 ## Features
 
-|                                                   |                                                   |
-| ------------------------------------------------- | ------------------------------------------------- |
-| :material-cube-outline: **3D Volume Meshing**     | Tetrahedral remeshing                             |
-| :material-triangle-outline: **2D Meshing**        | Triangular remeshing for planar domains           |
-| :material-shape-outline: **Surface Meshing**      | 3D surface remeshing and optimization             |
-| :material-resize: **Local Sizing**                | Sphere, box, cylinder, and point-based refinement |
-| :material-chart-line: **Anisotropic Metrics**     | Custom metric tensors for directional adaptation  |
-| :material-layers-outline: **Level-Set**           | Extract isosurfaces from implicit functions       |
-| :material-arrow-expand-all: **Lagrangian Motion** | Remesh while preserving displacement fields       |
-| :material-eye: **PyVista Integration**            | Seamless conversion for visualization             |
-| :material-file-multiple: **40+ File Formats**     | VTK, STL, OBJ, GMSH, and more via meshio          |
+|                                                   |                                                         |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| :material-cube-outline: **3D Volume Meshing**     | Tetrahedral remeshing                                   |
+| :material-triangle-outline: **2D Meshing**        | Triangular remeshing for planar domains                 |
+| :material-shape-outline: **Surface Meshing**      | 3D surface remeshing and optimization                   |
+| :material-resize: **Local Sizing**                | Sphere, box, cylinder, and point-based refinement       |
+| :material-chart-line: **Anisotropic Metrics**     | Custom metric tensors for directional adaptation        |
+| :material-layers-outline: **Level-Set**           | Extract isosurfaces from implicit functions             |
+| :material-arrow-expand-all: **Lagrangian Motion** | Remesh while preserving displacement fields             |
+| :material-eye: **PyVista Integration**            | Seamless conversion for visualization                   |
+| :material-file-multiple: **40+ File Formats**     | VTK, STL, OBJ natively; GMSH and more via `pyvista[io]` |
 
 ## Quick Start
 

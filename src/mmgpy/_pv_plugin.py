@@ -2,7 +2,7 @@
 
 Activated via entry points declared in ``pyproject.toml``:
 
-* ``pyvista.readers``: ``.mesh``, ``.meshb``, ``.node``, ``.ele``
+* ``pyvista.readers``: ``.mesh``, ``.meshb``
 * ``pyvista.writers``: ``.mesh``, ``.meshb``
 * ``pyvista.accessors``: ``mmg``
 
@@ -530,27 +530,6 @@ def read_mesh(
         _attach_sol_fields(dataset, sol_path)
 
     return dataset
-
-
-def read_tetgen(
-    path: str,
-    **kwargs: object,  # noqa: ARG001
-) -> pv.UnstructuredGrid:
-    """Read a Tetgen ``.node``/``.ele`` pair via meshio.
-
-    Registered for the ``.node`` and ``.ele`` extensions via the
-    ``pyvista.readers`` entry point group. Tetgen stores nodes and
-    elements in two sibling files; meshio handles the pairing
-    transparently. Point markers come back as ``point_data["tetgen:ref"]``
-    and tet region attributes as ``cell_data["tetgen:ref"]``, both of
-    which mmgpy's ``from_pyvista`` recognises as reference markers.
-
-    Without this entry point, ``pv.read("foo.node")`` still works via
-    pyvista's meshio fallback, but each call pays a try/except dance
-    through ``pv.get_reader`` first. Registering an explicit handler
-    keeps the path predictable.
-    """
-    return pv.read_meshio(path)
 
 
 def write_mesh(
@@ -1389,4 +1368,4 @@ class MmgAccessor:
         return _read_mesh(self._dataset).get_center_of_mass()
 
 
-__all__ = ["MmgAccessor", "read_mesh", "read_tetgen", "write_mesh"]
+__all__ = ["MmgAccessor", "read_mesh", "write_mesh"]
