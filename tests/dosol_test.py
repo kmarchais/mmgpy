@@ -36,9 +36,14 @@ def _surface_aniso_available() -> bool:
     return True
 
 
+_SURFACE_ANISO_AVAILABLE = _surface_aniso_available()
 _skip_if_no_surface_aniso = pytest.mark.skipif(
-    not _surface_aniso_available(),
+    not _SURFACE_ANISO_AVAILABLE,
     reason="MMGS_analys not exported in this build (conda Windows)",
+)
+_skip_if_surface_aniso_available = pytest.mark.skipif(
+    _SURFACE_ANISO_AVAILABLE,
+    reason="surface aniso works in this build; RuntimeError path is conda-Windows only",
 )
 
 
@@ -278,6 +283,25 @@ class TestBuildSizeMapAnisoSurface:
         mesh.remesh(verbose=-1)
 
         assert mesh.get_vertices().shape[0] > len(vertices)
+
+
+@_skip_if_surface_aniso_available
+class TestBuildSizeMapAnisoSurfaceUnsupported:
+    """Builds where ``MMGS_analys`` is hidden must raise with a clear message."""
+
+    def test_aniso_raises_with_clear_message(
+        self,
+        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """``aniso=True`` raises mentioning ``MMGS_analys`` on conda Windows."""
+        vertices, triangles = tetrahedron_surface_mesh
+        mesh = MmgMeshS(vertices, triangles)
+
+        with pytest.raises(
+            RuntimeError,
+            match=r"not implemented for surface.*MMGS_analys",
+        ):
+            mesh.build_size_map(aniso=True)
 
 
 class TestBuildSizeMapAnisoToggle:
