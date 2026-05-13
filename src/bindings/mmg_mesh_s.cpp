@@ -5,16 +5,61 @@
 #include <set>
 #include <stdexcept>
 
-// MMGS_analys is declared in libmmgs_private.h (not in the installed public
-// headers). The public declaration of MMGS_Get_triangleQuality in libmmgs.h
-// is also missing LIBMMGS_EXPORT in MMG v5.8.0. On Linux/macOS the symbols
-// have default visibility in the .so; on Windows the build enables
-// WINDOWS_EXPORT_ALL_SYMBOLS on libmmgs_so (see extern/CMakeLists.txt) so
-// the DLL exports them too. Forward-declare MMGS_analys here so we can call
-// it without pulling in the private header.
+// MMG v5.8.0 ships two MMGS symbols without LIBMMGS_EXPORT:
+//   - MMGS_Get_triangleQuality (public header drops the macro)
+//   - MMGS_analys (only in libmmgs_private.h)
+// On Linux/macOS both have default ELF visibility. Wheel builds on Windows
+// enable WINDOWS_EXPORT_ALL_SYMBOLS on libmmgs_so (see extern/CMakeLists.txt)
+// so the DLL exports them too. Conda links against the prebuilt mmgsuite
+// package, where the symbols stay hidden; src/CMakeLists.txt sets
+// MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN on that path so we fall back to a manual
+// triangle-quality formula and refuse the aniso-surface path.
+#ifdef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
+#include <cmath>
+#else
 extern "C" int MMGS_analys(MMG5_pMesh mesh);
+#endif
 
 namespace {
+
+double get_triangle_quality([[maybe_unused]] MMG5_pMesh mesh,
+                            [[maybe_unused]] MMG5_pSol met, MMG5_int k) {
+#ifdef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
+  MMG5_pTria pt = &mesh->tria[k];
+  MMG5_pPoint p0 = &mesh->point[pt->v[0]];
+  MMG5_pPoint p1 = &mesh->point[pt->v[1]];
+  MMG5_pPoint p2 = &mesh->point[pt->v[2]];
+
+  double ax = p1->c[0] - p0->c[0], ay = p1->c[1] - p0->c[1],
+         az = p1->c[2] - p0->c[2];
+  double bx = p2->c[0] - p0->c[0], by = p2->c[1] - p0->c[1],
+         bz = p2->c[2] - p0->c[2];
+  double cx = p2->c[0] - p1->c[0], cy = p2->c[1] - p1->c[1],
+         cz = p2->c[2] - p1->c[2];
+
+  double a2 = ax * ax + ay * ay + az * az;
+  double b2 = bx * bx + by * by + bz * bz;
+  double c2 = cx * cx + cy * cy + cz * cz;
+
+  double nx = ay * bz - az * by;
+  double ny = az * bx - ax * bz;
+  double nz = ax * by - ay * bx;
+  double area2 = nx * nx + ny * ny + nz * nz;
+
+  if (area2 < 1e-30)
+    return 0.0;
+
+  double sum_edges = a2 + b2 + c2;
+  if (sum_edges < 1e-30)
+    return 0.0;
+
+  // Quality = 4 * sqrt(3) * area / (2 * (a^2 + b^2 + c^2))
+  // Equivalent to MMGS_ALPHAD * sqrt(area2) / sum_edges for isotropic meshes.
+  return 4.0 * std::sqrt(3.0) * std::sqrt(area2) / (2.0 * sum_edges);
+#else
+  return MMGS_Get_triangleQuality(mesh, met, k);
+#endif
+}
 
 // Collect mesh statistics for surface mesh
 RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh, MMG5_pSol met) {
@@ -28,7 +73,7 @@ RemeshStats collect_mesh_stats_surface(MMG5_pMesh mesh, MMG5_pSol met) {
   double quality_sum = 0.0;
   if (stats.triangles > 0) {
     for (MMG5_int i = 1; i <= stats.triangles; i++) {
-      double q = MMGS_Get_triangleQuality(mesh, met, i);
+      double q = get_triangle_quality(mesh, met, i);
       quality_sum += q;
       if (q < stats.quality_min)
         stats.quality_min = q;
@@ -777,7 +822,7 @@ double MmgMeshS::get_element_quality(MMG5_int idx) const {
                              std::to_string(idx));
   }
 
-  return MMGS_Get_triangleQuality(mesh, met, mmg_idx);
+  return get_triangle_quality(mesh, met, mmg_idx);
 }
 
 py::array_t<double> MmgMeshS::get_element_qualities() const {
@@ -787,7 +832,7 @@ py::array_t<double> MmgMeshS::get_element_qualities() const {
   double *ptr = static_cast<double *>(buf.ptr);
 
   for (MMG5_int i = 0; i < nt; i++) {
-    ptr[i] = MMGS_Get_triangleQuality(mesh, met, i + 1);
+    ptr[i] = get_triangle_quality(mesh, met, i + 1);
   }
 
   return result;
@@ -1089,6 +1134,18 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
 py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
   check_not_corrupted("build_size_map");
 
+#ifdef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
+  if (aniso) {
+    // MMGS_analys is not callable from this build (conda mmgsuite hides
+    // the symbol). The surface aniso path needs the analyzed mesh state,
+    // so refuse with a clear message rather than producing zero metrics.
+    throw std::runtime_error(
+        "build_size_map(aniso=True) is not implemented for surface meshes "
+        "in conda Windows builds (MMGS_analys is not exported from the "
+        "mmgsuite mmgs.dll).");
+  }
+#endif
+
   // MMGS_doSol is a function pointer initialized by MMGS_setfunc, which
   // dispatches on mesh->info.ani and met->size. Set info.ani to the
   // requested mode and resize the metric buffer to match before letting
@@ -1106,6 +1163,7 @@ py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
     throw std::runtime_error("Failed to resize metric for build_size_map");
   }
 
+#ifndef MMGPY_MMGS_PRIVATE_SYMBOLS_HIDDEN
   if (aniso) {
     // MMGS_doSol_ani reads ridge tags, normals and manifold flags off the
     // mesh, all of which are populated by MMGS_analys. The expensive part
@@ -1124,6 +1182,7 @@ py::array_t<double> MmgMeshS::build_size_map(bool aniso) {
           "MMGS_analys failed; cannot build anisotropic size map");
     }
   }
+#endif
 
   MMGS_setfunc(mesh, met);
   if (MMGS_doSol == nullptr) {

@@ -2906,7 +2906,9 @@ class MmgMeshS:
                 aniso path runs ``MMGS_analys`` first to populate
                 ridges, normals and manifold tags; any later remesh
                 would have run analys anyway, so this only changes
-                timing.
+                timing. Conda Windows builds link the prebuilt
+                ``mmgsuite`` package, which does not export
+                ``MMGS_analys``, so ``aniso=True`` raises there.
 
         """
 
