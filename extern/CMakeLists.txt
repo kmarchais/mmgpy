@@ -44,10 +44,13 @@ set(USE_ELAS OFF CACHE BOOL "Do not use ELAS" FORCE)
 # Make MMG available
 FetchContent_MakeAvailable(mmg)
 
-# Work around missing LIBMMGS_EXPORT on MMGS_Get_triangleQuality in MMG v5.8.0.
-# On Windows, only __declspec(dllexport) symbols are exported from DLLs.
-# This generates a .def file that exports all symbols, including the one
-# missing the export macro in the upstream header.
+# Work around two missing exports in MMG v5.8.0 on Windows:
+#   - MMGS_Get_triangleQuality: public header drops LIBMMGS_EXPORT.
+#   - MMGS_analys: declared only in libmmgs_private.h, no export macro.
+# On POSIX both have default ELF visibility; on Windows only
+# __declspec(dllexport) symbols escape the DLL. WINDOWS_EXPORT_ALL_SYMBOLS
+# generates a .def file listing every extern symbol from the object files,
+# so both become callable from mmgpy. See issue #218.
 # https://cmake.org/cmake/help/latest/prop_tgt/WINDOWS_EXPORT_ALL_SYMBOLS.html
 if(WIN32)
     set_target_properties(libmmgs_so PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)

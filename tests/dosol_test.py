@@ -9,8 +9,6 @@ equivalent).
 
 from __future__ import annotations
 
-import sys
-
 import numpy as np
 import pytest
 import pyvista as pv
@@ -19,14 +17,6 @@ import mmgpy  # noqa: F401  -- registers the .mmg accessor
 from mmgpy._mesh import Mesh
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 from mmgpy.metrics import validate_metric_tensor
-
-# MMGS_analys is not exported from libmmgs.dll on Windows, so the surface
-# aniso path stays disabled there. Skip those tests instead of running them.
-_SURFACE_ANISO_UNSUPPORTED = sys.platform == "win32"
-_skip_if_no_surface_aniso = pytest.mark.skipif(
-    _SURFACE_ANISO_UNSUPPORTED,
-    reason="MMGS_analys is not exported from libmmgs.dll on Windows",
-)
 
 
 class TestBuildSizeMap3D:
@@ -201,7 +191,6 @@ class TestBuildSizeMapAniso2D:
         assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
 
 
-@_skip_if_no_surface_aniso
 class TestBuildSizeMapAnisoSurface:
     """Tests for ``MmgMeshS.build_size_map(aniso=True)``.
 
@@ -267,25 +256,6 @@ class TestBuildSizeMapAnisoSurface:
         assert mesh.get_vertices().shape[0] > len(vertices)
 
 
-@pytest.mark.skipif(
-    not _SURFACE_ANISO_UNSUPPORTED,
-    reason="Windows-only: verifies the explicit RuntimeError stays in place",
-)
-class TestBuildSizeMapAnisoSurfaceWindows:
-    """On Windows, the surface aniso path still raises with a clear message."""
-
-    def test_aniso_raises_on_windows(
-        self,
-        tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
-    ) -> None:
-        """``aniso=True`` raises until MMG exports ``MMGS_analys`` on Windows."""
-        vertices, triangles = tetrahedron_surface_mesh
-        mesh = MmgMeshS(vertices, triangles)
-
-        with pytest.raises(RuntimeError, match="not implemented for surface"):
-            mesh.build_size_map(aniso=True)
-
-
 class TestBuildSizeMapAnisoToggle:
     """``aniso`` should be toggleable on the same mesh without leaking state."""
 
@@ -317,7 +287,6 @@ class TestBuildSizeMapAnisoToggle:
         iso = mesh.build_size_map(aniso=False)
         assert iso.shape == (len(vertices), 1)
 
-    @_skip_if_no_surface_aniso
     def test_iso_then_aniso_surface(
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
@@ -332,7 +301,6 @@ class TestBuildSizeMapAnisoToggle:
         aniso = mesh.build_size_map(aniso=True)
         assert aniso.shape == (len(vertices), 6)
 
-    @_skip_if_no_surface_aniso
     def test_aniso_then_iso_surface(
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
@@ -429,7 +397,6 @@ class TestMeshWrapper:
         assert metric.shape == (len(vertices), 6)
         assert validate_metric_tensor(metric, raise_on_invalid=False)[0]
 
-    @_skip_if_no_surface_aniso
     def test_build_size_map_surface_aniso(
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
@@ -502,7 +469,6 @@ class TestPyVistaAccessor:
             sizes.ravel(),
         )
 
-    @_skip_if_no_surface_aniso
     def test_build_size_map_surface_aniso_via_polydata(
         self,
         tetrahedron_surface_mesh: tuple[np.ndarray, np.ndarray],
