@@ -1,0 +1,78 @@
+name: Redeploy docs
+
+# Manually rebuild a versioned doc slot (e.g. `0.13`) from any ref.
+# Intended for doc-only fixes on already-released versions when cutting a
+# new tag is overkill.
+#
+# Typical workflow for a doc fix on an already-shipped release:
+#   1. Branch from the release tag:    git switch -c docs-backport/0.13 v0.13.0
+#   2. Cherry-pick the doc commits:    git cherry-pick <sha>...
+#   3. Push, then run this workflow with version=0.13, ref=docs-backport/0.13.
+#
+# Do NOT run with ref=main against an older version slot: main may describe
+# newer API that did not exist in that release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Mike version slot to write (e.g. "0.13"). Use the minor version, not the patch.'
+        required: true
+      ref:
+        description: "Git ref to build from. Typically a backport branch off the release tag, NOT main."
+        required: true
+      set_latest:
+        description: "Also update the `latest` alias. Enable only if redeploying the currently-latest release."
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      - run: uv python install 3.12
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+          version: 1.0
+
+      - run: uv sync --group docs
+
+      - name: Configure Git for mike
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Validate version input
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version input must be MAJOR.MINOR (e.g. '0.13'), got '${{ inputs.version }}'"
+            exit 1
+          fi
+
+      - name: Deploy with mike
+        run: |
+          if [[ "${{ inputs.set_latest }}" == "true" ]]; then
+            uv run mike deploy "${{ inputs.version }}" latest --update-aliases --push
+            uv run mike set-default latest --push
+          else
+            uv run mike deploy "${{ inputs.version }}" --push
+          fi

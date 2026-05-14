@@ -6,8 +6,10 @@ This page documents the metric tensor operations in the `mmgpy.metrics` module.
 
 Metric tensors control anisotropic mesh adaptation. A metric at each vertex specifies:
 
-- **Isotropic**: Target edge length (single scalar)
-- **Anisotropic**: Target lengths along different directions (tensor)
+- **Isotropic**, target edge length (single scalar or `(n,1)` array).
+- **Anisotropic**, target lengths along principal directions (a symmetric tensor in Voigt form).
+
+The metric is attached to the dataset as `point_data["metric"]`; `dataset.mmg.remesh(...)` automatically picks it up.
 
 ## Metric Creation
 
@@ -70,22 +72,17 @@ show_root_heading: true
 Create a metric for uniform element sizes:
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 import mmgpy.metrics as metrics
 import numpy as np
 
-mesh = mmgpy.read("input.mesh")
-n_vertices = len(mesh.get_vertices())
+mesh = pv.read("input.mesh")
 
-# Uniform size everywhere
-sizes = np.ones(n_vertices) * 0.1
-metric = metrics.create_isotropic_metric(sizes)
+sizes = np.ones(mesh.n_points) * 0.1
+mesh.point_data["metric"] = metrics.create_isotropic_metric(sizes)
 
-# Apply to mesh (auto-detects tensor from shape)
-mesh["metric"] = metric
-
-# Remesh using the metric
-result = mesh.remesh()
+remeshed = mesh.mmg.remesh()
 ```
 
 ### Variable Size Metric
@@ -97,14 +94,14 @@ Size varying with position:
 ```python
 import numpy as np
 
-vertices = mesh.get_vertices()
+vertices = np.asarray(mesh.points)
 
 # Size increases with distance from origin
 distances = np.linalg.norm(vertices, axis=1)
 sizes = 0.01 + 0.1 * distances
 
-metric = metrics.create_isotropic_metric(sizes)
-mesh["metric"] = metric
+mesh.point_data["metric"] = metrics.create_isotropic_metric(sizes)
+remeshed = mesh.mmg.remesh()
 ```
 
 ### Anisotropic Metric
@@ -116,16 +113,13 @@ Different sizes in different directions:
 ```python
 import numpy as np
 
-n_vertices = len(mesh.get_vertices())
-
-# Create anisotropic metric for a single vertex, then tile
 # sizes: desired element sizes along each principal direction
 sizes = np.array([0.1, 0.1, 0.05])  # Smaller in z
 
 single_tensor = metrics.create_anisotropic_metric(sizes)
-metric = np.tile(single_tensor, (n_vertices, 1))
+mesh.point_data["metric"] = np.tile(single_tensor, (mesh.n_points, 1))
 
-mesh["metric"] = metric
+remeshed = mesh.mmg.remesh()
 ```
 
 ### Metric from Hessian
@@ -135,20 +129,19 @@ Adapt mesh to solution curvature:
 <!-- pytest-codeblocks:skip -->
 
 ```python
-# Solution field (e.g., temperature)
+from mmgpy.metrics import compute_hessian, create_metric_from_hessian
+
 solution = np.sin(vertices[:, 0] * 2 * np.pi)
+hessian = compute_hessian(vertices, triangles, solution)
 
-# Compute Hessian (second derivatives) - requires additional computation
-# hessian shape: (n_vertices, 6) for symmetric 3x3 tensor
-hessian = compute_hessian(solution, mesh)  # Implementation needed
-
-# Create metric from Hessian
-metric = metrics.create_metric_from_hessian(
+mesh.point_data["metric"] = create_metric_from_hessian(
     hessian,
-    target_error=0.01,  # Target interpolation error
+    target_error=0.01,
+    hmin=1e-3,
+    hmax=1e-1,
 )
 
-mesh["metric"] = metric
+adapted = mesh.mmg.remesh(hgrad=2.0)
 ```
 
 ### Metric Intersection
@@ -158,16 +151,13 @@ Combine multiple metrics (minimum size wins):
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Two different metrics with different sizes
-n_vertices = len(mesh.get_vertices())
-sizes1 = np.ones(n_vertices) * 0.05
-sizes2 = np.ones(n_vertices) * 0.08
+sizes1 = np.ones(mesh.n_points) * 0.05
+sizes2 = np.ones(mesh.n_points) * 0.08
 metric1 = metrics.create_isotropic_metric(sizes1)
 metric2 = metrics.create_isotropic_metric(sizes2)
 
-# Intersect: take minimum size in all directions
 combined = metrics.intersect_metrics(metric1, metric2)
-mesh["metric"] = combined
+mesh.point_data["metric"] = combined
 ```
 
 ### Extracting Metric Information
@@ -175,14 +165,12 @@ mesh["metric"] = combined
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# Get current metric
-metric = mesh["metric"]
+metric = np.asarray(mesh.point_data["metric"])
 
-# Extract principal sizes and directions
 sizes, directions = metrics.compute_metric_eigenpairs(metric)
 
-# sizes shape: (n_vertices, 3) - element sizes along each principal direction
-# directions shape: (n_vertices, 3, 3) - principal directions as columns
+# sizes shape: (n_vertices, dim) — element sizes along each principal direction
+# directions shape: (n_vertices, dim, dim) — principal directions as columns
 
 print(f"Size range: {sizes.min():.4f} to {sizes.max():.4f}")
 ```
@@ -200,12 +188,10 @@ MMG uses symmetric tensors in Voigt notation:
 # 2D: 3 components per vertex
 # [M11, M12, M22]
 
-# Convert tensor to full matrix
-tensor = mesh["metric"][0]  # First vertex
+tensor = np.asarray(mesh.point_data["metric"])[0]  # First vertex
 matrix = metrics.tensor_to_matrix(tensor)
 print(matrix.shape)  # (3, 3)
 
-# Convert matrix back to tensor
 tensor_back = metrics.matrix_to_tensor(matrix)
 ```
 
@@ -216,9 +202,8 @@ Check metric tensor validity:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-metric = mesh["metric"]
+metric = np.asarray(mesh.point_data["metric"])
 
-# Validate: must be symmetric positive definite
 is_valid = metrics.validate_metric_tensor(metric)
 if not is_valid:
     print("Warning: invalid metric tensor")
@@ -236,7 +221,7 @@ M = [M12  M22  M23]  -> [M11, M12, M13, M22, M23, M33]
     [M13  M23  M33]
 ```
 
-Metric field shape: `(n_vertices, 6)`
+Metric field shape: `(n_vertices, 6)`.
 
 ### 2D Metrics (TRIANGULAR_2D)
 
@@ -247,20 +232,16 @@ Symmetric 2x2 tensor stored as 3 components:
 M = [M12  M22]  -> [M11, M12, M22]
 ```
 
-Metric field shape: `(n_vertices, 3)`
+Metric field shape: `(n_vertices, 3)`.
 
 ### Surface Metrics (TRIANGULAR_SURFACE)
 
-Same as 3D: `(n_vertices, 6)`
+Same as 3D: `(n_vertices, 6)`.
 
 ## Tips
 
-1. **Isotropic first**: Start with isotropic metrics, add anisotropy only when needed
-
-2. **Size bounds**: Ensure metric sizes are within reasonable bounds relative to domain size
-
-3. **Gradation**: MMG's `hgrad` parameter controls size gradation regardless of metric
-
-4. **Validation**: Always validate metric tensors before remeshing
-
-5. **Combination**: Use `intersect_metrics` to combine sizing from different sources
+1. **Isotropic first**, start with isotropic metrics, add anisotropy only when needed.
+2. **Size bounds**, ensure metric sizes are within reasonable bounds relative to the domain.
+3. **Gradation**, MMG's `hgrad` parameter controls size gradation regardless of metric.
+4. **Validation**, always validate metric tensors before remeshing.
+5. **Combination**, use `intersect_metrics` to combine sizing from different sources.

@@ -1,6 +1,6 @@
 # File Formats
 
-mmgpy supports numerous file formats: the native Medit `.mesh`/`.meshb` reader is registered with PyVista at import; other formats are handled by PyVista directly. Formats not natively supported by VTK (e.g. `.msh`, `.med`, `.inp`) require `pip install pyvista[io]`, which pulls in meshio.
+mmgpy supports numerous file formats. The native Medit `.mesh`/`.meshb` reader and writer are registered with PyVista on import, so `pv.read("foo.mesh")` and `dataset.save("foo.mesh")` go through MMG's native I/O. Other formats are handled by PyVista directly. Formats not natively supported by VTK (e.g. `.msh`, `.med`, `.inp`) require `pip install pyvista[io]`, which pulls in meshio.
 
 ## Native MMG Format
 
@@ -70,9 +70,10 @@ End
 ## Format Selection Guide
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
-mesh = mmgpy.read("input.mesh")
+mesh = pv.read("input.mesh")
 ```
 
 ### For MMG Processing
@@ -86,8 +87,8 @@ mesh.save("output.mesh")
 ```
 
 - Best compatibility with MMG
-- Supports all MMG-specific features
-- Can include solution/metric files
+- Supports all MMG-specific features (ridges, required entities, reference markers)
+- Companion `.sol` files are auto-loaded on read and round-trip via `mesh.mmg.save_sol(...)`
 
 ### For Visualization (ParaView)
 
@@ -104,11 +105,12 @@ mesh.save("output.vtu")   # XML (preferred)
 
 Use STL:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
+import pyvista as pv
+import mmgpy  # noqa: F401
+
 # Surface meshes only
-surface_mesh = mmgpy.read("model.stl")
+surface_mesh = pv.read("model.stl")
 surface_mesh.save("output.stl")
 ```
 
@@ -125,35 +127,47 @@ surface_mesh.save("output.stl")
 
 ## Solution Files
 
-MMG supports solution files (`.sol`) containing:
+MMG supports solution files (`.sol` / `.solb`) containing:
 
-- Scalar fields (temperature, pressure)
+- Scalar fields (temperature, pressure, level set, isotropic metric)
 - Vector fields (velocity, displacement)
-- Tensor fields (stress, metric)
+- Tensor fields (stress, anisotropic metric)
 
-### Creating Solution Files
+When reading a `.mesh` / `.meshb` file, a sibling `.sol` (same stem, same directory) is auto-loaded into `point_data` / `cell_data`. The reserved keys `metric`, `displacement`, `levelset`, `tensor` are routed to MMG's solution channel on remesh.
 
-<!-- pytest-codeblocks:cont -->
+### Writing companion `.sol` files
 
 ```python
 import numpy as np
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-# Add scalar field
-temperature = np.random.rand(len(mesh.get_vertices()))
-mesh["temperature"] = temperature
+mesh = pv.read("input.mesh")
 
-# Save mesh and solution
-mesh.save("output.mesh")  # Also saves output.sol if fields exist
+# Scalar field on vertices
+mesh.point_data["temperature"] = np.random.rand(mesh.n_points)
+
+# Save every numeric vertex / cell array as a multi-block `.sol`
+mesh.mmg.save_all_sols("output.sol")
+
+# Or write only the MMG-reserved fields (metric / displacement / ...) with save_sol
+mesh.mmg.save_sol("output_metric.sol")
 ```
 
-### Loading Solution Files
-
-<!-- pytest-codeblocks:cont -->
+### Loading solution files
 
 ```python
-# Access user fields
-if "temperature" in mesh:
-    temp = mesh["temperature"]
+import pyvista as pv
+import mmgpy  # noqa: F401
+
+mesh = pv.read("input.mesh")
+
+# Attach extra fields from a separately-stored .sol
+mesh.mmg.load_all_sols("input_fields.sol")
+
+# Vertex-located arrays land in point_data; element-located arrays land in cell_data
+if "temperature" in mesh.point_data:
+    temp = mesh.point_data["temperature"]
 ```
 
 ## Binary vs ASCII
@@ -177,15 +191,16 @@ mesh.save("output.meshb")
 
 ## Format Detection
 
-mmgpy automatically detects format from extension:
-
-<!-- pytest-codeblocks:cont -->
+PyVista (and mmgpy's registered Medit reader) automatically detect the format from the file extension:
 
 ```python
-# Auto-detected from extension
-mesh = mmgpy.read("model.stl")
-mesh = mmgpy.read("simulation.vtu")
-mesh = mmgpy.read("domain.msh")
+import pyvista as pv
+import mmgpy  # noqa: F401
+
+mesh = pv.read("model.stl")
+mesh = pv.read("simulation.vtu")
+mesh = pv.read("domain.msh")
+mesh = pv.read("domain.mesh")  # Medit reader (provided by mmgpy)
 ```
 
 ## Troubleshooting
@@ -194,13 +209,13 @@ mesh = mmgpy.read("domain.msh")
 
 If a format is not recognized:
 
-1. Check the extension is correct
-2. Install `pyvista[io]` if the format is meshio-backed (`.msh`, `.med`, `.inp`, ...)
-3. Try converting to `.mesh` or `.vtk` first
+1. Check the extension is correct.
+2. Install `pyvista[io]` if the format is meshio-backed (`.msh`, `.med`, `.inp`, ...).
+3. Try converting to `.mesh` or `.vtk` first.
 
 ### Lost Data
 
-Some formats don't support all features:
+Some formats do not support all features:
 
 | Data Type     | .mesh    | .vtk | .stl |
 | ------------- | -------- | ---- | ---- |

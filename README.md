@@ -7,24 +7,25 @@
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://kmarchais.github.io/mmgpy)
 [![codecov](https://codecov.io/gh/kmarchais/mmgpy/graph/badge.svg)](https://codecov.io/gh/kmarchais/mmgpy)
 
-**mmgpy** brings the power of [MMG](https://www.mmgtools.org) mesh adaptation to Python. Generate, optimize, and refine 2D, 3D, and surface meshes with a clean API.
+**mmgpy** brings the power of [MMG](https://www.mmgtools.org) mesh adaptation to Python. Generate, optimize, and refine 2D, 3D, and surface meshes through a native PyVista accessor.
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers the .mmg accessor + Medit reader/writer
 
-mesh = mmgpy.read("input.vtk")
-mesh.remesh(hmax=0.1)
-mesh.save("output.vtk")
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.1)
+remeshed.save("output.vtk")
 ```
 
 ![Mechanical piece remeshing](assets/mechanical_piece_remeshing.png)
 
 ## Try It
 
-No installation needed — run directly with [uvx](https://docs.astral.sh/uv/):
+No installation needed, run directly with [uvx](https://docs.astral.sh/uv/):
 
 ```bash
-# Remesh a mesh file
+# Remesh a mesh file from the command line
 uvx mmgpy input.stl -o output.mesh -hmax 0.1
 
 # Launch the interactive UI
@@ -39,7 +40,7 @@ The recommended way to install mmgpy:
 uv pip install mmgpy
 ```
 
-This uses pre-built wheels from PyPI that bundle all native libraries (MMG, VTK) — no compiler needed.
+This uses pre-built wheels from PyPI that bundle all native libraries (MMG, VTK), no compiler needed.
 
 ### Other install methods
 
@@ -52,6 +53,9 @@ conda install -c conda-forge mmgpy
 
 # With UI support
 uv pip install "mmgpy[ui]"
+
+# With elasticity-based displacement propagation
+uv pip install "mmgpy[fem]"
 ```
 
 ### Using uv for project management
@@ -73,73 +77,159 @@ uv tool install "mmgpy[ui]"  # install CLI tools + UI globally
 
 Use **PyPI** (`uv pip install`) for the fastest setup. Use **conda-forge** when you already have a conda environment with VTK, PyVista, or other scientific packages.
 
-Lagrangian motion (boundary-driven mesh displacement) is available on every channel via `mmgpy.move_mesh`, with a built-in Laplacian propagator and an optional elasticity propagator backed by [`fedoo`](https://github.com/3MAH/fedoo) (`uv pip install "mmgpy[fem]"`).
+## How it works
+
+Importing `mmgpy` registers a PyVista plugin that adds two things to every `pv.UnstructuredGrid` and `pv.PolyData`:
+
+- A **`.mmg` accessor** that exposes the full MMG API: `remesh`, `remesh_optimize`, `remesh_uniform`, `remesh_levelset`, `move`, `validate`, `element_qualities`, and more.
+- A **Medit reader/writer** for `.mesh` and `.meshb` files (with auto-loading of companion `.sol` files into `point_data` / `cell_data`).
+
+Every accessor call returns a fresh PyVista dataset, so the result composes with the rest of the PyVista API (slicing, plotting, IO).
 
 ## Features
 
-- **Multi-dimensional** — 2D triangular, 3D tetrahedral, and surface meshes
-- **Local refinement** — Control mesh density with spheres, boxes, cylinders
-- **Anisotropic adaptation** — Metric tensors for directional refinement, including least-squares Hessian recovery from a scalar field
-- **Level-set discretization** — Extract isosurfaces from implicit functions
-- **Lagrangian motion** — Move boundaries and remesh, with Laplacian or (optional) elasticity-based propagation
-- **PyVista integration** — Visualize and convert meshes seamlessly
-- **40+ file formats** — VTK, STL, OBJ, GMSH, and more
+- **Multi-dimensional**, 2D triangular, 3D tetrahedral, and surface meshes (auto-detected from cell types via `dataset.mmg.kind`).
+- **Local refinement**, sphere / box / cylinder / point-based sizing, passed as `local_sizing=[...]` on `remesh`.
+- **Anisotropic adaptation**, metric tensors in `point_data["metric"]`, including least-squares Hessian recovery from a scalar field.
+- **Level-set discretization**, extract isosurfaces from implicit functions via `mesh.mmg.remesh_levelset(...)`; multi-material splits via `set_multi_materials`.
+- **Lagrangian motion**, move boundaries and remesh through `mesh.mmg.move(displacement, ...)`, with a Laplacian propagator or an optional elasticity backend (`fedoo`).
+- **Required entities**, lock vertices, edges, triangles, or tetrahedra during remeshing via kwargs (`required_triangles=...`) or `mmg_*` data tags.
+- **Companion `.sol` I/O**, scalar / vector / tensor fields via `load_sol`, `save_sol`, `load_all_sols`, `save_all_sols`.
+- **Validation & quality**, `mesh.mmg.validate(detailed=True)` returns a `ValidationReport`; `mesh.mmg.element_qualities()` returns MMG's in-radius ratios.
+- **40+ file formats**, native Medit, plus everything PyVista supports (VTK, STL, OBJ, GMSH, MED, Abaqus, etc.; install `pyvista[io]` for meshio-backed formats).
 
 ## Usage
 
-### Basic Remeshing
+### Basic remeshing
 
 ```python
-import mmgpy
+import pyvista as pv
+import mmgpy  # noqa: F401
 
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh(hmax=0.1)
+mesh = pv.read("input.mesh")
+remeshed = mesh.mmg.remesh(hmax=0.1)
 
-print(f"Quality: {result.quality_mean_before:.2f} → {result.quality_mean_after:.2f}")
-mesh.save("output.vtk")
+q_before = mesh.mmg.element_qualities()
+q_after = remeshed.mmg.element_qualities()
+print(f"Quality: {q_before.mean():.2f} -> {q_after.mean():.2f}")
+
+remeshed.save("output.vtk")
 ```
 
-### Local Sizing
+### Local sizing
+
+Refine inside specific regions without touching the rest of the mesh:
 
 ```python
-mesh = mmgpy.read("input.mesh")
-
-# Fine mesh near a point
-mesh.set_size_sphere(center=[0.5, 0.5, 0.5], radius=0.2, size=0.01)
-
-# Fine mesh in a region
-mesh.set_size_box(bounds=[[0, 0, 0], [0.3, 0.3, 0.3]], size=0.02)
-
-mesh.remesh(hmax=0.1)
+remeshed = mesh.mmg.remesh(
+    hmax=0.1,
+    local_sizing=[
+        {"shape": "sphere", "center": [0.5, 0.5, 0.5], "radius": 0.2, "size": 0.01},
+        {"shape": "box", "bounds": [[0, 0, 0], [0.3, 0.3, 0.3]], "size": 0.02},
+        {"shape": "cylinder", "point1": [0, 0, 0], "point2": [0, 0, 1],
+         "radius": 0.1, "size": 0.01},
+        {"shape": "from_point", "point": [0.5, 0.5, 0.5],
+         "near_size": 0.01, "far_size": 0.1, "influence_radius": 0.3},
+    ],
+)
 ```
 
-### Typed Options
+### Typed options
 
 ```python
 from mmgpy import Mmg3DOptions
 
 opts = Mmg3DOptions(hmin=0.01, hmax=0.1, hausd=0.001)
-mesh.remesh(opts)
+remeshed = mesh.mmg.remesh(opts)
 
 # Or use presets
-mesh.remesh(Mmg3DOptions.fine())
+remeshed = mesh.mmg.remesh(Mmg3DOptions.fine(hmax=0.05))
+```
+
+### Anisotropic metrics
+
+Drop a per-vertex metric on `point_data["metric"]` and `remesh()` picks it up:
+
+```python
+import numpy as np
+import mmgpy.metrics as metrics
+
+sizes = np.full(mesh.n_points, 0.05)
+mesh.point_data["metric"] = metrics.create_isotropic_metric(sizes)
+
+remeshed = mesh.mmg.remesh()
+```
+
+For solution-adaptive remeshing, recover a Hessian and convert it to a metric:
+
+```python
+from mmgpy.metrics import compute_hessian, create_metric_from_hessian
+
+hessian = compute_hessian(vertices, triangles, field)
+mesh.point_data["metric"] = create_metric_from_hessian(
+    hessian, target_error=5e-3, hmin=3e-3, hmax=8e-2,
+)
+remeshed = mesh.mmg.remesh(hgrad=2.0)
+```
+
+### Level-set discretization
+
+```python
+import numpy as np
+
+levelset = (
+    np.linalg.norm(mesh.points - [0.5, 0.5, 0.5], axis=1) - 0.3
+).reshape(-1, 1)
+
+discretized = mesh.mmg.remesh_levelset(levelset)
+```
+
+### Lagrangian motion
+
+Apply a per-vertex displacement and remesh to maintain element quality:
+
+```python
+import numpy as np
+
+displacement = np.zeros((mesh.n_points, 3))
+displacement[:, 0] = 0.1
+
+moved = mesh.mmg.move(displacement, hmax=0.1)
+```
+
+Pass only boundary values plus `propagate=True` to fill the interior. The default is a Laplacian smoother; pass `propagation_method="elasticity"` to use the `fedoo`-backed linear-elasticity solver (`uv pip install "mmgpy[fem]"`).
+
+### Locking entities
+
+Keep specific vertices, edges, triangles, or tetrahedra fixed during remeshing:
+
+```python
+remeshed = mesh.mmg.remesh(
+    hmax=0.1,
+    required_triangles=np.array([3, 7, 11], dtype=np.int32),
+)
+```
+
+Or attach the constraint to the dataset (it travels through `save` / `copy`):
+
+```python
+mask = np.zeros(mesh.n_cells, dtype=bool)
+mask[[3, 7, 11]] = True
+mesh.cell_data["mmg_required_triangles"] = mask
+remeshed = mesh.mmg.remesh(hmax=0.1)
 ```
 
 ### Visualization
 
 ```python
-mesh.plot()  # Quick plot with edges
-
-# Or for custom plotting:
-import pyvista as pv
-plotter = pv.Plotter()
-plotter.add_mesh(mesh.vtk, show_edges=True, color="lightblue")
-plotter.show()
+remeshed.plot(show_edges=True)
 ```
+
+The accessor returns a regular PyVista dataset, so anything PyVista does (slicing, integration, custom plotters) works directly on the result.
 
 ## Command Line
 
-MMG executables are included and available after installation:
+MMG executables are bundled with the wheel:
 
 ```bash
 # Auto-detect mesh type
@@ -175,7 +265,7 @@ The `_O3` suffix variants (`mmg3d_O3`, etc.) are also available for compatibilit
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and the pull request process.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and the pull request process.
 
 ## License
 
