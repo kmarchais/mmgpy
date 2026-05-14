@@ -1212,6 +1212,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmgpy.metrics.create_isotropic_metric--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mmgpy.metrics.create_isotropic_metric--examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1255,6 +1266,17 @@
     <span class="md-ellipsis">
       
         Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.create_anisotropic_metric--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
       
     </span>
   </a>
@@ -1347,6 +1369,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="compute_hessian">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1388,6 +1449,17 @@
     <span class="md-ellipsis">
       
         Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.intersect_metrics--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
       
     </span>
   </a>
@@ -2168,6 +2240,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mmgpy.metrics.create_isotropic_metric--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mmgpy.metrics.create_isotropic_metric--examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2211,6 +2294,17 @@
     <span class="md-ellipsis">
       
         Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.create_anisotropic_metric--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
       
     </span>
   </a>
@@ -2303,6 +2397,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="compute_hessian">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian--parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.compute_hessian--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2344,6 +2477,17 @@
     <span class="md-ellipsis">
       
         Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy.metrics.intersect_metrics--raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
       
     </span>
   </a>
@@ -2827,6 +2971,10 @@ dim : int, optional
 <p>NDArray[np.float64]
     Metric tensor array with shape (n_vertices, n_components) where
     n_components is 6 for 3D and 3 for 2D.</p>
+<h4 id="mmgpy.metrics.create_isotropic_metric--raises">Raises<a class="headerlink" href="#mmgpy.metrics.create_isotropic_metric--raises" title="Permanent link">&para;</a></h4>
+<p>ValueError
+    If <code>dim</code> is not 2 or 3, <code>n_vertices</code> is missing when <code>h</code> is
+    a scalar, or <code>h</code> does not flatten to a 1D array.</p>
 <h4 id="mmgpy.metrics.create_isotropic_metric--examples">Examples<a class="headerlink" href="#mmgpy.metrics.create_isotropic_metric--examples" title="Permanent link">&para;</a></h4>
 <blockquote>
 <blockquote>
@@ -2880,6 +3028,10 @@ directions : array_like, optional
 <p>NDArray[np.float64]
     Metric tensor(s). Shape (6,) for single 3D metric, (3,) for single 2D,
     or (n_vertices, 6) / (n_vertices, 3) for per-vertex metrics.</p>
+<h4 id="mmgpy.metrics.create_anisotropic_metric--raises">Raises<a class="headerlink" href="#mmgpy.metrics.create_anisotropic_metric--raises" title="Permanent link">&para;</a></h4>
+<p>ValueError
+    If <code>sizes</code> is not 1D / 2D, the dimension is not 2 or 3, or
+    <code>directions</code> does not match the expected shape.</p>
 <h4 id="mmgpy.metrics.create_anisotropic_metric--examples">Examples<a class="headerlink" href="#mmgpy.metrics.create_anisotropic_metric--examples" title="Permanent link">&para;</a></h4>
 <p>Create a metric with 10x stretch in x-direction:</p>
 <blockquote>
@@ -2986,54 +3138,21 @@ second-order coefficients give the Hessian components.</p>
 <p>This is the missing piece for solution-adaptive remeshing: compute a
 solution field with your FE solver, pass it here to get the Hessian,
 then use :func:<code>create_metric_from_hessian</code> to build an adaptation metric.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>vertices</code></b>
-              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>)
-          –
-          <div class="doc-md-description">
-            <p>Nx2 or Nx3 array of vertex coordinates.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>elements</code></b>
-              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.int32">int32</span>]</code>)
-          –
-          <div class="doc-md-description">
-            <p>Mx(nodes_per_element) array of element connectivity.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>field</code></b>
-              (<code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>)
-          –
-          <div class="doc-md-description">
-            <p>N array of scalar field values at vertices.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>
-          –
-          <div class="doc-md-description">
-            <p>Hessian tensor array. Shape (N, 3) for 2D [H11, H12, H22]</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><span title="numpy.typing.NDArray">NDArray</span>[<span title="numpy.float64">float64</span>]</code>
-          –
-          <div class="doc-md-description">
-            <p>or (N, 6) for 3D [H11, H12, H13, H22, H23, H33].</p>
-          </div>
-        </li>
-    </ul>
+<h4 id="mmgpy.metrics.compute_hessian--parameters">Parameters<a class="headerlink" href="#mmgpy.metrics.compute_hessian--parameters" title="Permanent link">&para;</a></h4>
+<p>vertices : ndarray
+    Nx2 or Nx3 array of vertex coordinates.
+elements : ndarray
+    Mx(nodes_per_element) array of element connectivity.
+field : ndarray
+    N array of scalar field values at vertices.</p>
+<h4 id="mmgpy.metrics.compute_hessian--returns">Returns<a class="headerlink" href="#mmgpy.metrics.compute_hessian--returns" title="Permanent link">&para;</a></h4>
+<p>ndarray
+    Hessian tensor array. Shape <code>(N, 3)</code> for 2D
+    <code>[H11, H12, H22]</code> or <code>(N, 6)</code> for 3D
+    <code>[H11, H12, H13, H22, H23, H33]</code>.</p>
+<h4 id="mmgpy.metrics.compute_hessian--raises">Raises<a class="headerlink" href="#mmgpy.metrics.compute_hessian--raises" title="Permanent link">&para;</a></h4>
+<p>ValueError
+    If <code>field</code> does not have one value per vertex.</p>
 
 
     </div>
@@ -3081,6 +3200,9 @@ dim : int, optional
 <h4 id="mmgpy.metrics.intersect_metrics--returns">Returns<a class="headerlink" href="#mmgpy.metrics.intersect_metrics--returns" title="Permanent link">&para;</a></h4>
 <p>NDArray[np.float64]
     Intersected metric tensor(s), same shape as inputs.</p>
+<h4 id="mmgpy.metrics.intersect_metrics--raises">Raises<a class="headerlink" href="#mmgpy.metrics.intersect_metrics--raises" title="Permanent link">&para;</a></h4>
+<p>ValueError
+    If <code>m1</code> and <code>m2</code> do not share the same shape.</p>
 
 
     </div>
