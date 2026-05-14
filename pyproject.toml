@@ -125,6 +125,11 @@ dev = [
 docs = [
     "mike @ git+https://github.com/squidfunk/mike.git@0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3",
     "mkdocstrings-python>=0.24.0",
+    # Pygments 2.20 strictened html.escape to reject None; pymdownx 10.20 still
+    # passes filename=None for separate-signature blocks rendered by
+    # mkdocstrings, which silently kills the build. Pin until pymdownx
+    # ships a fix.
+    "pygments<2.20",
     "zensical>=0.0.28",
 ]
 ui = [
