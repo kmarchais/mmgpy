@@ -176,7 +176,7 @@ class ValidationError(Exception):
     def __init__(self, report: ValidationReport) -> None:
         """Initialize with a validation report."""
         self.report = report
-        issues = report.errors if report.errors else report.warnings
+        issues = report.errors or report.warnings
         messages = [i.message for i in issues[:3]]
         super().__init__(f"Mesh validation failed: {'; '.join(messages)}")
 

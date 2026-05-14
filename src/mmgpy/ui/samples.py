@@ -171,7 +171,7 @@ SAMPLE_MESHES: dict[str, dict] = {
         "icon": "mdi-circle-double",
     },
     "bunny": {
-        "create": lambda: pv.examples.download_bunny(),
+        "create": pv.examples.download_bunny,
         "category": "surface",
         "icon": "mdi-rabbit",
     },
