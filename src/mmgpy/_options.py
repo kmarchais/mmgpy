@@ -199,6 +199,11 @@ class _MmgOptionsBase:
         hausd : float | None
             Hausdorff distance. Defaults to hmax/10.
 
+        Returns
+        -------
+        Self
+            A fresh options instance with tight gradation (``hgrad=1.2``).
+
         """
         return cls(
             hmax=hmax,
@@ -215,6 +220,11 @@ class _MmgOptionsBase:
         hmax : float
             Maximum edge size.
 
+        Returns
+        -------
+        Self
+            A fresh options instance with relaxed gradation (``hgrad=1.5``).
+
         """
         return cls(
             hmax=hmax,
@@ -226,6 +236,11 @@ class _MmgOptionsBase:
         """Create options for optimization without topology changes.
 
         Only moves vertices to improve quality, no insertion/deletion.
+
+        Returns
+        -------
+        Self
+            A fresh options instance with ``optim=True``, ``noinsert=True``.
 
         """
         return cls(

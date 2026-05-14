@@ -166,8 +166,19 @@ def infer_sol_type(array: NDArray[np.float64], dimension: int) -> int:
 
     A 1D array is scalar (type 1). A 2D ``(N, k)`` array is a vector when
     ``k == dimension`` and a symmetric tensor when ``k == dim * (dim + 1) / 2``.
-    Anything else raises ``ValueError`` with a message that names the
-    expected shapes so callers can surface it directly.
+
+    Returns
+    -------
+    int
+        The MMG type code: ``1`` (scalar), ``2`` (vector), or ``3``
+        (symmetric tensor).
+
+    Raises
+    ------
+    ValueError
+        If the array is neither 1D nor a 2D shape matching a scalar,
+        vector, or tensor layout for ``dimension``.
+
     """
     if array.ndim == 1:
         return _TYPE_SCALAR

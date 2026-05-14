@@ -71,6 +71,12 @@ def _renum_is_truthy(raw: object) -> bool:
     fast path is safe to take. Bad strings fall through to ``False`` and
     the precise ``ValueError`` is raised by ``_pop_renum_redirect`` once
     the kwarg actually reaches ``Mesh.remesh``.
+
+    Returns
+    -------
+    bool
+        ``True`` when ``raw`` should trigger the renum path.
+
     """
     if isinstance(raw, str):
         try:

@@ -30,7 +30,7 @@ repos:
     rev: "v0.15.13"
     hooks:
       - id: ruff-check
-        args: [--fix, --select, ALL, --ignore, INP001]
+        args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/asottile/pyupgrade

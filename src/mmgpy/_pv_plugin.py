@@ -49,7 +49,15 @@ _SOL_EXTENSIONS = (".sol", ".solb")
 
 
 def _find_companion_sol(mesh_path: Path) -> Path | None:
-    """Return the sibling ``.sol``/``.solb`` for *mesh_path* if one exists."""
+    """Return the sibling ``.sol``/``.solb`` for *mesh_path* if one exists.
+
+    Returns
+    -------
+    Path or None
+        Path to the existing companion sol file, or ``None`` when neither
+        ``.sol`` nor ``.solb`` is present.
+
+    """
     for ext in _SOL_EXTENSIONS:
         candidate = mesh_path.with_suffix(ext)
         if candidate.exists():
@@ -129,6 +137,13 @@ def _is_line_only_polydata(
     Used by the ``.mmg.remesh`` accessor to detect inputs that should go
     through the mmg2d edge-triangulation path
     (:func:`mmgpy.mmg2d.generate`) instead of the standard remesh pipeline.
+
+    Returns
+    -------
+    bool
+        ``True`` when *dataset* is a :class:`pyvista.PolyData` whose only
+        non-vertex cells are LINEs.
+
     """
     if not isinstance(dataset, pv.PolyData):
         return False
@@ -145,7 +160,20 @@ def _generate_from_line_polydata(
     dataset: pv.PolyData,
     options: dict[str, Any],
 ) -> pv.PolyData:
-    """Run :func:`mmgpy.mmg2d.generate` on a line-only PolyData."""
+    """Run :func:`mmgpy.mmg2d.generate` on a line-only PolyData.
+
+    Returns
+    -------
+    pv.PolyData
+        The triangulated 2D mesh.
+
+    Raises
+    ------
+    ValueError
+        If the LINE cells cannot be extracted as paired vertex indices,
+        or the geometry is not planar (z varies across vertices).
+
+    """
     from mmgpy._generate import generate  # noqa: PLC0415
     from mmgpy._pyvista import (  # noqa: PLC0415
         _extract_lines_from_polydata,
@@ -180,6 +208,13 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
     for any subsequent operation. This helper bridges the gap by re-applying
     those fields through ``Mesh.__setitem__``, which routes them to the C++
     layer.
+
+    Returns
+    -------
+    Mesh
+        A fresh :class:`mmgpy._mesh.Mesh` with any reserved MMG fields
+        already pushed through the C++ layer.
+
     """
     from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
@@ -206,6 +241,13 @@ def _to_pyvista_with_user_fields(
     the dataset as the unit of state, so we copy those fields back onto the
     returned dataset (after a remesh-with-``transfer_fields`` they have been
     interpolated to the new vertex set).
+
+    Returns
+    -------
+    pv.UnstructuredGrid or pv.PolyData
+        The PyVista dataset with user fields re-attached where their
+        length matches the new vertex count.
+
     """
     result = mesh.to_pyvista(include_refs=True, include_edges=True)
     n_points = result.n_points
@@ -289,6 +331,13 @@ def _per_type_indices_marked(
     ``cumsum(types == cell_type) - 1``. PolyData stores cells in a fixed
     section order (verts, lines, polys, strips) — pick the matching slice
     of *mask* and return the local indices.
+
+    Returns
+    -------
+    ndarray of int32
+        Zero-indexed positions among cells of the requested type (an
+        empty array when none of the matching cells are marked).
+
     """
     if isinstance(dataset, pv.PolyData):
         n_verts = int(dataset.n_verts)
@@ -318,7 +367,21 @@ def _per_type_indices_marked(
 def _collect_constraints_from_data(
     dataset: pv.UnstructuredGrid | pv.PolyData,
 ) -> dict[str, NDArray[np.int32]]:
-    """Read reserved point_data / cell_data tags into kwarg-name → index map."""
+    """Read reserved point_data / cell_data tags into kwarg-name → index map.
+
+    Returns
+    -------
+    dict[str, ndarray of int32]
+        Mapping from MMG constraint kwarg name to the (zero-indexed)
+        per-entity indices marked by the dataset's reserved tag arrays.
+
+    Raises
+    ------
+    ValueError
+        If any reserved tag array does not match ``dataset.n_points`` or
+        ``dataset.n_cells``.
+
+    """
     out: dict[str, NDArray[np.int32]] = {}
 
     for tag_name, kwarg_name in _POINT_TAG_TO_KWARG.items():
@@ -378,7 +441,16 @@ def _collect_constraints_from_data(
 def _split_constraint_kwargs(
     options: dict[str, Any],
 ) -> dict[str, NDArray[np.int32]]:
-    """Pop reserved constraint kwargs from ``options`` and normalize to int32."""
+    """Pop reserved constraint kwargs from ``options`` and normalize to int32.
+
+    Returns
+    -------
+    dict[str, ndarray of int32]
+        Mapping from constraint kwarg name to its contiguous index array.
+        ``options`` is mutated in place: every key that was consumed is
+        removed.
+
+    """
     out: dict[str, NDArray[np.int32]] = {}
     for name in _CONSTRAINT_KWARGS:
         if name not in options:
@@ -400,6 +472,12 @@ def _apply_constraint_markers(
 
     Tags on ``dataset`` are read first; ``explicit`` overrides them. Each
     marker is forwarded to the matching ``MmgMesh*.set_<name>`` binding.
+
+    Raises
+    ------
+    ValueError
+        If a constraint is not supported by this mesh kind's binding.
+
     """
     combined = _collect_constraints_from_data(dataset)
     combined.update(explicit)
@@ -467,6 +545,12 @@ def _apply_local_sizing_specs(
     ``Mesh.set_size_*`` method expects. ``Mesh.remesh`` auto-applies sizing,
     but the levelset/optimize/uniform variants do not, so we apply explicitly
     here for uniform behavior across all accessor methods.
+
+    Raises
+    ------
+    ValueError
+        If a spec's ``"shape"`` is not one of the supported values.
+
     """
     if not specs:
         return
@@ -542,6 +626,13 @@ def write_mesh(
     Registered for the ``.mesh`` and ``.meshb`` extensions via the
     ``pyvista.writers`` entry point group. Lets ``mesh.save("out.mesh")``
     round-trip through MMG without going through the ``Mesh`` wrapper.
+
+    Raises
+    ------
+    TypeError
+        If ``dataset`` is not an :class:`pyvista.UnstructuredGrid` or
+        :class:`pyvista.PolyData` (MMG only handles those two).
+
     """
     from mmgpy._pyvista import from_pyvista  # noqa: PLC0415
 
@@ -563,7 +654,15 @@ def write_mesh(
 
 
 def _is_numeric_sol_array(arr: NDArray[Any]) -> bool:
-    """Return True if *arr* is a numeric, non-boolean ndarray usable as a sol block."""
+    """Return True if *arr* is a numeric, non-boolean ndarray usable as a sol block.
+
+    Returns
+    -------
+    bool
+        ``True`` for numeric dtypes (int / float / complex) excluding
+        boolean.
+
+    """
     return np.issubdtype(arr.dtype, np.number) and not np.issubdtype(
         arr.dtype,
         np.bool_,
@@ -571,7 +670,15 @@ def _is_numeric_sol_array(arr: NDArray[Any]) -> bool:
 
 
 def _is_valid_sol_shape(arr: NDArray[Any], dim: int) -> bool:
-    """Return True if *arr*'s shape matches scalar / vector / tensor for *dim*."""
+    """Return True if *arr*'s shape matches scalar / vector / tensor for *dim*.
+
+    Returns
+    -------
+    bool
+        ``True`` for 1D arrays or 2D arrays whose last dimension is 1
+        (scalar), ``dim`` (vector), or ``dim * (dim + 1) // 2`` (tensor).
+
+    """
     if arr.ndim == 1:
         return True
     if arr.ndim != 2:  # noqa: PLR2004  -- sol arrays are 1D scalar or 2D
@@ -597,6 +704,12 @@ def _auto_collect_sol_arrays(
     Keeps only arrays whose shape maps to a valid scalar / vector / tensor
     layout for ``dim``; skips ``mmg_*`` constraint tags and PyVista-reserved
     arrays (``Normals``, ``TCoords``).
+
+    Returns
+    -------
+    dict[str, ndarray of float64]
+        The kept arrays cast to ``float64``.
+
     """
     out: dict[str, NDArray[np.float64]] = {}
     if n_entities <= 0:
@@ -625,6 +738,20 @@ def _explicit_collect_sol_arrays(
 
     Raises on any mismatch (missing key, wrong length, non-numeric dtype,
     bad shape) so the caller's intent is honored exactly.
+
+    Returns
+    -------
+    dict[str, ndarray of float64]
+        The requested arrays cast to ``float64``.
+
+    Raises
+    ------
+    ValueError
+        If the dataset has no eligible entities, a requested key is
+        missing, an array's length differs from ``n_entities``, the
+        dtype is non-numeric, or the shape does not match a scalar /
+        vector / tensor layout for ``dim``.
+
     """
     if n_entities <= 0:
         msg = (
@@ -675,6 +802,12 @@ def _primary_cell_count(dataset: pv.UnstructuredGrid | pv.PolyData) -> int:
     supported: only the dominant type's cell_data round-trips. MMG itself
     assumes a homogeneous mesh, so callers should split mixed datasets
     before going through the .sol path.
+
+    Returns
+    -------
+    int
+        Count of the dominant cell type, or ``n_cells`` as a fallback.
+
     """
     if isinstance(dataset, pv.UnstructuredGrid):
         types = np.asarray(dataset.celltypes)
@@ -704,7 +837,19 @@ def _coerce_metric_kwarg(
 
     Accepts a 1D scalar array of length ``n_points`` (reshaped to ``(n, 1)``)
     or a 2D array with last dimension 1 (scalar), 3 (2D tensor), or 6 (3D
-    tensor). Raises ``ValueError`` on any other shape.
+    tensor).
+
+    Returns
+    -------
+    ndarray of float64
+        The metric reshaped to a contiguous ``(n_points, k)`` array.
+
+    Raises
+    ------
+    ValueError
+        If the shape does not match ``(n_points,)``, ``(n_points, 1)``,
+        ``(n_points, 3)``, or ``(n_points, 6)``.
+
     """
     arr = np.asarray(metric, dtype=np.float64)
     if arr.ndim == 1:
@@ -811,6 +956,14 @@ class MmgAccessor:
             survive in ``cell_data["refs"]`` and MMG edges in ``LINE``
             cells.
 
+        Raises
+        ------
+        TypeError
+            If both ``opts`` and ``**options`` are supplied.
+        ValueError
+            On the LINE-only auto-routed path, when ``local_sizing`` or
+            ``metric`` is supplied (neither is supported there).
+
         Notes
         -----
         If the dataset is a ``PolyData`` carrying only ``LINE`` cells,
@@ -879,6 +1032,12 @@ class MmgAccessor:
         every mesh kind via the pure-Python Laplacian propagator (or the
         optional fedoo-backed elasticity solver). The shim exists only to
         avoid breaking callers and will be removed in a future release.
+
+        Returns
+        -------
+        pv.UnstructuredGrid or pv.PolyData
+            The moved-and-remeshed dataset.
+
         """
         warnings.warn(
             "dataset.mmg.remesh_lagrangian() is deprecated; use "
@@ -911,6 +1070,11 @@ class MmgAccessor:
             constraint kwargs documented on :meth:`remesh` are honored
             here as well.
 
+        Returns
+        -------
+        pv.UnstructuredGrid or pv.PolyData
+            The level-set-discretized dataset.
+
         """
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
@@ -929,6 +1093,12 @@ class MmgAccessor:
         No vertices are inserted or removed; only positions move to improve
         element quality. Equivalent to ``remesh(optim=1, noinsert=1)``. The
         reserved constraint kwargs documented on :meth:`remesh` are honored.
+
+        Returns
+        -------
+        pv.UnstructuredGrid or pv.PolyData
+            The optimized dataset.
+
         """
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
@@ -951,6 +1121,11 @@ class MmgAccessor:
         **options : object
             Forwarded to :meth:`mmgpy.Mesh.remesh_uniform`. The reserved
             constraint kwargs documented on :meth:`remesh` are honored.
+
+        Returns
+        -------
+        pv.UnstructuredGrid or pv.PolyData
+            The uniformly remeshed dataset.
 
         """
         constraints = _split_constraint_kwargs(options)
@@ -1091,6 +1266,12 @@ class MmgAccessor:
             the tensor by ``c`` rescales target edge lengths by
             ``1/sqrt(c)``.
 
+        Returns
+        -------
+        ndarray of float64
+            The freshly built size map, also stored on the dataset as
+            ``point_data["metric"]``.
+
         """
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         sizes = mesh.build_size_map(aniso=aniso)
@@ -1104,18 +1285,20 @@ class MmgAccessor:
         fresh dataset; the input is not modified. Not available on 2D
         meshes, MMG2D has no equivalent entry point.
 
+        Returns
+        -------
+        pv.UnstructuredGrid or pv.PolyData
+            The cleaned dataset with the same vertex set as the input
+            and ``cell_data`` dropped (see Notes).
+
         Notes
         -----
         The vertex set is preserved, so ``point_data`` flows through to the
         returned dataset. ``cell_data`` is dropped: ``Clean_isoSurf`` removes
         triangles/edges, so any positional cell array on the input would no
         longer align with the cleaned topology. A warning is emitted when
-        the input carries ``cell_data`` so the loss is not silent.
-
-        Raises
-        ------
-        ValueError
-            If the dataset's mesh kind is ``TRIANGULAR_2D``.
+        the input carries ``cell_data`` so the loss is not silent. The
+        underlying binding rejects ``TRIANGULAR_2D`` inputs.
 
         """
         if len(self._dataset.cell_data) > 0:
@@ -1223,6 +1406,13 @@ class MmgAccessor:
             ``.solb`` only carries vertex blocks through MMG's C API,
             so cell_keys for a ``.solb`` target raises.
 
+        Raises
+        ------
+        NotImplementedError
+            If ``path`` is a binary ``.solb`` file.
+        ValueError
+            If no eligible point or cell arrays are available to write.
+
         """
         from mmgpy._mesh import MeshKind  # noqa: PLC0415
         from mmgpy._sol import write_sol_file  # noqa: PLC0415
@@ -1292,6 +1482,13 @@ class MmgAccessor:
         """Validate the mesh and return either a bool or a detailed report.
 
         See :meth:`mmgpy.Mesh.validate` for parameter semantics.
+
+        Returns
+        -------
+        bool or ValidationReport
+            A bool when ``detailed=False`` (default), otherwise a
+            :class:`mmgpy.ValidationReport` with full diagnostics.
+
         """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
@@ -1309,13 +1506,26 @@ class MmgAccessor:
 
         Distinct from :meth:`pyvista.DataSet.cell_quality`, which exposes
         VTK's metrics (e.g. scaled jacobian, aspect ratio).
+
+        Returns
+        -------
+        float
+            MMG's in-radius-ratio quality in ``[0, 1]``.
+
         """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_element_quality(idx)
 
     def element_qualities(self) -> NDArray[np.float64]:
-        """Return MMG in-radius-ratio quality for every element."""
+        """Return MMG in-radius-ratio quality for every element.
+
+        Returns
+        -------
+        ndarray of float64
+            One quality value per element, each in ``[0, 1]``.
+
+        """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).get_element_qualities()
@@ -1326,6 +1536,12 @@ class MmgAccessor:
         Distinct from :meth:`pyvista.DataSet.cell_neighbors`, which uses
         VTK's 0-based topology. Useful when migrating code that relied on
         ``Mesh.get_adjacent_elements``.
+
+        Returns
+        -------
+        ndarray of int32
+            1-indexed element neighbours, as MMG reports them.
+
         """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
@@ -1337,6 +1553,12 @@ class MmgAccessor:
         Distinct from :meth:`pyvista.DataSet.point_neighbors`, which uses
         VTK's 0-based topology. Useful when migrating code that relied on
         ``Mesh.get_vertex_neighbors``.
+
+        Returns
+        -------
+        ndarray of int32
+            1-indexed vertex neighbours, as MMG reports them.
+
         """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
@@ -1351,6 +1573,12 @@ class MmgAccessor:
 
         Replaces MMG's SCOTCH-based ``renum=1``, which the bundled MMG
         cannot run. See :func:`mmgpy.reorder_cuthill_mckee` for details.
+
+        Returns
+        -------
+        pv.UnstructuredGrid or pv.PolyData
+            A reordered copy of the dataset.
+
         """
         from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
 
@@ -1362,6 +1590,12 @@ class MmgAccessor:
         Distinct from :attr:`pyvista.DataSet.center`, which is the
         arithmetic mean of point coordinates without volume/area
         weighting.
+
+        Returns
+        -------
+        ndarray of float64
+            The weighted centroid coordinates.
+
         """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 

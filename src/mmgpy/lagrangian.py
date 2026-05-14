@@ -36,7 +36,14 @@ MeshType = "MmgMesh2D | MmgMesh3D | MmgMeshS"
 
 
 def _check_fedoo_available() -> None:
-    """Check that fedoo is installed and importable."""
+    """Check that fedoo is installed and importable.
+
+    Raises
+    ------
+    ImportError
+        If the optional ``fedoo`` dependency is not installed.
+
+    """
     try:
         import fedoo  # noqa: F401, PLC0415
     except ImportError:
@@ -65,23 +72,34 @@ def propagate_displacement_elasticity(
 
     Requires the ``fedoo`` package (optional dependency).
 
-    Args:
-        vertices: Nx2 or Nx3 array of vertex coordinates.
-        elements: Mx(nodes_per_element) array of element connectivity.
-        boundary_mask: N boolean array, True for vertices with prescribed displacement.
-        boundary_displacement: Nxdim array of displacement vectors.
-            Only values at boundary vertices (where boundary_mask is True) are used.
-        E: Young's modulus for the fictitious elastic material. With only
-            Dirichlet BCs (no body forces, no tractions) the displacement field
-            is independent of ``E``; only ``nu`` affects the result. Default 1e6.
-        nu: Poisson's ratio. Default is 0.3.
+    Parameters
+    ----------
+    vertices : ndarray
+        Nx2 or Nx3 array of vertex coordinates.
+    elements : ndarray
+        Mx(nodes_per_element) array of element connectivity.
+    boundary_mask : ndarray of bool
+        N boolean array, True for vertices with prescribed displacement.
+    boundary_displacement : ndarray
+        Nxdim array of displacement vectors. Only values at boundary
+        vertices (where ``boundary_mask`` is True) are used.
+    E : float
+        Young's modulus for the fictitious elastic material. With only
+        Dirichlet BCs (no body forces, no tractions) the displacement
+        field is independent of ``E``; only ``nu`` affects the result.
+        Default 1e6.
+    nu : float
+        Poisson's ratio. Default is 0.3.
 
-    Returns:
+    Returns
+    -------
+    ndarray
         Nxdim array of displacement for all vertices.
 
-    Raises:
-        ImportError: If fedoo is not installed.
-        ValueError: If array dimensions don't match.
+    Raises
+    ------
+    ValueError
+        If array dimensions don't match or the element type is unsupported.
 
     """
     _check_fedoo_available()
@@ -175,12 +193,17 @@ def _build_laplacian_system(
     - u_I: Unknown interior displacements
     - u_B: Known boundary displacements
 
-    Args:
-        adjacency: Symmetric vertex-vertex CSR adjacency matrix.
-        boundary_mask: Boolean array, True for boundary vertices.
+    Parameters
+    ----------
+    adjacency : scipy.sparse.csr_matrix
+        Symmetric vertex-vertex CSR adjacency matrix.
+    boundary_mask : ndarray of bool
+        Boolean array, True for boundary vertices.
 
-    Returns:
-        Tuple of (L_II, L_IB, interior_indices, boundary_indices).
+    Returns
+    -------
+    tuple
+        ``(L_II, L_IB, interior_indices, boundary_indices)``.
 
     """
     interior_mask = ~boundary_mask
@@ -227,18 +250,27 @@ def propagate_displacement(
     The complexity is O(n) for building the matrix and typically O(n^1.5) for
     solving due to the sparse structure.
 
-    Args:
-        vertices: Nx2 or Nx3 array of vertex coordinates.
-        elements: Mx(nodes_per_element) array of element connectivity.
-        boundary_mask: N boolean array, True for vertices with prescribed displacement.
-        boundary_displacement: Nxdim array of displacement vectors.
-            Only values at boundary vertices (where boundary_mask is True) are used.
+    Parameters
+    ----------
+    vertices : ndarray
+        Nx2 or Nx3 array of vertex coordinates.
+    elements : ndarray
+        Mx(nodes_per_element) array of element connectivity.
+    boundary_mask : ndarray of bool
+        N boolean array, True for vertices with prescribed displacement.
+    boundary_displacement : ndarray
+        Nxdim array of displacement vectors. Only values at boundary
+        vertices (where ``boundary_mask`` is True) are used.
 
-    Returns:
+    Returns
+    -------
+    ndarray
         Nxdim array of displacement for all vertices.
 
-    Raises:
-        ValueError: If array dimensions don't match.
+    Raises
+    ------
+    ValueError
+        If array dimensions don't match.
 
     """
     n_vertices = len(vertices)
@@ -298,7 +330,14 @@ def _get_elements(
     *,
     is_3d: bool,
 ) -> NDArray[np.int32]:
-    """Get elements from mesh based on mesh type."""
+    """Get elements from mesh based on mesh type.
+
+    Returns
+    -------
+    ndarray of int32
+        Tetrahedra for 3D meshes, triangles for 2D / surface meshes.
+
+    """
     if is_3d:
         # Use cast since we've verified is_3d means mesh has get_tetrahedra
         return cast("Any", mesh).get_tetrahedra()
@@ -330,7 +369,14 @@ def _validate_displacement(
     n_vertices: int,
     n_dims: int,
 ) -> None:
-    """Validate displacement array dimensions."""
+    """Validate displacement array dimensions.
+
+    Raises
+    ------
+    ValueError
+        If ``displacement.shape`` is not ``(n_vertices, n_dims)``.
+
+    """
     if displacement.shape[0] != n_vertices:
         msg = f"Displacement rows {displacement.shape[0]} != n_vertices {n_vertices}"
         raise ValueError(msg)
@@ -355,34 +401,43 @@ def move_mesh(
     For large displacements, consider using multiple steps (``n_steps > 1``)
     to avoid mesh inversion.
 
-    Args:
-        mesh: Mesh, MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.
-        displacement: Nxdim array of displacement vectors for each vertex.
-            If boundary_mask is provided and propagate=True, only boundary
-            values need to be correct; interior values will be computed.
-        boundary_mask: Optional boolean array indicating which vertices have
-            prescribed displacement. If None, all vertices are treated as
-            having prescribed displacement (no propagation needed).
-        propagate: If True and boundary_mask is provided, propagate boundary
-            displacement to interior using the chosen propagation_method.
-        propagation_method: Method for propagating boundary displacements to
-            the interior. Options:
+    Parameters
+    ----------
+    mesh : Mesh or MmgMesh2D or MmgMesh3D or MmgMeshS
+        The mesh to deform in place.
+    displacement : ndarray
+        Nxdim array of displacement vectors for each vertex. If
+        ``boundary_mask`` is provided and ``propagate=True``, only
+        boundary values need to be correct; interior values will be
+        computed.
+    boundary_mask : ndarray of bool, optional
+        Boolean array indicating which vertices have prescribed
+        displacement. If ``None``, all vertices are treated as having
+        prescribed displacement (no propagation needed).
+    propagate : bool
+        If ``True`` and ``boundary_mask`` is provided, propagate boundary
+        displacement to interior using the chosen ``propagation_method``.
+    propagation_method : str
+        Method for propagating boundary displacements to the interior.
+        Options:
 
-            - ``"laplacian"`` (default): Solves the Laplace equation. Fast,
-              no extra dependencies.
-            - ``"elasticity"``: Solves a linear elasticity problem using
-              `fedoo <https://github.com/3MAH/fedoo>`_. Produces physically
-              meaningful displacements, better for large deformations and
-              complex geometries. Requires ``pip install fedoo``.
-        n_steps: Number of incremental steps to apply the displacement.
-            Use more steps for large displacements to avoid mesh inversion.
-        **remesh_options: Options passed to mesh.remesh() (hmax, hmin, etc.).
+        - ``"laplacian"`` (default): Solves the Laplace equation. Fast,
+          no extra dependencies.
+        - ``"elasticity"``: Solves a linear elasticity problem using
+          `fedoo <https://github.com/3MAH/fedoo>`_. Produces physically
+          meaningful displacements, better for large deformations and
+          complex geometries. Requires ``pip install fedoo``.
+    n_steps : int
+        Number of incremental steps to apply the displacement. Use more
+        steps for large displacements to avoid mesh inversion.
+    **remesh_options
+        Options passed to ``mesh.remesh()`` (hmax, hmin, etc.).
 
-    Raises:
-        ValueError: If displacement dimensions don't match mesh or
-            propagation_method is not recognized.
-        ImportError: If propagation_method="elasticity" and fedoo is not installed.
-        RuntimeError: If remeshing fails.
+    Raises
+    ------
+    ValueError
+        If displacement dimensions don't match the mesh, or
+        ``propagation_method`` is not recognized.
 
     """
     from ._mesh import Mesh  # noqa: PLC0415
@@ -462,11 +517,16 @@ def detect_boundary_vertices(
     For 3D meshes, these are vertices on surface triangles.
     For 2D/surface meshes, these are vertices on boundary edges.
 
-    Args:
-        mesh: Mesh, MmgMesh2D, MmgMesh3D, or MmgMeshS mesh object.
+    Parameters
+    ----------
+    mesh : Mesh or MmgMesh2D or MmgMesh3D or MmgMeshS
+        The mesh whose boundary vertices to detect.
 
-    Returns:
-        Boolean array of length n_vertices, True for boundary vertices.
+    Returns
+    -------
+    ndarray of bool
+        Boolean array of length ``n_vertices``, True for boundary
+        vertices.
 
     """
     from ._mesh import Mesh  # noqa: PLC0415

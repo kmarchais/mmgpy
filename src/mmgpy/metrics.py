@@ -72,6 +72,12 @@ def create_isotropic_metric(
         Metric tensor array with shape (n_vertices, n_components) where
         n_components is 6 for 3D and 3 for 2D.
 
+    Raises
+    ------
+    ValueError
+        If ``dim`` is not 2 or 3, ``n_vertices`` is missing when ``h`` is
+        a scalar, or ``h`` does not flatten to a 1D array.
+
     Examples
     --------
     >>> metric = create_isotropic_metric(0.1, n_vertices=100, dim=3)
@@ -143,6 +149,12 @@ def create_anisotropic_metric(
     NDArray[np.float64]
         Metric tensor(s). Shape (6,) for single 3D metric, (3,) for single 2D,
         or (n_vertices, 6) / (n_vertices, 3) for per-vertex metrics.
+
+    Raises
+    ------
+    ValueError
+        If ``sizes`` is not 1D / 2D, the dimension is not 2 or 3, or
+        ``directions`` does not match the expected shape.
 
     Examples
     --------
@@ -475,6 +487,11 @@ def intersect_metrics(
     NDArray[np.float64]
         Intersected metric tensor(s), same shape as inputs.
 
+    Raises
+    ------
+    ValueError
+        If ``m1`` and ``m2`` do not share the same shape.
+
     """
     m1 = np.asarray(m1, dtype=np.float64)
     m2 = np.asarray(m2, dtype=np.float64)
@@ -613,14 +630,26 @@ def compute_hessian(
     solution field with your FE solver, pass it here to get the Hessian,
     then use :func:`create_metric_from_hessian` to build an adaptation metric.
 
-    Args:
-        vertices: Nx2 or Nx3 array of vertex coordinates.
-        elements: Mx(nodes_per_element) array of element connectivity.
-        field: N array of scalar field values at vertices.
+    Parameters
+    ----------
+    vertices : ndarray
+        Nx2 or Nx3 array of vertex coordinates.
+    elements : ndarray
+        Mx(nodes_per_element) array of element connectivity.
+    field : ndarray
+        N array of scalar field values at vertices.
 
-    Returns:
-        Hessian tensor array. Shape (N, 3) for 2D [H11, H12, H22]
-        or (N, 6) for 3D [H11, H12, H13, H22, H23, H33].
+    Returns
+    -------
+    ndarray
+        Hessian tensor array. Shape ``(N, 3)`` for 2D
+        ``[H11, H12, H22]`` or ``(N, 6)`` for 3D
+        ``[H11, H12, H13, H22, H23, H33]``.
+
+    Raises
+    ------
+    ValueError
+        If ``field`` does not have one value per vertex.
 
     """
     n_vertices = len(vertices)

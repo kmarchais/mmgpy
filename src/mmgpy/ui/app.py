@@ -627,8 +627,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             pv_mesh.save(tmp_path)
 
             # Read file and encode as base64 for download
-            with Path(tmp_path).open("rb") as f:
-                content = f.read()
+            content = Path(tmp_path).read_bytes()
 
             # Trigger download via JavaScript
             b64_content = base64.b64encode(content).decode("utf-8")
@@ -695,7 +694,14 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         self.state.flush()
 
     def _build_ui(self):
-        """Build the trame UI."""
+        """Build the trame UI.
+
+        Returns
+        -------
+        SinglePageWithDrawerLayout
+            The configured top-level trame layout.
+
+        """
         with SinglePageWithDrawerLayout(
             self.server,
             full_height=True,

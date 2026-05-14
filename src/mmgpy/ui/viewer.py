@@ -205,7 +205,15 @@ class ViewerMixin:
         self.state.flush()
 
     def _compute_scalars(self, pv_mesh) -> str | None:
-        """Compute scalar field for visualization."""
+        """Compute scalar field for visualization.
+
+        Returns
+        -------
+        str or None
+            Name of the array attached to *pv_mesh*, or ``None`` when no
+            scalar field could be computed for the current state.
+
+        """
         scalars = None
         show_scalar = self.state.show_scalar
 
@@ -273,7 +281,14 @@ class ViewerMixin:
         return scalars
 
     def _compute_user_scalars(self, pv_mesh, field_name: str) -> str | None:
-        """Compute user-defined scalar field."""
+        """Compute user-defined scalar field.
+
+        Returns
+        -------
+        str or None
+            The field name when attached successfully, otherwise ``None``.
+
+        """
         if field_name not in self._solution_fields:
             return None
 
@@ -305,7 +320,14 @@ class ViewerMixin:
         self,
         scalars: str | None,
     ) -> tuple[str | None, str | None]:
-        """Get colormap and scalar bar title based on scalar field."""
+        """Get colormap and scalar bar title based on scalar field.
+
+        Returns
+        -------
+        tuple of (str or None, str or None)
+            ``(cmap, title)``. Both are ``None`` when *scalars* is ``None``.
+
+        """
         if scalars is None:
             return None, None
 
@@ -329,7 +351,15 @@ class ViewerMixin:
         return "viridis", None
 
     def _apply_slice_if_needed(self, pv_mesh):
-        """Apply slice/threshold for tetrahedral meshes."""
+        """Apply slice/threshold for tetrahedral meshes.
+
+        Returns
+        -------
+        pv.DataSet
+            The sliced dataset when slicing is enabled and applicable,
+            or the original mesh.
+
+        """
         if not (self.state.slice_enabled and self.state.mesh_kind == "tetrahedral"):
             return pv_mesh
 
@@ -511,7 +541,12 @@ class ViewerMixin:
     def _compute_edge_lengths_per_cell(self, pv_mesh) -> np.ndarray | None:
         """Compute average edge length per cell for visualization.
 
-        Returns an array of average edge lengths, one per cell.
+        Returns
+        -------
+        np.ndarray or None
+            One average edge length per cell, or ``None`` when the mesh
+            is empty or its cell type is unsupported.
+
         """
         points = np.array(pv_mesh.points)
 
@@ -550,7 +585,13 @@ class ViewerMixin:
     def _compute_all_edge_lengths(self, pv_mesh) -> np.ndarray | None:
         """Compute all edge lengths in the mesh for statistics.
 
-        Returns an array of all edge lengths (with duplicates for shared edges).
+        Returns
+        -------
+        np.ndarray or None
+            Flat array of all edge lengths (with duplicates for shared
+            edges), or ``None`` when the mesh is empty or its cell type
+            is unsupported.
+
         """
         points = np.array(pv_mesh.points)
 

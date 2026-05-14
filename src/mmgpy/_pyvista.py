@@ -100,7 +100,14 @@ def _apply_solution_aliases(
 
 
 def _all_faces_are_triangles(mesh: pv.PolyData) -> bool:
-    """Return True if every polygonal face in the mesh has 3 vertices."""
+    """Return True if every polygonal face in the mesh has 3 vertices.
+
+    Returns
+    -------
+    bool
+        ``True`` when every face in ``mesh.faces`` is a triangle.
+
+    """
     faces = np.asarray(mesh.faces)
     i = 0
     while i < len(faces):
@@ -122,6 +129,13 @@ def _strip_lines(mesh: pv.PolyData) -> pv.PolyData:
     `lines` cleared and any per-cell `cell_data` trimmed to drop the
     entries that belonged to the removed lines (PyVista does not do
     this automatically). Callers must not mutate the result.
+
+    Returns
+    -------
+    pv.PolyData
+        The original mesh when no lines are present, otherwise a fresh
+        copy without LINE cells.
+
     """
     if not hasattr(mesh, "lines") or len(np.asarray(mesh.lines)) == 0:
         return mesh
@@ -173,7 +187,15 @@ def _triangulate_if_needed(mesh: pv.PolyData) -> tuple[pv.PolyData, bool]:
 
 
 def _is_2d_mesh(points: NDArray[np.floating]) -> bool:
-    """Check if points are essentially 2D (z coordinates are zero or near-zero)."""
+    """Check if points are essentially 2D (z coordinates are zero or near-zero).
+
+    Returns
+    -------
+    bool
+        ``True`` if the array has only two coordinate columns, or three
+        with the z column within ``_2D_DETECTION_TOLERANCE`` of zero.
+
+    """
     if points.shape[1] == _DIMS_2D:
         return True
     if points.shape[1] == _DIMS_3D:
@@ -183,7 +205,19 @@ def _is_2d_mesh(points: NDArray[np.floating]) -> bool:
 
 
 def _extract_triangles_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32]:
-    """Extract triangle connectivity from PolyData faces array."""
+    """Extract triangle connectivity from PolyData faces array.
+
+    Returns
+    -------
+    ndarray of int32
+        An ``(n_triangles, 3)`` connectivity array.
+
+    Raises
+    ------
+    ValueError
+        If the mesh has no faces, or any face is not a triangle.
+
+    """
     if hasattr(mesh, "cells_dict") and pv.CellType.TRIANGLE in mesh.cells_dict:
         return mesh.cells_dict[pv.CellType.TRIANGLE].astype(np.int32)
 
@@ -208,7 +242,13 @@ def _extract_triangles_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32]:
 def _extract_lines_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32] | None:
     """Extract line connectivity from a PolyData.lines stream.
 
-    Returns None if the mesh has no line cells.
+    Returns
+    -------
+    ndarray of int32, or None
+        An ``(n_edges, 2)`` array of LINE-cell vertex pairs, or ``None``
+        when the mesh has no LINE cells. Polylines (``n > 2``) are
+        skipped because MMG does not support them.
+
     """
     if not hasattr(mesh, "lines"):
         return None
@@ -240,6 +280,13 @@ def _line_connectivity(
     in PyVista 0.48 this property is O(n_cells) per access (per-cell
     ``CellType`` enum lookup), so callers in a hot path should pass a
     pre-computed dict.
+
+    Returns
+    -------
+    ndarray of int32, or None
+        ``(n_edges, 2)`` connectivity, or ``None`` when no LINE cells
+        exist.
+
     """
     if cells_dict is None and hasattr(mesh, "cells_dict"):
         cells_dict = mesh.cells_dict
@@ -264,6 +311,13 @@ def _triangle_connectivity_unstructured(
     ``set_required_triangles`` and other surface-anchored operations have
     something to point at. ``cells_dict`` may be passed to skip the
     O(n_cells) rebuild.
+
+    Returns
+    -------
+    ndarray of int32, or None
+        ``(n_triangles, 3)`` connectivity, or ``None`` when no TRIANGLE
+        cells exist.
+
     """
     if cells_dict is None:
         cells_dict = mesh.cells_dict
@@ -285,6 +339,13 @@ def _refs_for_unstructured_grid_cells(
     Recognises `_REF_FIELDS` aliases. Returns the field already pre-sliced
     to `n_target` if its length matches, otherwise filters a per-cell array
     via the `celltypes` mask.
+
+    Returns
+    -------
+    ndarray of int64, or None
+        Per-cell reference markers as int64, or ``None`` when no
+        recognised refs array is present.
+
     """
     celltypes = np.asarray(mesh.celltypes)
     cell_mask = celltypes == cell_type
@@ -309,6 +370,13 @@ def _refs_for_polydata_lines(
 
     PolyData stores cells in a fixed order: verts, lines, polys, strips
     (see https://vtk.org/doc/nightly/html/classvtkPolyData.html).
+
+    Returns
+    -------
+    ndarray of int64, or None
+        Per-LINE reference markers, or ``None`` when no recognised refs
+        array is present.
+
     """
     n_verts = int(mesh.n_verts)
     n_lines = int(mesh.n_lines)
@@ -333,6 +401,13 @@ def _refs_for_polydata_polys(
 
     PolyData stores cells in a fixed order: verts, lines, polys, strips
     (see https://vtk.org/doc/nightly/html/classvtkPolyData.html).
+
+    Returns
+    -------
+    ndarray of int64, or None
+        Per-face reference markers, or ``None`` when no recognised refs
+        array is present.
+
     """
     n_verts = int(mesh.n_verts)
     n_lines = int(mesh.n_lines)
@@ -356,12 +431,20 @@ def _extract_edges(
 ) -> tuple[NDArray[np.int32] | None, NDArray[np.int64] | None]:
     """Extract LINE cells and matching reference markers from a PyVista mesh.
 
-    Returns (edges, refs) where either may be None. Recognised cell_data
-    field aliases for refs include `"refs"`, `"gmsh:physical"` (used by
-    meshio when reading `.msh` files) and `"medit:ref"`.
+    Recognised cell_data field aliases for refs include ``"refs"``,
+    ``"gmsh:physical"`` (used by meshio when reading ``.msh`` files) and
+    ``"medit:ref"``.
 
     ``cells_dict`` may be supplied to skip recomputing ``mesh.cells_dict``
     in callers that already hold one.
+
+    Returns
+    -------
+    tuple of (ndarray of int32 or None, ndarray of int64 or None)
+        ``(edges, refs)``. Either entry may be ``None``: ``edges`` when
+        the mesh has no LINE cells, ``refs`` when no recognised refs
+        array is present.
+
     """
     edges = _line_connectivity(mesh, cells_dict=cells_dict)
     if edges is None:
@@ -390,6 +473,14 @@ def _extract_element_refs(
     and triangles) by slicing the appropriate range out of a concatenated
     cell_data array. `cell_type` is required for UnstructuredGrid inputs
     so the right cells can be filtered.
+
+    Returns
+    -------
+    ndarray of int64, or None
+        Per-element reference markers, or ``None`` when no recognised
+        refs array is present (or when ``cell_type`` is missing for an
+        UnstructuredGrid input).
+
     """
     if isinstance(mesh, pv.UnstructuredGrid):
         if cell_type is None:
@@ -419,6 +510,17 @@ def _from_pyvista_to_mmg3d(
     operations like ``set_required_triangles`` have something to bind to.
     Inputs that happen to carry stray triangles will see them treated as
     MMG boundary triangles.
+
+    Returns
+    -------
+    MmgMesh3D
+        The populated 3D mesh.
+
+    Raises
+    ------
+    ValueError
+        If the mixed-cell path is taken and no TETRA cells are present.
+
     """
     celltypes = np.asarray(mesh.celltypes)
     tetra_type = int(pv.CellType.TETRA)
@@ -485,7 +587,14 @@ def _from_pyvista_to_mmg3d(
 
 
 def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
-    """Convert PolyData with 2D triangles to MmgMesh2D."""
+    """Convert PolyData with 2D triangles to MmgMesh2D.
+
+    Returns
+    -------
+    MmgMesh2D
+        The populated 2D mesh.
+
+    """
     edges, edge_refs = _extract_edges(mesh)
     # Capture point_data before triangulation: PyVista's triangulate() can
     # reset attached arrays. If triangulation adds points (rare for n-gons),
@@ -529,7 +638,14 @@ def _from_pyvista_to_mmg2d(mesh: pv.PolyData) -> MmgMesh2D:
 
 
 def _from_pyvista_to_mmgs(mesh: pv.PolyData) -> MmgMeshS:
-    """Convert PolyData with 3D surface triangles to MmgMeshS."""
+    """Convert PolyData with 3D surface triangles to MmgMeshS.
+
+    Returns
+    -------
+    MmgMeshS
+        The populated surface mesh.
+
+    """
     edges, edge_refs = _extract_edges(mesh)
     # See _from_pyvista_to_mmg2d for why we snapshot point_data pre-triangulate.
     source_point_data = mesh.point_data
@@ -569,7 +685,20 @@ def _from_pyvista_with_explicit_type(
     mesh: pv.UnstructuredGrid | pv.PolyData,
     mesh_type: type[MmgMesh3D | MmgMesh2D | MmgMeshS],
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
-    """Convert PyVista mesh to mmgpy mesh with explicit type."""
+    """Convert PyVista mesh to mmgpy mesh with explicit type.
+
+    Returns
+    -------
+    MmgMesh3D | MmgMesh2D | MmgMeshS
+        An instance of the requested ``mesh_type``.
+
+    Raises
+    ------
+    ValueError
+        If ``MmgMesh3D`` is requested with a non-UnstructuredGrid input,
+        or ``mesh_type`` is unrecognised.
+
+    """
     if mesh_type is MmgMesh3D:
         if not isinstance(mesh, pv.UnstructuredGrid):
             msg = "MmgMesh3D requires UnstructuredGrid input"
@@ -593,7 +722,24 @@ def _from_pyvista_with_explicit_type(
 def _from_pyvista_auto_detect(
     mesh: pv.UnstructuredGrid | pv.PolyData,
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
-    """Convert PyVista mesh to mmgpy mesh with auto-detection."""
+    """Convert PyVista mesh to mmgpy mesh with auto-detection.
+
+    Returns
+    -------
+    MmgMesh3D | MmgMesh2D | MmgMeshS
+        The matching mmgpy mesh kind, detected from cell types and the
+        coordinate dimension.
+
+    Raises
+    ------
+    TypeError
+        If ``mesh`` is not a :class:`pyvista.UnstructuredGrid` or
+        :class:`pyvista.PolyData`.
+    ValueError
+        If an UnstructuredGrid has no tetrahedra and the extracted
+        surface is empty.
+
+    """
     if isinstance(mesh, pv.UnstructuredGrid):
         celltypes = np.asarray(mesh.celltypes)
         tetra_type = int(pv.CellType.TETRA)
@@ -656,35 +802,41 @@ def from_pyvista(
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Convert a PyVista mesh to an mmgpy mesh.
 
-    Args:
-        mesh: PyVista mesh (UnstructuredGrid or PolyData).
-        mesh_type: Target mesh class. If None, auto-detects based on:
-            - UnstructuredGrid with tetrahedra → MmgMesh3D
-            - PolyData with 2D points (z~=0) -> MmgMesh2D
-            - PolyData with 3D points → MmgMeshS
+    Parameters
+    ----------
+    mesh : pyvista.UnstructuredGrid or pyvista.PolyData
+        Input PyVista mesh.
+    mesh_type : type, optional
+        Target mesh class. If ``None``, auto-detects based on:
 
-    Returns:
+        - UnstructuredGrid with tetrahedra -> ``MmgMesh3D``
+        - PolyData with 2D points (z~=0) -> ``MmgMesh2D``
+        - PolyData with 3D points -> ``MmgMeshS``
+
+    Returns
+    -------
+    MmgMesh3D or MmgMesh2D or MmgMeshS
         The appropriate mmgpy mesh instance.
 
-    Raises:
-        ValueError: If mesh type cannot be determined or is incompatible.
+    Notes
+    -----
+    When auto-detecting mesh type for PolyData, a mesh is considered 2D
+    (and converted to ``MmgMesh2D``) if all z-coordinates are within
+    ``1e-8`` of zero. For thin 3D meshes near ``z=0``, explicitly specify
+    ``mesh_type=MmgMeshS``.
 
-    Note:
-        When auto-detecting mesh type for PolyData, a mesh is considered 2D
-        (and converted to MmgMesh2D) if all z-coordinates are within 1e-8 of zero.
-        For thin 3D meshes near z=0, explicitly specify ``mesh_type=MmgMeshS``.
-
-    Example:
-        >>> import pyvista as pv
-        >>> from mmgpy import from_pyvista, MmgMeshS
-        >>>
-        >>> # Auto-detect mesh type
-        >>> grid = pv.read("tetra_mesh.vtk")
-        >>> mesh3d = from_pyvista(grid)
-        >>>
-        >>> # Explicit mesh type for thin 3D surfaces
-        >>> surface = pv.read("surface.stl")
-        >>> mesh_s = from_pyvista(surface, MmgMeshS)
+    Examples
+    --------
+    >>> import pyvista as pv
+    >>> from mmgpy import from_pyvista, MmgMeshS
+    >>>
+    >>> # Auto-detect mesh type
+    >>> grid = pv.read("tetra_mesh.vtk")
+    >>> mesh3d = from_pyvista(grid)
+    >>>
+    >>> # Explicit mesh type for thin 3D surfaces
+    >>> surface = pv.read("surface.stl")
+    >>> mesh_s = from_pyvista(surface, MmgMeshS)
 
     """
     if mesh_type is not None:
@@ -727,32 +879,39 @@ def to_pyvista(
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Convert an mmgpy mesh to a PyVista mesh.
 
-    Args:
-        mesh: mmgpy mesh instance (MmgMesh3D, MmgMesh2D, or MmgMeshS).
-        include_refs: If True, include element references as cell_data.
-        include_edges: If True, include MMG edges (ridges, boundary edges)
-            as LINE cells in the output. Defaults to False so the returned
-            mesh contains only the primary cell type, matching common
-            downstream expectations (e.g. matplotlib tripcolor). Set True
-            for round-trip / file-save workflows that must preserve edge
-            markers.
+    Parameters
+    ----------
+    mesh : MmgMesh3D or MmgMesh2D or MmgMeshS
+        mmgpy mesh instance.
+    include_refs : bool
+        If ``True``, include element references as ``cell_data``.
+    include_edges : bool
+        If ``True``, include MMG edges (ridges, boundary edges) as LINE
+        cells in the output. Defaults to ``False`` so the returned mesh
+        contains only the primary cell type, matching common downstream
+        expectations (e.g. matplotlib ``tripcolor``). Set ``True`` for
+        round-trip / file-save workflows that must preserve edge markers.
 
-    Returns:
-        PyVista mesh:
-            - MmgMesh3D → UnstructuredGrid with tetrahedra
-            - MmgMesh2D → PolyData with triangular faces (z=0)
-            - MmgMeshS → PolyData with triangular faces
+    Returns
+    -------
+    pyvista.UnstructuredGrid or pyvista.PolyData
+        - ``MmgMesh3D`` -> ``UnstructuredGrid`` with tetrahedra
+        - ``MmgMesh2D`` -> ``PolyData`` with triangular faces (``z=0``)
+        - ``MmgMeshS`` -> ``PolyData`` with triangular faces
 
-    Raises:
-        TypeError: If mesh is not an mmgpy mesh type.
+    Raises
+    ------
+    TypeError
+        If ``mesh`` is not an mmgpy mesh type.
 
-    Example:
-        >>> from mmgpy import MmgMesh3D, to_pyvista
-        >>>
-        >>> mesh = MmgMesh3D(vertices, elements)
-        >>> mesh.remesh(hmax=0.1)
-        >>> grid = to_pyvista(mesh)
-        >>> grid.plot()
+    Examples
+    --------
+    >>> from mmgpy import MmgMesh3D, to_pyvista
+    >>>
+    >>> mesh = MmgMesh3D(vertices, elements)
+    >>> mesh.remesh(hmax=0.1)
+    >>> grid = to_pyvista(mesh)
+    >>> grid.plot()
 
     """
     if isinstance(mesh, MmgMesh3D):
@@ -779,7 +938,14 @@ def to_pyvista(
 
 
 def _build_lines_array(edges: NDArray[np.int32]) -> NDArray[np.int32]:
-    """Build a VTK-style flat lines array (each entry: [2, v0, v1])."""
+    """Build a VTK-style flat lines array (each entry: [2, v0, v1]).
+
+    Returns
+    -------
+    ndarray of int32
+        Flattened ``[2, v0, v1, 2, v0, v1, ...]`` stream.
+
+    """
     return np.hstack(
         [np.full((len(edges), 1), _LINE_VERTS), edges],
     ).ravel()
@@ -791,7 +957,14 @@ def _mmg3d_to_pyvista(
     include_refs: bool,
     include_edges: bool,
 ) -> pv.UnstructuredGrid:
-    """Convert MmgMesh3D to PyVista UnstructuredGrid."""
+    """Convert MmgMesh3D to PyVista UnstructuredGrid.
+
+    Returns
+    -------
+    pv.UnstructuredGrid
+        Tetrahedral cells, with refs (and edges) attached when requested.
+
+    """
     vertices = mesh.get_vertices()
 
     if include_refs:
@@ -827,7 +1000,15 @@ def _mmg2d_to_pyvista(
     include_refs: bool,
     include_edges: bool,
 ) -> pv.PolyData:
-    """Convert MmgMesh2D to PyVista PolyData."""
+    """Convert MmgMesh2D to PyVista PolyData.
+
+    Returns
+    -------
+    pv.PolyData
+        Triangle faces at ``z = 0``, with refs (and LINE edges) attached
+        when requested.
+
+    """
     vertices_2d = mesh.get_vertices()
     vertices_3d = np.column_stack([vertices_2d, np.zeros(len(vertices_2d))])
 
@@ -866,7 +1047,15 @@ def _mmgs_to_pyvista(
     include_refs: bool,
     include_edges: bool,
 ) -> pv.PolyData:
-    """Convert MmgMeshS to PyVista PolyData."""
+    """Convert MmgMeshS to PyVista PolyData.
+
+    Returns
+    -------
+    pv.PolyData
+        Surface triangles in 3D, with refs (and LINE edges) attached
+        when requested.
+
+    """
     vertices = mesh.get_vertices()
 
     if include_refs:
@@ -924,6 +1113,11 @@ def polydata_from_2d_triangles(
     -------
     pv.PolyData
         Planar PolyData carrying ``triangles`` as its faces.
+
+    Raises
+    ------
+    ValueError
+        If ``vertices`` does not have shape ``(n, 2)`` or ``(n, 3)``.
 
     """
     verts = np.asarray(vertices, dtype=np.float64)

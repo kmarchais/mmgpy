@@ -118,7 +118,7 @@ dev = [
     "pytest>=9.0.3",
     "pytest-benchmark>=5.0.0",
     "pytest-cov>=4.1.0",
-    "ruff>=0.14.10",
+    "ruff>=0.15",
     "pytest-codeblocks>=0.17.0",
     "pytest-pyvista>=0.2",
 ]
@@ -147,17 +147,53 @@ image_cache_dir = "tests/image_cache"
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
+[tool.ruff]
+preview = true
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
     "D203",   # incompatible with D211 (no-blank-line-before-class)
     "D213",   # incompatible with D212 (multi-line-summary-first-line)
     "COM812", # conflicts with formatter
+    # Preview rules — opt out for now and fix in dedicated PRs.
+    # Each entry below corresponds to one currently-failing rule;
+    # remove it once the rule's findings are resolved.
+    "CPY001",  # missing-copyright-notice                       (37)
+    "FURB101", # read-whole-file                                (1)
+    "FURB113", # repeated-append                                (3)
+    "ISC004",  # implicit-string-concatenation-in-collection    (12)
+    "PLC1901", # compare-to-empty-string                        (2)
+    "PLC2801", # unnecessary-dunder-call                        (2)
+    "PLR0904", # too-many-public-methods                        (2)
+    "PLR0914", # too-many-locals                                (10)
+    "PLR0917", # too-many-positional-arguments                  (7)
+    "PLR1702", # too-many-nested-blocks                         (2)
+    "PLR6104", # non-augmented-assignment                       (1)
+    "PLR6201", # literal-membership                             (13)
+    "PLR6301", # no-self-use                                    (15)
+    "RUF052",  # used-dummy-variable                            (1)
+    "RUF067",  # non-empty-init-module                          (3)
+    "RUF069",  # float-equality-comparison                      (1)
+    "RUF072",  # useless-finally                                (1)
 ]
 
+# Preview-rule enforcement is currently scoped to ``src/mmgpy/`` (the public
+# API surface). Outside of it, these preview-only rules are noise:
+#   - docstring coverage (DOC201/DOC402/DOC501/DOC502) is overkill for
+#     tests, fixtures, examples, and CI scripts.
+#   - PLC2701 / S404 / PLW1514 / FURB11x / FURB14x / FURB15x / RUF027 are
+#     refactor suggestions ill-suited to throwaway / demo code.
+# Add a new fire to this list when a future PR cleans it up inside src/mmgpy/.
+# Globs cannot be reused in TOML, so the same list is repeated below for each
+# non-src tree.
 [tool.ruff.lint.extend-per-file-ignores]
-"docs/conftest.py" = [
+"docs/**/*.py" = [
     "INP001",  # docs/ is not a package, conftest.py doesn't need __init__.py
+    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
+    "PLC2701", "S404", "PLW1514",            # preview imports / IO
+    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "RUF027",                                # preview missing-f-string
 ]
 "src/mmgpy/_sol.py" = [
     "C901",    # parse_sol_file has inherent complexity from the Medit format
@@ -184,6 +220,10 @@ ignore = [
     "TC003",   # pathlib import in runtime allowed for test fixtures
     "ANN",     # type annotations not required for tests
     "INP001",  # tests/ subdirectories are intentional, not packages
+    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
+    "PLC2701", "S404", "PLW1514",            # preview imports / IO
+    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "RUF027",                                # preview missing-f-string
 ]
 ".github/scripts/**/*.py" = [
     "INP001",  # CI scripts are not a package
@@ -192,6 +232,10 @@ ignore = [
     "C901",    # complex wheel optimization function is acceptable
     "PLR0912", # many branches in wheel optimization is acceptable
     "PLR0915", # many statements in wheel optimization is acceptable
+    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
+    "PLC2701", "S404", "PLW1514",            # preview imports / IO
+    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "RUF027",                                # preview missing-f-string
 ]
 "src/mmgpy/lagrangian.py" = [
     "N803",    # uppercase argument names (E for Young's modulus) standard in mechanics
@@ -216,6 +260,11 @@ ignore = [
     "PTH123",  # open() is fine for simple examples
     "PLR2004", # magic values allowed in examples
     "N806",    # uppercase variable names for matrices in examples
+    "INP001",  # examples/ subdirectories are not packages
+    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
+    "PLC2701", "S404", "PLW1514",            # preview imports / IO
+    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "RUF027",                                # preview missing-f-string
 ]
 "scripts/**/*.py" = [
     "INP001",  # scripts are not a package
@@ -223,6 +272,10 @@ ignore = [
     "EXE001",  # shebang is fine in scripts
     "PLR2004", # magic values allowed in scripts
     "S603",    # subprocess calls are safe (calling our own executables)
+    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
+    "PLC2701", "S404", "PLW1514",            # preview imports / IO
+    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "RUF027",                                # preview missing-f-string
 ]
 "benchmarks/**/*.py" = [
     "S101",    # asserts allowed in benchmarks
@@ -234,6 +287,10 @@ ignore = [
     "S607",    # partial executable paths are intentional for benchmarks
     "PLC0415", # imports in functions are fine for benchmarks
     "T201",    # print statements used for timing reports
+    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
+    "PLC2701", "S404", "PLW1514",            # preview imports / IO
+    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "RUF027",                                # preview missing-f-string
 ]
 "src/mmgpy/__init__.py" = [
     "E402",   # imports after re-export of _find_mmg_executable

@@ -82,7 +82,14 @@ class RepairReport:
         return self.total_repairs > 0
 
     def __str__(self) -> str:
-        """Return a human-readable summary."""
+        """Return a human-readable summary.
+
+        Returns
+        -------
+        str
+            Multi-line view of the repair counts.
+
+        """
         lines = ["RepairReport:"]
 
         if self.duplicate_vertices_removed > 0:

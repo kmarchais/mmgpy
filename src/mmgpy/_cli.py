@@ -23,6 +23,12 @@ def _get_cli_logger() -> logging.Logger:  # pragma: no cover
     """Get a simple stdlib logger for CLI entry points.
 
     Uses plain StreamHandler to avoid Rich console issues on Windows pipes.
+
+    Returns
+    -------
+    logging.Logger
+        A configured ``mmgpy.cli`` logger writing to stderr.
+
     """
     logger = logging.getLogger("mmgpy.cli")
     if not logger.handlers:
@@ -62,11 +68,15 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
        command calls the Python API directly).  Kept for the public
        re-export in ``__init__.py`` and for test usage.
 
-    Args:
-        base_name: Base name of executable (e.g., "mmg3d_O3")
+    Parameters
+    ----------
+    base_name : str
+        Base name of executable (e.g., ``"mmg3d_O3"``).
 
-    Returns:
-        Full path to executable, or None if not found
+    Returns
+    -------
+    str or None
+        Full path to executable, or ``None`` if not found.
 
     """
     exe_name = f"{base_name}.exe" if sys.platform == "win32" else base_name
@@ -192,6 +202,12 @@ def _parse_args(args: list[str]) -> _ParsedArgs:
     Handles ``-flag value`` pairs, boolean flags, and positional input file
     detection.  Unknown flags are silently ignored so that the CLI remains
     forward-compatible with new MMG options.
+
+    Returns
+    -------
+    _ParsedArgs
+        The structured CLI arguments.
+
     """
     parsed = _ParsedArgs()
     i = 0
@@ -249,6 +265,12 @@ def _default_output_path(input_path: str) -> str:
     """Derive the default output path following MMG convention.
 
     ``input.mesh`` → ``input.o.mesh``
+
+    Returns
+    -------
+    str
+        Default output path next to ``input_path``.
+
     """
     p = Path(input_path)
     return str(p.with_name(f"{p.stem}.o{p.suffix}"))

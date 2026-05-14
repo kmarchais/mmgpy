@@ -148,6 +148,18 @@ def _load_meshb_by_trial(
     binary content) are caught so the next candidate gets a chance; if
     every candidate either errors or returns empty, a ``ValueError`` is
     raised describing the file.
+
+    Returns
+    -------
+    tuple[MmgMesh3D | MmgMesh2D | MmgMeshS, MeshKind]
+        The first candidate that loaded a non-empty population of its
+        primary element type, plus the matching mesh kind.
+
+    Raises
+    ------
+    ValueError
+        If no candidate class could load the file successfully.
+
     """
     path_str = str(path)
     candidates: tuple[
@@ -203,8 +215,6 @@ def _load_medit_native(
     ------
     ValueError
         If mesh kind cannot be determined.
-    RuntimeError
-        If loading fails.
 
     """
     if mesh_kind is None:
@@ -240,6 +250,19 @@ def _read_mesh_internal(
     consumers that need a :class:`Mesh` to drive sizing / user-field state.
     External users should construct a PyVista dataset (``pv.read`` or any
     other PyVista path) and use the ``.mmg`` accessor.
+
+    Returns
+    -------
+    Mesh
+        The internal mesh wrapper.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``source`` is a path and the file does not exist.
+    TypeError
+        If ``source`` is none of the supported input types.
+
     """
     # Import here to avoid circular imports
     from mmgpy._mesh import Mesh, _LazyFieldSource  # noqa: PLC0415
@@ -306,9 +329,13 @@ def read(
         ``.meshb`` via the registered Medit reader plugin. ``mmgpy.read``
         will be removed in 0.14.
 
-    Returns the internal :class:`Mesh` wrapper for backwards compatibility
-    with code written against 0.12. New code should call ``pv.read(...)``
-    and use ``dataset.mmg.remesh(...)``.
+    Returns
+    -------
+    Mesh
+        The internal mesh wrapper, kept for backwards compatibility with
+        code written against 0.12. New code should call ``pv.read(...)``
+        and use ``dataset.mmg.remesh(...)``.
+
     """
     import warnings  # noqa: PLC0415
 
@@ -328,7 +355,19 @@ def read(
 def _mesh_kind_to_class(
     mesh_kind: MeshKind,
 ) -> type[MmgMesh3D | MmgMesh2D | MmgMeshS]:
-    """Convert MeshKind enum to mesh class."""
+    """Convert MeshKind enum to mesh class.
+
+    Returns
+    -------
+    type[MmgMesh3D | MmgMesh2D | MmgMeshS]
+        The mesh class that handles ``mesh_kind``.
+
+    Raises
+    ------
+    ValueError
+        If ``mesh_kind`` is not a recognized :class:`MeshKind`.
+
+    """
     if mesh_kind == MeshKind.TETRAHEDRAL:
         return MmgMesh3D
     if mesh_kind == MeshKind.TRIANGULAR_2D:
@@ -342,7 +381,19 @@ def _mesh_kind_to_class(
 def _impl_to_kind(
     impl: MmgMesh3D | MmgMesh2D | MmgMeshS,
 ) -> MeshKind:
-    """Convert implementation type to MeshKind."""
+    """Convert implementation type to MeshKind.
+
+    Returns
+    -------
+    MeshKind
+        The mesh kind that matches ``impl``.
+
+    Raises
+    ------
+    TypeError
+        If ``impl`` is not one of the three recognized mesh classes.
+
+    """
     if isinstance(impl, MmgMesh3D):
         return MeshKind.TETRAHEDRAL
     if isinstance(impl, MmgMesh2D):
