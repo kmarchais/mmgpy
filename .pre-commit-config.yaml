@@ -30,7 +30,9 @@ repos:
     rev: "v0.15.13"
     hooks:
       - id: ruff-check
-        args: [--fix]
+        # --no-preview ensures the hook stays on stable rules even when
+        # pyproject sets `preview = true` for local dev.
+        args: [--fix, --select, ALL, --ignore, INP001, --no-preview]
       - id: ruff-format
 
   - repo: https://github.com/asottile/pyupgrade
