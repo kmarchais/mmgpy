@@ -1,25 +1,30 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v6.0.0"
+  # prek builtin hooks (Rust-native, faster)
+  - repo: builtin
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=5000"]
-      - id: check-ast
-      - id: check-builtin-literals
       - id: check-case-conflict
-      - id: check-docstring-first
-      - id: check-illegal-windows-names
       - id: check-merge-conflict
       - id: check-toml
       - id: check-yaml
         exclude: mkdocs.yml
-      - id: debug-statements
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
       - id: mixed-line-ending
-      - id: name-tests-test
       - id: trailing-whitespace
+
+  # pre-commit-hooks for Python-specific checks (no builtin equivalent)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v6.0.0"
+    hooks:
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-docstring-first
+      - id: check-illegal-windows-names
+      - id: debug-statements
+      - id: name-tests-test
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: "v0.14.10"
