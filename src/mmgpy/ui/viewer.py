@@ -39,13 +39,13 @@ class ViewerMixin:
         self.state.current_view = view
 
         view_methods = {
-            "xy": lambda: self._plotter.view_xy(),
+            "xy": self._plotter.view_xy,
             "-xy": lambda: self._plotter.view_xy(negative=True),
-            "xz": lambda: self._plotter.view_xz(),
+            "xz": self._plotter.view_xz,
             "-xz": lambda: self._plotter.view_xz(negative=True),
-            "yz": lambda: self._plotter.view_yz(),
+            "yz": self._plotter.view_yz,
             "-yz": lambda: self._plotter.view_yz(negative=True),
-            "isometric": lambda: self._plotter.view_isometric(),
+            "isometric": self._plotter.view_isometric,
         }
 
         if view in view_methods:

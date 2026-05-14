@@ -27,7 +27,7 @@ repos:
       - id: name-tests-test
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.14.10"
+    rev: "v0.15.13"
     hooks:
       - id: ruff-check
         args: [--fix, --select, ALL, --ignore, INP001]
@@ -51,7 +51,7 @@ repos:
           ]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         files: ^.*\.(py|rst|md)$
@@ -66,19 +66,19 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: "v20.1.8"
+    rev: "v22.1.5"
     hooks:
       - id: clang-format
         types_or: [c++, c, cuda]
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: "v3.7.4"
+    rev: "v3.8.3"
     hooks:
       - id: prettier
         types_or: [yaml, markdown]
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: "v0.24.1"
+    rev: "v0.25"
     hooks:
       - id: validate-pyproject
         additional_dependencies: ["validate-pyproject-schema-store[all]"]
