@@ -2132,17 +2132,17 @@ class Mesh:
         try:
             # Emit progress events
             if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
-                raise CancellationError("init")  # noqa: EM101
+                raise CancellationError(phase="init")
 
             initial_vertices = len(self._impl.get_vertices())
 
             if not _emit_event(callback, "options", "start", "Options", progress=0.0):
-                raise CancellationError("options")  # noqa: EM101
+                raise CancellationError(phase="options")
 
             _emit_event(callback, "options", "complete", "Options set", progress=1.0)
 
             if not _emit_event(callback, "remesh", "start", "Remeshing", progress=0.0):
-                raise CancellationError("remesh")  # noqa: EM101
+                raise CancellationError(phase="remesh")
 
             # Call raw C++ method and convert result
             stats = self._impl.remesh(**kwargs)
@@ -2232,12 +2232,12 @@ class Mesh:
 
         try:
             if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
-                raise CancellationError("init")  # noqa: EM101
+                raise CancellationError(phase="init")
 
             initial_vertices = len(self._impl.get_vertices())
 
             if not _emit_event(callback, "options", "start", "Level-set", progress=0.0):
-                raise CancellationError("options")  # noqa: EM101
+                raise CancellationError(phase="options")
 
             _emit_event(callback, "options", "complete", "Level-set set", progress=1.0)
 
@@ -2248,7 +2248,7 @@ class Mesh:
                 "Level-set remeshing",
                 progress=0.0,
             ):
-                raise CancellationError("remesh")  # noqa: EM101
+                raise CancellationError(phase="remesh")
 
             stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
             final_vertices = len(self._impl.get_vertices())

@@ -68,11 +68,15 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
        command calls the Python API directly).  Kept for the public
        re-export in ``__init__.py`` and for test usage.
 
-    Args:
-        base_name: Base name of executable (e.g., "mmg3d_O3")
+    Parameters
+    ----------
+    base_name : str
+        Base name of executable (e.g., ``"mmg3d_O3"``).
 
-    Returns:
-        Full path to executable, or None if not found
+    Returns
+    -------
+    str or None
+        Full path to executable, or ``None`` if not found.
 
     """
     exe_name = f"{base_name}.exe" if sys.platform == "win32" else base_name

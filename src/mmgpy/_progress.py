@@ -105,23 +105,6 @@ class CancellationError(Exception):
             message = "Operation cancelled"
         super().__init__(message)
 
-    @classmethod
-    def for_phase(cls, phase: str) -> Self:
-        """Create a CancellationError for a specific phase.
-
-        Parameters
-        ----------
-        phase : str
-            The phase during which cancellation occurred.
-
-        Returns
-        -------
-        CancellationError
-            A new CancellationError with appropriate message for the phase.
-
-        """
-        return cls(phase=phase)
-
 
 @dataclass
 class ProgressEvent:
@@ -524,7 +507,7 @@ def remesh_3d(  # pragma: no cover
     from ._mmgpy import mmg3d
 
     if not _emit_event(progress, "load", "start", "Loading input mesh", progress=0.0):
-        raise CancellationError("load")  # noqa: EM101
+        raise CancellationError(phase="load")
 
     if not _emit_event(
         progress,
@@ -533,10 +516,10 @@ def remesh_3d(  # pragma: no cover
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError("options")  # noqa: EM101
+        raise CancellationError(phase="options")
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError("remesh")  # noqa: EM101
+        raise CancellationError(phase="remesh")
 
     result = mmg3d.remesh(
         input_mesh=input_mesh,
@@ -603,7 +586,7 @@ def remesh_2d(  # pragma: no cover
     from ._mmgpy import mmg2d
 
     if not _emit_event(progress, "load", "start", "Loading input mesh", progress=0.0):
-        raise CancellationError("load")  # noqa: EM101
+        raise CancellationError(phase="load")
 
     if not _emit_event(
         progress,
@@ -612,10 +595,10 @@ def remesh_2d(  # pragma: no cover
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError("options")  # noqa: EM101
+        raise CancellationError(phase="options")
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError("remesh")  # noqa: EM101
+        raise CancellationError(phase="remesh")
 
     result = mmg2d.remesh(
         input_mesh=input_mesh,
@@ -682,7 +665,7 @@ def remesh_surface(  # pragma: no cover
     from ._mmgpy import mmgs
 
     if not _emit_event(progress, "load", "start", "Loading input mesh", progress=0.0):
-        raise CancellationError("load")  # noqa: EM101
+        raise CancellationError(phase="load")
 
     if not _emit_event(
         progress,
@@ -691,10 +674,10 @@ def remesh_surface(  # pragma: no cover
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError("options")  # noqa: EM101
+        raise CancellationError(phase="options")
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError("remesh")  # noqa: EM101
+        raise CancellationError(phase="remesh")
 
     result = mmgs.remesh(
         input_mesh=input_mesh,
@@ -753,7 +736,7 @@ def remesh_mesh(
 
     """
     if not _emit_event(progress, "init", "start", "Initializing mesh", progress=0.0):
-        raise CancellationError("init")  # noqa: EM101
+        raise CancellationError(phase="init")
 
     initial_vertices = len(mesh.get_vertices())
 
@@ -764,10 +747,10 @@ def remesh_mesh(
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError("options")  # noqa: EM101
+        raise CancellationError(phase="options")
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError("remesh")  # noqa: EM101
+        raise CancellationError(phase="remesh")
 
     mesh.remesh(**options)
 
@@ -822,7 +805,7 @@ def remesh_mesh_lagrangian(  # pragma: no cover
     )
 
     if not _emit_event(progress, "init", "start", "Initializing mesh", progress=0.0):
-        raise CancellationError("init")  # noqa: EM101
+        raise CancellationError(phase="init")
 
     initial_vertices = len(mesh.get_vertices())
 
@@ -833,7 +816,7 @@ def remesh_mesh_lagrangian(  # pragma: no cover
         "Setting displacement field",
         progress=0.0,
     ):
-        raise CancellationError("options")  # noqa: EM101
+        raise CancellationError(phase="options")
 
     if not _emit_event(
         progress,
@@ -842,7 +825,7 @@ def remesh_mesh_lagrangian(  # pragma: no cover
         "Starting Lagrangian remeshing",
         progress=0.0,
     ):
-        raise CancellationError("remesh")  # noqa: EM101
+        raise CancellationError(phase="remesh")
 
     _move_mesh(mesh, displacement, **options)
 

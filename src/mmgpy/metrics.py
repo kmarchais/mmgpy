@@ -630,17 +630,26 @@ def compute_hessian(
     solution field with your FE solver, pass it here to get the Hessian,
     then use :func:`create_metric_from_hessian` to build an adaptation metric.
 
-    Args:
-        vertices: Nx2 or Nx3 array of vertex coordinates.
-        elements: Mx(nodes_per_element) array of element connectivity.
-        field: N array of scalar field values at vertices.
+    Parameters
+    ----------
+    vertices : ndarray
+        Nx2 or Nx3 array of vertex coordinates.
+    elements : ndarray
+        Mx(nodes_per_element) array of element connectivity.
+    field : ndarray
+        N array of scalar field values at vertices.
 
-    Returns:
-        Hessian tensor array. Shape (N, 3) for 2D [H11, H12, H22]
-        or (N, 6) for 3D [H11, H12, H13, H22, H23, H33].
+    Returns
+    -------
+    ndarray
+        Hessian tensor array. Shape ``(N, 3)`` for 2D
+        ``[H11, H12, H22]`` or ``(N, 6)`` for 3D
+        ``[H11, H12, H13, H22, H23, H33]``.
 
-    Raises:
-        ValueError: If ``field`` does not have one value per vertex.
+    Raises
+    ------
+    ValueError
+        If ``field`` does not have one value per vertex.
 
     """
     n_vertices = len(vertices)

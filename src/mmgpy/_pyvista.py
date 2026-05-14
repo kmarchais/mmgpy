@@ -802,32 +802,41 @@ def from_pyvista(
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Convert a PyVista mesh to an mmgpy mesh.
 
-    Args:
-        mesh: PyVista mesh (UnstructuredGrid or PolyData).
-        mesh_type: Target mesh class. If None, auto-detects based on:
-            - UnstructuredGrid with tetrahedra → MmgMesh3D
-            - PolyData with 2D points (z~=0) -> MmgMesh2D
-            - PolyData with 3D points → MmgMeshS
+    Parameters
+    ----------
+    mesh : pyvista.UnstructuredGrid or pyvista.PolyData
+        Input PyVista mesh.
+    mesh_type : type, optional
+        Target mesh class. If ``None``, auto-detects based on:
 
-    Returns:
+        - UnstructuredGrid with tetrahedra -> ``MmgMesh3D``
+        - PolyData with 2D points (z~=0) -> ``MmgMesh2D``
+        - PolyData with 3D points -> ``MmgMeshS``
+
+    Returns
+    -------
+    MmgMesh3D or MmgMesh2D or MmgMeshS
         The appropriate mmgpy mesh instance.
 
-    Note:
-        When auto-detecting mesh type for PolyData, a mesh is considered 2D
-        (and converted to MmgMesh2D) if all z-coordinates are within 1e-8 of zero.
-        For thin 3D meshes near z=0, explicitly specify ``mesh_type=MmgMeshS``.
+    Notes
+    -----
+    When auto-detecting mesh type for PolyData, a mesh is considered 2D
+    (and converted to ``MmgMesh2D``) if all z-coordinates are within
+    ``1e-8`` of zero. For thin 3D meshes near ``z=0``, explicitly specify
+    ``mesh_type=MmgMeshS``.
 
-    Example:
-        >>> import pyvista as pv
-        >>> from mmgpy import from_pyvista, MmgMeshS
-        >>>
-        >>> # Auto-detect mesh type
-        >>> grid = pv.read("tetra_mesh.vtk")
-        >>> mesh3d = from_pyvista(grid)
-        >>>
-        >>> # Explicit mesh type for thin 3D surfaces
-        >>> surface = pv.read("surface.stl")
-        >>> mesh_s = from_pyvista(surface, MmgMeshS)
+    Examples
+    --------
+    >>> import pyvista as pv
+    >>> from mmgpy import from_pyvista, MmgMeshS
+    >>>
+    >>> # Auto-detect mesh type
+    >>> grid = pv.read("tetra_mesh.vtk")
+    >>> mesh3d = from_pyvista(grid)
+    >>>
+    >>> # Explicit mesh type for thin 3D surfaces
+    >>> surface = pv.read("surface.stl")
+    >>> mesh_s = from_pyvista(surface, MmgMeshS)
 
     """
     if mesh_type is not None:
@@ -870,32 +879,39 @@ def to_pyvista(
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Convert an mmgpy mesh to a PyVista mesh.
 
-    Args:
-        mesh: mmgpy mesh instance (MmgMesh3D, MmgMesh2D, or MmgMeshS).
-        include_refs: If True, include element references as cell_data.
-        include_edges: If True, include MMG edges (ridges, boundary edges)
-            as LINE cells in the output. Defaults to False so the returned
-            mesh contains only the primary cell type, matching common
-            downstream expectations (e.g. matplotlib tripcolor). Set True
-            for round-trip / file-save workflows that must preserve edge
-            markers.
+    Parameters
+    ----------
+    mesh : MmgMesh3D or MmgMesh2D or MmgMeshS
+        mmgpy mesh instance.
+    include_refs : bool
+        If ``True``, include element references as ``cell_data``.
+    include_edges : bool
+        If ``True``, include MMG edges (ridges, boundary edges) as LINE
+        cells in the output. Defaults to ``False`` so the returned mesh
+        contains only the primary cell type, matching common downstream
+        expectations (e.g. matplotlib ``tripcolor``). Set ``True`` for
+        round-trip / file-save workflows that must preserve edge markers.
 
-    Returns:
-        PyVista mesh:
-            - MmgMesh3D → UnstructuredGrid with tetrahedra
-            - MmgMesh2D → PolyData with triangular faces (z=0)
-            - MmgMeshS → PolyData with triangular faces
+    Returns
+    -------
+    pyvista.UnstructuredGrid or pyvista.PolyData
+        - ``MmgMesh3D`` -> ``UnstructuredGrid`` with tetrahedra
+        - ``MmgMesh2D`` -> ``PolyData`` with triangular faces (``z=0``)
+        - ``MmgMeshS`` -> ``PolyData`` with triangular faces
 
-    Raises:
-        TypeError: If mesh is not an mmgpy mesh type.
+    Raises
+    ------
+    TypeError
+        If ``mesh`` is not an mmgpy mesh type.
 
-    Example:
-        >>> from mmgpy import MmgMesh3D, to_pyvista
-        >>>
-        >>> mesh = MmgMesh3D(vertices, elements)
-        >>> mesh.remesh(hmax=0.1)
-        >>> grid = to_pyvista(mesh)
-        >>> grid.plot()
+    Examples
+    --------
+    >>> from mmgpy import MmgMesh3D, to_pyvista
+    >>>
+    >>> mesh = MmgMesh3D(vertices, elements)
+    >>> mesh.remesh(hmax=0.1)
+    >>> grid = to_pyvista(mesh)
+    >>> grid.plot()
 
     """
     if isinstance(mesh, MmgMesh3D):

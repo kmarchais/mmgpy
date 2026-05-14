@@ -25,13 +25,19 @@ def vertex_adjacency(
     The returned CSR has zero diagonal and stores 1.0 at every (i, j) where
     vertices i and j share at least one element.
 
-    Args:
-        n_vertices: Number of vertices in the mesh.
-        elements: ``(M, k)`` connectivity array; ``k`` ≥ 2.
+    Parameters
+    ----------
+    n_vertices : int
+        Number of vertices in the mesh.
+    elements : ndarray
+        ``(M, k)`` connectivity array; ``k`` >= 2.
 
-    Returns:
+    Returns
+    -------
+    scipy.sparse.csr_matrix
         ``(n_vertices, n_vertices)`` CSR matrix. For vertex ``i``,
-        ``adj.indices[adj.indptr[i]:adj.indptr[i + 1]]`` lists its 1-ring.
+        ``adj.indices[adj.indptr[i]:adj.indptr[i + 1]]`` lists its
+        1-ring.
 
     """
     n_per_elm = int(elements.shape[1])
