@@ -1,11 +1,12 @@
 # MMG Parameters Reference
 
 ```python
-import mmgpy
-mesh = mmgpy.read("input.mesh")
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + .mmg accessor
+mesh = pv.read("input.mesh")
 ```
 
-Complete reference for all MMG remeshing parameters.
+Complete reference for the keyword arguments accepted by `dataset.mmg.remesh(...)` (and its variants `remesh_optimize`, `remesh_uniform`, `remesh_levelset`, `move`). Each call returns a fresh PyVista dataset; the input is not mutated.
 
 ## Size Parameters
 
@@ -22,7 +23,7 @@ Minimum edge length.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(hmin=0.01)
+remeshed = mesh.mmg.remesh(hmin=0.01)
 ```
 
 Edges shorter than `hmin` will be collapsed or lengthened.
@@ -42,7 +43,7 @@ Maximum edge length.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(hmax=0.1)
+remeshed = mesh.mmg.remesh(hmax=0.1)
 ```
 
 Edges longer than `hmax` will be split.
@@ -62,10 +63,7 @@ Uniform target edge size.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# hsiz conflicts with prior metric, so reload the mesh
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh(hsiz=0.05)
-mesh = mmgpy.read("input.mesh")
+remeshed = mesh.mmg.remesh(hsiz=0.05)
 ```
 
 When set, overrides `hmin` and `hmax` with uniform sizing.
@@ -85,7 +83,7 @@ Gradation parameter controlling size transition.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(hgrad=1.2)
+remeshed = mesh.mmg.remesh(hgrad=1.2)
 ```
 
 - `hgrad=1.0`: No size variation allowed
@@ -98,7 +96,7 @@ result = mesh.remesh(hgrad=1.2)
 
 ### hausd
 
-Hausdorff distance - maximum distance between input and output geometry.
+Hausdorff distance, maximum distance between input and output geometry.
 
 | Property | Value                         |
 | -------- | ----------------------------- |
@@ -109,16 +107,16 @@ Hausdorff distance - maximum distance between input and output geometry.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(hausd=0.001)
+remeshed = mesh.mmg.remesh(hausd=0.001)
 ```
 
-Smaller values = better geometric approximation but more elements.
+Smaller values produce a closer geometric approximation at the cost of more elements.
 
 ---
 
-### angle
+### ar
 
-Ridge detection angle in degrees.
+Ridge detection angle (degrees).
 
 | Property | Value   |
 | -------- | ------- |
@@ -129,12 +127,11 @@ Ridge detection angle in degrees.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(ar=30)
+remeshed = mesh.mmg.remesh(ar=30)
 ```
 
-- Edges with dihedral angle > `ar` are treated as ridges
-- Ridges are preserved during remeshing
-- `angle=180`: No ridge detection
+- Edges with dihedral angle greater than `ar` are treated as ridges and preserved during remeshing.
+- `ar=180` disables ridge detection.
 
 ---
 
@@ -142,7 +139,7 @@ result = mesh.remesh(ar=30)
 
 ### optim
 
-Enable optimization mode.
+Enable optimization mode (no topology changes).
 
 | Property | Value           |
 | -------- | --------------- |
@@ -153,13 +150,10 @@ Enable optimization mode.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-# optim conflicts with prior metric, so reload the mesh
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh(optim=1)
-mesh = mmgpy.read("input.mesh")
+remeshed = mesh.mmg.remesh(optim=1)
 ```
 
-When enabled, only moves vertices to improve quality (no topology changes).
+When enabled, only moves vertices to improve quality.
 
 ---
 
@@ -176,7 +170,7 @@ Disable vertex insertion.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(noinsert=1)
+remeshed = mesh.mmg.remesh(noinsert=1)
 ```
 
 Prevents adding new vertices during remeshing.
@@ -187,16 +181,10 @@ Prevents adding new vertices during remeshing.
 
 Disable edge/face swapping.
 
-| Property | Value           |
-| -------- | --------------- |
-| Type     | `int`           |
-| Default  | 0               |
-| Values   | 0 (off), 1 (on) |
-
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(noswap=1)
+remeshed = mesh.mmg.remesh(noswap=1)
 ```
 
 Prevents topology changes via edge/face swaps.
@@ -207,16 +195,10 @@ Prevents topology changes via edge/face swaps.
 
 Disable vertex movement.
 
-| Property | Value           |
-| -------- | --------------- |
-| Type     | `int`           |
-| Default  | 0               |
-| Values   | 0 (off), 1 (on) |
-
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(nomove=1)
+remeshed = mesh.mmg.remesh(nomove=1)
 ```
 
 Keeps vertices at their original positions.
@@ -227,16 +209,10 @@ Keeps vertices at their original positions.
 
 Preserve surface vertices.
 
-| Property | Value           |
-| -------- | --------------- |
-| Type     | `int`           |
-| Default  | 0               |
-| Values   | 0 (off), 1 (on) |
-
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(nosurf=1)
+remeshed = mesh.mmg.remesh(nosurf=1)
 ```
 
 Prevents modification of surface mesh vertices.
@@ -258,23 +234,22 @@ Verbosity level.
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(verbose=-1)  # Silent
-result = mesh.remesh(verbose=0)   # Errors only
-result = mesh.remesh(verbose=1)   # Standard info
-result = mesh.remesh(verbose=5)   # Debug output
+silent = mesh.mmg.remesh(verbose=-1)  # Silent
+errors = mesh.mmg.remesh(verbose=0)   # Errors only
+info = mesh.mmg.remesh(verbose=1)     # Standard info
+debug = mesh.mmg.remesh(verbose=5)    # Debug output
 ```
 
 ---
 
 ## Common Combinations
 
-### Quality Optimization Only
+### Quality optimization only
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh(optim=1, noinsert=1)
+optimized = mesh.mmg.remesh(optim=1, noinsert=1)
 ```
 
 Or use the convenience method:
@@ -282,19 +257,17 @@ Or use the convenience method:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh_optimize()
+optimized = mesh.mmg.remesh_optimize()
 ```
 
 ---
 
-### Uniform Remeshing
+### Uniform remeshing
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh(hsiz=0.05)
+uniform = mesh.mmg.remesh(hsiz=0.05)
 ```
 
 Or use the convenience method:
@@ -302,19 +275,17 @@ Or use the convenience method:
 <!-- pytest-codeblocks:cont -->
 
 ```python
-mesh = mmgpy.read("input.mesh")
-result = mesh.remesh_uniform(size=0.05)
-mesh = mmgpy.read("input.mesh")
+uniform = mesh.mmg.remesh_uniform(size=0.05)
 ```
 
 ---
 
-### High-Quality Surface Approximation
+### High-quality surface approximation
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
     hausd=0.0001,  # Tight geometric tolerance
     hgrad=1.1,     # Smooth size transition
@@ -323,42 +294,42 @@ result = mesh.remesh(
 
 ---
 
-### Preserve Sharp Features
+### Preserve sharp features
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
-    ar=20,     # Detect more ridges
+    ar=20,         # Detect more ridges
     hausd=0.001,
 )
 ```
 
 ---
 
-### Fast Coarse Remeshing
+### Fast coarse remeshing
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.5,
-    hgrad=2.0,  # Allow large size variations
+    hgrad=2.0,     # Allow large size variations
     verbose=-1,
 )
 ```
 
 ---
 
-### Volume Interior Only
+### Volume interior only
 
 <!-- pytest-codeblocks:cont -->
 
 ```python
-result = mesh.remesh(
+remeshed = mesh.mmg.remesh(
     hmax=0.1,
-    nosurf=1,  # Keep surface fixed
+    nosurf=1,      # Keep surface fixed
 )
 ```
 
@@ -371,14 +342,14 @@ result = mesh.remesh(
 | `optim=1, noinsert=1`        | Quality optimization only |
 | `hmin=hmax`                  | Near-uniform sizing       |
 | `hausd` small + `hmax` large | More elements on surface  |
-| `angle=180`                  | No ridge preservation     |
+| `ar=180`                     | No ridge preservation     |
 | `hgrad=1.0`                  | No size gradation         |
 
 ## Best Practices
 
-1. **Start with defaults**: MMG auto-computes reasonable defaults
-2. **Set `hmax` first**: Most important parameter
-3. **Add `hausd` for surfaces**: Controls geometric fidelity
-4. **Tune `hgrad`**: Lower for smoother transitions
-5. **Use `verbose=-1`**: For batch processing
-6. **Validate results**: Always check mesh quality after remeshing
+1. **Start with defaults**, MMG auto-computes reasonable values.
+2. **Set `hmax` first**, it is the most important parameter.
+3. **Add `hausd` for surfaces**, it controls geometric fidelity.
+4. **Tune `hgrad`**, lower values give smoother transitions.
+5. **Use `verbose=-1`** for batch processing.
+6. **Validate results** with `dataset.mmg.validate(detailed=True)` after remeshing.

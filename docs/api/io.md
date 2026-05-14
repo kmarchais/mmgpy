@@ -6,11 +6,25 @@ mmgpy registers a Medit reader/writer plugin with PyVista on import, so `pv.read
 
 ## Reading Meshes
 
-::: mmgpy.read
-options:
-show_root_heading: true
+Use `pyvista.read` for everything. With `mmgpy` imported, the same call also reads MMG's native Medit format:
 
-`mmgpy.read` is **deprecated in 0.13 and will be removed in 0.14**. It still returns the same internal `Mesh` wrapper as in 0.12 (so existing `mesh = mmgpy.read(...); mesh.remesh(...)` code keeps running), but it emits a `DeprecationWarning`. New code should call `pv.read(...)` directly and use the `.mmg` accessor: `pv.read(...)` works for any PyVista-supported format, and with `mmgpy` installed it additionally handles `.mesh` / `.meshb` via the registered Medit reader plugin.
+```python
+import pyvista as pv
+import mmgpy  # noqa: F401  -- registers reader/writer + accessor
+
+mesh = pv.read("input.mesh")    # MMG native (via mmgpy's plugin)
+mesh = pv.read("input.meshb")   # MMG binary
+mesh = pv.read("input.vtu")     # VTK XML
+mesh = pv.read("input.stl")     # STL surface
+```
+
+The reader plugin auto-detects volumetric vs surface vs 2D meshes from the file's `Dimension` keyword and element population. A sibling `.sol` file (same stem, same directory) is auto-loaded into `point_data` / `cell_data`.
+
+!!! warning "Deprecated: `mmgpy.read`"
+`mmgpy.read(...)` is kept as a compatibility shim that returns the old
+internal `Mesh` wrapper. It emits a `DeprecationWarning` and will be
+removed in 0.14. New code should call `pv.read(...)` and use the `.mmg`
+accessor.
 
 ### Supported Formats
 

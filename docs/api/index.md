@@ -38,12 +38,16 @@ This section provides detailed API documentation for all public classes and func
 
 ### I/O Functions
 
-| Function                                     | Description                                                      |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| `pv.read(...)` (PyVista)                     | Preferred: handles `.mesh` / `.meshb` via mmgpy's reader plugin  |
-| [`read()`](io.md#mmgpy.read)                 | **Deprecated in 0.13, removed in 0.14.** Use `pv.read()` instead |
-| [`from_pyvista()`](io.md#mmgpy.from_pyvista) | Create mesh from PyVista                                         |
-| [`to_pyvista()`](io.md#mmgpy.to_pyvista)     | Convert mesh to PyVista                                          |
+| Function                                     | Description                                                     |
+| -------------------------------------------- | --------------------------------------------------------------- |
+| `pv.read(...)` (PyVista)                     | Handles `.mesh` / `.meshb` via mmgpy's reader plugin            |
+| `dataset.save(...)` (PyVista)                | Handles `.mesh` / `.meshb` via mmgpy's writer plugin            |
+| [`from_pyvista()`](io.md#mmgpy.from_pyvista) | Low-level: convert PyVista dataset to an `MmgMesh*` impl        |
+| [`to_pyvista()`](io.md#mmgpy.to_pyvista)     | Low-level: convert an `MmgMesh*` impl back to a PyVista dataset |
+
+!!! warning "Deprecated: `mmgpy.read`"
+`mmgpy.read(...)` emits a `DeprecationWarning` since 0.13 and will be
+removed in 0.14. Use `pv.read(...)` and the `.mmg` accessor instead.
 
 ### Modules
 

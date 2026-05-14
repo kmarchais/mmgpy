@@ -118,24 +118,21 @@ print(f"Cells: {mesh.n_cells} -> {remeshed.n_cells}")
 
 ### Boundary-Only Displacement
 
-Move only boundary vertices:
+Move only boundary vertices and let `move()` propagate the displacement into the interior. PyVista's `extract_surface` gives the boundary vertex set for any mesh kind:
 
 <!-- pytest-codeblocks:skip -->
 
 ```python
 import numpy as np
 import pyvista as pv
-from mmgpy import detect_boundary_vertices
 import mmgpy  # noqa: F401
 
 mesh = pv.read("input.mesh")
-vertices = np.asarray(mesh.points)
+surface = mesh.extract_surface()
+boundary_mask = np.zeros(mesh.n_points, dtype=bool)
+boundary_mask[surface.point_data["vtkOriginalPointIds"]] = True
 
-# detect_boundary_vertices accepts the underlying impl; fetch via _io.read
-from mmgpy import read as mmgpy_read
-boundary_mask = detect_boundary_vertices(mmgpy_read(mesh)._impl_unwrap)
-
-displacement = np.zeros((len(vertices), 3))
+displacement = np.zeros((mesh.n_points, 3))
 displacement[boundary_mask, 2] = 0.05
 
 moved = mesh.mmg.move(
