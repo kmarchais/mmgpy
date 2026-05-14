@@ -1,8 +1,16 @@
 name: Redeploy docs
 
 # Manually rebuild a versioned doc slot (e.g. `0.13`) from any ref.
-# Use for doc-only fixes on already-released versions, when cutting a
+# Intended for doc-only fixes on already-released versions when cutting a
 # new tag is overkill.
+#
+# Typical workflow for a doc fix on an already-shipped release:
+#   1. Branch from the release tag:    git switch -c docs-backport/0.13 v0.13.0
+#   2. Cherry-pick the doc commits:    git cherry-pick <sha>...
+#   3. Push, then run this workflow with version=0.13, ref=docs-backport/0.13.
+#
+# Do NOT run with ref=main against an older version slot: main may describe
+# newer API that did not exist in that release.
 
 on:
   workflow_dispatch:
@@ -11,11 +19,10 @@ on:
         description: 'Mike version slot to write (e.g. "0.13"). Use the minor version, not the patch.'
         required: true
       ref:
-        description: "Git ref to build from (branch, tag, or SHA). Defaults to main."
+        description: "Git ref to build from. Typically a backport branch off the release tag, NOT main."
         required: true
-        default: main
       set_latest:
-        description: "Also update the `latest` alias to this version. Leave off when redeploying an older release."
+        description: "Also update the `latest` alias. Enable only if redeploying the currently-latest release."
         required: true
         default: false
         type: boolean
