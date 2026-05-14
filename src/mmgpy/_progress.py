@@ -317,7 +317,15 @@ class RichProgressReporter:
         }
 
     def __enter__(self) -> Self:  # pragma: no cover
-        """Start the progress display."""
+        """Start the progress display.
+
+        Returns
+        -------
+        Self
+            The reporter, so it can be bound by ``with`` / reused as a
+            callback.
+
+        """
         from rich.progress import (
             BarColumn,
             Progress,
@@ -516,7 +524,7 @@ def remesh_3d(  # pragma: no cover
     from ._mmgpy import mmg3d
 
     if not _emit_event(progress, "load", "start", "Loading input mesh", progress=0.0):
-        raise CancellationError.for_phase("load")  # noqa: EM101
+        raise CancellationError("load")  # noqa: EM101
 
     if not _emit_event(
         progress,
@@ -525,10 +533,10 @@ def remesh_3d(  # pragma: no cover
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError.for_phase("options")  # noqa: EM101
+        raise CancellationError("options")  # noqa: EM101
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError.for_phase("remesh")  # noqa: EM101
+        raise CancellationError("remesh")  # noqa: EM101
 
     result = mmg3d.remesh(
         input_mesh=input_mesh,
@@ -595,7 +603,7 @@ def remesh_2d(  # pragma: no cover
     from ._mmgpy import mmg2d
 
     if not _emit_event(progress, "load", "start", "Loading input mesh", progress=0.0):
-        raise CancellationError.for_phase("load")  # noqa: EM101
+        raise CancellationError("load")  # noqa: EM101
 
     if not _emit_event(
         progress,
@@ -604,10 +612,10 @@ def remesh_2d(  # pragma: no cover
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError.for_phase("options")  # noqa: EM101
+        raise CancellationError("options")  # noqa: EM101
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError.for_phase("remesh")  # noqa: EM101
+        raise CancellationError("remesh")  # noqa: EM101
 
     result = mmg2d.remesh(
         input_mesh=input_mesh,
@@ -674,7 +682,7 @@ def remesh_surface(  # pragma: no cover
     from ._mmgpy import mmgs
 
     if not _emit_event(progress, "load", "start", "Loading input mesh", progress=0.0):
-        raise CancellationError.for_phase("load")  # noqa: EM101
+        raise CancellationError("load")  # noqa: EM101
 
     if not _emit_event(
         progress,
@@ -683,10 +691,10 @@ def remesh_surface(  # pragma: no cover
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError.for_phase("options")  # noqa: EM101
+        raise CancellationError("options")  # noqa: EM101
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError.for_phase("remesh")  # noqa: EM101
+        raise CancellationError("remesh")  # noqa: EM101
 
     result = mmgs.remesh(
         input_mesh=input_mesh,
@@ -745,7 +753,7 @@ def remesh_mesh(
 
     """
     if not _emit_event(progress, "init", "start", "Initializing mesh", progress=0.0):
-        raise CancellationError.for_phase("init")  # noqa: EM101
+        raise CancellationError("init")  # noqa: EM101
 
     initial_vertices = len(mesh.get_vertices())
 
@@ -756,10 +764,10 @@ def remesh_mesh(
         "Setting remesh options",
         progress=0.0,
     ):
-        raise CancellationError.for_phase("options")  # noqa: EM101
+        raise CancellationError("options")  # noqa: EM101
 
     if not _emit_event(progress, "remesh", "start", "Starting remeshing", progress=0.0):
-        raise CancellationError.for_phase("remesh")  # noqa: EM101
+        raise CancellationError("remesh")  # noqa: EM101
 
     mesh.remesh(**options)
 
@@ -793,6 +801,12 @@ def remesh_mesh_lagrangian(  # pragma: no cover
     progress callback receives ``init`` / ``options`` / ``remesh`` events
     bracketing the call. Will be removed in a future release; new code
     should call :func:`mmgpy.move_mesh` directly.
+
+    Raises
+    ------
+    CancellationError
+        If the progress callback returns ``False`` for any phase.
+
     """
     import warnings
 
@@ -808,7 +822,7 @@ def remesh_mesh_lagrangian(  # pragma: no cover
     )
 
     if not _emit_event(progress, "init", "start", "Initializing mesh", progress=0.0):
-        raise CancellationError.for_phase("init")  # noqa: EM101
+        raise CancellationError("init")  # noqa: EM101
 
     initial_vertices = len(mesh.get_vertices())
 
@@ -819,7 +833,7 @@ def remesh_mesh_lagrangian(  # pragma: no cover
         "Setting displacement field",
         progress=0.0,
     ):
-        raise CancellationError.for_phase("options")  # noqa: EM101
+        raise CancellationError("options")  # noqa: EM101
 
     if not _emit_event(
         progress,
@@ -828,7 +842,7 @@ def remesh_mesh_lagrangian(  # pragma: no cover
         "Starting Lagrangian remeshing",
         progress=0.0,
     ):
-        raise CancellationError.for_phase("remesh")  # noqa: EM101
+        raise CancellationError("remesh")  # noqa: EM101
 
     _move_mesh(mesh, displacement, **options)
 

@@ -143,7 +143,15 @@ class ValidationReport:
         return [i for i in self.issues if i.severity == IssueSeverity.WARNING]
 
     def __str__(self) -> str:
-        """Return a human-readable summary."""
+        """Return a human-readable summary.
+
+        Returns
+        -------
+        str
+            Multi-line view of validity, counts, quality, and up to
+            ``_MAX_DISPLAYED_ISSUES`` issue messages.
+
+        """
         lines = [
             f"ValidationReport({self.mesh_type}):",
             f"  Valid: {self.is_valid}",
@@ -182,7 +190,15 @@ class ValidationError(Exception):
 
 
 def _compute_quality_stats(qualities: NDArray[np.float64]) -> QualityStats:
-    """Compute quality statistics from an array of quality values."""
+    """Compute quality statistics from an array of quality values.
+
+    Returns
+    -------
+    QualityStats
+        Aggregated statistics, with all fields set to ``0`` when the
+        input is empty.
+
+    """
     if len(qualities) == 0:
         return QualityStats(
             min=0.0,

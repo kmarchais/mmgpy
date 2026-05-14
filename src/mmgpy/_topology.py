@@ -60,6 +60,13 @@ def two_ring_patches(adj: sparse.csr_matrix) -> list[NDArray[np.intp]]:
     Computed as the nonzero pattern of ``I + A + A @ A``. The matrix product
     runs in C and is dramatically cheaper than per-vertex Python set unions,
     especially for high-order elements.
+
+    Returns
+    -------
+    list of ndarray of intp
+        ``out[i]`` is the sorted vertex indices in the closed 2-ring of
+        vertex ``i``.
+
     """
     n = adj.shape[0]
     closed = (adj + adj @ adj + sparse.eye(n, format="csr")).tocsr()

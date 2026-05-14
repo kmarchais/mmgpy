@@ -26,7 +26,14 @@ if TYPE_CHECKING:
 def _split_legacy_cells(
     flat: NDArray[np.integer],
 ) -> list[NDArray[np.int32]]:
-    """Split a legacy ``[n0, v0, ..., v0_{n0-1}, n1, ...]`` array by cell width."""
+    """Split a legacy ``[n0, v0, ..., v0_{n0-1}, n1, ...]`` array by cell width.
+
+    Returns
+    -------
+    list of ndarray of int32
+        One ``(n_cells_of_width, width)`` block per distinct cell width.
+
+    """
     if flat.size == 0:
         return []
     arr = np.asarray(flat, dtype=np.int64)
@@ -44,7 +51,14 @@ def _split_legacy_cells(
 def _collect_element_blocks(
     dataset: pv.UnstructuredGrid | pv.PolyData,
 ) -> list[NDArray[np.int32]]:
-    """Return per-cell-type ``(n_cells_of_type, n_per_cell)`` connectivity blocks."""
+    """Return per-cell-type ``(n_cells_of_type, n_per_cell)`` connectivity blocks.
+
+    Returns
+    -------
+    list of ndarray of int32
+        One block per cell type present in the dataset.
+
+    """
     if isinstance(dataset, pv.PolyData):
         blocks: list[NDArray[np.int32]] = []
         for section in (dataset.lines, dataset.faces, dataset.strips):
@@ -65,7 +79,14 @@ def _build_adjacency(
     n_vertices: int,
     blocks: list[NDArray[np.int32]],
 ) -> csr_matrix:
-    """Symmetric vertex-vertex adjacency from one or more element blocks."""
+    """Symmetric vertex-vertex adjacency from one or more element blocks.
+
+    Returns
+    -------
+    scipy.sparse.csr_matrix
+        Symmetric adjacency with ``1.0`` for every connected vertex pair.
+
+    """
     adj = vertex_adjacency(n_vertices, blocks[0])
     for extra in blocks[1:]:
         adj = adj + vertex_adjacency(n_vertices, extra)
@@ -84,6 +105,12 @@ def _compute_rcm_permutation(
     ``perm[i]`` is the original index of the vertex now at position ``i``;
     ``inv_perm`` is its inverse and is what cell connectivity must be
     indexed with to remap from old to new vertex IDs.
+
+    Returns
+    -------
+    tuple of (ndarray of int64, ndarray of int64)
+        ``(perm, inv_perm)``.
+
     """
     adj = _build_adjacency(n_vertices, blocks)
     perm = np.asarray(
@@ -96,7 +123,14 @@ def _compute_rcm_permutation(
 
 
 def _bandwidth(adj: csr_matrix) -> int:
-    """Maximum ``|i - j|`` over all (i, j) edges in the CSR adjacency."""
+    """Maximum ``|i - j|`` over all (i, j) edges in the CSR adjacency.
+
+    Returns
+    -------
+    int
+        Bandwidth of the adjacency, or ``0`` when no edges are present.
+
+    """
     if adj.nnz == 0:
         return 0
     n = adj.shape[0]
@@ -134,6 +168,12 @@ def reorder_cuthill_mckee(
     same type as *mesh*
         New dataset with reordered vertices, remapped connectivity, and
         permuted ``point_data``.
+
+    Raises
+    ------
+    TypeError
+        If ``mesh`` is not an :class:`pyvista.UnstructuredGrid` or
+        :class:`pyvista.PolyData`.
 
     Examples
     --------
@@ -216,7 +256,16 @@ def _collect_mesh_element_blocks(
     tuple[NDArray[np.int32], NDArray[np.int64]] | None,
     tuple[NDArray[np.int32], NDArray[np.int64]],
 ]:
-    """Pull element blocks needed for both adjacency and re-application."""
+    """Pull element blocks needed for both adjacency and re-application.
+
+    Returns
+    -------
+    tuple
+        ``(blocks, tets, tris, (edges, edge_refs))``. ``tets`` and
+        ``tris`` are ``None`` when the corresponding element type is
+        absent.
+
+    """
     from mmgpy._mesh import MeshKind  # noqa: PLC0415
 
     blocks: list[NDArray[np.int32]] = []
@@ -246,7 +295,15 @@ def _snapshot_permuted_fields(
     perm: NDArray[np.int64],
     n_vertices: int,
 ) -> tuple[dict[str, NDArray[np.float64]], dict[str, NDArray[np.float64]]]:
-    """Snapshot + permute all fields before any in-place mutation."""
+    """Snapshot + permute all fields before any in-place mutation.
+
+    Returns
+    -------
+    tuple of (dict[str, ndarray], dict[str, ndarray])
+        ``(mmg_snapshots, user_snapshots)``. Both dicts are keyed by
+        field name and hold permuted float64 arrays.
+
+    """
     mmg_snapshots: dict[str, NDArray[np.float64]] = {}
     for name in mesh._MMG_FIELDS:  # noqa: SLF001
         data = mesh._try_get_field(name)  # noqa: SLF001

@@ -118,7 +118,7 @@ dev = [
     "pytest>=9.0.3",
     "pytest-benchmark>=5.0.0",
     "pytest-cov>=4.1.0",
-    "ruff>=0.14.10",
+    "ruff>=0.15",
     "pytest-codeblocks>=0.17.0",
     "pytest-pyvista>=0.2",
 ]
@@ -147,12 +147,35 @@ image_cache_dir = "tests/image_cache"
 markers = [
     "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
+[tool.ruff]
+preview = true
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
     "D203",   # incompatible with D211 (no-blank-line-before-class)
     "D213",   # incompatible with D212 (multi-line-summary-first-line)
     "COM812", # conflicts with formatter
+    # Preview rules — opt out for now and fix in dedicated PRs.
+    # Each entry below corresponds to one currently-failing rule;
+    # remove it once the rule's findings are resolved.
+    "CPY001",  # missing-copyright-notice                       (37)
+    "FURB101", # read-whole-file                                (1)
+    "FURB113", # repeated-append                                (3)
+    "ISC004",  # implicit-string-concatenation-in-collection    (12)
+    "PLC1901", # compare-to-empty-string                        (2)
+    "PLC2801", # unnecessary-dunder-call                        (2)
+    "PLR0904", # too-many-public-methods                        (2)
+    "PLR0914", # too-many-locals                                (10)
+    "PLR0917", # too-many-positional-arguments                  (7)
+    "PLR1702", # too-many-nested-blocks                         (2)
+    "PLR6104", # non-augmented-assignment                       (1)
+    "PLR6201", # literal-membership                             (13)
+    "PLR6301", # no-self-use                                    (15)
+    "RUF052",  # used-dummy-variable                            (1)
+    "RUF067",  # non-empty-init-module                          (3)
+    "RUF069",  # float-equality-comparison                      (1)
+    "RUF072",  # useless-finally                                (1)
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]

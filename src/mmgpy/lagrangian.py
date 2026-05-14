@@ -36,7 +36,14 @@ MeshType = "MmgMesh2D | MmgMesh3D | MmgMeshS"
 
 
 def _check_fedoo_available() -> None:
-    """Check that fedoo is installed and importable."""
+    """Check that fedoo is installed and importable.
+
+    Raises
+    ------
+    ImportError
+        If the optional ``fedoo`` dependency is not installed.
+
+    """
     try:
         import fedoo  # noqa: F401, PLC0415
     except ImportError:
@@ -80,7 +87,6 @@ def propagate_displacement_elasticity(
         Nxdim array of displacement for all vertices.
 
     Raises:
-        ImportError: If fedoo is not installed.
         ValueError: If array dimensions don't match.
 
     """
@@ -298,7 +304,14 @@ def _get_elements(
     *,
     is_3d: bool,
 ) -> NDArray[np.int32]:
-    """Get elements from mesh based on mesh type."""
+    """Get elements from mesh based on mesh type.
+
+    Returns
+    -------
+    ndarray of int32
+        Tetrahedra for 3D meshes, triangles for 2D / surface meshes.
+
+    """
     if is_3d:
         # Use cast since we've verified is_3d means mesh has get_tetrahedra
         return cast("Any", mesh).get_tetrahedra()
@@ -330,7 +343,14 @@ def _validate_displacement(
     n_vertices: int,
     n_dims: int,
 ) -> None:
-    """Validate displacement array dimensions."""
+    """Validate displacement array dimensions.
+
+    Raises
+    ------
+    ValueError
+        If ``displacement.shape`` is not ``(n_vertices, n_dims)``.
+
+    """
     if displacement.shape[0] != n_vertices:
         msg = f"Displacement rows {displacement.shape[0]} != n_vertices {n_vertices}"
         raise ValueError(msg)
@@ -381,8 +401,6 @@ def move_mesh(
     Raises:
         ValueError: If displacement dimensions don't match mesh or
             propagation_method is not recognized.
-        ImportError: If propagation_method="elasticity" and fedoo is not installed.
-        RuntimeError: If remeshing fails.
 
     """
     from ._mesh import Mesh  # noqa: PLC0415

@@ -20,7 +20,14 @@ def _compute_tetra_volumes(
     vertices: np.ndarray,
     tetrahedra: np.ndarray,
 ) -> np.ndarray:
-    """Compute signed volumes for tetrahedra."""
+    """Compute signed volumes for tetrahedra.
+
+    Returns
+    -------
+    np.ndarray
+        Signed volume per tetrahedron.
+
+    """
     tet_verts = vertices[tetrahedra]
     v0, v1, v2, v3 = tet_verts[:, 0], tet_verts[:, 1], tet_verts[:, 2], tet_verts[:, 3]
     edge_matrices = np.stack([v1 - v0, v2 - v0, v3 - v0], axis=-1)
@@ -31,7 +38,14 @@ def _compute_triangle_areas_2d(
     vertices: np.ndarray,
     triangles: np.ndarray,
 ) -> np.ndarray:
-    """Compute signed areas for 2D triangles."""
+    """Compute signed areas for 2D triangles.
+
+    Returns
+    -------
+    np.ndarray
+        Signed area per triangle (positive for counter-clockwise).
+
+    """
     tri_verts = vertices[triangles]
     v0, v1, v2 = tri_verts[:, 0], tri_verts[:, 1], tri_verts[:, 2]
     cross_z = (v1[:, 0] - v0[:, 0]) * (v2[:, 1] - v0[:, 1]) - (v2[:, 0] - v0[:, 0]) * (
@@ -44,7 +58,14 @@ def _compute_triangle_areas_3d(
     vertices: np.ndarray,
     triangles: np.ndarray,
 ) -> np.ndarray:
-    """Compute areas for 3D triangles (unsigned)."""
+    """Compute areas for 3D triangles (unsigned).
+
+    Returns
+    -------
+    np.ndarray
+        Unsigned area per triangle.
+
+    """
     tri_verts = vertices[triangles]
     v0, v1, v2 = tri_verts[:, 0], tri_verts[:, 1], tri_verts[:, 2]
     edge1 = v1 - v0

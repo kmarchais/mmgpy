@@ -199,7 +199,19 @@ class RemeshingMixin:
             self.state.flush()
 
     def _build_remesh_options(self) -> dict:
-        """Build options dictionary for remeshing."""
+        """Build options dictionary for remeshing.
+
+        Returns
+        -------
+        dict
+            Validated MMG kwargs gathered from the UI state.
+
+        Raises
+        ------
+        ValueError
+            If any size parameter is non-positive.
+
+        """
         options = {}
 
         hmin = to_float(self.state.hmin)
@@ -272,7 +284,14 @@ class RemeshingMixin:
         return options
 
     def _execute_remesh(self, source_solution_metric, options: dict):
-        """Execute the appropriate remesh operation."""
+        """Execute the appropriate remesh operation.
+
+        Returns
+        -------
+        RemeshResult
+            Statistics from the underlying ``Mesh`` remesh call.
+
+        """
         mode = self.state.remesh_mode
 
         if mode == "standard":
@@ -351,7 +370,14 @@ class RemeshingMixin:
             self._update_scalar_field_options()
 
     def _compute_levelset(self) -> np.ndarray:
-        """Compute levelset field from formula using safe evaluation."""
+        """Compute levelset field from formula using safe evaluation.
+
+        Returns
+        -------
+        np.ndarray
+            Per-vertex level-set values, shape ``(n_points, 1)``.
+
+        """
         vertices = self._mesh.get_vertices()
         x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
 

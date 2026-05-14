@@ -351,11 +351,6 @@ def evaluate_levelset_formula(
     np.ndarray
         Result of evaluating the formula, shaped as (-1, 1).
 
-    Raises
-    ------
-    ValueError
-        If the formula contains unsafe operations or syntax errors.
-
     Examples
     --------
     >>> x = np.array([0, 1, 0])

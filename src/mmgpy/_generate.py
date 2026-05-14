@@ -66,6 +66,12 @@ def generate(  # noqa: PLR0913  -- the standard MMG sizing knobs are explicit by
         Triangulated 2D mesh embedded at ``z=0``. Boundary edges are kept
         as ``LINE`` cells with their references in ``cell_data["refs"]``.
 
+    Raises
+    ------
+    ValueError
+        If ``boundary_vertices`` is not shape ``(n, 2)``, ``boundary_edges``
+        is not shape ``(m, 2)``, or ``refs`` does not match ``len(edges)``.
+
     Examples
     --------
     >>> import numpy as np

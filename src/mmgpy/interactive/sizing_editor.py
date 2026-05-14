@@ -146,13 +146,27 @@ class SizingEditor:
         self._is_3d = self._detect_mesh_dimension()
 
     def _detect_mesh_dimension(self) -> bool:
-        """Detect if mesh is 3D (vs 2D planar)."""
+        """Detect if mesh is 3D (vs 2D planar).
+
+        Returns
+        -------
+        bool
+            ``True`` for tetrahedral or surface meshes, ``False`` for 2D.
+
+        """
         from mmgpy import MeshKind
 
         return self._mesh.kind != MeshKind.TRIANGULAR_2D
 
     def _get_pyvista_mesh(self) -> pv.PolyData | pv.UnstructuredGrid:
-        """Get PyVista representation of the mesh."""
+        """Get PyVista representation of the mesh.
+
+        Returns
+        -------
+        pv.PolyData or pv.UnstructuredGrid
+            Cached or freshly built PyVista view of the editor's mesh.
+
+        """
         if self._pv_mesh is None:
             self._pv_mesh = self._mesh.to_pyvista()
         return self._pv_mesh
@@ -414,7 +428,14 @@ class SizingEditor:
         self._update_instructions()
 
     def _get_status_text(self) -> str:
-        """Get current status text including mode and constraint count."""
+        """Get current status text including mode and constraint count.
+
+        Returns
+        -------
+        str
+            Formatted status line for the current interactive mode.
+
+        """
         mode_names = {
             ConstraintMode.NONE: "None",
             ConstraintMode.SPHERE: "SPHERE",

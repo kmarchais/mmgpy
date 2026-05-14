@@ -124,7 +124,14 @@ class RemeshResult:
         return self.return_code == 0
 
     def __str__(self) -> str:
-        """Return a readable string representation."""
+        """Return a readable string representation.
+
+        Returns
+        -------
+        str
+            Multi-line summary of vertex/element counts and quality.
+
+        """
         quality_pct = self.quality_improvement * 100
         q_before = self.quality_mean_before
         q_after = self.quality_mean_after

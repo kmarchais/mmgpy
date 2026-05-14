@@ -69,7 +69,18 @@ def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
 
     A one-time :class:`FutureWarning` is emitted on first truthy use so
     callers migrating from the old SCOTCH semantics can notice the change.
-    Non-numeric strings are rejected with :class:`ValueError`.
+
+    Returns
+    -------
+    bool
+        ``True`` when the caller should apply a reverse Cuthill-McKee
+        reordering to its result, ``False`` otherwise.
+
+    Raises
+    ------
+    ValueError
+        If the kwarg is a non-numeric string.
+
     """
     if "renum" not in kwargs:
         return False
@@ -104,7 +115,12 @@ def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
 def _is_interactive_terminal() -> bool:  # pragma: no cover
     """Check if we're running in an interactive terminal.
 
-    Returns False in CI environments, pytest, or when stdout is not a TTY.
+    Returns
+    -------
+    bool
+        ``False`` in CI environments, under pytest, or when stdout is not
+        a TTY; ``True`` otherwise.
+
     """
     import os  # noqa: PLC0415
     import sys  # noqa: PLC0415
@@ -153,7 +169,14 @@ def _resolve_progress_callback(
 
 
 def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
-    """Convert C++ remesh statistics dict to RemeshResult dataclass."""
+    """Convert C++ remesh statistics dict to RemeshResult dataclass.
+
+    Returns
+    -------
+    RemeshResult
+        Dataclass populated from the C++ stats dict.
+
+    """
     from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
 
     return _RemeshResult(
@@ -188,19 +211,48 @@ class _LazyFieldSource:
         self._point_data: dict[str, NDArray[np.float64]] = dict(point_data)
 
     def field_names(self) -> frozenset[str]:
-        """Return names of available lazy fields."""
+        """Return names of available lazy fields.
+
+        Returns
+        -------
+        frozenset of str
+            Snapshot of the lazy-field names currently held.
+
+        """
         return frozenset(self._point_data)
 
     def has_field(self, name: str) -> bool:
-        """Check whether *name* is available for lazy materialization."""
+        """Check whether *name* is available for lazy materialization.
+
+        Returns
+        -------
+        bool
+            ``True`` if *name* is a lazy field, ``False`` otherwise.
+
+        """
         return name in self._point_data
 
     def pop_field(self, name: str) -> NDArray[np.float64]:
-        """Remove and return a single field, converting to float64."""
+        """Remove and return a single field, converting to float64.
+
+        Returns
+        -------
+        ndarray of float64
+            The materialized field array.
+
+        """
         return np.asarray(self._point_data.pop(name), dtype=np.float64)
 
     def pop_all(self) -> dict[str, NDArray[np.float64]]:
-        """Materialize and return all remaining lazy fields."""
+        """Materialize and return all remaining lazy fields.
+
+        Returns
+        -------
+        dict[str, ndarray]
+            Mapping from field name to its float64 array; the source is
+            cleared on return.
+
+        """
         result = {
             k: np.asarray(v, dtype=np.float64) for k, v in self._point_data.items()
         }
@@ -212,7 +264,14 @@ class _LazyFieldSource:
         self._point_data.clear()
 
     def is_empty(self) -> bool:
-        """Return True when no lazy fields remain."""
+        """Return True when no lazy fields remain.
+
+        Returns
+        -------
+        bool
+            ``True`` once every field has been popped or invalidated.
+
+        """
         return len(self._point_data) == 0
 
 
@@ -236,7 +295,15 @@ class MeshKind(Enum):
 
 
 def _is_2d_points(points: NDArray[np.floating]) -> bool:
-    """Check if points are essentially 2D (z coordinates are zero or near-zero)."""
+    """Check if points are essentially 2D (z coordinates are zero or near-zero).
+
+    Returns
+    -------
+    bool
+        ``True`` if the array is Nx2 or its z column is within
+        ``_2D_DETECTION_TOLERANCE`` of zero.
+
+    """
     if points.shape[1] == _DIMS_2D:
         return True
     if points.shape[1] == _DIMS_3D:
@@ -287,7 +354,20 @@ def _validate_refs(
     refs: NDArray[np.integer] | None,
     cells: NDArray[np.int32],
 ) -> NDArray[np.int64] | None:
-    """Coerce and validate cell reference markers."""
+    """Coerce and validate cell reference markers.
+
+    Returns
+    -------
+    ndarray of int64, or None
+        Reference markers as a contiguous int64 array, or ``None`` when
+        no refs were supplied.
+
+    Raises
+    ------
+    ValueError
+        If ``len(refs) != len(cells)``.
+
+    """
     if refs is None:
         return None
     refs_arr = np.ascontiguousarray(refs, dtype=np.int64)
@@ -301,7 +381,22 @@ def _validate_edges(
     edges: NDArray[np.integer] | None,
     edge_refs: NDArray[np.integer] | None,
 ) -> tuple[NDArray[np.int32] | None, NDArray[np.int64] | None]:
-    """Coerce and validate edge connectivity and reference markers."""
+    """Coerce and validate edge connectivity and reference markers.
+
+    Returns
+    -------
+    tuple of (ndarray of int32 or None, ndarray of int64 or None)
+        ``(edges, edge_refs)`` after coercion; both are ``None`` when
+        no edges were supplied.
+
+    Raises
+    ------
+    ValueError
+        If ``edge_refs`` is given without ``edges``, if ``edges`` is not
+        shape ``(n_edges, 2)``, or if the lengths of ``edges`` and
+        ``edge_refs`` differ.
+
+    """
     if edges is None:
         if edge_refs is not None:
             msg = "edge_refs provided without edges"
@@ -363,6 +458,11 @@ def _create_impl(  # noqa: PLR0913
     MmgMesh3D | MmgMesh2D | MmgMeshS
         The mesh implementation.
 
+    Raises
+    ------
+    ValueError
+        If ``kind`` is not a recognized :class:`MeshKind`.
+
     """
     if kind not in _KIND_CONFIG:
         msg = f"Unknown mesh kind: {kind}"
@@ -406,6 +506,18 @@ def _normalize_local_parameters(
     The binding raises a generic ``RuntimeError`` deep in MMG for malformed
     input; routing through this helper turns shape errors into a clear
     ``ValueError`` before the C call.
+
+    Returns
+    -------
+    list of dict
+        The normalized parameter specs with coerced types.
+
+    Raises
+    ------
+    ValueError
+        If an entry is not a mapping, is missing required keys, or has an
+        unsupported ``type`` for the mesh kind.
+
     """
     valid_types = (
         _VALID_ENTITY_TYPES_3D
@@ -443,7 +555,19 @@ def _normalize_local_parameters(
 def _normalize_multi_materials(
     materials: Sequence[Mapping[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Validate multi-material specs at the Python boundary."""
+    """Validate multi-material specs at the Python boundary.
+
+    Returns
+    -------
+    list of dict
+        The normalized material specs with coerced types.
+
+    Raises
+    ------
+    ValueError
+        If an entry is not a mapping or is missing required keys.
+
+    """
     normalized: list[dict[str, Any]] = []
     for i, raw in enumerate(materials):
         if not isinstance(raw, Mapping):
@@ -476,7 +600,19 @@ def _normalize_multi_materials(
 
 
 def _normalize_ls_base_references(references: Sequence[int]) -> list[int]:
-    """Validate LS base reference list at the Python boundary."""
+    """Validate LS base reference list at the Python boundary.
+
+    Returns
+    -------
+    list of int
+        Each input coerced to ``int``.
+
+    Raises
+    ------
+    ValueError
+        If any entry cannot be coerced to ``int``.
+
+    """
     normalized: list[int] = []
     for i, raw in enumerate(references):
         try:
@@ -553,7 +689,17 @@ class Mesh:
         edges: NDArray[np.integer] | None = None,
         edge_refs: NDArray[np.integer] | None = None,
     ) -> None:
-        """Initialize a Mesh from various sources."""
+        """Initialize a Mesh from various sources.
+
+        Raises
+        ------
+        ValueError
+            If ``refs`` / ``edges`` / ``edge_refs`` are passed alongside a
+            file path or PyVista object (they only apply to the
+            vertices-plus-cells form), or if ``cells`` is omitted when the
+            source is a vertices array.
+
+        """
         # Import here to avoid circular imports
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
@@ -658,7 +804,14 @@ class Mesh:
         edges: NDArray[np.integer] | None = None,
         edge_refs: NDArray[np.integer] | None = None,
     ) -> Mesh:
-        """Build an internal Mesh from raw arrays."""
+        """Build an internal Mesh from raw arrays.
+
+        Returns
+        -------
+        Mesh
+            A new Mesh whose kind is auto-detected from the array shapes.
+
+        """
         verts = np.asarray(vertices)
         cells_arr = np.asarray(cells)
         cell_refs = np.asarray(refs) if refs is not None else None
@@ -981,6 +1134,13 @@ class Mesh:
         The underlying C++ bindings may return uninitialized memory for fields
         that haven't been explicitly set. This method filters out such garbage
         by checking for subnormal (denormalized) floating point values.
+
+        Returns
+        -------
+        ndarray of float64, or None
+            The field array when present and finite; ``None`` if the
+            binding rejects it or the values look uninitialized.
+
         """
         try:
             data = self._impl.get_field(key)
@@ -1018,6 +1178,12 @@ class Mesh:
             All other names are stored as user fields.
         value : ndarray
             Field values (one per vertex).
+
+        Raises
+        ------
+        ValueError
+            When setting ``"metric"`` with a tensor whose last dimension
+            is neither 3 (2D) nor 6 (3D).
 
         Examples
         --------
@@ -1121,7 +1287,12 @@ class Mesh:
     def _materialize_lazy_field(self, name: str) -> bool:
         """Move one field from the lazy source into ``_user_fields``.
 
-        Returns True if the field was found and materialized.
+        Returns
+        -------
+        bool
+            ``True`` if the field was found and the array length matched
+            the current vertex count.
+
         """
         if self._lazy_source is None or not self._lazy_source.has_field(name):
             return False
@@ -1158,6 +1329,12 @@ class Mesh:
         values : ndarray
             Field values, shape (n_vertices,) for scalars or
             (n_vertices, n_components) for vectors/tensors.
+
+        Raises
+        ------
+        ValueError
+            If the array's first dimension does not match the mesh's
+            vertex count.
 
         Examples
         --------
@@ -1463,11 +1640,6 @@ class Mesh:
         float
             The diagonal length of the bounding box.
 
-        Raises
-        ------
-        ValueError
-            If the mesh has no vertices.
-
         Examples
         --------
         >>> mesh = Mesh(vertices, cells)
@@ -1700,6 +1872,14 @@ class Mesh:
             Solution blocks to write. Insertion order determines block
             order in the file.
 
+        Raises
+        ------
+        NotImplementedError
+            If a binary ``.solb`` path is given.
+        ValueError
+            If ``arrays`` is empty, or any block's shape does not match
+            a scalar / vector / tensor layout for the mesh dimension.
+
         """
         from pathlib import Path as _Path  # noqa: PLC0415
 
@@ -1740,7 +1920,18 @@ class Mesh:
     ]:
         """Prepare for field transfer before remeshing.
 
-        Returns fields to transfer, old vertices, and old elements.
+        Returns
+        -------
+        tuple
+            ``(fields_to_transfer, old_vertices, old_elements)``. The two
+            array values are ``None`` when no transfer is requested.
+
+        Raises
+        ------
+        KeyError
+            If ``transfer_fields`` is a sequence containing a name that is
+            not registered as a user field.
+
         """
         fields_to_transfer: dict[str, NDArray[np.float64]] = {}
         if not transfer_fields:
@@ -1827,16 +2018,6 @@ class Mesh:
         **kwargs : float
             Individual remeshing parameters (hmin, hmax, hsiz, hausd, etc.).
 
-        Notes
-        -----
-        Memory: When ``transfer_fields`` is enabled, the original mesh vertices
-        and elements are copied before remeshing, temporarily doubling memory
-        usage for large meshes.
-
-        Surface meshes (TRIANGULAR_SURFACE): Field transfer uses 3D Delaunay
-        triangulation for point location, which may not work well for nearly
-        planar surface meshes. Consider using volumetric meshes for field transfer.
-
         Returns
         -------
         RemeshResult
@@ -1846,6 +2027,21 @@ class Mesh:
         ------
         CancellationError
             If the progress callback returns False to cancel the operation.
+        TypeError
+            If both an options object and keyword arguments are passed, or
+            the options object's type does not match the mesh kind.
+        ValueError
+            If ``interpolation`` is not one of ``"linear"`` or ``"nearest"``.
+
+        Notes
+        -----
+        Memory: When ``transfer_fields`` is enabled, the original mesh vertices
+        and elements are copied before remeshing, temporarily doubling memory
+        usage for large meshes.
+
+        Surface meshes (TRIANGULAR_SURFACE): Field transfer uses 3D Delaunay
+        triangulation for point location, which may not work well for nearly
+        planar surface meshes. Consider using volumetric meshes for field transfer.
 
         Examples
         --------
@@ -1936,17 +2132,17 @@ class Mesh:
         try:
             # Emit progress events
             if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
-                raise CancellationError.for_phase("init")  # noqa: EM101
+                raise CancellationError("init")  # noqa: EM101
 
             initial_vertices = len(self._impl.get_vertices())
 
             if not _emit_event(callback, "options", "start", "Options", progress=0.0):
-                raise CancellationError.for_phase("options")  # noqa: EM101
+                raise CancellationError("options")  # noqa: EM101
 
             _emit_event(callback, "options", "complete", "Options set", progress=1.0)
 
             if not _emit_event(callback, "remesh", "start", "Remeshing", progress=0.0):
-                raise CancellationError.for_phase("remesh")  # noqa: EM101
+                raise CancellationError("remesh")  # noqa: EM101
 
             # Call raw C++ method and convert result
             stats = self._impl.remesh(**kwargs)
@@ -2036,12 +2232,12 @@ class Mesh:
 
         try:
             if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
-                raise CancellationError.for_phase("init")  # noqa: EM101
+                raise CancellationError("init")  # noqa: EM101
 
             initial_vertices = len(self._impl.get_vertices())
 
             if not _emit_event(callback, "options", "start", "Level-set", progress=0.0):
-                raise CancellationError.for_phase("options")  # noqa: EM101
+                raise CancellationError("options")  # noqa: EM101
 
             _emit_event(callback, "options", "complete", "Level-set set", progress=1.0)
 
@@ -2052,7 +2248,7 @@ class Mesh:
                 "Level-set remeshing",
                 progress=0.0,
             ):
-                raise CancellationError.for_phase("remesh")  # noqa: EM101
+                raise CancellationError("remesh")  # noqa: EM101
 
             stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
             final_vertices = len(self._impl.get_vertices())
@@ -2364,11 +2560,11 @@ class Mesh:
             - ``"hmin"`` / ``"hmax"``: local sizing bounds.
             - ``"hausd"``: local Hausdorff distance.
 
-        Raises
-        ------
-        ValueError
-            If any entry is missing a required key, has the wrong type, or
-            uses an entity type incompatible with this mesh's kind.
+        Notes
+        -----
+        Specs are validated by :func:`_normalize_local_parameters`, which
+        rejects entries that are missing required keys, have the wrong
+        type, or use an entity type incompatible with this mesh's kind.
 
         """
         normalized = _normalize_local_parameters(parameters, self._kind)
@@ -2401,10 +2597,11 @@ class Mesh:
               material. Required keys (use ``0`` as a placeholder when
               ``split`` is false; the values are then ignored by MMG).
 
-        Raises
-        ------
-        ValueError
-            If any entry is missing a required key or has the wrong type.
+        Notes
+        -----
+        Specs are validated by :func:`_normalize_multi_materials`, which
+        rejects entries that are missing required keys or have the wrong
+        type.
 
         """
         normalized = _normalize_multi_materials(materials)
@@ -2425,10 +2622,10 @@ class Mesh:
         references : sequence of int
             Reference numbers eligible for level-set splitting.
 
-        Raises
-        ------
-        ValueError
-            If any entry cannot be coerced to an integer.
+        Notes
+        -----
+        Entries are coerced via :func:`_normalize_ls_base_references`,
+        which rejects values that cannot be converted to ``int``.
 
         """
         normalized = _normalize_ls_base_references(references)

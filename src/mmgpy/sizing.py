@@ -289,6 +289,11 @@ def compute_sizes_from_constraints(
     NDArray[np.float64]
         Combined target size at each vertex, shape (n_vertices,).
 
+    Raises
+    ------
+    ValueError
+        If ``constraints`` is empty.
+
     """
     if not constraints:
         msg = "No sizing constraints provided"
