@@ -163,7 +163,7 @@ constraints = [
 
 # Convert directly to an isotropic metric and remesh through point_data
 vertices = np.asarray(mesh.points)
-sizes = compute_sizes_from_constraints(vertices, constraints, default_size=0.1)
+sizes = compute_sizes_from_constraints(vertices, constraints)
 mesh.point_data["metric"] = sizes_to_metric(sizes)
 remeshed = mesh.mmg.remesh()
 ```
@@ -216,7 +216,7 @@ constraints = [
     SphereSize(center=np.array([0.5, 0.5, 0.5]), radius=0.2, size=0.01),
     BoxSize(bounds=np.array([[0, 0, 0], [0.3, 0.3, 0.3]]), size=0.02),
 ]
-sizes = compute_sizes_from_constraints(vertices, constraints, default_size=0.1)
+sizes = compute_sizes_from_constraints(vertices, constraints)
 
 mesh.point_data["metric"] = metrics.create_isotropic_metric(sizes)
 remeshed = mesh.mmg.remesh()
