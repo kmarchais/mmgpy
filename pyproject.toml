@@ -159,12 +159,7 @@ ignore = [
     # Preview rules — opt out for now and fix in dedicated PRs.
     # Each entry below corresponds to one currently-failing rule;
     # remove it once the rule's findings are resolved.
-    "CPY001",  # missing-copyright-notice                       (37)
-    "FURB101", # read-whole-file                                (1)
-    "FURB113", # repeated-append                                (3)
-    "ISC004",  # implicit-string-concatenation-in-collection    (12)
-    "PLC1901", # compare-to-empty-string                        (2)
-    "PLC2801", # unnecessary-dunder-call                        (2)
+    "CPY001",  # missing-copyright-notice (header boilerplate not wanted)
     "PLR0904", # too-many-public-methods                        (2)
     "PLR0914", # too-many-locals                                (10)
     "PLR0917", # too-many-positional-arguments                  (7)
@@ -172,10 +167,6 @@ ignore = [
     "PLR6104", # non-augmented-assignment                       (1)
     "PLR6201", # literal-membership                             (13)
     "PLR6301", # no-self-use                                    (15)
-    "RUF052",  # used-dummy-variable                            (1)
-    "RUF067",  # non-empty-init-module                          (3)
-    "RUF069",  # float-equality-comparison                      (1)
-    "RUF072",  # useless-finally                                (1)
 ]
 
 # Preview-rule enforcement is currently scoped to ``src/mmgpy/`` (the public
@@ -215,6 +206,7 @@ ignore = [
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "PLR2004", # magic values allowed in tests
     "PLR0913", # many arguments allowed in test helper functions
+    "PLC1901", # tests assert empty-string sentinels literally
     "S603",    # subprocess calls allowed in tests
     "S607",    # partial executable paths allowed in tests
     "TC003",   # pathlib import in runtime allowed for test fixtures
@@ -224,6 +216,7 @@ ignore = [
     "PLC2701", "S404", "PLW1514",            # preview imports / IO
     "FURB118", "FURB142", "FURB152",         # preview refactors
     "RUF027",                                # preview missing-f-string
+    "RUF069",                                # exact float assertions are intentional in tests
 ]
 ".github/scripts/**/*.py" = [
     "INP001",  # CI scripts are not a package
@@ -263,7 +256,7 @@ ignore = [
     "INP001",  # examples/ subdirectories are not packages
     "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
     "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "FURB113", "FURB118", "FURB142", "FURB152",  # preview refactors
     "RUF027",                                # preview missing-f-string
 ]
 "scripts/**/*.py" = [
@@ -289,13 +282,14 @@ ignore = [
     "T201",    # print statements used for timing reports
     "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
     "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB118", "FURB142", "FURB152",         # preview refactors
+    "FURB113", "FURB118", "FURB142", "FURB152",  # preview refactors
     "RUF027",                                # preview missing-f-string
 ]
 "src/mmgpy/__init__.py" = [
     "E402",   # imports after re-export of _find_mmg_executable
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
+    "RUF067", # try/except for optional _version module is a packaging pattern
 ]
 "src/mmgpy/_cli.py" = [
     "C901",    # _run_mmg and _find_mmg_executable have many branches
@@ -341,6 +335,7 @@ ignore = [
     "EM102",   # f-string in exceptions for user messages
     # Other
     "RUF001",  # unicode multiplication sign intentional (×)
+    "RUF067",  # ui/__init__.py exposes top-level entry-point helpers
     "RUF046",  # int(floor()) is explicit for significant figures
     "PLW2901", # loop variable reassignment in parsers.py
     "SIM102",  # nested ifs clearer in samples.py triangulate check

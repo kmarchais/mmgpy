@@ -269,7 +269,7 @@ def _read_mesh_internal(
     from mmgpy._pyvista import from_pyvista  # noqa: PLC0415
 
     # MMG field names are routed to C++ — exclude from lazy source
-    _mmg_fields = frozenset({"metric", "displacement", "levelset", "tensor"})
+    mmg_fields = frozenset({"metric", "displacement", "levelset", "tensor"})
 
     # Handle PyVista objects
     if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
@@ -279,7 +279,7 @@ def _read_mesh_internal(
         point_data = {
             k: np.asarray(source.point_data[k])
             for k in source.point_data
-            if k not in _mmg_fields
+            if k not in mmg_fields
         }
         lazy = _LazyFieldSource(point_data) if point_data else None
         return Mesh._from_impl(impl, kind, lazy_source=lazy)  # noqa: SLF001
@@ -307,7 +307,7 @@ def _read_mesh_internal(
         point_data = {
             k: np.asarray(pv_mesh.point_data[k])
             for k in pv_mesh.point_data
-            if k not in _mmg_fields
+            if k not in mmg_fields
         }
         lazy = _LazyFieldSource(point_data) if point_data else None
         return Mesh._from_impl(impl, kind, lazy_source=lazy)  # noqa: SLF001

@@ -112,10 +112,12 @@ class RepairReport:
         if len(lines) == 1:
             lines.append("  No repairs needed")
         else:
-            lines.append(
-                f"  Vertices: {self.vertices_before} -> {self.vertices_after}",
+            lines.extend(
+                (
+                    f"  Vertices: {self.vertices_before} -> {self.vertices_after}",
+                    f"  Elements: {self.elements_before} -> {self.elements_after}",
+                ),
             )
-            lines.append(f"  Elements: {self.elements_before} -> {self.elements_after}")
 
         return "\n".join(lines)
 

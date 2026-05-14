@@ -97,7 +97,7 @@ def to_float(val: Any) -> float | None:
     True
 
     """
-    if val is None or val == "":
+    if val is None or not val:
         return None
     try:
         return float(val)

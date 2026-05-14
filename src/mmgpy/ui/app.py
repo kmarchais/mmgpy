@@ -858,8 +858,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             icon=("theme_name === 'dark' ? 'mdi-weather-sunny' : 'mdi-weather-night'",),
             click="trigger('toggle_theme')",
             title=(
-                "theme_name === 'dark' ? 'Switch to light theme' : "
-                "'Switch to dark theme'",
+                (
+                    "theme_name === 'dark' ? 'Switch to light theme' : "
+                    "'Switch to dark theme'"
+                ),
             ),
             variant="text",
         )
@@ -1333,8 +1335,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         v3.VTextField(
             v_model=("levelset_formula",),
             label=(
-                "use_solution_as_levelset ? "
-                "'Using solution file as levelset' : 'Levelset Formula'",
+                (
+                    "use_solution_as_levelset ? "
+                    "'Using solution file as levelset' : 'Levelset Formula'"
+                ),
             ),
             density="compact",
             variant="outlined",
@@ -1690,8 +1694,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     v3.VListItem(
                         title="Elements",
                         subtitle=(
-                            "`${mesh_stats?.elements?.toLocaleString() || '-'} "
-                            "${mesh_stats?.element_type || ''}`",
+                            (
+                                "`${mesh_stats?.elements?.toLocaleString() || '-'} "
+                                "${mesh_stats?.element_type || ''}`"
+                            ),
                         ),
                     )
 
@@ -1727,15 +1733,19 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     v3.VListItem(
                         title="Min / Max",
                         subtitle=(
-                            "`${mesh_stats?.quality?.min?.toFixed(4) || '-'} / "
-                            "${mesh_stats?.quality?.max?.toFixed(4) || '-'}`",
+                            (
+                                "`${mesh_stats?.quality?.min?.toFixed(4) || '-'} / "
+                                "${mesh_stats?.quality?.max?.toFixed(4) || '-'}`"
+                            ),
                         ),
                     )
                     v3.VListItem(
                         title="Mean ± Std",
                         subtitle=(
-                            "`${mesh_stats?.quality?.mean?.toFixed(4) || '-'} ± "
-                            "${mesh_stats?.quality?.std?.toFixed(4) || '-'}`",
+                            (
+                                "`${mesh_stats?.quality?.mean?.toFixed(4) || '-'} ± "
+                                "${mesh_stats?.quality?.std?.toFixed(4) || '-'}`"
+                            ),
                         ),
                     )
 
@@ -1747,15 +1757,19 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     v3.VListItem(
                         title="Min / Max",
                         subtitle=(
-                            "`${mesh_stats?.edge_length?.min?.toFixed(4) || '-'} / "
-                            "${mesh_stats?.edge_length?.max?.toFixed(4) || '-'}`",
+                            (
+                                "`${mesh_stats?.edge_length?.min?.toFixed(4) || '-'} / "
+                                "${mesh_stats?.edge_length?.max?.toFixed(4) || '-'}`"
+                            ),
                         ),
                     )
                     v3.VListItem(
                         title="Mean / Median",
                         subtitle=(
-                            "`${mesh_stats?.edge_length?.mean?.toFixed(4) || '-'} / "
-                            "${mesh_stats?.edge_length?.median?.toFixed(4) || '-'}`",
+                            (
+                                "`${mesh_stats?.edge_length?.mean?.toFixed(4) || '-'} / "
+                                "${mesh_stats?.edge_length?.median?.toFixed(4) || '-'}`"
+                            ),
                         ),
                     )
 
@@ -1769,8 +1783,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     v3.VListItem(
                         title="Element Refs",
                         subtitle=(
-                            "`${mesh_stats?.refs?.element_count || 0} region(s): "
-                            "${mesh_stats?.refs?.element_refs?.join(', ') || '-'}`",
+                            (
+                                "`${mesh_stats?.refs?.element_count || 0} region(s): "
+                                "${mesh_stats?.refs?.element_refs?.join(', ') || '-'}`"
+                            ),
                         ),
                     )
                     # Show boundary refs for tetrahedral meshes
@@ -1778,8 +1794,10 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                         v_show="mesh_stats?.refs?.boundary_refs",
                         title="Boundary Refs",
                         subtitle=(
-                            "`${mesh_stats?.refs?.boundary_count || 0} region(s): "
-                            "${mesh_stats?.refs?.boundary_refs?.join(', ') || '-'}`",
+                            (
+                                "`${mesh_stats?.refs?.boundary_count || 0} region(s): "
+                                "${mesh_stats?.refs?.boundary_refs?.join(', ') || '-'}`"
+                            ),
                         ),
                     )
 
@@ -1796,22 +1814,28 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                             v3.VListItem(
                                 title="Vertices",
                                 subtitle=(
-                                    "`${remesh_result?.vertices_before} → "
-                                    "${remesh_result?.vertices_after}`",
+                                    (
+                                        "`${remesh_result?.vertices_before} → "
+                                        "${remesh_result?.vertices_after}`"
+                                    ),
                                 ),
                             )
                             v3.VListItem(
                                 title="Elements",
                                 subtitle=(
-                                    "`${remesh_result?.elements_before} → "
-                                    "${remesh_result?.elements_after}`",
+                                    (
+                                        "`${remesh_result?.elements_before} → "
+                                        "${remesh_result?.elements_after}`"
+                                    ),
                                 ),
                             )
                             v3.VListItem(
                                 title="Quality (In-Radius Ratio)",
                                 subtitle=(
-                                    "`${remesh_result?.quality_before} → "
-                                    "${remesh_result?.quality_after}`",
+                                    (
+                                        "`${remesh_result?.quality_before} → "
+                                        "${remesh_result?.quality_after}`"
+                                    ),
                                 ),
                             )
                             v3.VListItem(
