@@ -121,18 +121,15 @@ def version_to_tuple(version: str) -> tuple[int, int, int]:
 
 def update_manifest(
     semver_version: str,
-    python_version: str,
     *,
     check_only: bool = False,
 ) -> bool:
-    """Update blender_manifest.toml with new version.
+    """Update ``blender_manifest.toml`` with the new version.
 
     Parameters
     ----------
     semver_version : str
-        SemVer format version for the manifest version field.
-    python_version : str
-        Python PEP 440 format for the dependency specifier.
+        SemVer format version for the manifest's ``version`` field.
     check_only : bool
         If True, don't modify files, just check if they need updating.
 
@@ -145,20 +142,12 @@ def update_manifest(
     manifest_path = Path(__file__).parent / "blender_manifest.toml"
     content = manifest_path.read_text()
 
-    # Replace version line (uses SemVer)
     new_content = re.sub(
         r'^version\s*=\s*"[^"]+"',
         f'version = "{semver_version}"',
         content,
         count=1,
         flags=re.MULTILINE,
-    )
-
-    # Also update the mmgpy dependency to match (uses Python PEP 440)
-    new_content = re.sub(
-        r'"mmgpy>=[^"]+"',
-        f'"mmgpy>={python_version}"',
-        new_content,
     )
 
     if new_content != content:
@@ -223,11 +212,7 @@ def main() -> int:
     _stdout(f"mmgpy version: {python_version} (SemVer: {semver_version})")
 
     try:
-        manifest_changed = update_manifest(
-            semver_version,
-            python_version,
-            check_only=check_only,
-        )
+        manifest_changed = update_manifest(semver_version, check_only=check_only)
         init_changed = update_register(semver_version, check_only=check_only)
     except (OSError, re.error) as e:
         _stderr(f"Error: {e}")

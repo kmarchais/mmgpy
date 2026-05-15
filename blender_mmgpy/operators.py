@@ -27,9 +27,11 @@ except ImportError as exc:
     _MMGPY_IMPORT_ERROR = exc
 
 # Errors we expect from mmgpy / PyVista / numpy on bad geometry or option
-# combinations. Anything outside this set is genuinely unexpected and bubbles
-# up to Blender's own error popup with a full traceback.
-_REMESH_EXC_TYPES = (RuntimeError, ValueError, TypeError, OSError)
+# combinations. The surface remesh path runs in-memory only — no file I/O
+# — so ``OSError`` is intentionally excluded. Anything outside this set
+# is genuinely unexpected and bubbles up to Blender's own error popup
+# with a full traceback.
+_REMESH_EXC_TYPES = (RuntimeError, ValueError, TypeError)
 
 # Above this raw triangle estimate we round to 2 significant figures for the
 # confirmation dialog instead of showing the noisy float.

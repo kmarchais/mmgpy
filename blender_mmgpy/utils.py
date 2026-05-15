@@ -218,6 +218,43 @@ def is_all_triangles(mesh: bpy.types.Mesh) -> bool:
     return all(p.loop_total == _TRIANGLE_LOOP_COUNT for p in mesh.polygons)
 
 
+def direct_triangle_arrays(
+    mesh: bpy.types.Mesh,
+) -> tuple[NDArray[np.float64], NDArray[np.int32]]:
+    """Extract vertices + triangles straight from an all-triangle mesh.
+
+    Skips ``bmesh.ops.triangulate`` — which reorders faces in ways
+    ``apply_quality_visualization`` cannot tolerate, since the i-th
+    quality value must line up with ``mesh.polygons[i]``. The two
+    ``foreach_get`` calls are also ~100x faster than the per-vertex
+    Python loop in :func:`blender_to_arrays`. Coordinates are in *local*
+    space; MMG's in-radius ratio is scale-invariant so this is fine for
+    the quality path.
+
+    Caller must have verified :func:`is_all_triangles` first.
+
+    Returns
+    -------
+    vertices : ndarray
+        Vertex coordinates (Nx3) in mesh-local space.
+    triangles : ndarray
+        Triangle connectivity (Mx3), 0-indexed, in
+        ``mesh.polygons`` order.
+
+    """
+    n_verts = len(mesh.vertices)
+    flat_verts = np.empty(n_verts * 3, dtype=np.float32)
+    mesh.vertices.foreach_get("co", flat_verts)
+    vertices = flat_verts.reshape(-1, 3).astype(np.float64, copy=False)
+
+    n_tris = len(mesh.polygons)
+    flat_tris = np.empty(n_tris * _TRIANGLE_LOOP_COUNT, dtype=np.int32)
+    mesh.polygons.foreach_get("vertices", flat_tris)
+    triangles = flat_tris.reshape(-1, _TRIANGLE_LOOP_COUNT)
+
+    return vertices, triangles
+
+
 # ColorBrewer "RdYlBu" diverging palette (5-class). The endpoints and the
 # middle stop are taken from https://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
 # Red = low quality, pale yellow = middling, blue = high quality. The
@@ -407,7 +444,11 @@ def apply_quality_visualization(obj: bpy.types.Object) -> int:
     if len(mesh.polygons) == 0:
         return 0
 
-    vertices, triangles = blender_to_arrays(obj, apply_modifiers=False)
+    # ``direct_triangle_arrays`` preserves ``mesh.polygons`` order so the
+    # i-th quality value lines up with the i-th polygon. Going through
+    # ``blender_to_arrays`` would route via ``bmesh.ops.triangulate``
+    # which is documented to reorder faces.
+    vertices, triangles = direct_triangle_arrays(mesh)
     polydata = arrays_to_polydata(vertices, triangles)
     qualities = polydata.mmg.element_qualities()
 

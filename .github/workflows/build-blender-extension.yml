@@ -228,6 +228,44 @@ jobs:
               fh.write(f"name={out.stem}\n")
           PY
 
+      - name: Validate zip structure
+        working-directory: blender_mmgpy
+        shell: bash
+        run: |
+          python - <<'PY'
+          import sys
+          import tomllib
+          import zipfile
+          from pathlib import Path
+
+          zip_path = Path("${{ steps.zip.outputs.path }}")
+          with zipfile.ZipFile(zip_path) as zf:
+              names = set(zf.namelist())
+
+              if "blender_manifest.toml" not in names:
+                  sys.exit("missing blender_manifest.toml at zip root")
+              with zf.open("blender_manifest.toml") as f:
+                  manifest = tomllib.loads(f.read().decode())
+
+              for required in ("id", "version", "schema_version", "type"):
+                  if required not in manifest:
+                      sys.exit(f"manifest missing required key {required!r}")
+
+              wheels = manifest.get("wheels", [])
+              if not wheels:
+                  sys.exit("manifest has no `wheels = [...]` block")
+              missing = [w for w in wheels if w.lstrip("./") not in names]
+              if missing:
+                  sys.exit(f"wheels declared but not present in zip: {missing}")
+
+              if "__init__.py" not in names:
+                  sys.exit("zip is missing the add-on entry point __init__.py")
+          print(
+              f"OK: {len(names)} entries, "
+              f"{len(wheels)} wheels declared & present",
+          )
+          PY
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
