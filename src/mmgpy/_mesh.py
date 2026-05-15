@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -2126,10 +2126,8 @@ class Mesh:
 
         # Resolve progress callback
         callback, reporter_ctx = _resolve_progress_callback(progress)
-        if reporter_ctx is not None:  # pragma: no cover
-            reporter_ctx.__enter__()
 
-        try:
+        with reporter_ctx if reporter_ctx is not None else nullcontext():
             # Emit progress events
             if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
                 raise CancellationError(phase="init")
@@ -2185,9 +2183,6 @@ class Mesh:
                 },
             )
             return _dict_to_remesh_result(stats)
-        finally:
-            if reporter_ctx is not None:  # pragma: no cover
-                reporter_ctx.__exit__(None, None, None)
 
     def remesh_levelset(
         self,
@@ -2227,10 +2222,8 @@ class Mesh:
         do_rcm = _pop_renum_redirect(kwargs)
 
         callback, reporter_ctx = _resolve_progress_callback(progress)
-        if reporter_ctx is not None:  # pragma: no cover
-            reporter_ctx.__enter__()
 
-        try:
+        with reporter_ctx if reporter_ctx is not None else nullcontext():
             if not _emit_event(callback, "init", "start", "Initializing", progress=0.0):
                 raise CancellationError(phase="init")
 
@@ -2271,9 +2264,6 @@ class Mesh:
                 },
             )
             return _dict_to_remesh_result(stats)
-        finally:
-            if reporter_ctx is not None:  # pragma: no cover
-                reporter_ctx.__exit__(None, None, None)
 
     def remesh_optimize(
         self,
@@ -2932,15 +2922,7 @@ class Mesh:
         else:
             cells = self._impl.get_triangles().copy()
 
-        working = Mesh(vertices, cells)
-
-        try:
-            yield working
-        finally:
-            # No cleanup needed - working mesh is garbage collected automatically
-            # when it goes out of scope. The finally block is kept for future
-            # extensibility (e.g., releasing resources or logging).
-            pass
+        yield Mesh(vertices, cells)
 
     def update_from(self, other: Mesh) -> None:
         """Update this mesh from another mesh's state.

@@ -691,7 +691,7 @@ def compute_hessian(
         # the small singular values that carry the second-derivative signal get
         # truncated by lstsq's default rcond.
         scale = float(np.linalg.norm(coords, axis=1).max())
-        if scale == 0.0:
+        if not scale:
             continue
         coords_n = coords / scale
         scale2 = scale * scale

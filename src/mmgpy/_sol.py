@@ -115,7 +115,7 @@ def parse_sol_file(content: str) -> dict[str, dict]:
                 line = lines[i].strip()
                 if line == "End" or line.startswith(("Mesh", "Sol")):
                     break
-                if line == "":
+                if not line:
                     i += 1
                     continue
                 row_values = [float(v) for v in line.split()]
@@ -268,8 +268,7 @@ def write_sol_file(
                     f"{n_entities}; field {name!r} has length {arr.shape[0]}"
                 )
                 raise ValueError(msg)
-        lines.append(keyword)
-        lines.append(str(n_entities))
+        lines.extend((keyword, str(n_entities)))
         type_header = [str(len(group))] + [str(t) for _, _, t in group]
         lines.append(" ".join(type_header))
 
@@ -284,8 +283,7 @@ def write_sol_file(
         lines.extend(" ".join(f"{v:.17g}" for v in row.tolist()) for row in joined)
         lines.append("")
 
-    lines.append("End")
-    lines.append("")
+    lines.extend(("End", ""))
 
     from pathlib import Path as _Path  # noqa: PLC0415
 

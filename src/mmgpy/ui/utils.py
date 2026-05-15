@@ -70,14 +70,14 @@ def get_mesh_diagonal(mesh: Mesh | None) -> float:
     return float(np.linalg.norm(size))
 
 
-def to_float(val: Any) -> float | None:
+def to_float(val: float | str | None) -> float | None:
     """Safely convert a value to float.
 
     Handles None, empty string, and other edge cases.
 
     Parameters
     ----------
-    val : Any
+    val : float | str | None
         The value to convert.
 
     Returns
@@ -95,9 +95,11 @@ def to_float(val: Any) -> float | None:
     True
     >>> to_float("") is None
     True
+    >>> to_float(0.0)
+    0.0
 
     """
-    if val is None or val == "":
+    if val is None or (isinstance(val, str) and not val):
         return None
     try:
         return float(val)
