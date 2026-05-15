@@ -62,7 +62,7 @@ tab. The main panel has four collapsible sub-panels:
 - **Visualization** — wireframe overlay and quality colormap
 - **Local Refinement** — sphere / box Empties as refinement zones
 
-<!-- TODO: screenshot of the N-panel goes here -->
+![MMGpy N-panel next to a remeshed Suzanne](assets/blender/overview.png)
 
 ## Basic remesh
 
@@ -113,8 +113,6 @@ Behind the scenes each constraint maps to
 
 in the `local_sizing=[...]` kwarg.
 
-<!-- TODO: screenshot of the local refinement workflow goes here -->
-
 ## Quality visualisation
 
 Two independent toggles in the **Visualization** sub-panel:
@@ -160,7 +158,7 @@ A stats block underneath shows the active mesh's `min` / `mean` /
     out-of-the-box after **Remesh**. For meshes with ngons / quads,
     triangulate first (`Ctrl + T` in Edit Mode).
 
-<!-- TODO: screenshot of the quality colormap on a remeshed mesh goes here -->
+![Visualization sub-panel showing the ColorRamp and quality stats](assets/blender/quality.png)
 
 ## Building from source
 
