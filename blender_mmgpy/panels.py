@@ -12,7 +12,9 @@ from bpy.types import Panel
 from . import utils
 
 if TYPE_CHECKING:
-    from bpy.types import Context
+    from bpy.types import Context, Node, Object, PropertyGroup, UILayout
+
+    QualityStats = dict[str, float] | None
 
 
 class MMGPY_PT_main_panel(Panel):
@@ -159,6 +161,78 @@ class MMGPY_PT_geometry(Panel):
             col.prop(settings, "verbose", text="Verbosity")
 
 
+def _find_quality_ramp_node() -> Node | None:
+    """Return the ColorRamp node from the MMGpy_Quality material, or None.
+
+    Returns
+    -------
+    bpy.types.Node or None
+        The ``ShaderNodeValToRGB`` node, or ``None`` when the material
+        is missing / has no nodes.
+
+    """
+    mat = bpy.data.materials.get(utils.QUALITY_MATERIAL_NAME)
+    if mat is None or not mat.use_nodes:
+        return None
+    return next(
+        (n for n in mat.node_tree.nodes if n.bl_idname == "ShaderNodeValToRGB"),
+        None,
+    )
+
+
+def _quality_axis_labels(
+    settings: PropertyGroup,
+    stats: QualityStats,
+) -> tuple[str, str]:
+    """Compute the left/right axis hint labels for the active ramp mode.
+
+    Returns
+    -------
+    tuple of (str, str)
+        ``(low_label, high_label)`` describing the ramp's endpoints.
+
+    """
+    mode = settings.quality_colormap_mode
+    if mode == "AUTO" and stats is not None:
+        return (f"{stats['min']:.2f} — poor", f"best — {stats['max']:.2f}")
+    if mode == "CUSTOM":
+        lo = min(settings.quality_custom_min, settings.quality_custom_max)
+        hi = max(settings.quality_custom_min, settings.quality_custom_max)
+        return (f"{lo:.2f} — poor", f"best — {hi:.2f}")
+    return ("0 — poor", "best — 1")
+
+
+def _draw_quality_ramp_controls(
+    layout: UILayout,
+    settings: PropertyGroup,
+    ramp_node: Node,
+    stats: QualityStats,
+) -> None:
+    """Heading, range dropdown, custom sliders, ColorRamp, axis hints."""
+    # Two-line heading so we don't depend on the panel being wide enough
+    # for "Mesh quality: In-radius ratio" on one row.
+    header = layout.column(align=True)
+    header.label(text="Mesh quality")
+    header.label(text="(MMG in-radius ratio)")
+    # ``text="Range"`` puts a label to the left of the dropdown instead
+    # of using the property's name.
+    layout.prop(settings, "quality_colormap_mode", text="Range")
+    if settings.quality_colormap_mode == "CUSTOM":
+        custom_col = layout.column(align=True)
+        custom_col.prop(settings, "quality_custom_min", text="Min")
+        custom_col.prop(settings, "quality_custom_max", text="Max")
+    layout.template_color_ramp(ramp_node, "color_ramp", expand=False)
+    # Endpoint hints. AUTO / CUSTOM expand the ramp across non-default
+    # values, so surface the actual numbers.
+    lo_label, hi_label = _quality_axis_labels(settings, stats)
+    row = layout.row()
+    row.alignment = "EXPAND"
+    row.label(text=lo_label)
+    sub = row.row()
+    sub.alignment = "RIGHT"
+    sub.label(text=hi_label)
+
+
 class MMGPY_PT_visualization(Panel):
     """Visualization sub-panel — wireframe overlay and quality coloring."""
 
@@ -183,46 +257,22 @@ class MMGPY_PT_visualization(Panel):
         col.prop(settings, "show_wire", icon="MOD_WIREFRAME")
         col.prop(settings, "show_quality", icon="COLOR")
 
-        if not (settings.show_quality and active_is_mesh and obj is not None):
-            return
+        if settings.show_quality and active_is_mesh and obj is not None:
+            layout.separator()
+            self._draw_quality_section(layout, settings, obj)
 
-        layout.separator()
-
-        # Show the actual ColorRamp from the shader so users see the
-        # mapping in place. Bonus: the widget is interactive — drag the
-        # stops to recolour the mesh without leaving the panel.
-        mat = bpy.data.materials.get(utils.QUALITY_MATERIAL_NAME)
-        ramp_node = None
-        if mat is not None and mat.use_nodes:
-            ramp_node = next(
-                (n for n in mat.node_tree.nodes if n.bl_idname == "ShaderNodeValToRGB"),
-                None,
-            )
+    @staticmethod
+    def _draw_quality_section(
+        layout: UILayout,
+        settings: PropertyGroup,
+        obj: Object,
+    ) -> None:
+        """Draw the ramp + range controls + stats block when quality is on."""
+        ramp_node = _find_quality_ramp_node()
         stats = utils.get_quality_stats(obj.data)
 
         if ramp_node is not None:
-            # Two-line heading so we don't depend on the panel being
-            # wide enough for "Mesh quality: In-radius ratio" on one row.
-            header = layout.column(align=True)
-            header.label(text="Mesh quality")
-            header.label(text="(MMG in-radius ratio)")
-            layout.prop(settings, "quality_colormap_mode", text="")
-            layout.template_color_ramp(ramp_node, "color_ramp", expand=False)
-            # Endpoint hints. In AUTO mode the ramp's left/right map to
-            # the mesh's actual min/max — surface those numbers so users
-            # don't have to read them off the stats block below.
-            row = layout.row()
-            row.alignment = "EXPAND"
-            if settings.quality_colormap_mode == "AUTO" and stats is not None:
-                row.label(text=f"{stats['min']:.2f} — poor")
-                sub = row.row()
-                sub.alignment = "RIGHT"
-                sub.label(text=f"best — {stats['max']:.2f}")
-            else:
-                row.label(text="0 — poor")
-                sub = row.row()
-                sub.alignment = "RIGHT"
-                sub.label(text="best — 1")
+            _draw_quality_ramp_controls(layout, settings, ramp_node, stats)
 
         if stats is None:
             layout.label(text="(toggle off/on to compute)", icon="QUESTION")

@@ -55,7 +55,27 @@ def _update_quality_colormap_mode(self: PropertyGroup, context: Context) -> None
     obj = context.active_object
     if obj is None or obj.type != "MESH":
         return
-    utils.refresh_quality_ramp(obj, mode=self.quality_colormap_mode)
+    utils.refresh_quality_ramp(
+        obj,
+        mode=self.quality_colormap_mode,
+        custom_min=self.quality_custom_min,
+        custom_max=self.quality_custom_max,
+    )
+
+
+def _update_quality_custom_range(self: PropertyGroup, context: Context) -> None:
+    """Re-stretch the ramp when the user nudges the custom min/max."""
+    if self.quality_colormap_mode != "CUSTOM":
+        return
+    obj = context.active_object
+    if obj is None or obj.type != "MESH":
+        return
+    utils.refresh_quality_ramp(
+        obj,
+        mode="CUSTOM",
+        custom_min=self.quality_custom_min,
+        custom_max=self.quality_custom_max,
+    )
 
 
 class MMGPYSizingConstraint(PropertyGroup):
@@ -294,7 +314,36 @@ class MMGPYSettings(PropertyGroup):
                     "when all triangles cluster near the same quality value."
                 ),
             ),
+            (
+                "CUSTOM",
+                "Custom [min, max]",
+                (
+                    "Use the Custom Min / Custom Max sliders below as the "
+                    "ramp endpoints. Useful for comparing several meshes on "
+                    "the same fixed scale."
+                ),
+            ),
         ],
         default="ABSOLUTE",
         update=_update_quality_colormap_mode,
+    )
+
+    quality_custom_min: FloatProperty(
+        name="Custom Min",
+        description="Lower bound for the Custom colormap range (red end)",
+        default=0.0,
+        min=0.0,
+        max=1.0,
+        precision=3,
+        update=_update_quality_custom_range,
+    )
+
+    quality_custom_max: FloatProperty(
+        name="Custom Max",
+        description="Upper bound for the Custom colormap range (green end)",
+        default=1.0,
+        min=0.0,
+        max=1.0,
+        precision=3,
+        update=_update_quality_custom_range,
     )

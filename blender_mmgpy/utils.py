@@ -267,7 +267,13 @@ def _set_ramp_stops(
     top.color = _RAMP_COLOURS[2]
 
 
-def refresh_quality_ramp(obj: bpy.types.Object, *, mode: str) -> None:
+def refresh_quality_ramp(
+    obj: bpy.types.Object,
+    *,
+    mode: str,
+    custom_min: float = 0.0,
+    custom_max: float = 1.0,
+) -> None:
     """Update the ColorRamp positions for the active colormap mode.
 
     ``mode`` is one of:
@@ -277,6 +283,7 @@ def refresh_quality_ramp(obj: bpy.types.Object, *, mode: str) -> None:
     - ``"AUTO"`` — stops stretched across the current mesh's
       ``min`` / midpoint / ``max`` so even tight quality bands paint
       the full red-to-green gradient.
+    - ``"CUSTOM"`` — stops at ``custom_min`` / midpoint / ``custom_max``.
 
     No-op when the material or its ColorRamp node aren't present.
     """
@@ -291,6 +298,10 @@ def refresh_quality_ramp(obj: bpy.types.Object, *, mode: str) -> None:
         else:
             lo, hi = stats["min"], stats["max"]
             positions = (lo, (lo + hi) / 2.0, hi)
+    elif mode == "CUSTOM":
+        # Guard against a misconfigured (or reverse-ordered) range.
+        lo, hi = min(custom_min, custom_max), max(custom_min, custom_max)
+        positions = (0.0, 0.5, 1.0) if hi <= lo else (lo, (lo + hi) / 2.0, hi)
     else:
         positions = (0.0, 0.5, 1.0)
 
@@ -415,12 +426,19 @@ def apply_quality_visualization(obj: bpy.types.Object) -> int:
 
     mat = _ensure_quality_material()
 
-    # AUTO mode rescales the ramp to the freshly-computed min/max. The
-    # mode lives on the scene settings; read it through ``bpy.context``
-    # so callers don't have to plumb it through.
+    # AUTO mode rescales the ramp to the freshly-computed min/max. Mode
+    # and custom-range bounds live on the scene settings; read them
+    # through ``bpy.context`` so callers don't have to plumb them through.
     settings = getattr(bpy.context.scene, "mmgpy", None)
-    mode = settings.quality_colormap_mode if settings is not None else "ABSOLUTE"
-    refresh_quality_ramp(obj, mode=mode)
+    if settings is not None:
+        refresh_quality_ramp(
+            obj,
+            mode=settings.quality_colormap_mode,
+            custom_min=settings.quality_custom_min,
+            custom_max=settings.quality_custom_max,
+        )
+    else:
+        refresh_quality_ramp(obj, mode="ABSOLUTE")
     slot_names = [slot.name for slot in mesh.materials if slot is not None]
     if QUALITY_MATERIAL_NAME not in slot_names:
         mesh.materials.append(mat)
