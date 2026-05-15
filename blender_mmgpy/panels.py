@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
+import bpy
 from bpy.types import Panel
 
 from . import utils
@@ -185,25 +186,44 @@ class MMGPY_PT_visualization(Panel):
         if not (settings.show_quality and active_is_mesh and obj is not None):
             return
 
-        # Legend: header + one row per ramp stop with a coloured swatch icon.
-        box = layout.box()
-        box.label(text="Quality (MMG in-radius ratio)", icon="INFO")
-        legend = box.column(align=True)
-        legend.label(text="0.0  poor", icon="SEQUENCE_COLOR_01")  # red
-        legend.label(text="0.5  fair", icon="SEQUENCE_COLOR_03")  # yellow
-        legend.label(text="1.0  excellent", icon="SEQUENCE_COLOR_04")  # green
+        layout.separator()
+
+        # Show the actual ColorRamp from the shader so users see the
+        # mapping in place. Bonus: the widget is interactive — drag the
+        # stops to recolour the mesh without leaving the panel.
+        mat = bpy.data.materials.get(utils.QUALITY_MATERIAL_NAME)
+        ramp_node = None
+        if mat is not None and mat.use_nodes:
+            ramp_node = next(
+                (
+                    n
+                    for n in mat.node_tree.nodes
+                    if n.bl_idname == "ShaderNodeValToRGB"
+                ),
+                None,
+            )
+        if ramp_node is not None:
+            layout.label(text="In-radius ratio")
+            layout.template_color_ramp(ramp_node, "color_ramp", expand=False)
+            # Endpoint hints (the ramp widget itself has no axis labels).
+            row = layout.row()
+            row.alignment = "EXPAND"
+            row.label(text="0 — poor")
+            sub = row.row()
+            sub.alignment = "RIGHT"
+            sub.label(text="best — 1")
 
         stats = utils.get_quality_stats(obj.data)
         if stats is None:
-            box.label(text="(stats unavailable — toggle off/on)", icon="QUESTION")
+            layout.label(text="(toggle off/on to compute)", icon="QUESTION")
             return
 
-        # Current-mesh stats sub-section.
-        stats_col = box.column(align=True)
-        stats_col.label(text=f"This mesh ({stats['n']:,} triangles):")
-        stats_col.label(text=f"    min:  {stats['min']:.3f}")
-        stats_col.label(text=f"    mean: {stats['mean']:.3f}")
-        stats_col.label(text=f"    max:  {stats['max']:.3f}")
+        layout.separator()
+        layout.label(text=f"{stats['n']:,} triangles", icon="MESH_DATA")
+        stats_col = layout.column(align=True)
+        stats_col.label(text=f"min:  {stats['min']:.3f}")
+        stats_col.label(text=f"mean: {stats['mean']:.3f}")
+        stats_col.label(text=f"max:  {stats['max']:.3f}")
 
 
 class MMGPY_PT_local_refinement(Panel):
