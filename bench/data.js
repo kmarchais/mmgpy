@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778883914159,
+  "lastUpdate": 1778888698284,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -7944,6 +7944,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00035817582065073966",
             "extra": "mean: 70.37230179999672 msec\nrounds: 15"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevinmarchais@gmail.com",
+            "name": "Kevin Marchais",
+            "username": "kmarchais"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ee05a8b23e3e1313f7e7a410ac33be9b04283ae7",
+          "message": "docs(blender): prep manifest + docs page for extensions.blender.org submission (#272)\n\n* docs(blender): prep manifest + docs page for extensions.blender.org\n\nPre-flight cleanup ahead of submitting the Blender add-on to\n[extensions.blender.org](https://extensions.blender.org) once the\nnext mmgpy release is tagged.\n\n- **Drop the unused ``[permissions]`` block from the manifest.** The\n  remesh path is fully in-memory (Blender mesh -> NumPy -> PyVista ->\n  MMG -> Blender mesh); we never touch the filesystem, so declaring\n  ``files = \"...\"`` permission is misleading and a review-board flag.\n\n- **Rephrase the tagline** from \"Powerful mesh remeshing using MMG\n  library\" to \"Adaptive surface remeshing via the MMG library\" — more\n  descriptive, less marketing.\n\n- **Point ``website``** at a dedicated docs page\n  (``https://kmarchais.github.io/mmgpy/latest/blender-extension``)\n  instead of the bare GitHub repo. The platform shows the website\n  link in the add-on listing, and a focused docs page is a better\n  landing than the project root.\n\n- **Add ``docs/blender-extension.md``** plus a nav entry under\n  ``mkdocs.yml`` so the new website URL actually resolves. Covers\n  install (extensions.blender.org + GitHub releases), basic remesh,\n  presets, local refinement, the visualization toggles + three\n  colormap modes, building from source, troubleshooting, TODOs and\n  licensing.\n\nID availability check came back clean:\n``GET https://extensions.blender.org/api/v1/extensions/?search=mmgpy``\nreturned no hits, so the manifest id can stay as ``mmgpy``.\n\n* docs(blender): skip the build-pipeline bash block under pytest-codeblocks\n\nThe build-from-source code block calls ``blender --command extension\nbuild`` as its last line. CI runners don't have Blender installed,\nso ``pytest --codeblocks`` (which is the project's ``daily-docs-test``\njob) fails on it with ``bash: line 14: blender: command not found``.\n\nMark the block with ``<!-- pytest-codeblocks:skip -->`` (the same\nconvention every other docs page uses for non-runnable snippets, e.g.\n``docs/api/lagrangian.md``). The block is documentation about how the\nrelease CI builds the extension; it isn't intended to be executed by\nthe docs harness.\n\n* docs(blender): wire in the two screenshots\n\nReplace the three ``<!-- TODO: screenshot -->`` markers in\n``docs/blender-extension.md``:\n\n- **overview.png** (1.4 MB) — full N-panel with the four sub-panels\n  visible next to a remeshed Suzanne. Sits at the bottom of the\n  *Where the UI lives* section.\n- **quality.png** (23 KB) — Visualization sub-panel showing the\n  ColorRamp widget + stats block. Sits at the bottom of the\n  *Quality visualisation* section.\n\nThe third planned screenshot (a separate *Local refinement workflow*\nshot) is dropped: the local refinement section is short and\ntext-heavy, and the overview screenshot already shows enough of the\npanel context. Easier than ginning up a third capture for marginal\nbenefit.\n\nImages live under ``docs/assets/blender/`` (the existing\n``docs/assets/`` convention — see e.g. the elasticity-propagation\ntutorial), where the project ``.gitignore`` allowlists\n``!docs/assets/**/*.png``.\n\n* chore(blender): drop legacy bl_info, inject platforms in CI\n\nCleanup pass following the Blender extensions spec audit against\nhttps://docs.blender.org/manual/en/dev/advanced/extensions/.\n\n- **Remove the legacy ``bl_info`` dict from ``_register.py``** and\n  the matching re-export from ``__init__.py``. The upstream\n  conversion guide is explicit: \"Remove the bl_info information\n  (this is now in the manifest).\" Blender 4.2+ reads every piece of\n  add-on metadata from ``blender_manifest.toml`` instead, so the\n  duplicate was dead weight and a drift target.\n\n- **Simplify ``sync_version.py`` accordingly.** Drop\n  ``update_register()`` and the ``version_to_tuple()`` helper it\n  depended on; the script now only rewrites the manifest version\n  field. The prek ``sync-blender-version`` hook's ``files:``\n  pattern loses ``_register.py``.\n\n- **Inject ``platforms = [\"<matrix.platform>\"]`` in the CI workflow**\n  next to the existing ``wheels = [...]`` injection. Each CI zip\n  targets exactly one Blender platform identifier (linux-x64,\n  windows-x64, macos-arm64), so declaring it makes the manifest in\n  the zip self-describing and lets Blender catch any\n  platform/zip mismatch at install time with a clearer error\n  message.\n\n  Fixes a regression at the same time: the previous injection\n  regex anchored on ``[permissions]``, which was removed from the\n  source manifest in the previous PR commit; the injection has\n  been silently no-op'ing since. The replacement appends both\n  blocks to the end of the manifest, which is location-independent\n  and lint-stable.\n\n* fix(blender): three small follow-ups from the PR review\n\n- ``docs/blender-extension.md``: relabel the Absolute-mode endpoint\n  from \"0 = inverted\" to \"0 = degenerate, 1 = equilateral\". MMG's\n  in-radius ratio at 0 is a sliver/zero-area triangle, not a\n  winding-order flip — \"inverted\" would suggest a different failure\n  mode entirely.\n- CI ``Validate zip structure`` step: add an explicit\n  ``platforms`` check so a future regex slip in the injection\n  step can't silently produce zips with the wrong ``platforms``\n  field. Compares against ``${{ matrix.platform }}`` directly.\n- Same step: swap ``str.lstrip(\"./\")`` for ``str.removeprefix(\"./\")``.\n  ``lstrip`` strips *any* leading ``.``/``/`` characters in any\n  order rather than the literal ``./`` prefix — produces the right\n  answer for current inputs by accident.",
+          "timestamp": "2026-05-15T23:37:49Z",
+          "tree_id": "b6b88eebe5ad723ce7dad9ace28e550aae4215d0",
+          "url": "https://github.com/kmarchais/mmgpy/commit/ee05a8b23e3e1313f7e7a410ac33be9b04283ae7"
+        },
+        "date": 1778888697441,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 43.18372359448067,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00014896067885813928",
+            "extra": "mean: 23.156872931814767 msec\nrounds: 44"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 21.362857724546622,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00033792093778949863",
+            "extra": "mean: 46.81021672727648 msec\nrounds: 22"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 35.5748911149731,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0001102970497201978",
+            "extra": "mean: 28.109713583328737 msec\nrounds: 36"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3377.2540091224378,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007566653248380492",
+            "extra": "mean: 296.0985455339928 usec\nrounds: 3437"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 72.78832715815908,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006418681096605128",
+            "extra": "mean: 13.738466578949351 msec\nrounds: 76"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 8613.663090936381,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000004684430231473457",
+            "extra": "mean: 116.09462657672755 usec\nrounds: 13636"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.10994985060739515,
+            "unit": "iter/sec",
+            "range": "stddev: 0.05604980137825523",
+            "extra": "mean: 9.095055559200011 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.09553630972528403,
+            "unit": "iter/sec",
+            "range": "stddev: 0.2546011846580096",
+            "extra": "mean: 10.467224481200015 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.4003527358383766,
+            "unit": "iter/sec",
+            "range": "stddev: 0.008301423671054952",
+            "extra": "mean: 2.4977973433999523 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.2765446133916205,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004882396574024048",
+            "extra": "mean: 189.51796550000685 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.281203080031985,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00047453021808710103",
+            "extra": "mean: 189.35079466664698 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.2831422003862185,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00029766861492508975",
+            "extra": "mean: 189.28129550003328 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.336754221252278,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002512124495083219",
+            "extra": "mean: 187.3798114999848 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 2.034078572436658,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002608607303809295",
+            "extra": "mean: 491.62309340001684 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 2.031223502943284,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003407237599075037",
+            "extra": "mean: 492.31411440000556 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.81252599582634,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002522892315392859",
+            "extra": "mean: 355.55226919998404 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 164.24896429388335,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000027303718123498088",
+            "extra": "mean: 6.08831845180311 msec\nrounds: 166"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 13.607919849784174,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000215266229680517",
+            "extra": "mean: 73.4866174285896 msec\nrounds: 14"
           }
         ]
       }
