@@ -163,9 +163,6 @@ ignore = [
     "PLR0904", # too-many-public-methods                        (2)
     "PLR0914", # too-many-locals                                (10)
     "PLR0917", # too-many-positional-arguments                  (7)
-    "PLR1702", # too-many-nested-blocks                         (2)
-    "PLR6104", # non-augmented-assignment                       (1)
-    "PLR6201", # literal-membership                             (13)
     "PLR6301", # no-self-use                                    (15)
 ]
 

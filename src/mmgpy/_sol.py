@@ -27,6 +27,92 @@ _TYPE_VECTOR = 2
 _TYPE_TENSOR = 3
 
 
+def _parse_sol_block(
+    lines: list[str],
+    start: int,
+    location: str,
+    dimension: int,
+) -> tuple[int, dict[str, dict]]:
+    """Parse one ``SolAt*`` block.
+
+    Returns
+    -------
+    tuple[int, dict[str, dict]]
+        The line index just after the consumed block and the fields parsed
+        from it (empty if the block contained no data rows).
+
+    """
+    i = start
+    if i >= len(lines):
+        return i, {}
+    n_entities = int(lines[i].strip())
+    i += 1
+    if i >= len(lines):
+        return i, {}
+
+    type_line = lines[i].strip().split()
+    n_solutions = int(type_line[0])
+    sol_types = [int(t) for t in type_line[1 : 1 + n_solutions]]
+    i += 1
+
+    values: list[list[float]] = []
+    while len(values) < n_entities and i < len(lines):
+        line = lines[i].strip()
+        if line == "End" or line.startswith(("Mesh", "Sol")):
+            break
+        if not line:
+            i += 1
+            continue
+        values.append([float(v) for v in line.split()])
+        i += 1
+
+    if not values:
+        return i, {}
+    return i, _fields_from_block(values, sol_types, n_solutions, location, dimension)
+
+
+def _fields_from_block(
+    values: list[list[float]],
+    sol_types: list[int],
+    n_solutions: int,
+    location: str,
+    dimension: int,
+) -> dict[str, dict]:
+    """Build the field dict from a parsed ``SolAt*`` block's raw values.
+
+    Returns
+    -------
+    dict[str, dict]
+        Field names mapped to ``{"data": array, "location": location}``.
+
+    """
+    data = np.array(values, dtype=np.float64)
+    fields: dict[str, dict] = {}
+    col_idx = 0
+    for sol_idx, sol_type in enumerate(sol_types):
+        if sol_type == 1:
+            base = f"solution_{sol_idx}" if n_solutions > 1 else "solution"
+            payload = data if data.ndim == 1 else data[:, col_idx]
+            fields[f"{base}@{location}"] = {"data": payload, "location": location}
+            col_idx += 1
+        elif sol_type == 2:
+            base = f"vector_{sol_idx}" if n_solutions > 1 else "vector"
+            fields[f"{base}@{location}"] = {
+                "data": data[:, col_idx : col_idx + dimension],
+                "location": location,
+            }
+            col_idx += dimension
+        elif sol_type == 3:
+            tensor_size = 6 if dimension == 3 else 3
+            base = f"tensor_{sol_idx}" if n_solutions > 1 else "tensor"
+            fields[f"{base}@{location}"] = {
+                "data": data[:, col_idx : col_idx + tensor_size],
+                "location": location,
+            }
+            col_idx += tensor_size
+    return fields
+
+
 def parse_sol_file(content: str) -> dict[str, dict]:
     """Parse a Medit .sol file and return solution fields.
 
@@ -96,64 +182,8 @@ def parse_sol_file(content: str) -> dict[str, dict]:
                 break
 
         if location is not None:
-            i += 1
-            if i >= len(lines):
-                break
-
-            n_entities = int(lines[i].strip())
-            i += 1
-            if i >= len(lines):
-                break
-
-            type_line = lines[i].strip().split()
-            n_solutions = int(type_line[0])
-            sol_types = [int(t) for t in type_line[1 : 1 + n_solutions]]
-
-            i += 1
-            values: list[list[float]] = []
-            while len(values) < n_entities and i < len(lines):
-                line = lines[i].strip()
-                if line == "End" or line.startswith(("Mesh", "Sol")):
-                    break
-                if not line:
-                    i += 1
-                    continue
-                row_values = [float(v) for v in line.split()]
-                values.append(row_values)
-                i += 1
-
-            if values:
-                data = np.array(values, dtype=np.float64)
-                col_idx = 0
-                for sol_idx, sol_type in enumerate(sol_types):
-                    if sol_type == 1:
-                        base = f"solution_{sol_idx}" if n_solutions > 1 else "solution"
-                        name = f"{base}@{location}"
-                        if data.ndim == 1:
-                            fields[name] = {"data": data, "location": location}
-                        else:
-                            fields[name] = {
-                                "data": data[:, col_idx],
-                                "location": location,
-                            }
-                        col_idx += 1
-                    elif sol_type == 2:
-                        base = f"vector_{sol_idx}" if n_solutions > 1 else "vector"
-                        name = f"{base}@{location}"
-                        fields[name] = {
-                            "data": data[:, col_idx : col_idx + dimension],
-                            "location": location,
-                        }
-                        col_idx += dimension
-                    elif sol_type == 3:
-                        tensor_size = 6 if dimension == 3 else 3
-                        base = f"tensor_{sol_idx}" if n_solutions > 1 else "tensor"
-                        name = f"{base}@{location}"
-                        fields[name] = {
-                            "data": data[:, col_idx : col_idx + tensor_size],
-                            "location": location,
-                        }
-                        col_idx += tensor_size
+            i, block_fields = _parse_sol_block(lines, i + 1, location, dimension)
+            fields.update(block_fields)
             continue
 
         i += 1
@@ -237,7 +267,7 @@ def write_sol_file(
         layout for the given dimension.
 
     """
-    if dimension not in (2, 3):
+    if dimension not in {2, 3}:
         msg = f"dimension must be 2 or 3, got {dimension}"
         raise ValueError(msg)
     if not fields:

@@ -90,7 +90,7 @@ def create_isotropic_metric(
     (100, 6)
 
     """
-    if dim not in (2, 3):
+    if dim not in {2, 3}:
         msg = f"dim must be 2 or 3, got {dim}"
         raise ValueError(msg)
 
@@ -190,7 +190,7 @@ def create_anisotropic_metric(
         msg = f"sizes must be 1D or 2D array, got shape {sizes.shape}"
         raise ValueError(msg)
 
-    if dim not in (2, 3):
+    if dim not in {2, 3}:
         msg = f"sizes must have 2 or 3 components, got {dim}"
         raise ValueError(msg)
 

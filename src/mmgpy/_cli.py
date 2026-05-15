@@ -219,7 +219,7 @@ def _parse_args(args: list[str]) -> _ParsedArgs:
             value = args[i + 1]
             if arg == "-in":
                 parsed.input_mesh = value
-            elif arg in ("-o", "-out"):
+            elif arg in {"-o", "-out"}:
                 parsed.output_mesh = value
             elif arg == "-sol":
                 parsed.sol_file = value
@@ -288,7 +288,7 @@ def _run_mmg() -> None:  # pragma: no cover
     args = sys.argv[1:]
 
     # -- help ----------------------------------------------------------------
-    if not args or args[0] in ("-h", "--help"):
+    if not args or args[0] in {"-h", "--help"}:
         print(
             "mmg - Unified mesh remeshing tool with auto-detection\n\n"
             "Usage: mmg [options] <input_mesh>\n"
@@ -324,7 +324,7 @@ def _run_mmg() -> None:  # pragma: no cover
         sys.exit(0)
 
     # -- version -------------------------------------------------------------
-    if args[0] in ("-V", "--version"):
+    if args[0] in {"-V", "--version"}:
         try:
             from . import _version  # type: ignore[attr-defined]  # noqa: PLC0415
 

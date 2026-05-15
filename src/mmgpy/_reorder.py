@@ -89,7 +89,7 @@ def _build_adjacency(
     """
     adj = vertex_adjacency(n_vertices, blocks[0])
     for extra in blocks[1:]:
-        adj = adj + vertex_adjacency(n_vertices, extra)
+        adj += vertex_adjacency(n_vertices, extra)
     adj.data[:] = 1.0
     return adj
 
