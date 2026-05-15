@@ -12,6 +12,7 @@ import mathutils
 import numpy as np
 
 if TYPE_CHECKING:
+    import pyvista as pv
     from numpy.typing import NDArray
 
 
@@ -140,6 +141,58 @@ def replace_mesh_data(
     mesh.clear_geometry()
     mesh.from_pydata(local_verts, [], triangles.tolist())
     mesh.update()
+
+
+def arrays_to_polydata(
+    vertices: NDArray[np.float64],
+    triangles: NDArray[np.int32],
+) -> pv.PolyData:
+    """Build a PyVista PolyData surface from vertex + triangle arrays.
+
+    Parameters
+    ----------
+    vertices : ndarray
+        Vertex coordinates (Nx3) in world space.
+    triangles : ndarray
+        Triangle connectivity (Mx3), 0-indexed.
+
+    Returns
+    -------
+    pv.PolyData
+        Triangle surface mesh ready for ``mesh.mmg.remesh()``.
+
+    """
+    import pyvista as pv
+
+    faces = np.column_stack(
+        [np.full(len(triangles), 3, dtype=np.int32), triangles.astype(np.int32)],
+    ).ravel()
+    return pv.PolyData(vertices.astype(np.float64), faces=faces)
+
+
+def polydata_to_arrays(
+    polydata: pv.PolyData,
+) -> tuple[NDArray[np.float64], NDArray[np.int32]]:
+    """Extract vertices and triangle connectivity from a PolyData.
+
+    Handles the polygon stream produced by ``.mmg.remesh()`` — line cells
+    (MMG ridges) sit in ``polydata.lines`` and are ignored here.
+
+    Returns
+    -------
+    vertices : ndarray
+        Vertex coordinates (Nx3).
+    triangles : ndarray
+        Triangle connectivity (Mx3), 0-indexed.
+
+    """
+    vertices = np.asarray(polydata.points, dtype=np.float64)
+    faces = np.asarray(polydata.faces)
+    if faces.size == 0:
+        triangles = np.empty((0, 3), dtype=np.int32)
+    else:
+        triangles = faces.reshape(-1, 4)[:, 1:].astype(np.int32, copy=False)
+    return vertices, triangles
 
 
 def get_sizing_empties(context: bpy.types.Context) -> list[bpy.types.Object]:

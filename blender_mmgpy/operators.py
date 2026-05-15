@@ -83,7 +83,7 @@ class MMGPY_OT_remesh(Operator):
     def execute(self, context: Context) -> set[str]:
         """Execute the remeshing operation."""
         try:
-            import mmgpy
+            import mmgpy  # noqa: F401  -- registers the .mmg PyVista accessor
         except ImportError as e:
             self.report(
                 {"ERROR"},
@@ -96,45 +96,41 @@ class MMGPY_OT_remesh(Operator):
         obj = context.active_object
         settings = context.scene.mmgpy
 
-        # Convert Blender mesh to arrays
         try:
             vertices, triangles = utils.blender_to_arrays(obj)
         except Exception as e:
             self.report({"ERROR"}, f"Failed to convert mesh: {e}")
             return {"CANCELLED"}
 
-        # Create mmgpy Mesh
+        n_verts_before = len(vertices)
+        n_tris_before = len(triangles)
+
         try:
-            mesh = mmgpy.Mesh(vertices, triangles)
+            polydata = utils.arrays_to_polydata(vertices, triangles)
         except Exception as e:
-            self.report({"ERROR"}, f"Failed to create mmgpy mesh: {e}")
+            self.report({"ERROR"}, f"Failed to build PyVista mesh: {e}")
             return {"CANCELLED"}
 
-        # Build remesh options based on settings
         remesh_kwargs = self._build_remesh_options(settings)
+        local_sizing = self._build_local_sizing(settings)
 
-        # Apply local sizing constraints
-        self._apply_sizing_constraints(mesh, settings)
-
-        # Perform remeshing
         try:
-            result = mesh.remesh(progress=False, **remesh_kwargs)
+            result = polydata.mmg.remesh(
+                local_sizing=local_sizing or None,
+                **remesh_kwargs,
+            )
         except Exception as e:
             self.report({"ERROR"}, f"Remeshing failed: {e}")
             return {"CANCELLED"}
 
-        # Get result arrays
-        new_vertices = mesh.get_vertices()
-        new_triangles = mesh.get_triangles()
+        new_vertices, new_triangles = utils.polydata_to_arrays(result)
 
-        # Replace mesh data in-place
         utils.replace_mesh_data(obj, new_vertices, new_triangles)
 
-        # Report results
         self.report(
             {"INFO"},
-            f"Remeshed: {result.vertices_before:,} -> {result.vertices_after:,} vertices, "
-            f"{result.elements_before:,} -> {result.elements_after:,} elements",
+            f"Remeshed: {n_verts_before:,} -> {len(new_vertices):,} vertices, "
+            f"{n_tris_before:,} -> {len(new_triangles):,} elements",
         )
 
         return {"FINISHED"}
@@ -185,8 +181,14 @@ class MMGPY_OT_remesh(Operator):
 
         return kwargs
 
-    def _apply_sizing_constraints(self, mesh, settings) -> None:
-        """Apply local sizing constraints to the mesh."""
+    def _build_local_sizing(self, settings) -> list[dict]:
+        """Translate sizing-constraint empties into ``.mmg.remesh`` specs.
+
+        Each sphere/box empty becomes one entry in the ``local_sizing`` list
+        forwarded to :meth:`mmgpy.MmgAccessor.remesh`. Empties without a
+        target object are skipped.
+        """
+        specs: list[dict] = []
         for constraint in settings.sizing_constraints:
             empty = constraint.empty_object
             if empty is None:
@@ -197,30 +199,35 @@ class MMGPY_OT_remesh(Operator):
 
             if constraint.constraint_type == "SPHERE":
                 radius = empty.empty_display_size
-                mesh.set_size_sphere(
-                    center=[location.x, location.y, location.z],
-                    radius=radius,
-                    size=size,
+                specs.append(
+                    {
+                        "shape": "sphere",
+                        "center": [location.x, location.y, location.z],
+                        "radius": radius,
+                        "size": size,
+                    },
                 )
             elif constraint.constraint_type == "BOX":
-                # For box, use empty scale to determine bounds
-                scale = empty.empty_display_size
-                half_size = scale
-                mesh.set_size_box(
-                    bounds=[
-                        [
-                            location.x - half_size,
-                            location.y - half_size,
-                            location.z - half_size,
+                half_size = empty.empty_display_size
+                specs.append(
+                    {
+                        "shape": "box",
+                        "bounds": [
+                            [
+                                location.x - half_size,
+                                location.y - half_size,
+                                location.z - half_size,
+                            ],
+                            [
+                                location.x + half_size,
+                                location.y + half_size,
+                                location.z + half_size,
+                            ],
                         ],
-                        [
-                            location.x + half_size,
-                            location.y + half_size,
-                            location.z + half_size,
-                        ],
-                    ],
-                    size=size,
+                        "size": size,
+                    },
                 )
+        return specs
 
 
 class MMGPY_OT_autofit(Operator):

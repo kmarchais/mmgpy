@@ -388,6 +388,16 @@ ignore = [
     # Scripts (sync_version.py)
     "T201",    # print statements needed for CLI output
     "D401",    # imperative mood not required for scripts
+    # Blender extension `__init__.py` is the addon entry point (bl_info,
+    # register/unregister), not a re-export shim
+    "RUF067",
+    # Blender's Operator pattern: callbacks all return set[str]; documenting
+    # that on every method is noise. Same rationale for DOC501.
+    "DOC201",
+    "DOC501",
+    # Operator methods take `self` because Blender's API mandates it,
+    # even when the body doesn't need instance state.
+    "PLR6301",
 ]
 
 [tool.ty.src]

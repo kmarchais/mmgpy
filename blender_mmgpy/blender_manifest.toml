@@ -30,9 +30,11 @@ tags = ["Mesh", "Modeling"]
 wheel-path = "./wheels"
 
 # Dependencies in PEP 508 format (used by blender-extension-builder)
-# mmgpy pulls in numpy, meshio, pyvista, scipy, etc.
+# mmgpy pulls in numpy, pyvista, scipy, etc.
+# >=0.13 required: the extension drives MMG through PyVista's ``.mmg`` accessor,
+# which replaced the removed ``mmgpy.Mesh`` public API in 0.13.
 dependencies = [
-    "mmgpy>=0.8.0",
+    "mmgpy>=0.13.0",
 ]
 
 # Platform support

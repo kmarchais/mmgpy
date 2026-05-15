@@ -86,7 +86,7 @@ def version_to_tuple(version: str) -> tuple[int, int, int]:
     so prerelease suffixes are stripped.
     """
     # Strip prerelease suffix (e.g., "0.6.0-dev.0" -> "0.6.0")
-    base_version = version.split("-")[0]
+    base_version = version.split("-", maxsplit=1)[0]
     parts = base_version.split(".")
     return (int(parts[0]), int(parts[1]), int(parts[2]))
 
