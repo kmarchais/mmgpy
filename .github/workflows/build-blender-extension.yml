@@ -259,10 +259,21 @@ jobs:
                   if required not in manifest:
                       sys.exit(f"manifest missing required key {required!r}")
 
+              expected_platform = "${{ matrix.platform }}"
+              if manifest.get("platforms") != [expected_platform]:
+                  sys.exit(
+                      f"platforms mismatch: manifest has "
+                      f"{manifest.get('platforms')!r}, "
+                      f"expected [{expected_platform!r}]",
+                  )
+
               wheels = manifest.get("wheels", [])
               if not wheels:
                   sys.exit("manifest has no `wheels = [...]` block")
-              missing = [w for w in wheels if w.lstrip("./") not in names]
+              # ``removeprefix`` (not ``lstrip``) — ``lstrip("./")`` would
+              # strip *any* leading ``.``/``/`` characters in any order
+              # rather than the literal ``./`` prefix.
+              missing = [w for w in wheels if w.removeprefix("./") not in names]
               if missing:
                   sys.exit(f"wheels declared but not present in zip: {missing}")
 

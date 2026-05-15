@@ -143,11 +143,11 @@ mode.
 
 Three range modes:
 
-| Mode                  | Ramp stops at                   | Use case                                    |
-| --------------------- | ------------------------------- | ------------------------------------------- |
-| **Absolute [0, 1]**   | `0.0` / `0.5` / `1.0`           | Universal scale (0 = inverted, 1 = perfect) |
-| **Auto [min, max]**   | actual `min` / midpoint / `max` | Emphasises in-mesh variation                |
-| **Custom [min, max]** | user-set bounds                 | Compare two meshes on a fixed scale         |
+| Mode                  | Ramp stops at                   | Use case                                          |
+| --------------------- | ------------------------------- | ------------------------------------------------- |
+| **Absolute [0, 1]**   | `0.0` / `0.5` / `1.0`           | Universal scale (0 = degenerate, 1 = equilateral) |
+| **Auto [min, max]**   | actual `min` / midpoint / `max` | Emphasises in-mesh variation                      |
+| **Custom [min, max]** | user-set bounds                 | Compare two meshes on a fixed scale               |
 
 A stats block underneath shows the active mesh's `min` / `mean` /
 `max` plus the triangle count.
