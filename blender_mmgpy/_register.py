@@ -15,7 +15,7 @@ from . import operators, panels, preferences, properties
 bl_info = {
     "name": "MMGpy Remesh",
     "author": "Kevin Marchais",
-    "version": (0, 9, 0),
+    "version": (0, 14, 0),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > MMGpy",
     "description": "Powerful mesh remeshing using MMG library",

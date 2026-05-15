@@ -169,8 +169,12 @@ def update_manifest(
     return False
 
 
-def update_init(version: str, *, check_only: bool = False) -> bool:
-    """Update __init__.py bl_info with new version.
+def update_register(version: str, *, check_only: bool = False) -> bool:
+    """Update ``_register.py`` bl_info with new version.
+
+    The ``bl_info`` dict was moved out of ``__init__.py`` so the add-on's
+    public package module stays a pure re-export shim (RUF067). The
+    version tuple lives in ``_register.py`` now.
 
     Returns
     -------
@@ -178,8 +182,8 @@ def update_init(version: str, *, check_only: bool = False) -> bool:
         ``True`` if the file was (or would be) modified.
 
     """
-    init_path = Path(__file__).parent / "__init__.py"
-    content = init_path.read_text()
+    register_path = Path(__file__).parent / "_register.py"
+    content = register_path.read_text()
 
     version_tuple = version_to_tuple(version)
 
@@ -192,8 +196,8 @@ def update_init(version: str, *, check_only: bool = False) -> bool:
 
     if new_content != content:
         if not check_only:
-            init_path.write_text(new_content)
-            _stdout(f"Updated __init__.py bl_info to version {version_tuple}")
+            register_path.write_text(new_content)
+            _stdout(f"Updated _register.py bl_info to version {version_tuple}")
         return True
     return False
 
@@ -224,7 +228,7 @@ def main() -> int:
             python_version,
             check_only=check_only,
         )
-        init_changed = update_init(semver_version, check_only=check_only)
+        init_changed = update_register(semver_version, check_only=check_only)
     except (OSError, re.error) as e:
         _stderr(f"Error: {e}")
         return 1
