@@ -46,6 +46,10 @@ def _update_show_quality(self: PropertyGroup, context: Context) -> None:
             utils.apply_quality_visualization(obj)
         except (RuntimeError, ValueError, TypeError) as exc:
             sys.stderr.write(f"[MMGpy] Cannot show quality: {exc}\n")
+            return
+        # Solid / wireframe shading ignores materials — flip every 3D
+        # viewport over to Material Preview so the gradient is visible.
+        utils.ensure_material_preview(context)
     else:
         utils.remove_quality_visualization(obj)
 

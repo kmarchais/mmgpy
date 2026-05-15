@@ -218,10 +218,14 @@ def is_all_triangles(mesh: bpy.types.Mesh) -> bool:
     return all(p.loop_total == _TRIANGLE_LOOP_COUNT for p in mesh.polygons)
 
 
+# ColorBrewer "RdYlBu" diverging palette (5-class). The endpoints and the
+# middle stop are taken from https://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+# Red = low quality, pale yellow = middling, blue = high quality. The
+# convention follows scientific colormaps where warm = bad / cool = good.
 _RAMP_COLOURS: tuple[tuple[float, float, float, float], ...] = (
-    (1.0, 0.0, 0.0, 1.0),  # red — low quality
-    (1.0, 1.0, 0.0, 1.0),  # yellow — middling
-    (0.0, 1.0, 0.0, 1.0),  # green — high quality
+    (0.843, 0.098, 0.110, 1.0),  # #d7191c — deep red
+    (1.000, 1.000, 0.749, 1.0),  # #ffffbf — pale yellow
+    (0.173, 0.482, 0.714, 1.0),  # #2c7bb6 — deep blue
 )
 
 
@@ -492,6 +496,34 @@ def set_wireframe_overlay(obj: bpy.types.Object, *, enabled: bool) -> None:
     """Toggle the per-object wireframe overlay on top of shaded surfaces."""
     obj.show_wire = enabled
     obj.show_all_edges = enabled
+
+
+# Viewport shading modes in which a shader material actually affects the
+# rendered colour. ``SOLID`` and ``WIREFRAME`` ignore materials, so quality
+# colouring is invisible there.
+_MATERIAL_AWARE_SHADING = frozenset({"MATERIAL", "RENDERED"})
+
+
+def ensure_material_preview(context: bpy.types.Context) -> None:
+    """Switch every 3D viewport off ``SOLID`` / ``WIREFRAME`` shading.
+
+    Walks the current screen's areas, finds every ``VIEW_3D`` space, and
+    flips any that aren't already on ``MATERIAL`` or ``RENDERED`` over to
+    ``MATERIAL`` (Material Preview) so the quality-colour material is
+    actually visible. Idempotent — viewports already on a material-aware
+    shading mode are left untouched.
+    """
+    screen = getattr(context, "screen", None)
+    if screen is None:
+        return
+    for area in screen.areas:
+        if area.type != "VIEW_3D":
+            continue
+        for space in area.spaces:
+            if space.type != "VIEW_3D":
+                continue
+            if space.shading.type not in _MATERIAL_AWARE_SHADING:
+                space.shading.type = "MATERIAL"
 
 
 def get_sizing_empties(context: bpy.types.Context) -> list[bpy.types.Object]:
