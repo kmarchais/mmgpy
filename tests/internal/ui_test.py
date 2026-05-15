@@ -834,4 +834,4 @@ class TestDefaultState:
         from mmgpy.ui.utils import DEFAULT_STATE
 
         assert "theme_name" in DEFAULT_STATE
-        assert DEFAULT_STATE["theme_name"] in ("light", "dark")
+        assert DEFAULT_STATE["theme_name"] in {"light", "dark"}

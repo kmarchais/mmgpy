@@ -585,7 +585,7 @@ def _normalize_multi_materials(
             )
             raise ValueError(msg)  # noqa: TRY004
         split = int(split_raw)
-        if split not in (0, 1):
+        if split not in {0, 1}:
             msg = f"materials[{i}]['split'] must be 0 or 1, got {split}"
             raise ValueError(msg)
         normalized.append(
@@ -1744,10 +1744,10 @@ class Mesh:
             for name, arr in self._user_fields.items():
                 pv_mesh.point_data[name] = arr
             # Cast PolyData → UnstructuredGrid for formats that require it
-            if isinstance(pv_mesh, pv.PolyData) and path.suffix.lower() in (
+            if isinstance(pv_mesh, pv.PolyData) and path.suffix.lower() in {
                 ".vtu",
                 ".vtkhdf",
-            ):
+            }:
                 pv_mesh = pv_mesh.cast_to_unstructured_grid()
             pv_mesh.save(str(path))
 

@@ -225,7 +225,7 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
         arr = np.asarray(dataset.point_data[key], dtype=np.float64)
         # MMG's scalar metric / levelset bindings want an Nx1 array; PyVista
         # users naturally store these as 1D, so reshape on the way through.
-        if arr.ndim == 1 and key in ("metric", "levelset"):
+        if arr.ndim == 1 and key in {"metric", "levelset"}:
             arr = arr.reshape(-1, 1)
         mesh[key] = arr
     return mesh
@@ -346,7 +346,7 @@ def _per_type_indices_marked(
         n_polys = int(dataset.n_cells) - n_verts - n_lines - n_strips
         if cell_type == pv.CellType.LINE:
             start, length = n_verts, n_lines
-        elif cell_type in (pv.CellType.TRIANGLE, pv.CellType.QUAD):
+        elif cell_type in {pv.CellType.TRIANGLE, pv.CellType.QUAD}:
             start, length = n_verts + n_lines, n_polys
         elif cell_type == pv.CellType.VERTEX:
             start, length = 0, n_verts
@@ -861,7 +861,7 @@ def _coerce_metric_kwarg(
             f"{tuple(np.asarray(metric).shape)} for n_points={n_points}"
         )
         raise ValueError(msg)
-    if arr.shape[1] not in (1, 3, 6):
+    if arr.shape[1] not in {1, 3, 6}:
         msg = (
             f"metric last dimension must be 1 (scalar), 3 (2D tensor) "
             f"or 6 (3D tensor); got {arr.shape[1]}"

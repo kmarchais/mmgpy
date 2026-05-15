@@ -420,6 +420,22 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         self._update_viewer(reset_camera=False)
         self.state.sol_filename = filename
 
+    def _insert_boundary_refs_option(self, base_options: list[dict]) -> None:
+        """Insert a Boundary Refs entry after the existing Refs option, if any."""
+        try:
+            _, tri_refs = self._mesh.get_triangles_with_refs()
+        except Exception:
+            return
+        if len(np.unique(tri_refs)) == 0:
+            return
+        for i, opt in enumerate(base_options):
+            if opt.get("value") == "refs":
+                base_options.insert(
+                    i + 1,
+                    {"title": "Boundary Refs", "value": "boundary_refs"},
+                )
+                return
+
     def _update_scalar_field_options(self) -> None:
         """Update scalar field dropdown options based on available fields and mesh type."""
         base_options = list(DEFAULT_SCALAR_FIELD_OPTIONS)
@@ -438,23 +454,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
             # Add Boundary Refs option for tetrahedral meshes with boundary triangles
             if self._mesh is not None:
-                try:
-                    _, tri_refs = self._mesh.get_triangles_with_refs()
-                    unique_tri_refs = np.unique(tri_refs)
-                    if len(unique_tri_refs) > 0:
-                        # Find the "-- Other --" section and add Boundary Refs after Refs
-                        for i, opt in enumerate(base_options):
-                            if opt.get("value") == "refs":
-                                base_options.insert(
-                                    i + 1,
-                                    {
-                                        "title": "Boundary Refs",
-                                        "value": "boundary_refs",
-                                    },
-                                )
-                                break
-                except Exception:
-                    pass
+                self._insert_boundary_refs_option(base_options)
 
         if self._solution_fields:
             base_options.append({"type": "subheader", "title": "-- Solution --"})

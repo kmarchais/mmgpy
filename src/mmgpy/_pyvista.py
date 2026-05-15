@@ -1121,7 +1121,7 @@ def polydata_from_2d_triangles(
 
     """
     verts = np.asarray(vertices, dtype=np.float64)
-    if verts.ndim != _NDIM_2D_ARRAY or verts.shape[1] not in (_DIMS_2D, _DIMS_3D):
+    if verts.ndim != _NDIM_2D_ARRAY or verts.shape[1] not in {_DIMS_2D, _DIMS_3D}:
         msg = f"vertices must have shape (n, 2) or (n, 3); got {verts.shape}"
         raise ValueError(msg)
     if verts.shape[1] == _DIMS_2D:

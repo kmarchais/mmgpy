@@ -195,7 +195,7 @@ def test_mesh_quality_analysis(generated_meshes: tuple[pv.DataSet, pv.DataSet]) 
                 continue  # Skip unknown cell types
 
             cell_type_name = cell_type_map[cell_type_id]
-            if cell_type_id in [1, 3, 5]:  # Skip 1D/2D elements in 3D mesh
+            if cell_type_id in {1, 3, 5}:  # Skip 1D/2D elements in 3D mesh
                 continue
 
             # Get quality info from PyVista

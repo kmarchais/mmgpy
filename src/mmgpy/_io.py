@@ -294,7 +294,7 @@ def _read_mesh_internal(
         # Use native MMG loading for Medit format to preserve MMG-specific
         # keywords (Ridges, RequiredVertices, Tangents, reference markers)
         suffix = path.suffix.lower()
-        if suffix in (".mesh", ".meshb"):
+        if suffix in {".mesh", ".meshb"}:
             impl = _load_medit_native(path, mesh_kind)
             kind = _impl_to_kind(impl)
             return Mesh._from_impl(impl, kind)  # noqa: SLF001
