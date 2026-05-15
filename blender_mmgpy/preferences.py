@@ -12,6 +12,14 @@ from bpy.types import AddonPreferences
 if TYPE_CHECKING:
     from bpy.types import Context
 
+try:
+    import mmgpy
+
+    _MMGPY_IMPORT_ERROR: ImportError | None = None
+except ImportError as exc:
+    mmgpy = None  # type: ignore[assignment]
+    _MMGPY_IMPORT_ERROR = exc
+
 
 class MMGPYPreferences(AddonPreferences):
     """Preferences for MMGpy addon."""
@@ -43,23 +51,15 @@ class MMGPYPreferences(AddonPreferences):
         """Draw the preferences panel."""
         layout = self.layout
 
-        # Check mmgpy installation status
-        try:
-            import mmgpy
-
-            version = mmgpy.__version__
-            mmg_version = mmgpy.MMG_VERSION
-
-            box = layout.box()
-            col = box.column(align=True)
+        box = layout.box()
+        col = box.column(align=True)
+        if mmgpy is not None:
             col.label(text="mmgpy Status:", icon="CHECKMARK")
-            col.label(text=f"  mmgpy version: {version}")
-            col.label(text=f"  MMG version: {mmg_version}")
-        except ImportError as e:
-            box = layout.box()
-            col = box.column(align=True)
+            col.label(text=f"  mmgpy version: {mmgpy.__version__}")
+            col.label(text=f"  MMG version: {mmgpy.MMG_VERSION}")
+        else:
             col.label(text="mmgpy Status:", icon="ERROR")
-            col.label(text=f"  Not installed or import error: {e}")
+            col.label(text=f"  Not installed or import error: {_MMGPY_IMPORT_ERROR}")
             col.separator()
             col.label(text="Please reinstall the extension with wheels included.")
 

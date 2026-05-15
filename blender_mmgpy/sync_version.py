@@ -18,18 +18,34 @@ import sys
 from pathlib import Path
 
 
+def _stdout(message: str) -> None:
+    """Print *message* and a newline to stdout (avoids ruff's T201)."""
+    sys.stdout.write(message + "\n")
+
+
+def _stderr(message: str) -> None:
+    """Print *message* and a newline to stderr (avoids ruff's T201)."""
+    sys.stderr.write(message + "\n")
+
+
 def python_version_to_semver(version: str) -> str:
     """Convert Python PEP 440 version to SemVer format for Blender.
 
     Blender requires semantic versioning (semver.org) which uses hyphens
     for prerelease identifiers, while Python uses dots or suffixes.
 
-    Examples:
-        0.6.0.dev0 -> 0.6.0-dev.0
-        0.6.0a1    -> 0.6.0-alpha.1
-        0.6.0b1    -> 0.6.0-beta.1
-        0.6.0rc1   -> 0.6.0-rc.1
-        0.6.0      -> 0.6.0 (unchanged)
+    Returns
+    -------
+    str
+        SemVer string. Unrecognised inputs are returned unchanged.
+
+    Examples
+    --------
+    ``0.6.0.dev0`` -> ``0.6.0-dev.0``;
+    ``0.6.0a1`` -> ``0.6.0-alpha.1``;
+    ``0.6.0b1`` -> ``0.6.0-beta.1``;
+    ``0.6.0rc1`` -> ``0.6.0-rc.1``;
+    ``0.6.0`` -> ``0.6.0`` (unchanged).
 
     """
     # Handle .devN format (e.g., 0.6.0.dev0)
@@ -62,7 +78,13 @@ def get_mmgpy_version() -> tuple[str, str]:
     Returns
     -------
     tuple[str, str]
-        (semver_version, python_version) - SemVer for manifest, Python for deps.
+        ``(semver_version, python_version)`` — SemVer for the manifest,
+        PEP 440 for the dependency specifier.
+
+    Raises
+    ------
+    ValueError
+        If no ``version = "..."`` line is found in ``pyproject.toml``.
 
     """
     pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
@@ -84,6 +106,12 @@ def version_to_tuple(version: str) -> tuple[int, int, int]:
 
     bl_info only supports (major, minor, patch) integers,
     so prerelease suffixes are stripped.
+
+    Returns
+    -------
+    tuple of three ints
+        ``(major, minor, patch)``.
+
     """
     # Strip prerelease suffix (e.g., "0.6.0-dev.0" -> "0.6.0")
     base_version = version.split("-", maxsplit=1)[0]
@@ -111,7 +139,7 @@ def update_manifest(
     Returns
     -------
     bool
-        True if file was (or would be) modified.
+        ``True`` if the file was (or would be) modified.
 
     """
     manifest_path = Path(__file__).parent / "blender_manifest.toml"
@@ -136,7 +164,7 @@ def update_manifest(
     if new_content != content:
         if not check_only:
             manifest_path.write_text(new_content)
-            print(f"Updated blender_manifest.toml to version {semver_version}")
+            _stdout(f"Updated blender_manifest.toml to version {semver_version}")
         return True
     return False
 
@@ -144,7 +172,11 @@ def update_manifest(
 def update_init(version: str, *, check_only: bool = False) -> bool:
     """Update __init__.py bl_info with new version.
 
-    Returns True if file was (or would be) modified.
+    Returns
+    -------
+    bool
+        ``True`` if the file was (or would be) modified.
+
     """
     init_path = Path(__file__).parent / "__init__.py"
     content = init_path.read_text()
@@ -161,41 +193,53 @@ def update_init(version: str, *, check_only: bool = False) -> bool:
     if new_content != content:
         if not check_only:
             init_path.write_text(new_content)
-            print(f"Updated __init__.py bl_info to version {version_tuple}")
+            _stdout(f"Updated __init__.py bl_info to version {version_tuple}")
         return True
     return False
 
 
 def main() -> int:
-    """Main entry point."""
+    """Run the version sync (or check) and return a process exit code.
+
+    Returns
+    -------
+    int
+        ``0`` on success, ``1`` on any error (missing version line,
+        unreadable file, etc.).
+
+    """
     check_only = "--check" in sys.argv
 
     try:
         semver_version, python_version = get_mmgpy_version()
-        print(f"mmgpy version: {python_version} (SemVer: {semver_version})")
+    except (OSError, ValueError, re.error) as e:
+        _stderr(f"Error: {e}")
+        return 1
 
+    _stdout(f"mmgpy version: {python_version} (SemVer: {semver_version})")
+
+    try:
         manifest_changed = update_manifest(
             semver_version,
             python_version,
             check_only=check_only,
         )
         init_changed = update_init(semver_version, check_only=check_only)
+    except (OSError, re.error) as e:
+        _stderr(f"Error: {e}")
+        return 1
 
-        if check_only:
-            if manifest_changed or init_changed:
-                print("Version mismatch detected. Run without --check to update.")
-                return 1
-            print("Versions are in sync.")
-            return 0
-
-        if not manifest_changed and not init_changed:
-            print("Versions already in sync.")
-
+    if check_only:
+        if manifest_changed or init_changed:
+            _stdout("Version mismatch detected. Run without --check to update.")
+            return 1
+        _stdout("Versions are in sync.")
         return 0
 
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
+    if not manifest_changed and not init_changed:
+        _stdout("Versions already in sync.")
+
+    return 0
 
 
 if __name__ == "__main__":

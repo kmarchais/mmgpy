@@ -5,15 +5,35 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import bpy
 import mathutils
 from bpy.props import FloatProperty, IntProperty
 from bpy.types import Operator
 
+from . import utils
+
 if TYPE_CHECKING:
     from bpy.types import Context, Event
+
+    from .properties import MMGPYSettings
+
+try:
+    import mmgpy  # noqa: F401 -- registers the .mmg PyVista accessor
+
+    _MMGPY_IMPORT_ERROR: ImportError | None = None
+except ImportError as exc:
+    _MMGPY_IMPORT_ERROR = exc
+
+# Errors we expect from mmgpy / PyVista / numpy on bad geometry or option
+# combinations. Anything outside this set is genuinely unexpected and bubbles
+# up to Blender's own error popup with a full traceback.
+_REMESH_EXC_TYPES = (RuntimeError, ValueError, TypeError, OSError)
+
+# Above this raw triangle estimate we round to 2 significant figures for the
+# confirmation dialog instead of showing the noisy float.
+_ROUND_TO_2SF_ABOVE = 100
 
 
 class MMGPY_OT_remesh(Operator):
@@ -29,19 +49,31 @@ class MMGPY_OT_remesh(Operator):
 
     @classmethod
     def poll(cls, context: Context) -> bool:
-        """Check if operator can run."""
+        """Check if operator can run.
+
+        Returns
+        -------
+        bool
+            ``True`` when the active object is a mesh.
+
+        """
         obj = context.active_object
         return obj is not None and obj.type == "MESH"
 
-    def _estimate_triangles(self, context: Context) -> int | None:
-        """Estimate the number of triangles the remesh would produce.
+    @staticmethod
+    def _estimate_triangles(context: Context) -> int | None:
+        """Estimate the triangle count the remesh would produce.
 
-        Returns None if no size parameter is set (can't estimate).
+        Returns
+        -------
+        int or None
+            Estimated triangle count, or ``None`` when no usable size
+            parameter is set (cannot estimate).
+
         """
         obj = context.active_object
         settings = context.scene.mmgpy
 
-        # Determine effective target edge size
         if settings.use_hsiz:
             h = settings.hsiz
         elif settings.use_hmax:
@@ -52,53 +84,64 @@ class MMGPY_OT_remesh(Operator):
         if h <= 0:
             return None
 
-        # Compute surface area from mesh polygons, scaled to world space
+        # Compute surface area from mesh polygons, scaled to world space.
         scale = obj.matrix_world.to_scale()
         avg_scale_sq = (scale.x**2 + scale.y**2 + scale.z**2) / 3
         area = sum(p.area for p in obj.data.polygons) * avg_scale_sq
 
-        # Equilateral triangle with edge h has area = (sqrt(3)/4) * h^2
+        # Equilateral triangle with edge h has area = (sqrt(3)/4) * h^2.
         tri_area = (math.sqrt(3) / 4) * h**2
         raw = area / tri_area
 
-        # Round to 2 significant figures for a clean number
-        if raw >= 100:
+        if raw >= _ROUND_TO_2SF_ABOVE:
             digits = math.floor(math.log10(raw)) - 1
             return int(round(raw, -digits))
         return int(raw)
 
     def invoke(self, context: Context, event: Event) -> set[str]:
-        """Check estimated triangle count and confirm if very high."""
+        """Confirm before running when the estimated triangle count is high.
+
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
         estimate = self._estimate_triangles(context)
         if estimate is not None and estimate > self.TRIANGLE_WARNING_THRESHOLD:
             return context.window_manager.invoke_confirm(
                 self,
                 event,
                 title="High triangle count",
-                message=f"Estimated ~{estimate:,} triangles. This may take a long time.",
+                message=(
+                    f"Estimated ~{estimate:,} triangles. This may take a long time."
+                ),
                 confirm_text="Remesh anyway",
             )
         return self.execute(context)
 
     def execute(self, context: Context) -> set[str]:
-        """Execute the remeshing operation."""
-        try:
-            import mmgpy  # noqa: F401  -- registers the .mmg PyVista accessor
-        except ImportError as e:
+        """Execute the remeshing operation.
+
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
+        if _MMGPY_IMPORT_ERROR is not None:
             self.report(
                 {"ERROR"},
-                f"mmgpy is not installed or failed to import: {e}",
+                f"mmgpy is not installed or failed to import: {_MMGPY_IMPORT_ERROR}",
             )
             return {"CANCELLED"}
-
-        from . import utils
 
         obj = context.active_object
         settings = context.scene.mmgpy
 
         try:
             vertices, triangles = utils.blender_to_arrays(obj)
-        except Exception as e:
+        except _REMESH_EXC_TYPES as e:
             self.report({"ERROR"}, f"Failed to convert mesh: {e}")
             return {"CANCELLED"}
 
@@ -107,7 +150,7 @@ class MMGPY_OT_remesh(Operator):
 
         try:
             polydata = utils.arrays_to_polydata(vertices, triangles)
-        except Exception as e:
+        except _REMESH_EXC_TYPES as e:
             self.report({"ERROR"}, f"Failed to build PyVista mesh: {e}")
             return {"CANCELLED"}
 
@@ -119,7 +162,7 @@ class MMGPY_OT_remesh(Operator):
                 local_sizing=local_sizing or None,
                 **remesh_kwargs,
             )
-        except Exception as e:
+        except _REMESH_EXC_TYPES as e:
             self.report({"ERROR"}, f"Remeshing failed: {e}")
             return {"CANCELLED"}
 
@@ -135,60 +178,61 @@ class MMGPY_OT_remesh(Operator):
 
         return {"FINISHED"}
 
-    def _build_remesh_options(self, settings) -> dict:
-        """Build remesh keyword arguments from settings."""
-        kwargs = {}
+    @staticmethod
+    def _build_remesh_options(settings: MMGPYSettings) -> dict[str, Any]:
+        """Translate settings into ``polydata.mmg.remesh`` keyword arguments.
 
-        # Apply preset first
-        if settings.preset == "FINE":
-            kwargs["hgrad"] = 1.2
-        elif settings.preset == "COARSE":
-            kwargs["hgrad"] = 1.5
+        Returns
+        -------
+        dict
+            Keyword arguments to forward to the accessor.
 
-        # Size control
+        """
+        kwargs: dict[str, Any] = {"verbose": settings.verbose}
+
+        # Preset gradation (may be overridden by use_hgrad below).
+        preset_hgrad = {"FINE": 1.2, "COARSE": 1.5}.get(settings.preset)
+        if preset_hgrad is not None:
+            kwargs["hgrad"] = preset_hgrad
+
+        # ``hsiz`` is mutually exclusive with ``hmin`` / ``hmax``.
         if settings.use_hsiz:
             kwargs["hsiz"] = settings.hsiz
         else:
-            if settings.use_hmin:
-                kwargs["hmin"] = settings.hmin
-            if settings.use_hmax:
-                kwargs["hmax"] = settings.hmax
+            for flag, name in (("use_hmin", "hmin"), ("use_hmax", "hmax")):
+                if getattr(settings, flag):
+                    kwargs[name] = getattr(settings, name)
 
-        # Geometry
-        if settings.use_hausd:
-            kwargs["hausd"] = settings.hausd
+        toggleable = (
+            ("use_hausd", "hausd"),
+            ("use_ar", "ar"),
+            ("use_hgrad", "hgrad"),
+        )
+        for flag, name in toggleable:
+            if getattr(settings, flag):
+                kwargs[name] = getattr(settings, name)
 
-        # Angle detection
-        if settings.use_ar:
-            kwargs["ar"] = settings.ar
-
-        # Gradation
-        if settings.use_hgrad:
-            kwargs["hgrad"] = settings.hgrad
-
-        # Verbosity
-        kwargs["verbose"] = settings.verbose
-
-        # Optimization flags
-        if settings.optim:
-            kwargs["optim"] = 1
-        if settings.noinsert:
-            kwargs["noinsert"] = 1
-        if settings.noswap:
-            kwargs["noswap"] = 1
-        if settings.nomove:
-            kwargs["nomove"] = 1
+        for name in ("optim", "noinsert", "noswap", "nomove"):
+            if getattr(settings, name):
+                kwargs[name] = 1
 
         return kwargs
 
-    def _build_local_sizing(self, settings) -> list[dict]:
+    @staticmethod
+    def _build_local_sizing(settings: MMGPYSettings) -> list[dict[str, Any]]:
         """Translate sizing-constraint empties into ``.mmg.remesh`` specs.
 
         Each sphere/box empty becomes one entry in the ``local_sizing`` list
         forwarded to :meth:`mmgpy.MmgAccessor.remesh`. Empties without a
         target object are skipped.
+
+        Returns
+        -------
+        list of dict
+            One spec per active sphere/box constraint.
+
         """
-        specs: list[dict] = []
+        specs: list[dict[str, Any]] = []
         for constraint in settings.sizing_constraints:
             empty = constraint.empty_object
             if empty is None:
@@ -198,12 +242,11 @@ class MMGPY_OT_remesh(Operator):
             size = constraint.target_size
 
             if constraint.constraint_type == "SPHERE":
-                radius = empty.empty_display_size
                 specs.append(
                     {
                         "shape": "sphere",
                         "center": [location.x, location.y, location.z],
-                        "radius": radius,
+                        "radius": empty.empty_display_size,
                         "size": size,
                     },
                 )
@@ -240,18 +283,30 @@ class MMGPY_OT_autofit(Operator):
 
     @classmethod
     def poll(cls, context: Context) -> bool:
-        """Check if operator can run."""
+        """Check if operator can run.
+
+        Returns
+        -------
+        bool
+            ``True`` when the active object is a mesh.
+
+        """
         obj = context.active_object
         return obj is not None and obj.type == "MESH"
 
     def execute(self, context: Context) -> set[str]:
-        """Execute the auto-fit operation."""
-        import math
+        """Apply size defaults scaled to the active mesh's bounding box.
 
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
         obj = context.active_object
         settings = context.scene.mmgpy
 
-        # Compute bounding box diagonal in world space
+        # Bounding box diagonal in world space.
         bbox = [obj.matrix_world @ mathutils.Vector(v) for v in obj.bound_box]
         min_corner = mathutils.Vector(
             (
@@ -273,11 +328,9 @@ class MMGPY_OT_autofit(Operator):
             self.report({"WARNING"}, "Mesh has zero size")
             return {"CANCELLED"}
 
-        # Scale factor: power of 10 matching the mesh size
-        # Defaults are tuned for a ~1.0 unit mesh
+        # Defaults are tuned for a ~1.0 unit mesh; scale by power of 10.
         scale = 10 ** math.floor(math.log10(diagonal))
 
-        # Apply scaled defaults
         settings.hmin = 0.001 * scale
         settings.hmax = 0.1 * scale
         settings.hsiz = 0.05 * scale
@@ -313,16 +366,20 @@ class MMGPY_OT_add_sizing_sphere(Operator):
     )
 
     def execute(self, context: Context) -> set[str]:
-        """Execute the operator."""
-        from . import utils
+        """Create the sphere empty and register a sizing constraint for it.
 
-        # Get location from 3D cursor or active object center
-        if context.active_object:
-            location = context.active_object.location.copy()
-        else:
-            location = context.scene.cursor.location.copy()
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
 
-        # Create empty
+        """
+        location = (
+            context.active_object.location.copy()
+            if context.active_object
+            else context.scene.cursor.location.copy()
+        )
+
         empty = utils.create_sizing_empty(
             context,
             location=tuple(location),
@@ -330,7 +387,6 @@ class MMGPY_OT_add_sizing_sphere(Operator):
             radius=self.radius,
         )
 
-        # Add to constraints collection
         settings = context.scene.mmgpy
         constraint = settings.sizing_constraints.add()
         constraint.constraint_type = "SPHERE"
@@ -341,7 +397,14 @@ class MMGPY_OT_add_sizing_sphere(Operator):
         return {"FINISHED"}
 
     def invoke(self, context: Context, event: Event) -> set[str]:
-        """Invoke with dialog."""
+        """Open the radius/target-size properties dialog before executing.
+
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -368,16 +431,20 @@ class MMGPY_OT_add_sizing_box(Operator):
     )
 
     def execute(self, context: Context) -> set[str]:
-        """Execute the operator."""
-        from . import utils
+        """Create the box empty and register a sizing constraint for it.
 
-        # Get location from 3D cursor or active object center
-        if context.active_object:
-            location = context.active_object.location.copy()
-        else:
-            location = context.scene.cursor.location.copy()
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
 
-        # Create empty
+        """
+        location = (
+            context.active_object.location.copy()
+            if context.active_object
+            else context.scene.cursor.location.copy()
+        )
+
         empty = utils.create_sizing_empty(
             context,
             location=tuple(location),
@@ -385,7 +452,6 @@ class MMGPY_OT_add_sizing_box(Operator):
             radius=self.size,
         )
 
-        # Add to constraints collection
         settings = context.scene.mmgpy
         constraint = settings.sizing_constraints.add()
         constraint.constraint_type = "BOX"
@@ -396,7 +462,14 @@ class MMGPY_OT_add_sizing_box(Operator):
         return {"FINISHED"}
 
     def invoke(self, context: Context, event: Event) -> set[str]:
-        """Invoke with dialog."""
+        """Open the size/target-size properties dialog before executing.
+
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -416,24 +489,36 @@ class MMGPY_OT_remove_sizing_constraint(Operator):
 
     @classmethod
     def poll(cls, context: Context) -> bool:
-        """Check if operator can run."""
+        """Check if at least one constraint exists to remove.
+
+        Returns
+        -------
+        bool
+            ``True`` when the scene carries any sizing constraints.
+
+        """
         settings = context.scene.mmgpy
         return len(settings.sizing_constraints) > 0
 
     def execute(self, context: Context) -> set[str]:
-        """Execute the operator."""
+        """Remove the constraint at ``self.index`` and its backing empty.
+
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
         settings = context.scene.mmgpy
 
         if 0 <= self.index < len(settings.sizing_constraints):
             constraint = settings.sizing_constraints[self.index]
 
-            # Optionally delete the empty object
             if constraint.empty_object is not None:
                 bpy.data.objects.remove(constraint.empty_object, do_unlink=True)
 
             settings.sizing_constraints.remove(self.index)
 
-            # Update active index
             if settings.active_constraint_index >= len(settings.sizing_constraints):
                 settings.active_constraint_index = max(
                     0,
@@ -457,20 +542,32 @@ class MMGPY_OT_clear_sizing_constraints(Operator):
 
     @classmethod
     def poll(cls, context: Context) -> bool:
-        """Check if operator can run."""
+        """Check if there is at least one constraint to clear.
+
+        Returns
+        -------
+        bool
+            ``True`` when the scene carries any sizing constraints.
+
+        """
         settings = context.scene.mmgpy
         return len(settings.sizing_constraints) > 0
 
     def execute(self, context: Context) -> set[str]:
-        """Execute the operator."""
+        """Remove every sizing constraint and its backing empty.
+
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
         settings = context.scene.mmgpy
 
-        # Delete all empty objects
         for constraint in settings.sizing_constraints:
             if constraint.empty_object is not None:
                 bpy.data.objects.remove(constraint.empty_object, do_unlink=True)
 
-        # Clear collection
         settings.sizing_constraints.clear()
         settings.active_constraint_index = 0
 
@@ -478,5 +575,12 @@ class MMGPY_OT_clear_sizing_constraints(Operator):
         return {"FINISHED"}
 
     def invoke(self, context: Context, event: Event) -> set[str]:
-        """Confirm before clearing."""
+        """Show a confirmation dialog before clearing every constraint.
+
+        Returns
+        -------
+        set of str
+            Blender operator status flags.
+
+        """
         return context.window_manager.invoke_confirm(self, event)

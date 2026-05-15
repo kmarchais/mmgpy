@@ -10,14 +10,15 @@ import bmesh
 import bpy
 import mathutils
 import numpy as np
+import pyvista as pv
 
 if TYPE_CHECKING:
-    import pyvista as pv
     from numpy.typing import NDArray
 
 
 def blender_to_arrays(
     obj: bpy.types.Object,
+    *,
     apply_modifiers: bool = True,
 ) -> tuple[NDArray[np.float64], NDArray[np.int32]]:
     """Convert Blender mesh to numpy arrays.
@@ -110,10 +111,7 @@ def arrays_to_blender(
     mesh.from_pydata(verts_list, [], faces_list)
     mesh.update()
 
-    # Create object
-    obj = bpy.data.objects.new(name, mesh)
-
-    return obj
+    return bpy.data.objects.new(name, mesh)
 
 
 def replace_mesh_data(
@@ -162,8 +160,6 @@ def arrays_to_polydata(
         Triangle surface mesh ready for ``mesh.mmg.remesh()``.
 
     """
-    import pyvista as pv
-
     faces = np.column_stack(
         [np.full(len(triangles), 3, dtype=np.int32), triangles.astype(np.int32)],
     ).ravel()
@@ -210,11 +206,11 @@ def get_sizing_empties(context: bpy.types.Context) -> list[bpy.types.Object]:
 
     """
     settings = context.scene.mmgpy
-    empties = []
-    for constraint in settings.sizing_constraints:
-        if constraint.empty_object is not None:
-            empties.append(constraint.empty_object)
-    return empties
+    return [
+        constraint.empty_object
+        for constraint in settings.sizing_constraints
+        if constraint.empty_object is not None
+    ]
 
 
 def create_sizing_empty(
