@@ -170,6 +170,14 @@ class MMGPY_OT_remesh(Operator):
 
         utils.replace_mesh_data(obj, new_vertices, new_triangles)
 
+        # Refresh the per-face quality colouring on the new geometry. If
+        # this fails we still report the remesh as a success.
+        if settings.show_quality:
+            try:
+                utils.apply_quality_visualization(obj)
+            except (RuntimeError, ValueError, TypeError) as exc:
+                self.report({"WARNING"}, f"Quality coloring update failed: {exc}")
+
         self.report(
             {"INFO"},
             f"Remeshed: {n_verts_before:,} -> {len(new_vertices):,} vertices, "

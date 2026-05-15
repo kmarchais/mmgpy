@@ -156,6 +156,38 @@ class MMGPY_PT_geometry(Panel):
             col.prop(settings, "verbose", text="Verbosity")
 
 
+class MMGPY_PT_visualization(Panel):
+    """Visualization sub-panel — wireframe overlay and quality coloring."""
+
+    bl_label = "Visualization"
+    bl_idname = "MMGPY_PT_visualization"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "MMGpy"
+    bl_parent_id = "MMGPY_PT_main_panel"
+    bl_options: ClassVar[set[str]] = {"DEFAULT_CLOSED"}
+
+    def draw(self, context: Context) -> None:
+        """Draw the panel."""
+        layout = self.layout
+        settings = context.scene.mmgpy
+
+        obj = context.active_object
+        active_is_mesh = obj is not None and obj.type == "MESH"
+
+        col = layout.column(align=True)
+        col.active = active_is_mesh
+        col.prop(settings, "show_wire", icon="MOD_WIREFRAME")
+        col.prop(settings, "show_quality", icon="COLOR")
+
+        if settings.show_quality and active_is_mesh and obj is not None:
+            box = layout.box()
+            box.label(
+                text="Red = poor, Green = excellent (MMG in-radius ratio)",
+                icon="INFO",
+            )
+
+
 class MMGPY_PT_local_refinement(Panel):
     """Local refinement sub-panel."""
 

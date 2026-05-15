@@ -38,6 +38,7 @@ classes = (
     panels.MMGPY_PT_main_panel,
     panels.MMGPY_PT_size_control,
     panels.MMGPY_PT_geometry,
+    panels.MMGPY_PT_visualization,
     panels.MMGPY_PT_local_refinement,
     preferences.MMGPYPreferences,
 )

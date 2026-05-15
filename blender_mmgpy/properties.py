@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import sys
+from typing import TYPE_CHECKING
+
 import bpy
 from bpy.props import (
     BoolProperty,
@@ -14,6 +17,37 @@ from bpy.props import (
     PointerProperty,
 )
 from bpy.types import PropertyGroup
+
+from . import utils
+
+if TYPE_CHECKING:
+    from bpy.types import Context
+
+
+def _update_show_wire(self: PropertyGroup, context: Context) -> None:
+    """Apply the wireframe overlay toggle to the active mesh object."""
+    obj = context.active_object
+    if obj is None or obj.type != "MESH":
+        return
+    utils.set_wireframe_overlay(obj, enabled=self.show_wire)
+
+
+def _update_show_quality(self: PropertyGroup, context: Context) -> None:
+    """Apply / remove the quality-coloured material on the active mesh.
+
+    Failures (non-triangle mesh, mmgpy error) are written to stderr so the
+    user can see them in the system console without crashing the UI.
+    """
+    obj = context.active_object
+    if obj is None or obj.type != "MESH":
+        return
+    if self.show_quality:
+        try:
+            utils.apply_quality_visualization(obj)
+        except (RuntimeError, ValueError, TypeError) as exc:
+            sys.stderr.write(f"[MMGpy] Cannot show quality: {exc}\n")
+    else:
+        utils.remove_quality_visualization(obj)
 
 
 class MMGPYSizingConstraint(PropertyGroup):
@@ -206,4 +240,26 @@ class MMGPYSettings(PropertyGroup):
         name="Show Advanced",
         description="Show advanced options",
         default=False,
+    )
+
+    # Visualisation toggles (apply to the active mesh object).
+    show_wire: BoolProperty(
+        name="Wireframe on Surface",
+        description=(
+            "Overlay the mesh wireframe on top of the shaded surface for "
+            "the active object (toggles obj.show_wire / show_all_edges)"
+        ),
+        default=False,
+        update=_update_show_wire,
+    )
+
+    show_quality: BoolProperty(
+        name="Color by Quality",
+        description=(
+            "Compute MMG's in-radius-ratio quality per triangle and apply "
+            "a red->yellow->green material (red = poor, green = excellent). "
+            "Requires an all-triangle mesh"
+        ),
+        default=False,
+        update=_update_show_quality,
     )
