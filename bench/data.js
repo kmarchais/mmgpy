@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778844866105,
+  "lastUpdate": 1778883914159,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -7794,6 +7794,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0001566251537758629",
             "extra": "mean: 70.03393793332862 msec\nrounds: 15"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevinmarchais@gmail.com",
+            "name": "Kevin Marchais",
+            "username": "kmarchais"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c5a1a6e349c590d5ae959c983b3b7ad9ef821d95",
+          "message": "feat(blender): add Blender extension for mesh remeshing (#270)\n\n* feat(blender): add Blender extension for mesh remeshing\n\nCreate a Blender 4.2+ extension that integrates mmgpy functionality\ndirectly into Blender's UI, allowing users to remesh models without\nleaving Blender.\n\nFeatures:\n- Remesh selected mesh objects with customizable parameters\n- Presets (Fine, Medium, Coarse) for quick remeshing\n- Size control (hmin, hmax, hsiz, hausd)\n- Local refinement via Empty objects (spheres and boxes)\n- Batch processing support\n- Full undo/redo support\n\nThe extension uses the new Blender Extensions system with:\n- blender_manifest.toml for metadata and wheel bundling\n- blender-extension-builder for dependency management\n- Platform-specific builds via --split-platforms flag\n\nCloses #125\n\n* feat(blender): add version sync and CI workflow for releases\n\n- Add sync_version.py to sync extension version from pyproject.toml\n- Update build.sh to run version sync before building\n- Add GitHub Actions workflow to build extension for all platforms\n  (linux-x64, windows-x64, macos-arm64) on release\n- Workflow uploads packages as release assets automatically\n\nThe extension version is now derived from mmgpy's version:\n- 0.6.0.dev0 -> 0.6.0 (dev suffix stripped for Blender manifest)\n\n* fix(blender): support prerelease versions in manifest\n\nConvert Python PEP 440 versions to SemVer format for Blender:\n- 0.6.0.dev0 -> 0.6.0-dev.0\n- 0.6.0a1 -> 0.6.0-alpha.1\n- 0.6.0b1 -> 0.6.0-beta.1\n- 0.6.0rc1 -> 0.6.0-rc.1\n\nKeep Python format for dependency specifier (PEP 508 compatible).\n\n* fix(blender): Blender 5.1 compat, in-place remesh, auto-fit sizing, triangle warning\n\n* chore(blender): GPL-3.0 license, copyright, and tags for extensions platform\n\n* fix(blender): port to the .mmg PyVista accessor (mmgpy 0.13+)\n\nThe original branch was written against ``mmgpy.Mesh``, which v0.13\nremoved (#237) in favor of the ``.mmg`` accessor registered on\nPyVista datasets. Rework the remesh operator to drive MMG through\nthe accessor:\n\n- Build a ``pv.PolyData`` from Blender's triangulated mesh and call\n  ``polydata.mmg.remesh(...)``; extract the resulting points and\n  triangle faces back into Blender.\n- Replace ``Mesh.set_size_sphere`` / ``set_size_box`` mutations with\n  ``local_sizing=[{\"shape\": ...}]`` specs forwarded through the\n  accessor's kwarg.\n- Count vertex / element deltas locally since ``polydata.mmg.remesh``\n  returns a dataset rather than a ``RemeshResult``.\n\nBump the manifest's ``mmgpy`` dependency to ``>=0.13.0`` (the first\nrelease with the ``.mmg`` accessor and without the legacy ``Mesh``\npublic API).\n\nSuppress a handful of lint rules under ``blender_mmgpy/**/*.py`` that\nwere enabled on main since the branch was first written and conflict\nwith Blender's add-on patterns (``__init__.py`` as entry point,\n``set[str]`` return-type docstrings, ``Operator`` methods that need\n``self``).\n\n* refactor(blender): fix lint errors instead of accumulating per-file ignores\n\nStrip the bulk of the ``blender_mmgpy/**/*.py`` ruff ignore block and\nfix the code instead. Only seven rules remain ignored, all of them\ngenuinely Blender-API-mandated patterns that cannot be addressed in\ncode (N801/N802 naming, RUF012 mutable bl_options, TC002 runtime bpy\nimports, ARG002 fixed-signature callbacks, RUF067 add-on entry point).\n\nCode changes that replaced the rest of the ignores:\n\n- ``operators.py``: hoist ``import mmgpy`` and ``from . import utils``\n  to module level (PLC0415); convert ``except Exception`` to a\n  ``_REMESH_EXC_TYPES`` tuple of expected mmgpy/PyVista errors so\n  truly unexpected failures still surface a traceback (BLE001); make\n  three settings-translation helpers ``@staticmethod`` and type their\n  ``settings`` argument as ``MMGPYSettings`` (PLR6301, ANN001);\n  restructure ``_build_remesh_options`` around a couple of\n  ``(flag, name)`` tables to drop complexity below the C901 / PLR0912\n  threshold; extract a ``_ROUND_TO_2SF_ABOVE`` constant (PLR2004);\n  rewrap the long warning message (E501); add ``Returns`` sections to\n  every public/protected docstring (DOC201).\n\n- ``utils.py``: hoist ``import pyvista as pv`` to module level\n  (PLC0415); make ``apply_modifiers`` keyword-only (FBT001/FBT002);\n  drop the unnecessary ``obj`` temporary before ``return`` (RET504);\n  convert the empties-collection loop into a list comprehension\n  (PERF401).\n\n- ``preferences.py``: replace the in-function ``try: import mmgpy``\n  with a module-level try/except that exposes a single\n  ``_MMGPY_IMPORT_ERROR`` sentinel (PLC0415); the ``draw()`` body\n  branches on that.\n\n- ``sync_version.py``: route every user-visible print through\n  ``sys.stdout.write`` / ``sys.stderr.write`` helpers (T201); narrow\n  the top-level ``except Exception`` to ``(OSError, ValueError,\n  re.error)`` (BLE001); split it so the ``get_mmgpy_version`` call\n  sits outside the success-path ``try`` (TRY300); add ``Returns``\n  sections and unify the docstring style on NumPy (DOC201/D416/D420);\n  reword ``main()``'s summary in the imperative mood (D401);\n  document the ``ValueError`` ``get_mmgpy_version`` can raise\n  (DOC501).\n\n* refactor(blender): drop five more ignores after testing each against Blender\n\nAfter auditing every rule left in ``blender_mmgpy/**/*.py``, only two\nare genuinely Blender-API-mandated. The other five were avoidable:\n\n- ``RUF012``: declare ``bl_options`` with a ``ClassVar[set[str]]``\n  annotation. Runtime value is still a ``set`` (Blender's own\n  requirement), so ``register_class()`` is unaffected.\n- ``ARG002``: rename the unused ``event`` / ``context`` parameters\n  on ``invoke()`` / ``draw()`` to ``_event`` / ``_context``. Blender\n  calls these callbacks positionally, so the rename does not break\n  the operator / preferences contract.\n- ``RUF067``: move ``bl_info`` plus the registration helpers out of\n  ``__init__.py`` into a new ``_register.py`` and re-export them.\n  Blender resolves ``register`` / ``unregister`` / ``bl_info`` as\n  attributes of the package, so the re-export is transparent.\n- ``N802``: never actually fired — all our method names (``poll``,\n  ``execute``, ``invoke``, ``draw``) are already lowercase.\n\nWhat remains, with the reason each cannot be addressed in code:\n\n- ``N801``: ``bpy.utils.register_class()`` rejects operators / panels\n  unless the class name matches ``UPPER_TYPE_lowercase``\n  (``MMGPY_OT_remesh``, ``MMGPY_PT_main_panel``); the registration\n  helper validates the name against ``cls.bl_rna.identifier`` and\n  raises on a mismatch.\n- ``TC002``: ``bpy.props.<Property>`` callables only appear in class\n  annotations (``radius: FloatProperty(default=0.1)``) but Blender's\n  add-on metaclass evaluates those annotations at registration to\n  materialise RNA property descriptors — so the names must stay in\n  module globals. ``flake8-type-checking.exempt-modules`` would be a\n  surgical fix but it is a global setting; tweaking it disrupts\n  preview TC rules already passing in ``src/mmgpy/``, so the\n  per-file ignore is the smaller blast radius.\n\n* feat(blender): add wireframe overlay and per-triangle quality colouring\n\nTwo new toggles in the N-panel's \"Visualization\" sub-panel that operate\non the active mesh object:\n\n- **Wireframe on Surface**: flips ``obj.show_wire`` and\n  ``obj.show_all_edges`` so the mesh sits on top of the shaded surface\n  in every viewport shading mode. Purely a display-time change.\n\n- **Color by Quality**: computes MMG's in-radius-ratio quality per\n  triangle via ``polydata.mmg.element_qualities()``, stores it on the\n  mesh as a FACE-domain float attribute (``mmgpy_quality``) and\n  attaches a shared ``MMGpy_Quality`` material whose shader graph is\n  ``Attribute -> ColorRamp(red->yellow->green) -> Principled BSDF``.\n  Keeping the ColorRamp in the shader (instead of baking RGB into a\n  COLOR attribute) means users can re-grade the palette in the shader\n  editor without recomputing.\n\nThe remesh operator now refreshes the quality colouring at the end of\nevery successful run when the toggle is on, so the colours stay live\nacross iterations. Failures (non-triangle mesh, mmgpy errors) are\nreported as a WARNING without aborting the remesh — the underlying\ngeometry is already correct.\n\nBoth toggles are saved on the scene ``mmgpy`` settings group so they\nround-trip through ``.blend`` files.\n\n* feat(blender): refresh wireframe, show quality stats, rework release CI\n\nThree independent improvements bundled together:\n\n**Wireframe refresh after remesh.** ``replace_mesh_data`` calls\n``mesh.clear_geometry()`` + ``mesh.from_pydata()`` which invalidates the\nviewport's overlay cache, so a previously-on ``show_wire`` flag stops\ndrawing edges until something writes the property again. The remesh\noperator now re-applies the wireframe overlay at the end of each\nsuccessful run when the setting is on.\n\n**Quality stats in the panel.** ``apply_quality_visualization`` now\nstashes ``min`` / ``max`` / ``mean`` / ``n`` of the just-computed\nquality array as ID properties on the mesh (``mmgpy_quality_min``\netc.). The Visualization sub-panel reads them back via\n``utils.get_quality_stats`` so users see exactly what the colour\nramp is mapping. The legend is rewritten as a column of\n``SEQUENCE_COLOR_*`` swatches (red/yellow/green) with the matching\nquality value next to each, plus a stats block for the current mesh:\n\n    Quality (MMG in-radius ratio)\n    ▮ 0.0  poor\n    ▮ 0.5  fair\n    ▮ 1.0  excellent\n\n    This mesh (12,345 triangles):\n        min:  0.234\n        mean: 0.654\n        max:  0.987\n\n**Release CI consumes wheels directly.** The ``Build Blender\nExtension`` workflow now triggers via ``workflow_run`` after the\n``Build Wheels`` workflow succeeds on a release, and pulls the freshly\nbuilt mmgpy wheel out of that run's artifacts via\n``actions/download-artifact`` with ``run-id``. This drops the dependency\non ``pip download mmgpy`` against PyPI (which racy: the publish job\nhasn't finished yet by the time the extension built before).\n\nThe matrix expands to six packages — three platforms (linux-x64,\nwindows-x64, macos-arm64) crossed with two Blender Python ABIs\n(cp311 for Blender 4.2–4.5, cp313 for Blender 5.x). Each one runs:\n\n1. Download the wheels artifact for its platform.\n2. Drop every mmgpy wheel except the matching ABI.\n3. ``pip download mmgpy --find-links wheels`` to fill in transitive\n   deps for the target Python / platform.\n4. Inject ``wheels = [...]`` into the manifest (mirrors what bbext\n   would do; needed because the source manifest carries bbext-only\n   keys).\n5. Zip the eight Python source files + manifest + wheels via Python's\n   ``zipfile`` (no Blender binary required in CI).\n\nOutput zips are named\n``mmgpy-<version>-<platform>-py<X.YY>.zip`` and attached to the\nrelease page automatically; one of the six matches every Blender 4.2+\ninstall. ``bbext`` is no longer in the loop.\n\nAlso: gitignore ``blender_mmgpy/mmgpy-*.zip`` so local builds don't\nsneak into commits.\n\n* feat(blender): show the actual ColorRamp + axis hints in the panel\n\nThe previous \"Quality (MMG in-radius ratio)\" header + emoji-swatch\nlegend was getting clipped on narrow N-panels and didn't convey the\nmapping at a glance.\n\nReplace it with ``layout.template_color_ramp`` pointing at the\n``ColorRamp`` node inside the ``MMGpy_Quality`` material. The widget\ndraws the actual gradient that's lit on the mesh, shrinks to fit the\navailable panel width, and stays interactive — dragging a stop\nre-grades the colormap in place. Short axis hints (``0 — poor`` left,\n``best — 1`` right) sit underneath since the widget itself carries no\nlabels.\n\nThe stats block below keeps the same content (triangle count + min /\nmean / max) but loses the surrounding ``box`` (whose internal padding\nate horizontal space that the gradient now needs).\n\n* feat(blender): add Absolute vs Auto colormap range for quality coloring\n\nNew ``quality_colormap_mode`` enum on the scene settings:\n\n- ``Absolute [0, 1]`` — ramp stops at 0 / 0.5 / 1. Quality reads as an\n  absolute value: a perfect equilateral triangle is solid green, half\n  the ramp lit is genuinely poor.\n- ``Auto [min, max]`` — stops stretched across the current mesh's\n  actual ``min``..``max``. Useful when every triangle in the mesh\n  clusters near one quality value: the relative variation pops out\n  because the worst-in-this-mesh paints solid red and the\n  best-in-this-mesh paints solid green.\n\nImplementation:\n\n- ``utils.refresh_quality_ramp(obj, mode=...)`` rebuilds the\n  ``MMGpy_Quality`` material's ColorRamp with three red/yellow/green\n  stops at the right positions.\n- ``apply_quality_visualization`` calls it after caching the new\n  stats, reading the active mode through ``bpy.context.scene.mmgpy``\n  so the gradient redraws automatically after every remesh.\n- ``_update_quality_colormap_mode`` on the property fires the same\n  refresh when the user picks a different range.\n\nThe panel adds a one-row dropdown above the ramp widget, and the\naxis-hint labels switch from ``0 — poor`` / ``best — 1`` to the\nmesh-specific ``<min> — poor`` / ``best — <max>`` numbers in AUTO\nmode so users don't have to read them off the stats block.\n\nTrade-off worth flagging: ``_set_ramp_stops`` rebuilds the three\nstops from scratch on every refresh, so user-side colour edits in\nthe ramp widget get reverted whenever the mode or stats change.\nPredictable beats clever here — anyone who wants a permanent custom\npalette can fork the material.\n\n* docs(blender): label the quality ramp as MMG's in-radius ratio\n\nReplace the bare ``In-radius ratio`` heading above the ColorRamp\nwidget with a two-line ``Mesh quality`` / ``(MMG in-radius ratio)``\ncolumn so the metric is named even on narrow N-panels where the\ncombined \"Mesh quality: In-radius ratio\" string was getting clipped.\n\nMMG itself only exposes the in-radius ratio (``area/sum(edge^2)`` for\ntriangles, ``volume/(sum(edge^2))^(3/2)`` for tetrahedra), so it's\nnot gaining a peer here — calling it out gives users a search term\nwhen they want the formula.\n\n* chore: clear pre-existing prek failures (ty + prettier)\n\nThree small fixes so ``prek run --all-files`` is clean again — no\nbehavioural changes:\n\n- ``src/mmgpy/_io.py``: replace the mypy-only ``# type: ignore`` on\n  ``pv.read(...)`` with ``typing.cast``. ty doesn't honor mypy's\n  ignore comment and was flagging the wider ``DataSet | MultiBlock``\n  union as a mismatch.\n\n- ``src/mmgpy/_mesh.py`` (two ``Mesh`` constructors): the public API\n  accepts ``NDArray[np.integer]`` for refs / edges / edge_refs, but\n  ``_create_impl`` pins each to a concrete dtype (``int64`` for refs\n  and edge_refs, ``int32`` for edges). Add the explicit dtype to the\n  ``np.asarray`` calls so the narrowing happens at the call site\n  instead of leaking past the type checker.\n\n- ``.github/workflows/build-blender-extension.yml``: apply prettier's\n  preferred multi-line matrix-entry layout. The compact\n  ``{ key: val, key: val }`` form on the original commit tripped CI's\n  prettier hook.\n\n* feat(blender): add Range label + Custom [min, max] colormap mode\n\nTwo follow-ups to the colormap ramp:\n\n- The ``quality_colormap_mode`` dropdown now sits to the right of a\n  ``Range`` label (via ``layout.prop(..., text=\"Range\")``) instead of\n  appearing as a bare unlabeled dropdown.\n\n- New ``CUSTOM`` enum value exposes two sliders (``Custom Min`` /\n  ``Custom Max``, both clamped to ``[0, 1]``) so users can pin the\n  ramp endpoints at fixed values — useful for visually comparing two\n  meshes that would otherwise auto-scale to different ranges.\n\n  ``refresh_quality_ramp`` accepts ``custom_min`` / ``custom_max``\n  kwargs and, for the new mode, stretches the three stops to\n  ``(custom_min, midpoint, custom_max)``. Reverse-ordered values are\n  normalised; equal values fall back to the absolute ``[0, 1]`` ramp\n  to avoid a zero-width gradient.\n\nThe axis hints under the ramp pick up the active mode: AUTO shows\nthe mesh's measured min/max, CUSTOM shows the user-set bounds,\nABSOLUTE keeps the static ``0 — poor`` / ``best — 1``.\n\nRefactored ``MMGPY_PT_visualization.draw`` to push the quality\nsection into a static helper plus two module-level helpers\n(``_find_quality_ramp_node``, ``_quality_axis_labels``,\n``_draw_quality_ramp_controls``) so the draw method stays under the\nPLR0914/PLR0915 thresholds.\n\n* feat(blender): use RdYlBu palette + auto-switch to Material Preview\n\nTwo quality-of-life fixes on the quality colouring:\n\n- Swap the red/yellow/green ramp for ColorBrewer's 5-class **RdYlBu**\n  endpoints (``#d7191c`` / ``#ffffbf`` / ``#2c7bb6``). Follows the\n  scientific-colormap convention of warm = bad, cool = good.\n\n- When the user toggles **Color by Quality** on, walk the current\n  screen's 3D viewports and flip any that are still on ``SOLID`` /\n  ``WIREFRAME`` shading over to ``MATERIAL`` (Material Preview).\n  Without this, the colour material is invisible. Viewports already\n  on a material-aware mode (``MATERIAL`` / ``RENDERED``) are left\n  alone, and the toggle never auto-reverts on disable.\n\n* chore(blender): auto-sync extension version via prek hook\n\nAdd a local prek hook that runs ``blender_mmgpy/sync_version.py``\nwhenever any of ``pyproject.toml`` /\n``blender_mmgpy/blender_manifest.toml`` /\n``blender_mmgpy/_register.py`` is modified. ``sync_version.py``\nrewrites the manifest's ``version`` field and the ``bl_info`` tuple\nin ``_register.py`` from the project version, so the three files\ncan no longer drift past a commit.\n\nFix a stale reference at the same time: ``sync_version.py`` used to\ntarget ``__init__.py``'s ``bl_info`` tuple, but the previous\nRUF067 refactor moved ``bl_info`` to ``_register.py``. The script\nnow updates the right file (and renames ``update_init`` ->\n``update_register`` so the function name reflects reality). One\nside-effect of fixing it: the cached ``(0, 9, 0)`` bl_info version\nthat had been hiding for several commits now correctly reads\n``(0, 14, 0)``.\n\n* chore(blender): apply PR review feedback\n\nAddress the items flagged in the PR review:\n\n- **README rewrite**. Fix the license claim (was wrongly \"MIT\" — the\n  manifest is GPL-3.0-or-later). Update the package size from\n  \"~50-80MB\" to the actual ~150MB. Drop the stale ``bbext`` build\n  instructions and document the dev-build pipeline that the CI\n  workflow actually uses. Document the per-platform / per-Python-ABI\n  zip naming. Add the new **Visualization** features (wireframe\n  overlay, quality coloring with Range / Custom modes, ColorBrewer\n  RdYlBu, auto-switch to Material Preview). Add a **TODOs / Known\n  limitations** section flagging the long-running-remesh UI lockup\n  (and the planned ``wm.progress_*`` wiring), the palette reset on\n  refresh, the missing unit tests, and the single-quality-metric\n  limitation.\n\n- **Strip dead bbext keys from the manifest**. ``wheel-path`` and the\n  ``dependencies = [...]`` block are bbext-only conventions; Blender\n  itself reads ``wheels = [...]`` (which the CI generates per build).\n  Leave only a comment explaining how the wheels block is filled.\n\n- **Quality coloring uses ``direct_triangle_arrays``** instead of\n  ``blender_to_arrays``. The latter runs ``bmesh.ops.triangulate``,\n  which is documented to reorder faces — even on an all-triangle\n  input the round-trip order isn't guaranteed, and the i-th quality\n  value must line up with ``mesh.polygons[i]``. The new helper goes\n  through ``foreach_get`` (~100x faster than the per-vertex Python\n  loop too) and preserves order.\n\n- **Drop ``OSError``** from ``_REMESH_EXC_TYPES``. The surface remesh\n  path is in-memory only; no file I/O happens. Keeping ``OSError`` in\n  the tuple was conservative but misleading.\n\n- **CI gains a zip-structure validation step**. Pure Python check\n  (no Blender required) that confirms ``blender_manifest.toml`` is at\n  the zip root, parses as TOML with the required schema keys, has a\n  non-empty ``wheels = [...]`` block, and every declared wheel is\n  actually inside the zip.\n\n- **sync_version.py** no longer rewrites a manifest dependency line\n  that doesn't exist anymore — the ``dependencies = [...]`` block was\n  removed above. The script keeps updating the manifest ``version``\n  and ``_register.py``'s ``bl_info`` tuple.",
+          "timestamp": "2026-05-15T22:18:22Z",
+          "tree_id": "10efa85bf7e59d838930c7a00095e531c7aafe90",
+          "url": "https://github.com/kmarchais/mmgpy/commit/c5a1a6e349c590d5ae959c983b3b7ad9ef821d95"
+        },
+        "date": 1778883913461,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 35.584636183679415,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002653498714888662",
+            "extra": "mean: 28.102015567567932 msec\nrounds: 37"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 18.417097465517898,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00033139064631365877",
+            "extra": "mean: 54.29737242104992 msec\nrounds: 19"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 31.45409564365178,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0001965966281168337",
+            "extra": "mean: 31.792362156240372 msec\nrounds: 32"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3384.7691466623282,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009267003834617007",
+            "extra": "mean: 295.44112365420415 usec\nrounds: 3437"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 74.53089901569462,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00009717207236434908",
+            "extra": "mean: 13.41725396052745 msec\nrounds: 76"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 7140.910949871567,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000574118840786525",
+            "extra": "mean: 140.03815577870853 usec\nrounds: 19027"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.13005248259715893,
+            "unit": "iter/sec",
+            "range": "stddev: 0.03499623312415353",
+            "extra": "mean: 7.6892034663999995 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.10216611938563701,
+            "unit": "iter/sec",
+            "range": "stddev: 0.2889055468067699",
+            "extra": "mean: 9.78798065359997 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.3467978181569034,
+            "unit": "iter/sec",
+            "range": "stddev: 0.008338808920420234",
+            "extra": "mean: 2.8835244849999753 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.317465468087509,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003153344101370148",
+            "extra": "mean: 188.0595193333079 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.335618215792865,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00016101412888937315",
+            "extra": "mean: 187.41970650000894 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.32071148951356,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006270145215602872",
+            "extra": "mean: 187.9447893333198 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.163583917708703,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0019287569189537438",
+            "extra": "mean: 193.66393883334845 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 2.115189280745988,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0015985275260417538",
+            "extra": "mean: 472.7709283999957 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 2.091748576434712,
+            "unit": "iter/sec",
+            "range": "stddev: 0.004885456143758669",
+            "extra": "mean: 478.0689281999912 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.8799918269059805,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0018794625712876222",
+            "extra": "mean: 347.22320759997274 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 171.21977574406077,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000946341559735708",
+            "extra": "mean: 5.840446850571744 msec\nrounds: 174"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 14.210136295414548,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00035817582065073966",
+            "extra": "mean: 70.37230179999672 msec\nrounds: 15"
           }
         ]
       }
