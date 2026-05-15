@@ -10,36 +10,36 @@
       
       
       
-        <link rel="canonical" href="https://kmarchais.github.io/latest/tutorials/hessian-adaptation/">
+        <link rel="canonical" href="https://kmarchais.github.io/latest/blender-extension/">
       
       
-        <link rel="prev" href="../adaptive-sizing/">
+        <link rel="prev" href="../reference/benchmarks/">
       
       
-        <link rel="next" href="../elasticity-propagation/">
+        <link rel="next" href="../changelog/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="zensical-0.0.31">
     
     
       
-        <title>Hessian-Based Solution-Adaptive Remeshing - mmgpy</title>
+        <title>Blender extension - mmgpy</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.53a7feaf.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.53a7feaf.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -58,7 +58,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -83,7 +83,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#hessian-based-solution-adaptive-remeshing" class="md-skip">
+        <a href="#blender-extension" class="md-skip">
           Skip to content
         </a>
       
@@ -101,7 +101,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="mmgpy" class="md-header__button md-logo" aria-label="mmgpy" data-md-component="logo">
+    <a href="./.." title="mmgpy" class="md-header__button md-logo" aria-label="mmgpy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Hessian-Based Solution-Adaptive Remeshing
+              Blender extension
             
           </span>
         </div>
@@ -205,7 +205,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="./.." class="md-tabs__link">
         
   
   Home
@@ -223,7 +223,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../getting-started/installation/" class="md-tabs__link">
+        <a href="../getting-started/installation/" class="md-tabs__link">
           
   
   Getting Started
@@ -238,13 +238,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../basic-remeshing/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../tutorials/basic-remeshing/" class="md-tabs__link">
           
   
   Tutorials
@@ -263,7 +261,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/" class="md-tabs__link">
+        <a href="../examples/" class="md-tabs__link">
           
   
   Examples
@@ -282,7 +280,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../api/" class="md-tabs__link">
+        <a href="../api/" class="md-tabs__link">
           
   
   API Reference
@@ -301,7 +299,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/cli/" class="md-tabs__link">
+        <a href="../reference/cli/" class="md-tabs__link">
           
   
   Reference
@@ -316,9 +314,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../../blender-extension/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="././" class="md-tabs__link">
         
   
   Blender Extension
@@ -334,7 +334,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../changelog/" class="md-tabs__link">
+      <a href="../changelog/" class="md-tabs__link">
         
   
   Changelog
@@ -366,7 +366,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="mmgpy" class="md-nav__button md-logo" aria-label="mmgpy" data-md-component="logo">
+    <a href="./.." title="mmgpy" class="md-nav__button md-logo" aria-label="mmgpy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
@@ -396,7 +396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="./.." class="md-nav__link">
         
   
   
@@ -477,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/installation/" class="md-nav__link">
+      <a href="../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -505,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/quickstart/" class="md-nav__link">
+      <a href="../getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -533,7 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/concepts/" class="md-nav__link">
+      <a href="../getting-started/concepts/" class="md-nav__link">
         
   
   
@@ -565,31 +565,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -607,7 +604,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -625,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../basic-remeshing/" class="md-nav__link">
+      <a href="../tutorials/basic-remeshing/" class="md-nav__link">
         
   
   
@@ -653,7 +650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../surface-remeshing/" class="md-nav__link">
+      <a href="../tutorials/surface-remeshing/" class="md-nav__link">
         
   
   
@@ -681,7 +678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adaptive-sizing/" class="md-nav__link">
+      <a href="../tutorials/adaptive-sizing/" class="md-nav__link">
         
   
   
@@ -706,37 +703,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Hessian-Based Adaptation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../tutorials/hessian-adaptation/" class="md-nav__link">
         
   
   
@@ -752,82 +722,6 @@
   
 
       </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#2d-demo-circular-front" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2D demo: circular front
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3d-demo-spherical-front" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3D demo: spherical front
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#choosing-target_error-hmin-hmax" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Choosing target_error, hmin, hmax
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#anisotropic-vs-isotropic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Anisotropic vs isotropic
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -840,7 +734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../elasticity-propagation/" class="md-nav__link">
+      <a href="../tutorials/elasticity-propagation/" class="md-nav__link">
         
   
   
@@ -868,7 +762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyvista-integration/" class="md-nav__link">
+      <a href="../tutorials/pyvista-integration/" class="md-nav__link">
         
   
   
@@ -896,7 +790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../levelset-extraction/" class="md-nav__link">
+      <a href="../tutorials/levelset-extraction/" class="md-nav__link">
         
   
   
@@ -985,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/" class="md-nav__link">
+      <a href="../examples/" class="md-nav__link">
         
   
   
@@ -1074,7 +968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -1102,7 +996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mesh-classes.md" class="md-nav__link">
+      <a href="../api/mesh-classes.md" class="md-nav__link">
         
   
   
@@ -1130,7 +1024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/options/" class="md-nav__link">
+      <a href="../api/options/" class="md-nav__link">
         
   
   
@@ -1158,7 +1052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/results-validation/" class="md-nav__link">
+      <a href="../api/results-validation/" class="md-nav__link">
         
   
   
@@ -1186,7 +1080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/sizing/" class="md-nav__link">
+      <a href="../api/sizing/" class="md-nav__link">
         
   
   
@@ -1214,7 +1108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/metrics/" class="md-nav__link">
+      <a href="../api/metrics/" class="md-nav__link">
         
   
   
@@ -1242,7 +1136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/io/" class="md-nav__link">
+      <a href="../api/io/" class="md-nav__link">
         
   
   
@@ -1270,7 +1164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/lagrangian/" class="md-nav__link">
+      <a href="../api/lagrangian/" class="md-nav__link">
         
   
   
@@ -1359,7 +1253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/" class="md-nav__link">
+      <a href="../reference/cli/" class="md-nav__link">
         
   
   
@@ -1387,7 +1281,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/file-formats/" class="md-nav__link">
+      <a href="../reference/file-formats/" class="md-nav__link">
         
   
   
@@ -1415,7 +1309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/mmg-parameters/" class="md-nav__link">
+      <a href="../reference/mmg-parameters/" class="md-nav__link">
         
   
   
@@ -1443,7 +1337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/mmg-api-coverage/" class="md-nav__link">
+      <a href="../reference/mmg-api-coverage/" class="md-nav__link">
         
   
   
@@ -1473,7 +1367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/benchmarks/" class="md-nav__link">
+      <a href="../reference/benchmarks/" class="md-nav__link">
         
   
   
@@ -1507,10 +1401,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../blender-extension/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blender Extension
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1526,6 +1447,210 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-extensionsblenderorg-recommended-once-published" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 1 — extensions.blender.org (recommended once published)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-install-a-zip-from-a-github-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 2 — install a zip from a GitHub release
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-ui-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the UI lives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-remesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic remesh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-refinement-zones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local refinement zones
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quality-visualisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality visualisation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quality visualisation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wireframe-on-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wireframe on Surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#color-by-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Color by Quality
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building from source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#todos-known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TODOs / Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy-is-not-installed-in-the-add-ons-preferences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "mmgpy is not installed" in the Add-ons preferences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-coloring-shows-the-panel-but-the-mesh-stays-solid-grey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality coloring shows the panel but the mesh stays solid grey
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#licensing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Licensing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1537,7 +1662,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -1600,10 +1725,49 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#2d-demo-circular-front" class="md-nav__link">
+  <a href="#install" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2D demo: circular front
+        Install
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-extensionsblenderorg-recommended-once-published" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 1 — extensions.blender.org (recommended once published)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-install-a-zip-from-a-github-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 2 — install a zip from a GitHub release
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-ui-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the UI lives
       
     </span>
   </a>
@@ -1611,10 +1775,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3d-demo-spherical-front" class="md-nav__link">
+  <a href="#basic-remesh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3D demo: spherical front
+        Basic remesh
       
     </span>
   </a>
@@ -1622,10 +1786,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#choosing-target_error-hmin-hmax" class="md-nav__link">
+  <a href="#local-refinement-zones" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Choosing target_error, hmin, hmax
+        Local refinement zones
       
     </span>
   </a>
@@ -1633,10 +1797,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#anisotropic-vs-isotropic" class="md-nav__link">
+  <a href="#quality-visualisation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Anisotropic vs isotropic
+        Quality visualisation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quality visualisation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wireframe-on-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wireframe on Surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#color-by-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Color by Quality
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building from source
       
     </span>
   </a>
@@ -1644,10 +1847,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#todos-known-limitations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See also
+        TODOs / Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmgpy-is-not-installed-in-the-add-ons-preferences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "mmgpy is not installed" in the Add-ons preferences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-coloring-shows-the-panel-but-the-mesh-stays-solid-grey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality coloring shows the panel but the mesh stays solid grey
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#licensing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Licensing
       
     </span>
   </a>
@@ -1672,46 +1925,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../basic-remeshing/" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Tutorials
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -1720,115 +1933,287 @@
   
 
 
-<h1 id="hessian-based-solution-adaptive-remeshing">Hessian-Based Solution-Adaptive Remeshing<a class="headerlink" href="#hessian-based-solution-adaptive-remeshing" title="Permanent link">&para;</a></h1>
-<p>Linear-interpolation error on a finite element is bounded by
-<code>|H| · h²</code>, where <code>H</code> is the Hessian (second derivatives) of the field
-being interpolated and <code>h</code> is the local element size. To keep the error
-<strong>uniform</strong> across the mesh, the size should scale as <code>h ∝ 1 / √|H|</code>.
-The Hessian's eigenstructure also gives a <em>direction</em>: large eigenvalues
-indicate fronts (shock waves, boundary layers, material interfaces),
-where elements should be stretched perpendicular to the front.</p>
-<p>mmgpy provides:</p>
+<h1 id="blender-extension">Blender extension<a class="headerlink" href="#blender-extension" title="Permanent link">&para;</a></h1>
+<p>mmgpy ships a Blender 4.2+ add-on that exposes the remeshing pipeline
+through Blender's UI — no scripting required. Under the hood it builds
+a <a href="https://docs.pyvista.org/api/core/_autosummary/pyvista.PolyData"><code>pyvista.PolyData</code></a> from the active mesh and runs
+<code>polydata.mmg.remesh(...)</code> against <a href="../api/">PyVista's <code>.mmg</code> accessor</a>,
+so every option that's available from Python is reachable from the
+N-panel.</p>
+<div class="admonition info">
+<p class="admonition-title">Requirements</p>
 <ul>
-<li><a href="../../api/metrics/#mmgpy.metrics.compute_hessian"><code>compute_hessian</code></a>
-  — recovers the Hessian by least-squares on a 2-ring patch around each
-  vertex.</li>
-<li><a href="../../api/metrics/#mmgpy.metrics.create_metric_from_hessian"><code>create_metric_from_hessian</code></a>
-  — converts the Hessian into an anisotropic metric tensor that MMG
-  consumes via <code>point_data["metric"]</code>.</li>
+<li>Blender <strong>4.2+</strong> (uses the new Extensions system)</li>
+<li>The released zips bundle mmgpy and every transitive dependency
+  (numpy, pyvista, scipy, vtk, matplotlib, …). No separate <code>pip
+  install</code> is needed inside Blender's Python.</li>
 </ul>
-<p>Together they enable the standard solution-adaptive loop:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>1. Solve PDE on current mesh        →  field u
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>2. compute_hessian(...)             →  Hessian
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>3. create_metric_from_hessian(...)  →  metric
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>4. mesh.mmg.remesh()                →  adapted mesh
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>5. Repeat until error is uniform.
-</span></code></pre></div>
-<h2 id="2d-demo-circular-front">2D demo: circular front<a class="headerlink" href="#2d-demo-circular-front" title="Permanent link">&para;</a></h2>
-<p>Field <code>f(x, y) = tanh(40 · (r − 0.3))</code> with <code>r = ‖(x, y) − (0.5, 0.5)‖</code>.
-The mesh on the left is uniform; the mesh on the right was adapted from
-the same vertex budget but using the Hessian metric. Elements concentrate
-in a thin ring around the front and stay coarse elsewhere.</p>
-<p><img alt="Uniform vs Hessian-adapted 2D mesh" src="../../assets/hessian_adaptation_2d.png" /></p>
-<!-- pytest-codeblocks:skip -->
-
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401  -- registers the .mmg accessor</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">polydata_from_2d_triangles</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_hessian</span><span class="p">,</span> <span class="n">create_metric_from_hessian</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># vertices: (N, 2), triangles: (M, 3)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">field</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># your scalar solution at vertices</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">hessian</span> <span class="o">=</span> <span class="n">compute_hessian</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">triangles</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">metric</span>  <span class="o">=</span> <span class="n">create_metric_from_hessian</span><span class="p">(</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">hessian</span><span class="p">,</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">target_error</span><span class="o">=</span><span class="mf">5e-3</span><span class="p">,</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">hmin</span><span class="o">=</span><span class="mf">3e-3</span><span class="p">,</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">8e-2</span><span class="p">,</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="p">)</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">polydata_from_2d_triangles</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">triangles</span><span class="p">)</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">mesh</span><span class="o">.</span><span class="n">point_data</span><span class="p">[</span><span class="s2">&quot;solution&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">mesh</span><span class="o">.</span><span class="n">point_data</span><span class="p">[</span><span class="s2">&quot;metric&quot;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">metric</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">adapted</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hgrad</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
-</span></code></pre></div>
-<p>Full script:
-<a href="https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/hessian_adaptation.py"><code>examples/mmg2d/hessian_adaptation.py</code></a>.</p>
-<h2 id="3d-demo-spherical-front">3D demo: spherical front<a class="headerlink" href="#3d-demo-spherical-front" title="Permanent link">&para;</a></h2>
-<p>Same idea on a tetrahedral mesh. Field
-<code>f(p) = tanh(40 · (‖p − (0.5, 0.5, 0.5)‖ − 0.3))</code>. The half-cube cut is
-the visualisation only — the metric is computed on the full mesh.</p>
-<p><img alt="Uniform vs Hessian-adapted 3D mesh" src="../../assets/hessian_adaptation_3d.png" /></p>
-<p>The adapted mesh resolves the spherical front with a single shell of
-small tetrahedra; the corners stay coarse. Same vertex budget concentrated
-where the Hessian is large.</p>
-<p>Full script:
-<a href="https://github.com/kmarchais/mmgpy/blob/main/examples/mmg3d/hessian_adaptation.py"><code>examples/mmg3d/hessian_adaptation.py</code></a>.</p>
-<h2 id="choosing-target_error-hmin-hmax">Choosing <code>target_error</code>, <code>hmin</code>, <code>hmax</code><a class="headerlink" href="#choosing-target_error-hmin-hmax" title="Permanent link">&para;</a></h2>
+</div>
+<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
+<h3 id="option-1-extensionsblenderorg-recommended-once-published">Option 1 — extensions.blender.org (recommended once published)<a class="headerlink" href="#option-1-extensionsblenderorg-recommended-once-published" title="Permanent link">&para;</a></h3>
+<p>Search for <strong>MMGpy</strong> in Blender's <strong>Edit → Preferences → Get
+Extensions</strong> browser, click <strong>Install</strong>. Blender picks the right
+platform / Python-ABI zip automatically and handles updates.</p>
+<h3 id="option-2-install-a-zip-from-a-github-release">Option 2 — install a zip from a GitHub release<a class="headerlink" href="#option-2-install-a-zip-from-a-github-release" title="Permanent link">&para;</a></h3>
+<p>Each tagged release on
+<a href="https://github.com/kmarchais/mmgpy/releases">GitHub releases</a>
+publishes one zip per (platform, Python ABI) combination. Pick the row
+that matches your Blender install:</p>
 <table>
 <thead>
 <tr>
-<th>Parameter</th>
-<th>Effect</th>
+<th>Filename suffix</th>
+<th>Blender versions</th>
+<th>Python ABI</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>target_error</code></td>
-<td>Per-element interpolation error budget. Halving it ≈ doubles the vertex count.</td>
+<td><code>*-linux-x64-py3.11.zip</code></td>
+<td>4.2 LTS — 4.5</td>
+<td>3.11</td>
 </tr>
 <tr>
-<td><code>hmin</code></td>
-<td>Floor on element size — prevents the metric from collapsing on a singular Hessian.</td>
+<td><code>*-windows-x64-py3.11.zip</code></td>
+<td>4.2 LTS — 4.5</td>
+<td>3.11</td>
 </tr>
 <tr>
-<td><code>hmax</code></td>
-<td>Ceiling — prevents arbitrarily large elements far from the feature.</td>
+<td><code>*-macos-arm64-py3.11.zip</code></td>
+<td>4.2 LTS — 4.5</td>
+<td>3.11</td>
+</tr>
+<tr>
+<td><code>*-linux-x64-py3.13.zip</code></td>
+<td>5.x</td>
+<td>3.13</td>
+</tr>
+<tr>
+<td><code>*-windows-x64-py3.13.zip</code></td>
+<td>5.x</td>
+<td>3.13</td>
+</tr>
+<tr>
+<td><code>*-macos-arm64-py3.13.zip</code></td>
+<td>5.x</td>
+<td>3.13</td>
 </tr>
 </tbody>
 </table>
-<p>A useful starting point: set <code>target_error</code> to a few percent of the
-field's range, <code>hmax</code> to ~1/10 of the domain extent, and <code>hmin</code> to
-<code>hmax / 30</code>.</p>
-<h2 id="anisotropic-vs-isotropic">Anisotropic vs isotropic<a class="headerlink" href="#anisotropic-vs-isotropic" title="Permanent link">&para;</a></h2>
-<p><code>create_metric_from_hessian</code> produces an <em>anisotropic</em> metric: when the
-Hessian has one dominant eigenvalue (planar fronts, shock waves), MMG
-stretches elements along the front and shrinks them across it. For
-isotropic adaptation the cheaper recipe is to use the Frobenius norm of
-the Hessian as a sizing scalar via
-<a href="../../api/metrics/#mmgpy.metrics.create_isotropic_metric"><code>create_isotropic_metric</code></a>
-— but you lose the directional information that makes anisotropic
-adaptation efficient near fronts.</p>
-<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<p>Then in Blender:</p>
+<ol>
+<li><strong>Edit → Preferences → Get Extensions</strong>.</li>
+<li>Click <strong>▼</strong> at the top-right and choose <strong>Install from Disk…</strong>.</li>
+<li>Select the downloaded zip.</li>
+<li>Confirm the install in <strong>Add-ons → MMGpy</strong>; the status box shows
+   the bundled mmgpy + MMG versions.</li>
+</ol>
+<p>Each zip is ~150 MB — the bulk is VTK (~60 MB), SciPy (~40 MB),
+NumPy (~15 MB), and matplotlib (~10 MB).</p>
+<h2 id="where-the-ui-lives">Where the UI lives<a class="headerlink" href="#where-the-ui-lives" title="Permanent link">&para;</a></h2>
+<p>Open the 3D Viewport sidebar with <strong>N</strong> and switch to the <strong>MMGpy</strong>
+tab. The main panel has four collapsible sub-panels:</p>
 <ul>
-<li><a href="../../api/metrics/">API reference: Metrics</a> for the full function
-  signatures.</li>
-<li><a href="../adaptive-sizing/">Adaptive Sizing</a> — manual sizing fields when the
-  feature you care about is geometric, not solution-driven.</li>
-<li><a href="../elasticity-propagation/">Elasticity Propagation</a> — companion feature:
-  smoothly move a mesh whose boundary changes shape.</li>
+<li><strong>Size Control</strong> — <code>hmin</code> / <code>hmax</code> / <code>hsiz</code> / gradation</li>
+<li><strong>Geometry</strong> — Hausdorff distance, angle detection, advanced flags</li>
+<li><strong>Visualization</strong> — wireframe overlay and quality colormap</li>
+<li><strong>Local Refinement</strong> — sphere / box Empties as refinement zones</li>
 </ul>
+<p><img alt="MMGpy N-panel next to a remeshed Suzanne" src="../assets/blender/overview.png" /></p>
+<h2 id="basic-remesh">Basic remesh<a class="headerlink" href="#basic-remesh" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Select a mesh object.</li>
+<li>(Optional) hit <strong>Auto-fit to Mesh</strong> in the Size Control panel — it
+   sizes <code>hmin</code> / <code>hmax</code> / <code>hsiz</code> / <code>hausd</code> to a power of 10 matching
+   the object's bounding-box diagonal.</li>
+<li>Pick a preset (Fine / Medium / Coarse) or tweak the sliders.</li>
+<li>Click <strong>Remesh</strong> at the top of the panel.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Gradation override</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fine</td>
+<td><code>hgrad=1.2</code></td>
+<td>high quality, smaller elements, tight transitions</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>default</td>
+<td>balanced quality and performance</td>
+</tr>
+<tr>
+<td>Coarse</td>
+<td><code>hgrad=1.5</code></td>
+<td>fast remeshing, larger elements</td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>manual</td>
+<td>full control over every parameter</td>
+</tr>
+</tbody>
+</table>
+<p>The operator declares <code>REGISTER, UNDO</code> so a remesh is one <strong>Ctrl+Z</strong>
+away from the previous mesh state.</p>
+<div class="admonition warning">
+<p class="admonition-title">High-triangle confirmation</p>
+<p>If the estimated output element count (computed from the active
+<code>hsiz</code> / <code>hmax</code> and the mesh's surface area) exceeds 1,000,000, a
+confirmation dialog asks whether to proceed. This is to keep
+Blender's UI from locking up on inadvertently-huge inputs.</p>
+</div>
+<h2 id="local-refinement-zones">Local refinement zones<a class="headerlink" href="#local-refinement-zones" title="Permanent link">&para;</a></h2>
+<p>Use Empties as refinement zones. Each one becomes a <code>local_sizing</code>
+entry on the <code>.mmg.remesh</code> call.</p>
+<ol>
+<li>Expand <strong>Local Refinement</strong>.</li>
+<li>Click <strong>Add Sphere</strong> or <strong>Add Box</strong>. An Empty is created at the
+   active object's location.</li>
+<li>Move / scale the Empty. Its <code>empty_display_size</code> controls the
+   sphere radius or box half-extent.</li>
+<li>Set the Empty's per-zone <strong>Target Size</strong>.</li>
+<li>Repeat as needed, then <strong>Remesh</strong>.</li>
+</ol>
+<p>Behind the scenes each constraint maps to</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span><span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="s2">&quot;sphere&quot;</span><span class="p">,</span>  <span class="s2">&quot;center&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="s2">&quot;radius&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># or</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">{</span><span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="s2">&quot;box&quot;</span><span class="p">,</span>     <span class="s2">&quot;bounds&quot;</span><span class="p">:</span>  <span class="p">[</span><span class="o">...</span><span class="p">],</span>                 <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+</span></code></pre></div>
+<p>in the <code>local_sizing=[...]</code> kwarg.</p>
+<h2 id="quality-visualisation">Quality visualisation<a class="headerlink" href="#quality-visualisation" title="Permanent link">&para;</a></h2>
+<p>Two independent toggles in the <strong>Visualization</strong> sub-panel:</p>
+<h3 id="wireframe-on-surface">Wireframe on Surface<a class="headerlink" href="#wireframe-on-surface" title="Permanent link">&para;</a></h3>
+<p>Flips <code>obj.show_wire</code> and <code>obj.show_all_edges</code> on the active mesh, so
+the wireframe overlays the shaded surface in every viewport shading
+mode. Persists across remeshes (the operator re-pokes the flag after
+swapping the mesh data so the viewport's overlay cache refreshes).</p>
+<h3 id="color-by-quality">Color by Quality<a class="headerlink" href="#color-by-quality" title="Permanent link">&para;</a></h3>
+<p>Computes <a href="https://www.mmgtools.org/">MMG's in-radius-ratio quality</a> per triangle, writes
+the values to a <code>mmgpy_quality</code> <code>FACE</code>-domain attribute, and assigns a
+shared <code>MMGpy_Quality</code> material whose shader graph is
+<code>Attribute → ColorRamp → Principled BSDF</code>. The ColorRamp is rendered
+<strong>live in the panel</strong> via <code>template_color_ramp</code>, so the gradient you
+see on the mesh is the gradient the material is using — and you can
+drag the stops to re-grade in place.</p>
+<p>The palette is ColorBrewer's <strong>RdYlBu</strong>: red = poor, yellow =
+middling, blue = excellent. Toggling the option flips the viewport to
+<strong>Material Preview</strong> if it isn't already on a material-aware shading
+mode.</p>
+<p>Three range modes:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Ramp stops at</th>
+<th>Use case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Absolute [0, 1]</strong></td>
+<td><code>0.0</code> / <code>0.5</code> / <code>1.0</code></td>
+<td>Universal scale (0 = degenerate, 1 = equilateral)</td>
+</tr>
+<tr>
+<td><strong>Auto [min, max]</strong></td>
+<td>actual <code>min</code> / midpoint / <code>max</code></td>
+<td>Emphasises in-mesh variation</td>
+</tr>
+<tr>
+<td><strong>Custom [min, max]</strong></td>
+<td>user-set bounds</td>
+<td>Compare two meshes on a fixed scale</td>
+</tr>
+</tbody>
+</table>
+<p>A stats block underneath shows the active mesh's <code>min</code> / <code>mean</code> /
+<code>max</code> plus the triangle count.</p>
+<div class="admonition info">
+<p class="admonition-title">Quality coloring requires an all-triangle mesh</p>
+<p>Fresh remesh output is always all-triangle, so the feature works
+out-of-the-box after <strong>Remesh</strong>. For meshes with ngons / quads,
+triangulate first (<code>Ctrl + T</code> in Edit Mode).</p>
+</div>
+<p><img alt="Visualization sub-panel showing the ColorRamp and quality stats" src="../assets/blender/quality.png" /></p>
+<h2 id="building-from-source">Building from source<a class="headerlink" href="#building-from-source" title="Permanent link">&para;</a></h2>
+<p>For most users the released zips are the right path. To build locally
+against an unreleased mmgpy version, the canonical pipeline lives in
+<a href="https://github.com/kmarchais/mmgpy/blob/main/.github/workflows/build-blender-extension.yml"><code>.github/workflows/build-blender-extension.yml</code></a>.</p>
+<p>In short:</p>
+<!-- pytest-codeblocks:skip -->
+
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 1. Build the mmgpy wheel into ./blender_mmgpy/wheels</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>build<span class="w"> </span>--wheel<span class="w"> </span>--out-dir<span class="w"> </span>blender_mmgpy/wheels
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 2. Fill in transitive deps for the target ABI + platform</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">cd</span><span class="w"> </span>blender_mmgpy
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>pip<span class="w"> </span>download<span class="w"> </span>mmgpy<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span>--find-links<span class="w"> </span>wheels<span class="w"> </span>--dest<span class="w"> </span>wheels<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span>--only-binary<span class="w"> </span>:all:<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span>--python-version<span class="w"> </span><span class="m">3</span>.13<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span>--platform<span class="w"> </span>win_amd64<span class="w"> </span>--platform<span class="w"> </span>any<span class="w">   </span><span class="c1"># adjust for your platform</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># 3. Inject `wheels = [...]` into the manifest (see CI workflow for</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1">#    the snippet) and let Blender package the zip</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>blender<span class="w"> </span>--command<span class="w"> </span>extension<span class="w"> </span>build<span class="w"> </span>--source-dir<span class="w"> </span>.<span class="w"> </span>--output-dir<span class="w"> </span>.
+</span></code></pre></div>
+<p>The <code>./build.sh</code> script wraps the upstream
+<a href="https://pypi.org/project/blender-extension-builder/"><code>blender-extension-builder</code></a> tool, which is the recommended
+path for <strong>released</strong> versions of mmgpy. It doesn't work for dev
+versions because it tries to <code>pip download mmgpy</code> from PyPI; the
+manual pipeline above is what the CI release workflow uses.</p>
+<h2 id="todos-known-limitations">TODOs / Known limitations<a class="headerlink" href="#todos-known-limitations" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Long-running remeshes lock the UI.</strong> The operator runs
+  synchronously on Blender's main thread, so a 1M-triangle remesh
+  freezes the viewport for tens of seconds. mmgpy exposes
+  <a href="../api/"><code>progress=</code> callbacks</a> that could feed Blender's
+  <code>wm.progress_*</code> family for a real progress bar; not wired up yet.</li>
+<li><strong>Custom palette resets on every refresh.</strong> Whenever the colormap
+  range or stats change, the ColorRamp is rebuilt from the canonical
+  RdYlBu endpoints. Per-stop edits made directly in the ramp widget
+  are lost.</li>
+<li><strong>No unit tests for <code>blender_mmgpy/</code>.</strong> The bpy-dependent code is
+  hard to test without Blender installed; the pure helpers
+  (<code>arrays_to_polydata</code>, <code>polydata_to_arrays</code>, <code>is_all_triangles</code>)
+  could be split out and tested but haven't been yet.</li>
+<li><strong>Quality coloring is in-radius ratio only.</strong> MMG itself exposes
+  one quality metric. PyVista's <code>cell_quality(quality_measure=…)</code>
+  ships ~20 more (<code>scaled_jacobian</code>, <code>aspect_ratio</code>, <code>skew</code>, …) that
+  could be surfaced as another panel dropdown.</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="mmgpy-is-not-installed-in-the-add-ons-preferences">"mmgpy is not installed" in the Add-ons preferences<a class="headerlink" href="#mmgpy-is-not-installed-in-the-add-ons-preferences" title="Permanent link">&para;</a></h3>
+<p>The bundled wheels didn't match Blender's Python ABI. Use the
+<code>py3.11</code> zip for Blender 4.x and the <code>py3.13</code> zip for Blender 5.x.
+If the version still looks wrong, <strong>Disable → Re-enable</strong> the
+add-on (forces a Python module reload).</p>
+<h3 id="quality-coloring-shows-the-panel-but-the-mesh-stays-solid-grey">Quality coloring shows the panel but the mesh stays solid grey<a class="headerlink" href="#quality-coloring-shows-the-panel-but-the-mesh-stays-solid-grey" title="Permanent link">&para;</a></h3>
+<p>Two possibilities:</p>
+<ul>
+<li>Your viewport is on <strong>Solid</strong> or <strong>Wireframe</strong> shading — materials
+  are invisible there. The add-on auto-switches to Material Preview
+  on enable, but only on the screen's currently visible 3D
+  viewports. Toggle the option off / on if a viewport was created
+  after enabling.</li>
+<li>Your mesh isn't all triangles. Check the system console for the
+  "Quality visualisation requires an all-triangle mesh" warning;
+  triangulate via <code>Ctrl + T</code> in Edit Mode and re-enable.</li>
+</ul>
+<h2 id="licensing">Licensing<a class="headerlink" href="#licensing" title="Permanent link">&para;</a></h2>
+<p>The extension is <strong>GPL-3.0-or-later</strong> because it links against
+Blender's <code>bpy</code> API (Blender itself is GPL-2.0-or-later, so anything
+that imports <code>bpy</code> inherits a GPL-compatible licensing requirement).
+The bundled MMG library is <strong>LGPL-3.0-or-later</strong>, and mmgpy itself is
+MIT. See the SPDX headers and the manifest's <code>license</code> field for the
+exact identifiers.</p>
 
 
 
@@ -1919,14 +2304,14 @@ adaptation efficient near fronts.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.instant.prefetch","navigation.tracking","navigation.tabs","navigation.sections","navigation.expand","navigation.path","navigation.top","search.suggest","search.highlight","content.code.copy","content.code.select","content.tabs.link","content.tooltips"],"search":"../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"latest","provider":"mike"}}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant","navigation.instant.prefetch","navigation.tracking","navigation.tabs","navigation.sections","navigation.expand","navigation.path","navigation.top","search.suggest","search.highlight","content.code.copy","content.code.select","content.tabs.link","content.tooltips"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"latest","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.91a19a9e.min.js"></script>
+      <script src="../assets/javascripts/bundle.91a19a9e.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
       
-        <script src="../../assets/js/benchmarks.js"></script>
+        <script src="../assets/js/benchmarks.js"></script>
       
     
   </body>
