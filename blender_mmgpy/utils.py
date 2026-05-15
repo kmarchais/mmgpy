@@ -194,6 +194,15 @@ def polydata_to_arrays(
 QUALITY_ATTR_NAME = "mmgpy_quality"
 QUALITY_MATERIAL_NAME = "MMGpy_Quality"
 
+# Mesh ID-property keys that cache the last computed quality statistics so
+# the panel can show them without recomputing on every redraw.
+QUALITY_STAT_KEYS: tuple[str, str, str, str] = (
+    "mmgpy_quality_min",
+    "mmgpy_quality_max",
+    "mmgpy_quality_mean",
+    "mmgpy_quality_n",
+)
+
 _TRIANGLE_LOOP_COUNT = 3
 
 
@@ -318,6 +327,13 @@ def apply_quality_visualization(obj: bpy.types.Object) -> int:
 
     _write_quality_attribute(mesh, qualities)
 
+    # Cache the min/max/mean on the mesh so the panel can display them
+    # without re-running ``element_qualities()`` on every UI redraw.
+    mesh[QUALITY_STAT_KEYS[0]] = float(qualities.min())
+    mesh[QUALITY_STAT_KEYS[1]] = float(qualities.max())
+    mesh[QUALITY_STAT_KEYS[2]] = float(qualities.mean())
+    mesh[QUALITY_STAT_KEYS[3]] = len(qualities)
+
     mat = _ensure_quality_material()
     slot_names = [slot.name for slot in mesh.materials if slot is not None]
     if QUALITY_MATERIAL_NAME not in slot_names:
@@ -344,6 +360,28 @@ def remove_quality_visualization(obj: bpy.types.Object) -> None:
         slot = mesh.materials[i]
         if slot is not None and slot.name == QUALITY_MATERIAL_NAME:
             mesh.materials.pop(index=i)
+
+
+def get_quality_stats(mesh: bpy.types.Mesh) -> dict[str, float] | None:
+    """Return cached min/max/mean/n quality stats, or ``None`` if absent.
+
+    Returns
+    -------
+    dict or None
+        ``{"min": ..., "max": ..., "mean": ..., "n": ...}`` when
+        :func:`apply_quality_visualization` has run on this mesh,
+        otherwise ``None``.
+
+    """
+    keys = QUALITY_STAT_KEYS
+    if not all(k in mesh for k in keys):
+        return None
+    return {
+        "min": float(mesh[keys[0]]),
+        "max": float(mesh[keys[1]]),
+        "mean": float(mesh[keys[2]]),
+        "n": int(mesh[keys[3]]),
+    }
 
 
 def set_wireframe_overlay(obj: bpy.types.Object, *, enabled: bool) -> None:

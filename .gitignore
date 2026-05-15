@@ -37,3 +37,6 @@ htmlcov/
 !tests/image_cache/**/*.png
 
 wheelhouse/
+
+# Blender extension build artefacts
+blender_mmgpy/mmgpy-*.zip

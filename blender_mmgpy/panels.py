@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, ClassVar
 
 from bpy.types import Panel
 
+from . import utils
+
 if TYPE_CHECKING:
     from bpy.types import Context
 
@@ -180,12 +182,28 @@ class MMGPY_PT_visualization(Panel):
         col.prop(settings, "show_wire", icon="MOD_WIREFRAME")
         col.prop(settings, "show_quality", icon="COLOR")
 
-        if settings.show_quality and active_is_mesh and obj is not None:
-            box = layout.box()
-            box.label(
-                text="Red = poor, Green = excellent (MMG in-radius ratio)",
-                icon="INFO",
-            )
+        if not (settings.show_quality and active_is_mesh and obj is not None):
+            return
+
+        # Legend: header + one row per ramp stop with a coloured swatch icon.
+        box = layout.box()
+        box.label(text="Quality (MMG in-radius ratio)", icon="INFO")
+        legend = box.column(align=True)
+        legend.label(text="0.0  poor", icon="SEQUENCE_COLOR_01")  # red
+        legend.label(text="0.5  fair", icon="SEQUENCE_COLOR_03")  # yellow
+        legend.label(text="1.0  excellent", icon="SEQUENCE_COLOR_04")  # green
+
+        stats = utils.get_quality_stats(obj.data)
+        if stats is None:
+            box.label(text="(stats unavailable — toggle off/on)", icon="QUESTION")
+            return
+
+        # Current-mesh stats sub-section.
+        stats_col = box.column(align=True)
+        stats_col.label(text=f"This mesh ({stats['n']:,} triangles):")
+        stats_col.label(text=f"    min:  {stats['min']:.3f}")
+        stats_col.label(text=f"    mean: {stats['mean']:.3f}")
+        stats_col.label(text=f"    max:  {stats['max']:.3f}")
 
 
 class MMGPY_PT_local_refinement(Panel):

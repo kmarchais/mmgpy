@@ -170,6 +170,13 @@ class MMGPY_OT_remesh(Operator):
 
         utils.replace_mesh_data(obj, new_vertices, new_triangles)
 
+        # Re-poke the wireframe-overlay flags after ``replace_mesh_data``:
+        # ``clear_geometry`` + ``from_pydata`` invalidates the viewport
+        # cache, so a previously-set ``show_wire`` stops drawing the
+        # edges until a property write triggers a refresh.
+        if settings.show_wire:
+            utils.set_wireframe_overlay(obj, enabled=True)
+
         # Refresh the per-face quality colouring on the new geometry. If
         # this fails we still report the remesh as a success.
         if settings.show_quality:
