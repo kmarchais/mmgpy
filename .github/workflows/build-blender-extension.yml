@@ -37,35 +37,65 @@ jobs:
       matrix:
         include:
           # Blender 4.2 LTS .. 4.5 ship Python 3.11.
-          - { blender_min: "4.2", py: "3.11", abi: "cp311",
-              platform: linux-x64,    os: ubuntu-latest,
+          - {
+              blender_min: "4.2",
+              py: "3.11",
+              abi: "cp311",
+              platform: linux-x64,
+              os: ubuntu-latest,
               wheels_artifact: wheels-linux-x86_64,
-              pip_platform: manylinux_2_28_x86_64 }
-          - { blender_min: "4.2", py: "3.11", abi: "cp311",
-              platform: windows-x64,  os: windows-latest,
+              pip_platform: manylinux_2_28_x86_64,
+            }
+          - {
+              blender_min: "4.2",
+              py: "3.11",
+              abi: "cp311",
+              platform: windows-x64,
+              os: windows-latest,
               wheels_artifact: wheels-windows,
-              pip_platform: win_amd64 }
-          - { blender_min: "4.2", py: "3.11", abi: "cp311",
-              platform: macos-arm64,  os: macos-latest,
+              pip_platform: win_amd64,
+            }
+          - {
+              blender_min: "4.2",
+              py: "3.11",
+              abi: "cp311",
+              platform: macos-arm64,
+              os: macos-latest,
               wheels_artifact: wheels-macos,
-              pip_platform: macosx_11_0_arm64 }
+              pip_platform: macosx_11_0_arm64,
+            }
           # Blender 5.0+ ships Python 3.13.
-          - { blender_min: "5.0", py: "3.13", abi: "cp313",
-              platform: linux-x64,    os: ubuntu-latest,
+          - {
+              blender_min: "5.0",
+              py: "3.13",
+              abi: "cp313",
+              platform: linux-x64,
+              os: ubuntu-latest,
               wheels_artifact: wheels-linux-x86_64,
-              pip_platform: manylinux_2_28_x86_64 }
-          - { blender_min: "5.0", py: "3.13", abi: "cp313",
-              platform: windows-x64,  os: windows-latest,
+              pip_platform: manylinux_2_28_x86_64,
+            }
+          - {
+              blender_min: "5.0",
+              py: "3.13",
+              abi: "cp313",
+              platform: windows-x64,
+              os: windows-latest,
               wheels_artifact: wheels-windows,
-              pip_platform: win_amd64 }
-          - { blender_min: "5.0", py: "3.13", abi: "cp313",
-              platform: macos-arm64,  os: macos-latest,
+              pip_platform: win_amd64,
+            }
+          - {
+              blender_min: "5.0",
+              py: "3.13",
+              abi: "cp313",
+              platform: macos-arm64,
+              os: macos-latest,
               wheels_artifact: wheels-macos,
-              pip_platform: macosx_11_0_arm64 }
+              pip_platform: macosx_11_0_arm64,
+            }
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.platform }}, py${{ matrix.py }})
     permissions:
-      actions: read   # download-artifact across workflow runs
+      actions: read # download-artifact across workflow runs
       contents: read
 
     steps:

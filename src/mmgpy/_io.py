@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pyvista as pv
@@ -299,8 +299,11 @@ def _read_mesh_internal(
             kind = _impl_to_kind(impl)
             return Mesh._from_impl(impl, kind)  # noqa: SLF001
 
-        # Use PyVista for other formats
-        pv_mesh: pv.UnstructuredGrid | pv.PolyData = pv.read(path)  # type: ignore[assignment]
+        # Use PyVista for other formats. ``pv.read`` returns a wider union
+        # (DataSet | MultiBlock | ...) but on the file extensions we support
+        # only the two PyVista mesh classes come back; ``cast`` keeps mypy
+        # and ty happy without a per-tool type-ignore.
+        pv_mesh = cast("pv.UnstructuredGrid | pv.PolyData", pv.read(path))
         mesh_class = _mesh_kind_to_class(mesh_kind) if mesh_kind else None
         impl = from_pyvista(pv_mesh, mesh_class)
         kind = _impl_to_kind(impl)
