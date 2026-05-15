@@ -151,29 +151,37 @@ jobs:
             --platform ${{ matrix.pip_platform }} \
             --platform any
 
-      - name: Inject ``wheels = [...]`` into the manifest
+      - name: Inject ``wheels`` and ``platforms`` into the manifest
         working-directory: blender_mmgpy
         shell: bash
         run: |
           python - <<'PY'
-          import re
           from pathlib import Path
+
           manifest = Path("blender_manifest.toml")
-          text = manifest.read_text()
+          text = manifest.read_text().rstrip()
+
           wheels = sorted(
               p.name for p in Path("wheels").iterdir()
               if p.suffix == ".whl"
           )
-          block = "wheels = [\n" + "".join(
+          wheels_block = "wheels = [\n" + "".join(
               f'    "./wheels/{w}",\n' for w in wheels
           ) + "]\n"
-          new_text = re.sub(
-              r"(\n# Permissions[^\n]*\n\[permissions\])",
-              block + r"\n\1",
-              text,
+
+          # Each CI zip targets exactly one Blender platform identifier.
+          # Declaring it here gives Blender a sanity check at install
+          # time and makes the manifest in the zip self-describing.
+          platform = "${{ matrix.platform }}"
+          platforms_block = f'platforms = ["{platform}"]\n'
+
+          manifest.write_text(
+              text + "\n\n" + wheels_block + "\n" + platforms_block,
           )
-          manifest.write_text(new_text)
-          print(f"Injected {len(wheels)} wheels into the manifest")
+          print(
+              f"Injected {len(wheels)} wheels + platforms = ['{platform}']"
+              " into the manifest",
+          )
           PY
 
       - name: Build the extension zip
@@ -251,10 +259,21 @@ jobs:
                   if required not in manifest:
                       sys.exit(f"manifest missing required key {required!r}")
 
+              expected_platform = "${{ matrix.platform }}"
+              if manifest.get("platforms") != [expected_platform]:
+                  sys.exit(
+                      f"platforms mismatch: manifest has "
+                      f"{manifest.get('platforms')!r}, "
+                      f"expected [{expected_platform!r}]",
+                  )
+
               wheels = manifest.get("wheels", [])
               if not wheels:
                   sys.exit("manifest has no `wheels = [...]` block")
-              missing = [w for w in wheels if w.lstrip("./") not in names]
+              # ``removeprefix`` (not ``lstrip``) — ``lstrip("./")`` would
+              # strip *any* leading ``.``/``/`` characters in any order
+              # rather than the literal ``./`` prefix.
+              missing = [w for w in wheels if w.removeprefix("./") not in names]
               if missing:
                   sys.exit(f"wheels declared but not present in zip: {missing}")
 

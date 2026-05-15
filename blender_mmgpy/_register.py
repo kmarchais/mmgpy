@@ -2,8 +2,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Class registration for the MMGpy Blender add-on.
 
-The add-on entry points (``bl_info``, ``register``, ``unregister``) live
-here so that ``__init__.py`` can be a pure re-export shim.
+The add-on entry points (``register`` / ``unregister``) live here so
+that ``__init__.py`` can be a pure re-export shim. ``bl_info`` is
+deliberately absent — Blender 4.2+ reads every piece of add-on
+metadata from ``blender_manifest.toml`` (see the upstream conversion
+guide:
+https://docs.blender.org/manual/en/dev/advanced/extensions/addons.html#converting-a-legacy-add-on-into-an-extension).
 """
 
 from __future__ import annotations
@@ -11,18 +15,6 @@ from __future__ import annotations
 import bpy
 
 from . import operators, panels, preferences, properties
-
-bl_info = {
-    "name": "MMGpy Remesh",
-    "author": "Kevin Marchais",
-    "version": (0, 14, 0),
-    "blender": (4, 2, 0),
-    "location": "View3D > Sidebar > MMGpy",
-    "description": "Powerful mesh remeshing using MMG library",
-    "warning": "",
-    "doc_url": "https://github.com/kmarchais/mmgpy",
-    "category": "Mesh",
-}
 
 # Property groups must be registered before anything that points at them
 # via ``PointerProperty``.

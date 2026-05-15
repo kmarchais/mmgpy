@@ -69,11 +69,11 @@ repos:
         name: sync Blender extension version with pyproject.toml
         entry: python blender_mmgpy/sync_version.py
         language: system
-        # Trigger when any of the three source-of-truth files for the
-        # version are touched. The script rewrites the manifest /
-        # _register.py if they drift; prek then surfaces the modification
-        # so the author re-stages and commits the synced state.
-        files: ^(pyproject\.toml|blender_mmgpy/blender_manifest\.toml|blender_mmgpy/_register\.py)$
+        # Trigger when either source-of-truth file for the version is
+        # touched. The script rewrites the manifest's ``version`` field
+        # if it drifts; prek then surfaces the modification so the
+        # author re-stages and commits the synced state.
+        files: ^(pyproject\.toml|blender_mmgpy/blender_manifest\.toml)$
         pass_filenames: false
 
   - repo: https://github.com/pre-commit/mirrors-clang-format

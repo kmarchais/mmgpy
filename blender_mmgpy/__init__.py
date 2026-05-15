@@ -13,6 +13,6 @@ Features:
 - Full undo/redo support
 """
 
-from ._register import bl_info, register, unregister
+from ._register import register, unregister
 
-__all__ = ["bl_info", "register", "unregister"]
+__all__ = ["register", "unregister"]

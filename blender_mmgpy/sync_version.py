@@ -101,24 +101,6 @@ def get_mmgpy_version() -> tuple[str, str]:
     return semver_version, python_version
 
 
-def version_to_tuple(version: str) -> tuple[int, int, int]:
-    """Convert version string to tuple for bl_info.
-
-    bl_info only supports (major, minor, patch) integers,
-    so prerelease suffixes are stripped.
-
-    Returns
-    -------
-    tuple of three ints
-        ``(major, minor, patch)``.
-
-    """
-    # Strip prerelease suffix (e.g., "0.6.0-dev.0" -> "0.6.0")
-    base_version = version.split("-", maxsplit=1)[0]
-    parts = base_version.split(".")
-    return (int(parts[0]), int(parts[1]), int(parts[2]))
-
-
 def update_manifest(
     semver_version: str,
     *,
@@ -158,39 +140,6 @@ def update_manifest(
     return False
 
 
-def update_register(version: str, *, check_only: bool = False) -> bool:
-    """Update ``_register.py`` bl_info with new version.
-
-    The ``bl_info`` dict was moved out of ``__init__.py`` so the add-on's
-    public package module stays a pure re-export shim (RUF067). The
-    version tuple lives in ``_register.py`` now.
-
-    Returns
-    -------
-    bool
-        ``True`` if the file was (or would be) modified.
-
-    """
-    register_path = Path(__file__).parent / "_register.py"
-    content = register_path.read_text()
-
-    version_tuple = version_to_tuple(version)
-
-    # Replace version tuple in bl_info
-    new_content = re.sub(
-        r'"version":\s*\([^)]+\)',
-        f'"version": {version_tuple}',
-        content,
-    )
-
-    if new_content != content:
-        if not check_only:
-            register_path.write_text(new_content)
-            _stdout(f"Updated _register.py bl_info to version {version_tuple}")
-        return True
-    return False
-
-
 def main() -> int:
     """Run the version sync (or check) and return a process exit code.
 
@@ -213,19 +162,18 @@ def main() -> int:
 
     try:
         manifest_changed = update_manifest(semver_version, check_only=check_only)
-        init_changed = update_register(semver_version, check_only=check_only)
     except (OSError, re.error) as e:
         _stderr(f"Error: {e}")
         return 1
 
     if check_only:
-        if manifest_changed or init_changed:
+        if manifest_changed:
             _stdout("Version mismatch detected. Run without --check to update.")
             return 1
         _stdout("Versions are in sync.")
         return 0
 
-    if not manifest_changed and not init_changed:
+    if not manifest_changed:
         _stdout("Versions already in sync.")
 
     return 0
