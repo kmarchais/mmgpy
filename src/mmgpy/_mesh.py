@@ -747,9 +747,15 @@ class Mesh:
 
         vertices = np.asarray(source)
         cells = np.asarray(cells)
-        cell_refs = np.asarray(refs) if refs is not None else None
-        edges_arr = np.asarray(edges) if edges is not None else None
-        e_refs = np.asarray(edge_refs) if edge_refs is not None else None
+        # ``_create_impl`` pins each marker array to a specific MMG-side
+        # dtype (refs / edge_refs are int64, edges are int32) — convert
+        # here so callers can pass any ``NDArray[np.integer]`` without
+        # tripping the type checker on the abstract -> concrete narrowing.
+        cell_refs = np.asarray(refs, dtype=np.int64) if refs is not None else None
+        edges_arr = np.asarray(edges, dtype=np.int32) if edges is not None else None
+        e_refs = (
+            np.asarray(edge_refs, dtype=np.int64) if edge_refs is not None else None
+        )
 
         self._kind = _detect_mesh_kind(vertices, cells)
         self._impl = _create_impl(
@@ -814,9 +820,12 @@ class Mesh:
         """
         verts = np.asarray(vertices)
         cells_arr = np.asarray(cells)
-        cell_refs = np.asarray(refs) if refs is not None else None
-        edges_arr = np.asarray(edges) if edges is not None else None
-        e_refs = np.asarray(edge_refs) if edge_refs is not None else None
+        # See ``__init__`` for the rationale on the explicit dtype pin.
+        cell_refs = np.asarray(refs, dtype=np.int64) if refs is not None else None
+        edges_arr = np.asarray(edges, dtype=np.int32) if edges is not None else None
+        e_refs = (
+            np.asarray(edge_refs, dtype=np.int64) if edge_refs is not None else None
+        )
 
         kind = _detect_mesh_kind(verts, cells_arr)
         impl = _create_impl(

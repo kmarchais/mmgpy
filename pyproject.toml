@@ -360,13 +360,30 @@ ignore = [
     "SIM102",  # nested ifs clearer in samples.py triangulate check
     "T201",    # print used for debug HTML output
 ]
+"blender_mmgpy/**/*.py" = [
+    # ``bpy.utils.register_class()`` validates that an Operator / Panel
+    # class name matches its ``bl_rna.identifier`` (e.g. ``MMGPY_OT_remesh``,
+    # ``MMGPY_PT_main_panel``); CapWords would fail registration. Property
+    # groups and AddonPreferences use CapWords already, so this only
+    # applies to operator and panel definitions.
+    "N801",
+    # ``bpy.props.<Property>`` callables are referenced *only* in class
+    # annotations (e.g. ``radius: FloatProperty(default=0.1)``). Blender's
+    # add-on metaclass evaluates those annotations at ``register_class()``
+    # time to materialise RNA property descriptors, so the names must be
+    # reachable from the module's runtime globals. ``exempt-modules`` would
+    # be the surgical fix, but it is a global setting and tweaking it
+    # changes lint behaviour in ``src/mmgpy/`` too.
+    "TC002",
+]
 
 [tool.ty.src]
 # Exclude tests, scripts, examples, and certain modules from type checking
 # Progress module uses union types that cause complex type inference issues
 # Interactive module uses PyVista types that have incomplete stubs
 # UI module uses trame which has no type stubs
-exclude = ["tests/**", "scripts/**", "examples/**", "docs/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
+# Blender extension uses bpy property decorators that ty doesn't understand
+exclude = ["tests/**", "scripts/**", "examples/**", "docs/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**", "blender_mmgpy/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time

@@ -1,0 +1,340 @@
+# Build Blender Extension packages for all (platform, blender-python) combos.
+#
+# Triggered by ``Build Wheels`` completing on a release (so mmgpy wheels for
+# every platform/ABI are already sitting in that run's artifacts).
+# Reuses the wheels artifacts in place of ``pip install mmgpy`` so we don't
+# depend on PyPI publish having completed yet — the wheel that *will* be on
+# PyPI is the same one we're bundling.
+
+name: Build Blender Extension
+
+on:
+  workflow_run:
+    workflows: ["Build Wheels"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run ID of a completed 'Build Wheels' workflow to consume artifacts from"
+        required: true
+        type: string
+      upload_to_release:
+        description: "Upload built zips to the latest release"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-extension:
+    # Only run when triggered by a release-driven Build Wheels run, or
+    # explicitly via workflow_dispatch.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'release' &&
+       github.event.workflow_run.conclusion == 'success')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Blender 4.2 LTS .. 4.5 ship Python 3.11.
+          - {
+              blender_min: "4.2",
+              py: "3.11",
+              abi: "cp311",
+              platform: linux-x64,
+              os: ubuntu-latest,
+              wheels_artifact: wheels-linux-x86_64,
+              pip_platform: manylinux_2_28_x86_64,
+            }
+          - {
+              blender_min: "4.2",
+              py: "3.11",
+              abi: "cp311",
+              platform: windows-x64,
+              os: windows-latest,
+              wheels_artifact: wheels-windows,
+              pip_platform: win_amd64,
+            }
+          - {
+              blender_min: "4.2",
+              py: "3.11",
+              abi: "cp311",
+              platform: macos-arm64,
+              os: macos-latest,
+              wheels_artifact: wheels-macos,
+              pip_platform: macosx_11_0_arm64,
+            }
+          # Blender 5.0+ ships Python 3.13.
+          - {
+              blender_min: "5.0",
+              py: "3.13",
+              abi: "cp313",
+              platform: linux-x64,
+              os: ubuntu-latest,
+              wheels_artifact: wheels-linux-x86_64,
+              pip_platform: manylinux_2_28_x86_64,
+            }
+          - {
+              blender_min: "5.0",
+              py: "3.13",
+              abi: "cp313",
+              platform: windows-x64,
+              os: windows-latest,
+              wheels_artifact: wheels-windows,
+              pip_platform: win_amd64,
+            }
+          - {
+              blender_min: "5.0",
+              py: "3.13",
+              abi: "cp313",
+              platform: macos-arm64,
+              os: macos-latest,
+              wheels_artifact: wheels-macos,
+              pip_platform: macosx_11_0_arm64,
+            }
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.platform }}, py${{ matrix.py }})
+    permissions:
+      actions: read # download-artifact across workflow runs
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.py }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+
+      - name: Sync version + dependency pin from pyproject.toml
+        working-directory: blender_mmgpy
+        run: python sync_version.py
+
+      - name: Download wheels artifact from build-wheels run
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.wheels_artifact }}
+          path: blender_mmgpy/wheels/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: >-
+            ${{ github.event_name == 'workflow_run'
+                && github.event.workflow_run.id
+                || inputs.run_id }}
+
+      - name: Keep only the matching mmgpy wheel
+        working-directory: blender_mmgpy/wheels
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in mmgpy-*.whl; do
+            if [[ "$f" == *-${{ matrix.abi }}-${{ matrix.abi }}-* ]]; then
+              echo "Keep:  $f"
+            else
+              echo "Drop:  $f"
+              rm "$f"
+            fi
+          done
+          ls -la
+
+      - name: Resolve transitive deps as wheels
+        working-directory: blender_mmgpy
+        shell: bash
+        run: |
+          set -euo pipefail
+          # ``pip download`` fans out from the local mmgpy wheel, pulling
+          # the matching ABI wheels for numpy / scipy / pyvista / vtk
+          # (and pure-Python wheels for the rest) into the same dir.
+          pip download mmgpy \
+            --find-links wheels --dest wheels \
+            --only-binary :all: \
+            --python-version ${{ matrix.py }} \
+            --platform ${{ matrix.pip_platform }} \
+            --platform any
+
+      - name: Inject ``wheels = [...]`` into the manifest
+        working-directory: blender_mmgpy
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          manifest = Path("blender_manifest.toml")
+          text = manifest.read_text()
+          wheels = sorted(
+              p.name for p in Path("wheels").iterdir()
+              if p.suffix == ".whl"
+          )
+          block = "wheels = [\n" + "".join(
+              f'    "./wheels/{w}",\n' for w in wheels
+          ) + "]\n"
+          new_text = re.sub(
+              r"(\n# Permissions[^\n]*\n\[permissions\])",
+              block + r"\n\1",
+              text,
+          )
+          manifest.write_text(new_text)
+          print(f"Injected {len(wheels)} wheels into the manifest")
+          PY
+
+      - name: Build the extension zip
+        id: zip
+        working-directory: blender_mmgpy
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import zipfile
+          from pathlib import Path
+
+          # The manifest version is the source of truth.
+          manifest_text = Path("blender_manifest.toml").read_text()
+          version = re.search(
+              r'^version\s*=\s*"([^"]+)"', manifest_text, re.MULTILINE,
+          ).group(1)
+
+          platform = "${{ matrix.platform }}"
+          py = "${{ matrix.py }}"
+          out = Path(f"mmgpy-{version}-{platform}-py{py}.zip")
+
+          # Explicit allowlist so we never accidentally ship build artefacts
+          # (``build/``, ``__pycache__``, leftover zips, ``sync_version.py``,
+          # ``build.sh`` — those last two are build-time helpers only).
+          shipped_files = (
+              "blender_manifest.toml",
+              "__init__.py",
+              "_register.py",
+              "operators.py",
+              "panels.py",
+              "preferences.py",
+              "properties.py",
+              "utils.py",
+              "README.md",
+          )
+
+          with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+              for name in shipped_files:
+                  if Path(name).exists():
+                      zf.write(name, name)
+              for wheel in sorted(Path("wheels").iterdir()):
+                  if wheel.suffix == ".whl":
+                      zf.write(wheel, wheel.as_posix())
+
+          size_mb = out.stat().st_size / (1024 * 1024)
+          print(f"Built {out} ({size_mb:.1f} MB)")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"path={out}\n")
+              fh.write(f"name={out.stem}\n")
+          PY
+
+      - name: Validate zip structure
+        working-directory: blender_mmgpy
+        shell: bash
+        run: |
+          python - <<'PY'
+          import sys
+          import tomllib
+          import zipfile
+          from pathlib import Path
+
+          zip_path = Path("${{ steps.zip.outputs.path }}")
+          with zipfile.ZipFile(zip_path) as zf:
+              names = set(zf.namelist())
+
+              if "blender_manifest.toml" not in names:
+                  sys.exit("missing blender_manifest.toml at zip root")
+              with zf.open("blender_manifest.toml") as f:
+                  manifest = tomllib.loads(f.read().decode())
+
+              for required in ("id", "version", "schema_version", "type"):
+                  if required not in manifest:
+                      sys.exit(f"manifest missing required key {required!r}")
+
+              wheels = manifest.get("wheels", [])
+              if not wheels:
+                  sys.exit("manifest has no `wheels = [...]` block")
+              missing = [w for w in wheels if w.lstrip("./") not in names]
+              if missing:
+                  sys.exit(f"wheels declared but not present in zip: {missing}")
+
+              if "__init__.py" not in names:
+                  sys.exit("zip is missing the add-on entry point __init__.py")
+          print(
+              f"OK: {len(names)} entries, "
+              f"{len(wheels)} wheels declared & present",
+          )
+          PY
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-extension-${{ matrix.platform }}-py${{ matrix.py }}
+          path: blender_mmgpy/${{ steps.zip.outputs.path }}
+          retention-days: 30
+
+      - name: Summary row
+        shell: bash
+        run: |
+          size=$(du -h "blender_mmgpy/${{ steps.zip.outputs.path }}" | cut -f1)
+          {
+            echo "## ${{ matrix.platform }} / py${{ matrix.py }} (Blender ${{ matrix.blender_min }}+)"
+            echo ""
+            echo "| Package | Size |"
+            echo "|---------|------|"
+            echo "| ${{ steps.zip.outputs.path }} | $size |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  upload-to-release:
+    needs: build-extension
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_run'
+       && github.event.workflow_run.event == 'release') ||
+      (github.event_name == 'workflow_dispatch'
+       && inputs.upload_to_release)
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all extension artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blender-extension-*
+          merge-multiple: true
+          path: extensions/
+
+      - name: Resolve the release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            TAG="${{ github.event.workflow_run.head_branch }}"
+          else
+            TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' \
+                  --repo "${{ github.repository }}")
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Uploading to release: $TAG"
+
+      - name: Upload zips to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for zip in extensions/*.zip; do
+            gh release upload "${{ steps.tag.outputs.tag }}" "$zip" \
+              --clobber --repo "${{ github.repository }}"
+          done
+
+      - name: Summary
+        run: |
+          {
+            echo "## Blender Extension Release"
+            echo ""
+            echo "Uploaded to \`${{ steps.tag.outputs.tag }}\`:"
+            echo ""
+            for zip in extensions/*.zip; do
+              echo "- $(basename "$zip")"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
