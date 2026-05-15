@@ -361,16 +361,20 @@ ignore = [
     "T201",    # print used for debug HTML output
 ]
 "blender_mmgpy/**/*.py" = [
-    # Blender's add-on API mandates these patterns; they cannot be "fixed"
-    # in code without breaking the extension.
-    "N801",    # class names: MMGPY_OT_operator, MMGPY_PT_panel
-    "N802",    # method names: poll, execute, invoke, draw
-    "RUF012",  # bl_options = {"REGISTER", "UNDO"} is required as a mutable class attr
-    "TC002",   # bpy.types must be importable at runtime for prop registration
-    "ARG002",  # operator callbacks have fixed signatures (unused `event`, etc.)
-    # `__init__.py` is the add-on entry point (bl_info, register, unregister),
-    # not a re-export shim. Same exception as src/mmgpy/ui/__init__.py.
-    "RUF067",
+    # ``bpy.utils.register_class()`` validates that an Operator / Panel
+    # class name matches its ``bl_rna.identifier`` (e.g. ``MMGPY_OT_remesh``,
+    # ``MMGPY_PT_main_panel``); CapWords would fail registration. Property
+    # groups and AddonPreferences use CapWords already, so this only
+    # applies to operator and panel definitions.
+    "N801",
+    # ``bpy.props.<Property>`` callables are referenced *only* in class
+    # annotations (e.g. ``radius: FloatProperty(default=0.1)``). Blender's
+    # add-on metaclass evaluates those annotations at ``register_class()``
+    # time to materialise RNA property descriptors, so the names must be
+    # reachable from the module's runtime globals. ``exempt-modules`` would
+    # be the surgical fix, but it is a global setting and tweaking it
+    # changes lint behaviour in ``src/mmgpy/`` too.
+    "TC002",
 ]
 
 [tool.ty.src]

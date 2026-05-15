@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from bpy.types import Panel
 
@@ -55,7 +55,7 @@ class MMGPY_PT_size_control(Panel):
     bl_region_type = "UI"
     bl_category = "MMGpy"
     bl_parent_id = "MMGPY_PT_main_panel"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options: ClassVar[set[str]] = {"DEFAULT_CLOSED"}
 
     def draw(self, context: Context) -> None:
         """Draw the panel."""
@@ -113,7 +113,7 @@ class MMGPY_PT_geometry(Panel):
     bl_region_type = "UI"
     bl_category = "MMGpy"
     bl_parent_id = "MMGPY_PT_main_panel"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options: ClassVar[set[str]] = {"DEFAULT_CLOSED"}
 
     def draw(self, context: Context) -> None:
         """Draw the panel."""
@@ -165,7 +165,7 @@ class MMGPY_PT_local_refinement(Panel):
     bl_region_type = "UI"
     bl_category = "MMGpy"
     bl_parent_id = "MMGPY_PT_main_panel"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options: ClassVar[set[str]] = {"DEFAULT_CLOSED"}
 
     def draw(self, context: Context) -> None:
         """Draw the panel."""

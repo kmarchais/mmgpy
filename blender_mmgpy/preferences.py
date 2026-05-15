@@ -47,7 +47,7 @@ class MMGPYPreferences(AddonPreferences):
         default=False,
     )
 
-    def draw(self, context: Context) -> None:
+    def draw(self, _context: Context) -> None:
         """Draw the preferences panel."""
         layout = self.layout
 

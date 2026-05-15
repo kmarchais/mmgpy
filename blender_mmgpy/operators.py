@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import bpy
 import mathutils
@@ -42,7 +42,7 @@ class MMGPY_OT_remesh(Operator):
     bl_idname = "mmgpy.remesh"
     bl_label = "MMGpy Remesh"
     bl_description = "Remesh the selected mesh using MMGpy"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     # Threshold for the confirmation dialog
     TRIANGLE_WARNING_THRESHOLD = 1_000_000
@@ -279,7 +279,7 @@ class MMGPY_OT_autofit(Operator):
     bl_idname = "mmgpy.autofit"
     bl_label = "Auto-fit to Mesh"
     bl_description = "Set sizing parameters based on the active mesh dimensions"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: Context) -> bool:
@@ -349,7 +349,7 @@ class MMGPY_OT_add_sizing_sphere(Operator):
     bl_idname = "mmgpy.add_sizing_sphere"
     bl_label = "Add Sphere"
     bl_description = "Add a spherical local refinement zone"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     radius: FloatProperty(
         name="Radius",
@@ -396,7 +396,7 @@ class MMGPY_OT_add_sizing_sphere(Operator):
         self.report({"INFO"}, "Added spherical sizing constraint")
         return {"FINISHED"}
 
-    def invoke(self, context: Context, event: Event) -> set[str]:
+    def invoke(self, context: Context, _event: Event) -> set[str]:
         """Open the radius/target-size properties dialog before executing.
 
         Returns
@@ -414,7 +414,7 @@ class MMGPY_OT_add_sizing_box(Operator):
     bl_idname = "mmgpy.add_sizing_box"
     bl_label = "Add Box"
     bl_description = "Add a box-shaped local refinement zone"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     size: FloatProperty(
         name="Size",
@@ -461,7 +461,7 @@ class MMGPY_OT_add_sizing_box(Operator):
         self.report({"INFO"}, "Added box sizing constraint")
         return {"FINISHED"}
 
-    def invoke(self, context: Context, event: Event) -> set[str]:
+    def invoke(self, context: Context, _event: Event) -> set[str]:
         """Open the size/target-size properties dialog before executing.
 
         Returns
@@ -479,7 +479,7 @@ class MMGPY_OT_remove_sizing_constraint(Operator):
     bl_idname = "mmgpy.remove_sizing_constraint"
     bl_label = "Remove Constraint"
     bl_description = "Remove the selected sizing constraint"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     index: IntProperty(
         name="Index",
@@ -538,7 +538,7 @@ class MMGPY_OT_clear_sizing_constraints(Operator):
     bl_idname = "mmgpy.clear_sizing_constraints"
     bl_label = "Clear All Constraints"
     bl_description = "Remove all sizing constraints"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: Context) -> bool:
