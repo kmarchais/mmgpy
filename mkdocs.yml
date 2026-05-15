@@ -120,6 +120,7 @@ nav:
       - MMG Parameters: reference/mmg-parameters.md
       - API Coverage: reference/mmg-api-coverage.md
       - Benchmarks: reference/benchmarks.md
+  - Blender Extension: blender-extension.md
   - Changelog: changelog.md
 
 extra_javascript:

@@ -6,7 +6,7 @@ schema_version = "1.0.0"
 id = "mmgpy"
 version = "0.14.0-dev.0"
 name = "MMGpy - Mesh Remeshing"
-tagline = "Powerful mesh remeshing using MMG library"
+tagline = "Adaptive surface remeshing via the MMG library"
 maintainer = "Kevin Marchais <kevinmarchais@gmail.com>"
 type = "add-on"
 
@@ -17,8 +17,8 @@ blender_version_min = "4.2.0"
 license = ["SPDX:GPL-3.0-or-later"]
 copyright = ["2026 Kevin Marchais"]
 
-# Website and documentation
-website = "https://github.com/kmarchais/mmgpy"
+# Website and documentation (deep-link into the extension docs page)
+website = "https://kmarchais.github.io/mmgpy/latest/blender-extension"
 
 # Category for the addon
 tags = ["Mesh", "Modeling"]
@@ -28,6 +28,6 @@ tags = ["Mesh", "Modeling"]
 # downloaded for the target Python ABI + platform. We don't carry a
 # hard-coded list here because the right set depends on the target.
 
-# Permissions - we need file access for temp files during remeshing
-[permissions]
-files = "Import/export mesh files for remeshing"
+# No ``[permissions]`` block: the remesh path is fully in-memory
+# (Blender mesh -> NumPy -> PyVista -> MMG -> Blender mesh). MMG runs in
+# the process; no filesystem, network or clipboard access is taken.
