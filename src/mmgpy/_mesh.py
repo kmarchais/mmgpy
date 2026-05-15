@@ -1425,8 +1425,8 @@ class Mesh:
     # Geometry operations
     # =========================================================================
 
+    @staticmethod
     def _compute_tetrahedra_volumes(
-        self,
         vertices: NDArray[np.float64],
         tetrahedra: NDArray[np.int32],
     ) -> NDArray[np.float64]:

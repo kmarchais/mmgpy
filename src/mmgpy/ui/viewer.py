@@ -538,7 +538,8 @@ class ViewerMixin:
 
         return boundary_mesh
 
-    def _compute_edge_lengths_per_cell(self, pv_mesh) -> np.ndarray | None:
+    @staticmethod
+    def _compute_edge_lengths_per_cell(pv_mesh) -> np.ndarray | None:
         """Compute average edge length per cell for visualization.
 
         Returns
@@ -582,7 +583,8 @@ class ViewerMixin:
 
         return None
 
-    def _compute_all_edge_lengths(self, pv_mesh) -> np.ndarray | None:
+    @staticmethod
+    def _compute_all_edge_lengths(pv_mesh) -> np.ndarray | None:
         """Compute all edge lengths in the mesh for statistics.
 
         Returns

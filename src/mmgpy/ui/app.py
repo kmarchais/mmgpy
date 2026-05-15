@@ -781,7 +781,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
 
         return layout
 
-    def _build_footer(self) -> None:
+    @staticmethod
+    def _build_footer() -> None:
         """Build footer with version and GitHub link."""
         try:
             from importlib.metadata import version
@@ -803,7 +804,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 classes="text-caption",
             )
 
-    def _build_toolbar(self) -> None:
+    @staticmethod
+    def _build_toolbar() -> None:
         """Build toolbar content."""
         v3.VBtn(
             icon="mdi-refresh",
@@ -895,7 +897,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
         v3.VDivider(classes="mb-3")
         self._build_run_section()
 
-    def _build_file_upload_section(self) -> None:
+    @staticmethod
+    def _build_file_upload_section() -> None:
         """Build file upload inputs for mesh and solution files."""
         # Import mesh row with file input and sample menu
         with v3.VRow(dense=True, classes="mb-2", no_gutters=True):
@@ -986,7 +989,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             click="sol_file_upload = null",
         )
 
-    def _build_solution_options_section(self) -> None:
+    @staticmethod
+    def _build_solution_options_section() -> None:
         """Build solution type alerts and usage options."""
         v3.VAlert(
             text="Solution detected as levelset (signed distance)",
@@ -1023,7 +1027,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
             title="Use solution as levelset field for iso-surface extraction",
         )
 
-    def _build_mode_and_preset_section(self) -> None:
+    @staticmethod
+    def _build_mode_and_preset_section() -> None:
         """Build mode selection and preset buttons."""
         with html.Div(classes="d-flex align-center mb-2"):
             v3.VIcon("mdi-tune", size="small", color="primary", classes="mr-2")
@@ -1099,7 +1104,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 click="trigger('apply_preset', ['coarse'])",
             )
 
-    def _build_size_parameters_section(self) -> None:
+    @staticmethod
+    def _build_size_parameters_section() -> None:
         """Build size control parameters (hsiz, hmax, hmin, hausd, hgrad, ar)."""
         with html.Div(classes="d-flex align-center mb-2"):
             v3.VIcon("mdi-resize", size="small", color="success", classes="mr-2")
@@ -1199,7 +1205,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     title="Angle detection threshold in degrees (default: 45)",
                 )
 
-    def _build_advanced_options_section(self) -> None:
+    @staticmethod
+    def _build_advanced_options_section() -> None:
         """Build advanced optimization options (optim, noinsert, noswap, etc.)."""
         with html.Div(classes="d-flex align-center mb-2"):
             v3.VIcon("mdi-cog", size="small", color="warning", classes="mr-2")
@@ -1330,7 +1337,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                         title="Maximum memory usage in MB. Leave empty for automatic.",
                     )
 
-    def _build_mode_specific_options(self) -> None:
+    @staticmethod
+    def _build_mode_specific_options() -> None:
         """Build mode-specific options (levelset formula, source)."""
         v3.VTextField(
             v_model=("levelset_formula",),
@@ -1381,7 +1389,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 title="Remesh from last result (iterative)",
             )
 
-    def _build_run_section(self) -> None:
+    @staticmethod
+    def _build_run_section() -> None:
         """Build run button and result alerts."""
         v3.VBtn(
             "Run Remesh",
@@ -1473,7 +1482,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     # Top-right toolbar overlay
                     self._build_viewer_toolbar()
 
-    def _build_viewer_toolbar(self) -> None:
+    @staticmethod
+    def _build_viewer_toolbar() -> None:
         """Build the viewer toolbar overlay."""
         with v3.VCard(
             classes="position-absolute",
@@ -1668,7 +1678,8 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                     variant="text",
                 )
 
-    def _build_info_panel(self) -> None:
+    @staticmethod
+    def _build_info_panel() -> None:
         """Build the right-side mesh info panel (inside drawer)."""
         with v3.VCard(
             classes="fill-height overflow-auto",

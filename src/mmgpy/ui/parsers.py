@@ -283,7 +283,8 @@ class SafeFormulaEvaluator:
         msg = "Invalid function call"
         raise ValueError(msg)
 
-    def _eval_attribute(self, node: ast.Attribute) -> float:
+    @staticmethod
+    def _eval_attribute(node: ast.Attribute) -> float:
         """Evaluate an attribute access node.
 
         Parameters

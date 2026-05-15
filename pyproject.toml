@@ -156,14 +156,8 @@ ignore = [
     "D203",   # incompatible with D211 (no-blank-line-before-class)
     "D213",   # incompatible with D212 (multi-line-summary-first-line)
     "COM812", # conflicts with formatter
-    # Preview rules — opt out for now and fix in dedicated PRs.
-    # Each entry below corresponds to one currently-failing rule;
-    # remove it once the rule's findings are resolved.
-    "CPY001",  # missing-copyright-notice (header boilerplate not wanted)
-    "PLR0904", # too-many-public-methods                        (2)
-    "PLR0914", # too-many-locals                                (10)
-    "PLR0917", # too-many-positional-arguments                  (7)
-    "PLR6301", # no-self-use                                    (15)
+    # Project-wide opt-out (header boilerplate not wanted).
+    "CPY001", # missing-copyright-notice
 ]
 
 # Preview-rule enforcement is currently scoped to ``src/mmgpy/`` (the public
@@ -193,6 +187,23 @@ ignore = [
     "FBT002",  # transfer_fields has a boolean default for consistency with Mesh.remesh()
     "N801",    # class names match C++ API (mmg2d, mmg3d, mmgs)
     "PLR0913", # _wrapped_remesh mirrors C++ function signatures
+    "PLR0917", # _wrapped_remesh mirrors C++ function signatures (positional)
+]
+"src/mmgpy/_mesh.py" = [
+    "PLR0904", # Mesh exposes the full public API (auto-detected 2D/3D/surface)
+    "PLR0917", # _create_impl mirrors a C++ constructor (positional)
+]
+"src/mmgpy/_pv_plugin.py" = [
+    "PLR0904", # PyVista accessor exposes the full public API surface
+]
+"src/mmgpy/_reorder.py" = [
+    "PLR0914", # RCM reordering manipulates many intermediate arrays
+]
+"src/mmgpy/_transfer.py" = [
+    "PLR0914", # field interpolation manipulates many intermediate arrays
+]
+"src/mmgpy/repair/_vertices.py" = [
+    "PLR0914", # duplicate-vertex removal manipulates many intermediate arrays
 ]
 "tests/**/*.py" = [
     "S101",    # asserts allowed in tests
@@ -202,7 +213,10 @@ ignore = [
     "PLC0415", # imports inside functions are intentional for fixtures
     "N806",    # uppercase variable names for matrices (M, D, H) standard in math
     "PLR2004", # magic values allowed in tests
+    "PLR0904", # test classes group many test methods
     "PLR0913", # many arguments allowed in test helper functions
+    "PLR0914", # many locals allowed in test setup
+    "PLR6301", # test methods don't need to use self
     "PLC1901", # tests assert empty-string sentinels literally
     "S603",    # subprocess calls allowed in tests
     "S607",    # partial executable paths allowed in tests
@@ -232,7 +246,9 @@ ignore = [
     "C901",    # complex functions acceptable for mathematical algorithms
     "PLR0912", # many branches acceptable for element-type dispatch
     "PLR0913", # many arguments acceptable for elasticity solver (E, nu, etc.)
+    "PLR0914", # many locals acceptable for elasticity solver
     "PLR0915", # many statements acceptable for elasticity solver
+    "PLR0917", # many positional arguments acceptable for elasticity solver
     "PLR2004", # magic values (2, 3) are dimension constants in math code
 ]
 "src/mmgpy/metrics.py" = [
@@ -241,10 +257,12 @@ ignore = [
     "PLR2004", # magic values (2, 3, 6) are dimension constants in math code
     "C901",    # complex functions acceptable for mathematical algorithms
     "PLR0912", # many branches acceptable for 2D/3D dispatch
+    "PLR0914", # many locals acceptable for matrix-heavy math
 ]
 "examples/**/*.py" = [
     "T201",    # print statements essential for example output
     "PLR0913", # many arguments allowed for clarity in examples
+    "PLR0914", # many locals allowed for didactic examples
     "PLR0915", # long functions allowed for comprehensive examples
     "PERF401", # list comprehensions not required in examples (readability first)
     "PTH123",  # open() is fine for simple examples
@@ -270,6 +288,8 @@ ignore = [
 "benchmarks/**/*.py" = [
     "S101",    # asserts allowed in benchmarks
     "PLR2004", # magic values allowed in benchmarks
+    "PLR0914", # many locals allowed in benchmark setup
+    "PLR6301", # benchmark methods don't need to use self
     "INP001",  # benchmarks directory is not a package
     "TC002",   # third-party imports in runtime for type annotations
     "TC003",   # stdlib imports in runtime for type annotations
@@ -299,6 +319,7 @@ ignore = [
 ]
 "src/mmgpy/_progress.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency
+    "PLR0917", # _emit_event mirrors the progress callback signature (positional)
 ]
 "src/mmgpy/_mmgpy.pyi" = [
     "PYI021",  # Docstrings intentionally included for IDE support (issue #111)
@@ -319,6 +340,7 @@ ignore = [
     "C901",    # complex functions in parsers and remeshing
     "PLR0911", # many returns in recursive AST evaluator
     "PLR0912", # many branches in parser and validation logic
+    "PLR0914", # many locals in upload handlers and remeshing flow
     "PLR0915", # many statements in sol file parser
     "PLR2004", # magic values (MMG solution types, VTK cell types)
     # Error handling
