@@ -218,6 +218,85 @@ def is_all_triangles(mesh: bpy.types.Mesh) -> bool:
     return all(p.loop_total == _TRIANGLE_LOOP_COUNT for p in mesh.polygons)
 
 
+_RAMP_COLOURS: tuple[tuple[float, float, float, float], ...] = (
+    (1.0, 0.0, 0.0, 1.0),  # red — low quality
+    (1.0, 1.0, 0.0, 1.0),  # yellow — middling
+    (0.0, 1.0, 0.0, 1.0),  # green — high quality
+)
+
+
+def _find_quality_ramp() -> bpy.types.Node | None:
+    """Return the ``MMGpy_Quality`` material's ColorRamp node, or ``None``.
+
+    Returns
+    -------
+    bpy.types.Node or None
+        The ``ShaderNodeValToRGB`` node in the quality material, or
+        ``None`` when the material is missing / has no nodes / has been
+        edited to remove the ramp.
+
+    """
+    mat = bpy.data.materials.get(QUALITY_MATERIAL_NAME)
+    if mat is None or not mat.use_nodes:
+        return None
+    return next(
+        (n for n in mat.node_tree.nodes if n.bl_idname == "ShaderNodeValToRGB"),
+        None,
+    )
+
+
+def _set_ramp_stops(
+    ramp_node: bpy.types.Node,
+    positions: tuple[float, float, float],
+) -> None:
+    """Reset the ColorRamp to three red/yellow/green stops at *positions*.
+
+    Every call rebuilds the stops from scratch, so any user-side colour
+    edits in the panel widget are reverted — a clean, predictable state
+    each time the mode changes or stats refresh.
+    """
+    elements = ramp_node.color_ramp.elements
+    # Trim down to a single element (the collection has a minimum of 1).
+    while len(elements) > 1:
+        elements.remove(elements[-1])
+    elements[0].position = positions[0]
+    elements[0].color = _RAMP_COLOURS[0]
+    mid = elements.new(positions[1])
+    mid.color = _RAMP_COLOURS[1]
+    top = elements.new(positions[2])
+    top.color = _RAMP_COLOURS[2]
+
+
+def refresh_quality_ramp(obj: bpy.types.Object, *, mode: str) -> None:
+    """Update the ColorRamp positions for the active colormap mode.
+
+    ``mode`` is one of:
+
+    - ``"ABSOLUTE"`` — stops at ``0.0`` / ``0.5`` / ``1.0`` (absolute
+      reading of MMG's in-radius ratio).
+    - ``"AUTO"`` — stops stretched across the current mesh's
+      ``min`` / midpoint / ``max`` so even tight quality bands paint
+      the full red-to-green gradient.
+
+    No-op when the material or its ColorRamp node aren't present.
+    """
+    ramp_node = _find_quality_ramp()
+    if ramp_node is None:
+        return
+
+    if mode == "AUTO":
+        stats = get_quality_stats(obj.data)
+        if stats is None or stats["max"] <= stats["min"]:
+            positions = (0.0, 0.5, 1.0)
+        else:
+            lo, hi = stats["min"], stats["max"]
+            positions = (lo, (lo + hi) / 2.0, hi)
+    else:
+        positions = (0.0, 0.5, 1.0)
+
+    _set_ramp_stops(ramp_node, positions)
+
+
 def _ensure_quality_material() -> bpy.types.Material:
     """Create (or fetch) the ``MMGpy_Quality`` shader material.
 
@@ -335,6 +414,13 @@ def apply_quality_visualization(obj: bpy.types.Object) -> int:
     mesh[QUALITY_STAT_KEYS[3]] = len(qualities)
 
     mat = _ensure_quality_material()
+
+    # AUTO mode rescales the ramp to the freshly-computed min/max. The
+    # mode lives on the scene settings; read it through ``bpy.context``
+    # so callers don't have to plumb it through.
+    settings = getattr(bpy.context.scene, "mmgpy", None)
+    mode = settings.quality_colormap_mode if settings is not None else "ABSOLUTE"
+    refresh_quality_ramp(obj, mode=mode)
     slot_names = [slot.name for slot in mesh.materials if slot is not None]
     if QUALITY_MATERIAL_NAME not in slot_names:
         mesh.materials.append(mat)

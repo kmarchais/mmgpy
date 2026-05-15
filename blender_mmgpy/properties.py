@@ -50,6 +50,14 @@ def _update_show_quality(self: PropertyGroup, context: Context) -> None:
         utils.remove_quality_visualization(obj)
 
 
+def _update_quality_colormap_mode(self: PropertyGroup, context: Context) -> None:
+    """Re-stretch the ``MMGpy_Quality`` ColorRamp for the chosen mode."""
+    obj = context.active_object
+    if obj is None or obj.type != "MESH":
+        return
+    utils.refresh_quality_ramp(obj, mode=self.quality_colormap_mode)
+
+
 class MMGPYSizingConstraint(PropertyGroup):
     """A local sizing constraint (sphere or box refinement zone)."""
 
@@ -262,4 +270,31 @@ class MMGPYSettings(PropertyGroup):
         ),
         default=False,
         update=_update_show_quality,
+    )
+
+    quality_colormap_mode: EnumProperty(
+        name="Range",
+        description="How to map quality values onto the red->yellow->green ramp",
+        items=[
+            (
+                "ABSOLUTE",
+                "Absolute [0, 1]",
+                (
+                    "Map 0 -> red and 1 -> green. Absolute reading: a perfect "
+                    "equilateral triangle is solid green; anything below 0.5 "
+                    "is warning territory regardless of the rest of the mesh."
+                ),
+            ),
+            (
+                "AUTO",
+                "Auto [min, max]",
+                (
+                    "Stretch the ramp across the current mesh's min..max so "
+                    "the variation within this specific mesh is visible even "
+                    "when all triangles cluster near the same quality value."
+                ),
+            ),
+        ],
+        default="ABSOLUTE",
+        update=_update_quality_colormap_mode,
     )

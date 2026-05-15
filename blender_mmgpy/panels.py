@@ -195,25 +195,31 @@ class MMGPY_PT_visualization(Panel):
         ramp_node = None
         if mat is not None and mat.use_nodes:
             ramp_node = next(
-                (
-                    n
-                    for n in mat.node_tree.nodes
-                    if n.bl_idname == "ShaderNodeValToRGB"
-                ),
+                (n for n in mat.node_tree.nodes if n.bl_idname == "ShaderNodeValToRGB"),
                 None,
             )
+        stats = utils.get_quality_stats(obj.data)
+
         if ramp_node is not None:
             layout.label(text="In-radius ratio")
+            layout.prop(settings, "quality_colormap_mode", text="")
             layout.template_color_ramp(ramp_node, "color_ramp", expand=False)
-            # Endpoint hints (the ramp widget itself has no axis labels).
+            # Endpoint hints. In AUTO mode the ramp's left/right map to
+            # the mesh's actual min/max — surface those numbers so users
+            # don't have to read them off the stats block below.
             row = layout.row()
             row.alignment = "EXPAND"
-            row.label(text="0 — poor")
-            sub = row.row()
-            sub.alignment = "RIGHT"
-            sub.label(text="best — 1")
+            if settings.quality_colormap_mode == "AUTO" and stats is not None:
+                row.label(text=f"{stats['min']:.2f} — poor")
+                sub = row.row()
+                sub.alignment = "RIGHT"
+                sub.label(text=f"best — {stats['max']:.2f}")
+            else:
+                row.label(text="0 — poor")
+                sub = row.row()
+                sub.alignment = "RIGHT"
+                sub.label(text="best — 1")
 
-        stats = utils.get_quality_stats(obj.data)
         if stats is None:
             layout.label(text="(toggle off/on to compute)", icon="QUESTION")
             return
