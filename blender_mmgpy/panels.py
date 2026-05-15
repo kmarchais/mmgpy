@@ -201,7 +201,11 @@ class MMGPY_PT_visualization(Panel):
         stats = utils.get_quality_stats(obj.data)
 
         if ramp_node is not None:
-            layout.label(text="In-radius ratio")
+            # Two-line heading so we don't depend on the panel being
+            # wide enough for "Mesh quality: In-radius ratio" on one row.
+            header = layout.column(align=True)
+            header.label(text="Mesh quality")
+            header.label(text="(MMG in-radius ratio)")
             layout.prop(settings, "quality_colormap_mode", text="")
             layout.template_color_ramp(ramp_node, "color_ramp", expand=False)
             # Endpoint hints. In AUTO mode the ramp's left/right map to
