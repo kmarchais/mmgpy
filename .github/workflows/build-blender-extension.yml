@@ -174,7 +174,7 @@ jobs:
             --only-binary :all: \
             --python-version ${{ matrix.py }} \
             --platform ${{ matrix.pip_platform }} \
-            "${EXTRA_PLATFORMS[@]}" \
+            ${EXTRA_PLATFORMS[@]+"${EXTRA_PLATFORMS[@]}"} \
             --platform any
 
       - name: Inject ``wheels`` and ``platforms`` into the manifest
