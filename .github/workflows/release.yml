@@ -172,6 +172,7 @@ jobs:
     env:
       TARGET: ${{ needs.preflight.outputs.target_version }}
       NEXT_DEV: ${{ needs.preflight.outputs.next_dev_version }}
+      LATEST_RELEASE: ${{ needs.preflight.outputs.latest_release }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -202,14 +203,33 @@ jobs:
           git tag -a "v${TARGET}" -m "v${TARGET}"
           git push origin "v${TARGET}"
 
+      # Pin previous_tag_name to the latest published release so the
+      # changelog is correct even if a prior release PR was squashed
+      # (which would orphan its tagged commit from main's first-parent
+      # history and confuse GitHub's default tag-walking heuristic).
+      # If there is no prior release, fall back to the default behaviour.
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v${TARGET}" \
-            --title "v${TARGET}" \
-            --generate-notes \
-            --verify-tag
+          if [ "$LATEST_RELEASE" != "(none)" ] && [ -n "$LATEST_RELEASE" ]; then
+            echo "Pinning previous_tag_name=${LATEST_RELEASE} for note generation."
+            gh api -X POST \
+              "repos/${{ github.repository }}/releases/generate-notes" \
+              -f tag_name="v${TARGET}" \
+              -f previous_tag_name="${LATEST_RELEASE}" \
+              --jq '.body' > release-notes.md
+            gh release create "v${TARGET}" \
+              --title "v${TARGET}" \
+              --notes-file release-notes.md \
+              --verify-tag
+          else
+            echo "No prior release found; using default note generation."
+            gh release create "v${TARGET}" \
+              --title "v${TARGET}" \
+              --generate-notes \
+              --verify-tag
+          fi
 
       # Releases created with GITHUB_TOKEN don't fire the `release: published`
       # event for downstream workflows, so we dispatch the wheel build
