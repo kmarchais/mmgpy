@@ -3,16 +3,25 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      target_version:
-        description: "Version to release (MAJOR.MINOR.PATCH). Run with dry_run=true first to see current state."
-        required: true
-        type: string
-      next_dev_version:
-        description: "Next dev version (MAJOR.MINOR.PATCH.devN)."
-        required: true
-        type: string
+      release_bump:
+        description: "Release version, relative to current pyproject version"
+        type: choice
+        options:
+          - current # strip .devN from current (e.g. 0.14.0.dev0 -> 0.14.0)
+          - patch
+          - minor
+          - major
+        default: current
+      next_dev_bump:
+        description: "Next dev cycle bump, relative to the released version"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: minor
       dry_run:
-        description: "Preview only: validate inputs and print current/target state without tagging or pushing."
+        description: "Preview only: print computed versions and current state without tagging or pushing."
         type: boolean
         default: true
 
@@ -28,22 +37,13 @@ jobs:
       current_version: ${{ steps.state.outputs.current_version }}
       latest_release: ${{ steps.state.outputs.latest_release }}
       head_sha: ${{ steps.state.outputs.head_sha }}
+      target_version: ${{ steps.compute.outputs.target_version }}
+      next_dev_version: ${{ steps.compute.outputs.next_dev_version }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
-
-      - name: Validate input formats
-        run: |
-          if ! [[ "${{ inputs.target_version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::target_version must be MAJOR.MINOR.PATCH (got '${{ inputs.target_version }}')"
-            exit 1
-          fi
-          if ! [[ "${{ inputs.next_dev_version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.dev[0-9]+$ ]]; then
-            echo "::error::next_dev_version must be MAJOR.MINOR.PATCH.devN (got '${{ inputs.next_dev_version }}')"
-            exit 1
-          fi
 
       - name: Read current state
         id: state
@@ -62,11 +62,51 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
+      - name: Compute target + next dev versions
+        id: compute
+        env:
+          CURRENT: ${{ steps.state.outputs.current_version }}
+          RELEASE_BUMP: ${{ inputs.release_bump }}
+          NEXT_DEV_BUMP: ${{ inputs.next_dev_bump }}
+        run: |
+          uv run --no-project --with packaging python - <<'EOF' >> "$GITHUB_OUTPUT"
+          import os
+          from packaging.version import Version
+
+          current = Version(os.environ["CURRENT"])
+          release_bump = os.environ["RELEASE_BUMP"]
+          next_dev_bump = os.environ["NEXT_DEV_BUMP"]
+
+
+          def bump(base: tuple[int, int, int], kind: str) -> tuple[int, int, int]:
+              maj, mi, pa = base
+              if kind == "major":
+                  return (maj + 1, 0, 0)
+              if kind == "minor":
+                  return (maj, mi + 1, 0)
+              if kind == "patch":
+                  return (maj, mi, pa + 1)
+              if kind == "current":
+                  return base
+              msg = f"Unknown bump kind: {kind}"
+              raise ValueError(msg)
+
+
+          base = (current.major, current.minor, current.micro)
+          target = bump(base, release_bump)
+          next_dev = bump(target, next_dev_bump)
+
+          target_str = f"{target[0]}.{target[1]}.{target[2]}"
+          next_dev_str = f"{next_dev[0]}.{next_dev[1]}.{next_dev[2]}.dev0"
+          print(f"target_version={target_str}")
+          print(f"next_dev_version={next_dev_str}")
+          EOF
+
       - name: Validate version ordering
         env:
           CURRENT: ${{ steps.state.outputs.current_version }}
-          TARGET: ${{ inputs.target_version }}
-          NEXT_DEV: ${{ inputs.next_dev_version }}
+          TARGET: ${{ steps.compute.outputs.target_version }}
+          NEXT_DEV: ${{ steps.compute.outputs.next_dev_version }}
         run: |
           uv run --no-project --with packaging python - <<'EOF'
           import os, sys
@@ -77,9 +117,9 @@ jobs:
           next_dev = Version(os.environ["NEXT_DEV"])
           errors = []
           if target <= current:
-              errors.append(f"target_version ({target}) must be > current pyproject version ({current})")
+              errors.append(f"target ({target}) must be > current pyproject version ({current})")
           if next_dev <= target:
-              errors.append(f"next_dev_version ({next_dev}) must be > target_version ({target})")
+              errors.append(f"next dev ({next_dev}) must be > target ({target})")
           for e in errors:
               print(f"::error::{e}")
           sys.exit(1 if errors else 0)
@@ -88,9 +128,10 @@ jobs:
       - name: Refuse if target already released
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ steps.compute.outputs.target_version }}
         run: |
-          if gh release view "v${{ inputs.target_version }}" >/dev/null 2>&1; then
-            echo "::error::Release v${{ inputs.target_version }} already exists."
+          if gh release view "v${TARGET}" >/dev/null 2>&1; then
+            echo "::error::Release v${TARGET} already exists."
             exit 1
           fi
 
@@ -123,8 +164,10 @@ jobs:
             echo "|---|---|"
             echo "| Current pyproject version | \`${{ steps.state.outputs.current_version }}\` |"
             echo "| Latest GitHub release | \`${{ steps.state.outputs.latest_release }}\` |"
-            echo "| Target release version | \`${{ inputs.target_version }}\` |"
-            echo "| Next dev version | \`${{ inputs.next_dev_version }}\` |"
+            echo "| Release bump | \`${{ inputs.release_bump }}\` |"
+            echo "| Computed target | \`${{ steps.compute.outputs.target_version }}\` |"
+            echo "| Next dev bump | \`${{ inputs.next_dev_bump }}\` |"
+            echo "| Computed next dev | \`${{ steps.compute.outputs.next_dev_version }}\` |"
             echo "| main HEAD | \`${{ steps.state.outputs.head_sha }}\` |"
             echo "| Dry run | \`${{ inputs.dry_run }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -133,6 +176,9 @@ jobs:
     needs: preflight
     if: ${{ inputs.dry_run == false }}
     runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ needs.preflight.outputs.target_version }}
+      NEXT_DEV: ${{ needs.preflight.outputs.next_dev_version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -148,29 +194,29 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Bump to release version
-        run: uv run --no-project python .github/scripts/sync_versions.py --set "${{ inputs.target_version }}"
+        run: uv run --no-project python .github/scripts/sync_versions.py --set "${TARGET}"
 
       - name: Commit release on release branch
         run: |
-          BRANCH="release/v${{ inputs.target_version }}"
+          BRANCH="release/v${TARGET}"
           git checkout -b "$BRANCH"
           git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
-          git commit -m "release: v${{ inputs.target_version }}"
+          git commit -m "release: v${TARGET}"
           git push origin "$BRANCH"
 
       - name: Tag release commit
         run: |
-          git tag -a "v${{ inputs.target_version }}" -m "v${{ inputs.target_version }}"
-          git push origin "v${{ inputs.target_version }}"
+          git tag -a "v${TARGET}" -m "v${TARGET}"
+          git push origin "v${TARGET}"
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v${{ inputs.target_version }}" \
-            --title "v${{ inputs.target_version }}" \
+          gh release create "v${TARGET}" \
+            --title "v${TARGET}" \
             --generate-notes \
-            --target "v${{ inputs.target_version }}"
+            --target "v${TARGET}"
 
       # Releases created with GITHUB_TOKEN don't fire the `release: published`
       # event for downstream workflows, so we dispatch the wheel build
@@ -180,17 +226,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run build-wheels.yml \
-            --ref "v${{ inputs.target_version }}" \
+            --ref "v${TARGET}" \
             -f publish_to_pypi=true
 
       - name: Bump to next dev version
-        run: uv run --no-project python .github/scripts/sync_versions.py --set "${{ inputs.next_dev_version }}"
+        run: uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
 
       - name: Commit dev bump
         run: |
           git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
-          git commit -m "chore: bump to ${{ inputs.next_dev_version }}"
-          git push origin "release/v${{ inputs.target_version }}"
+          git commit -m "chore: bump to ${NEXT_DEV}"
+          git push origin "release/v${TARGET}"
 
       - name: Open PR back to main
         env:
@@ -198,6 +244,6 @@ jobs:
         run: |
           gh pr create \
             --base main \
-            --head "release/v${{ inputs.target_version }}" \
-            --title "release: v${{ inputs.target_version }}" \
-            --body "Tagged \`v${{ inputs.target_version }}\` on the release commit. This PR also bumps to \`${{ inputs.next_dev_version }}\`. **Merge with a merge commit (no squash)** so the tagged commit stays reachable from main."
+            --head "release/v${TARGET}" \
+            --title "release: v${TARGET}" \
+            --body "Tagged \`v${TARGET}\` on the release commit. This PR also bumps to \`${NEXT_DEV}\`. **Merge with a merge commit (no squash)** so the tagged commit stays reachable from main."
