@@ -52,7 +52,7 @@ def test_python_to_semver(sv: ModuleType, pep440: str, semver: str) -> None:
 def test_read_pyproject_version_matches_file(sv: ModuleType) -> None:
     """The script reads the live version straight out of pyproject.toml."""
     expected = None
-    for line in (REPO_ROOT / "pyproject.toml").read_text().splitlines():
+    for line in (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines():
         if line.startswith("version = "):
             expected = line.split('"')[1]
             break

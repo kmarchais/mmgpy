@@ -57,7 +57,7 @@ def python_to_semver(version: str) -> str:
 
 def read_pyproject_version() -> str:
     """Return the ``version = "..."`` value from ``pyproject.toml``."""
-    content = PYPROJECT.read_text()
+    content = PYPROJECT.read_text(encoding="utf-8")
     match = re.search(r'^version\s*=\s*"([^"]+)"', content, re.MULTILINE)
     if not match:
         msg = 'Could not find `version = "..."` in pyproject.toml'
@@ -66,12 +66,12 @@ def read_pyproject_version() -> str:
 
 
 def _rewrite(path: Path, pattern: str, replacement: str, *, check_only: bool) -> bool:
-    content = path.read_text()
+    content = path.read_text(encoding="utf-8")
     new_content = re.sub(pattern, replacement, content, count=1, flags=re.MULTILINE)
     if new_content == content:
         return False
     if not check_only:
-        path.write_text(new_content)
+        path.write_text(new_content, encoding="utf-8")
     return True
 
 
