@@ -152,6 +152,12 @@ def main() -> int:
             _err("Version mismatch in: " + ", ".join(out_of_sync))
             _err("Run `python .github/scripts/sync_versions.py` to fix.")
             return 1
+        if not re.match(
+            r"^\d+\.\d+\.\d+(?:(?:a|b|rc)\d+|\.dev\d+|\.post\d+)?$",
+            version,
+        ):
+            _err(f"Version {version!r} in pyproject.toml is not valid PEP 440.")
+            return 1
         _log("All version files in sync.")
         return 0
 

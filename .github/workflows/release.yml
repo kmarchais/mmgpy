@@ -115,6 +115,16 @@ jobs:
             exit 1
           fi
 
+      - name: Refuse if release branch already exists
+        env:
+          TARGET: ${{ steps.compute.outputs.target_version }}
+        run: |
+          BRANCH="release/v${TARGET}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Remote branch $BRANCH already exists. Delete it before retrying."
+            exit 1
+          fi
+
       - name: Check build-and-test is green on main
         env:
           GH_TOKEN: ${{ github.token }}
@@ -161,7 +171,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: main
+          ref: ${{ needs.preflight.outputs.head_sha }}
           fetch-depth: 0
 
       - name: Configure git
@@ -195,7 +205,7 @@ jobs:
           gh release create "v${TARGET}" \
             --title "v${TARGET}" \
             --generate-notes \
-            --target "v${TARGET}"
+            --verify-tag
 
       # Releases created with GITHUB_TOKEN don't fire the `release: published`
       # event for downstream workflows, so we dispatch the wheel build
