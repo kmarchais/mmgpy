@@ -40,7 +40,7 @@ jobs:
       target_version: ${{ steps.compute.outputs.target_version }}
       next_dev_version: ${{ steps.compute.outputs.next_dev_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
@@ -60,7 +60,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Compute target + next dev versions
         id: compute
@@ -180,7 +180,7 @@ jobs:
       TARGET: ${{ needs.preflight.outputs.target_version }}
       NEXT_DEV: ${{ needs.preflight.outputs.next_dev_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
@@ -191,7 +191,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Bump to release version
         run: uv run --no-project python .github/scripts/sync_versions.py --set "${TARGET}"

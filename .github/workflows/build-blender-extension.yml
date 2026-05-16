@@ -107,7 +107,7 @@ jobs:
           python-version: ${{ matrix.py }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Sync version + dependency pin from pyproject.toml
         run: uv run --no-project python .github/scripts/sync_versions.py
