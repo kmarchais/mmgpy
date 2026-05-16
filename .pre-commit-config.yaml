@@ -65,15 +65,15 @@ repos:
         types: [python]
         pass_filenames: false
 
-      - id: sync-blender-version
-        name: sync Blender extension version with pyproject.toml
-        entry: python blender_mmgpy/sync_version.py
+      - id: sync-versions
+        name: sync downstream version files with pyproject.toml
+        entry: uv run --no-project python .github/scripts/sync_versions.py
         language: system
-        # Trigger when either source-of-truth file for the version is
-        # touched. The script rewrites the manifest's ``version`` field
-        # if it drifts; prek then surfaces the modification so the
+        # Trigger when any of the pinned version files is touched. The
+        # script rewrites the conda recipe and Blender manifest to match
+        # pyproject.toml; prek then surfaces the modification so the
         # author re-stages and commits the synced state.
-        files: ^(pyproject\.toml|blender_mmgpy/blender_manifest\.toml)$
+        files: ^(pyproject\.toml|conda/recipe\.yaml|blender_mmgpy/blender_manifest\.toml)$
         pass_filenames: false
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
