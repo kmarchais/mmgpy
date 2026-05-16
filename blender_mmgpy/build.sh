@@ -35,7 +35,7 @@ fi
 
 # Sync version from pyproject.toml
 echo -e "${YELLOW}Syncing version from pyproject.toml...${NC}"
-python3 sync_version.py
+uv run --no-project python ../.github/scripts/sync_versions.py
 
 # Parse arguments
 ALL_PLATFORMS=false

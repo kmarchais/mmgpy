@@ -32,7 +32,7 @@ requirements:
     - numpy
     - mmgsuite
   run:
-    - python >=3.10
+    - python
     - numpy >=2.0.2,<3
     - pyvista >=0.48,<1
     - rich >=13.0.0,<15

@@ -106,9 +106,11 @@ jobs:
         with:
           python-version: ${{ matrix.py }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+
       - name: Sync version + dependency pin from pyproject.toml
-        working-directory: blender_mmgpy
-        run: python sync_version.py
+        run: uv run --no-project python .github/scripts/sync_versions.py
 
       - name: Download wheels artifact from build-wheels run
         uses: actions/download-artifact@v4
@@ -206,8 +208,8 @@ jobs:
           out = Path(f"mmgpy-{version}-{platform}-py{py}.zip")
 
           # Explicit allowlist so we never accidentally ship build artefacts
-          # (``build/``, ``__pycache__``, leftover zips, ``sync_version.py``,
-          # ``build.sh`` — those last two are build-time helpers only).
+          # (``build/``, ``__pycache__``, leftover zips, ``build.sh``,
+          # which is a build-time helper only).
           shipped_files = (
               "blender_manifest.toml",
               "__init__.py",

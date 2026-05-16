@@ -234,8 +234,10 @@ ignore = [
     "T201",    # print statements needed for CI output
     "PLR2004", # magic values (like argument counts) are fine in scripts
     "C901",    # complex wheel optimization function is acceptable
+    "PLR0911", # multiple early returns in CLI dispatchers are clearer than nested branches
     "PLR0912", # many branches in wheel optimization is acceptable
     "PLR0915", # many statements in wheel optimization is acceptable
+    "PLC0415", # lazy imports keep optional deps (e.g. ``packaging``) opt-in for fast paths
     "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
     "PLC2701", "S404", "PLW1514",            # preview imports / IO
     "FURB118", "FURB142", "FURB152",         # preview refactors

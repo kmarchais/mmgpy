@@ -1,0 +1,265 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      next_dev_bump:
+        description: "Next dev cycle bump, relative to the released version"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: minor
+      dry_run:
+        description: "Preview only: print computed versions and current state without tagging or pushing."
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      current_version: ${{ steps.state.outputs.current_version }}
+      latest_release: ${{ steps.state.outputs.latest_release }}
+      head_sha: ${{ steps.state.outputs.head_sha }}
+      target_version: ${{ steps.compute.outputs.target_version }}
+      next_dev_version: ${{ steps.compute.outputs.next_dev_version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Read current state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT=$(grep -E '^version = "' pyproject.toml | sed -E 's/version = "(.*)"/\1/')
+          LATEST=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // "(none)"')
+          HEAD=$(git rev-parse HEAD)
+          {
+            echo "current_version=$CURRENT"
+            echo "latest_release=$LATEST"
+            echo "head_sha=$HEAD"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Compute target + next dev versions
+        id: compute
+        env:
+          CURRENT: ${{ steps.state.outputs.current_version }}
+          NEXT_DEV_BUMP: ${{ inputs.next_dev_bump }}
+        run: |
+          uv run --no-project --with packaging python - <<'EOF'
+          import os
+          from packaging.version import Version
+
+          current = Version(os.environ["CURRENT"])
+          next_dev_bump = os.environ["NEXT_DEV_BUMP"]
+
+          maj, mi, pa = current.major, current.minor, current.micro
+          target = (maj, mi, pa)
+          if next_dev_bump == "major":
+              next_dev = (maj + 1, 0, 0)
+          elif next_dev_bump == "minor":
+              next_dev = (maj, mi + 1, 0)
+          elif next_dev_bump == "patch":
+              next_dev = (maj, mi, pa + 1)
+          else:
+              msg = f"Unknown bump kind: {next_dev_bump}"
+              raise ValueError(msg)
+
+          # Write directly to GITHUB_OUTPUT so uv/pip stdout chatter cannot
+          # corrupt the workflow outputs.
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"target_version={target[0]}.{target[1]}.{target[2]}\n")
+              fh.write(f"next_dev_version={next_dev[0]}.{next_dev[1]}.{next_dev[2]}.dev0\n")
+          EOF
+
+      - name: Validate version ordering
+        env:
+          CURRENT: ${{ steps.state.outputs.current_version }}
+          TARGET: ${{ steps.compute.outputs.target_version }}
+          NEXT_DEV: ${{ steps.compute.outputs.next_dev_version }}
+        run: |
+          uv run --no-project --with packaging python - <<'EOF'
+          import os, sys
+          from packaging.version import Version
+
+          current = Version(os.environ["CURRENT"])
+          target = Version(os.environ["TARGET"])
+          next_dev = Version(os.environ["NEXT_DEV"])
+          errors = []
+          if target <= current:
+              errors.append(f"target ({target}) must be > current pyproject version ({current})")
+          if next_dev <= target:
+              errors.append(f"next dev ({next_dev}) must be > target ({target})")
+          for e in errors:
+              print(f"::error::{e}")
+          sys.exit(1 if errors else 0)
+          EOF
+
+      - name: Refuse if target already released
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ steps.compute.outputs.target_version }}
+        run: |
+          if gh release view "v${TARGET}" >/dev/null 2>&1; then
+            echo "::error::Release v${TARGET} already exists."
+            exit 1
+          fi
+
+      - name: Refuse if release branch already exists
+        env:
+          TARGET: ${{ steps.compute.outputs.target_version }}
+        run: |
+          BRANCH="release/v${TARGET}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Remote branch $BRANCH already exists. Delete it before retrying."
+            exit 1
+          fi
+
+      - name: Check build-and-test is green on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LATEST=$(gh run list --workflow build-and-test.yml --branch main --limit 1 \
+            --json conclusion,status,headSha,databaseId \
+            --jq '.[0]')
+          CONCLUSION=$(echo "$LATEST" | jq -r '.conclusion // "in_progress"')
+          STATUS=$(echo "$LATEST" | jq -r '.status')
+          RUN_SHA=$(echo "$LATEST" | jq -r '.headSha')
+          RUN_ID=$(echo "$LATEST" | jq -r '.databaseId')
+          echo "build-and-test: conclusion=$CONCLUSION status=$STATUS sha=$RUN_SHA run_id=$RUN_ID"
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "::error::Latest build-and-test run on main is '$CONCLUSION' (status: $STATUS). Refusing to release."
+            exit 1
+          fi
+          if [ "$RUN_SHA" != "${{ steps.state.outputs.head_sha }}" ]; then
+            echo "::error::Latest green build-and-test run was for $RUN_SHA but main HEAD is ${{ steps.state.outputs.head_sha }}. Refusing to release a commit that has not been validated. Trigger build-and-test on the current HEAD and retry."
+            exit 1
+          fi
+
+      - name: Summarise plan
+        run: |
+          {
+            echo "## Release plan"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Current pyproject version | \`${{ steps.state.outputs.current_version }}\` |"
+            echo "| Latest GitHub release | \`${{ steps.state.outputs.latest_release }}\` |"
+            echo "| Target release | \`${{ steps.compute.outputs.target_version }}\` |"
+            echo "| Next dev bump | \`${{ inputs.next_dev_bump }}\` |"
+            echo "| Computed next dev | \`${{ steps.compute.outputs.next_dev_version }}\` |"
+            echo "| main HEAD | \`${{ steps.state.outputs.head_sha }}\` |"
+            echo "| Dry run | \`${{ inputs.dry_run }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    needs: preflight
+    if: ${{ inputs.dry_run == false }}
+    runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ needs.preflight.outputs.target_version }}
+      NEXT_DEV: ${{ needs.preflight.outputs.next_dev_version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.preflight.outputs.head_sha }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Bump to release version
+        run: uv run --no-project python .github/scripts/sync_versions.py --set "${TARGET}"
+
+      - name: Commit release on release branch
+        run: |
+          BRANCH="release/v${TARGET}"
+          git checkout -b "$BRANCH"
+          git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
+          git commit -m "release: v${TARGET}"
+          git push origin "$BRANCH"
+
+      - name: Tag release commit
+        run: |
+          git tag -a "v${TARGET}" -m "v${TARGET}"
+          git push origin "v${TARGET}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${TARGET}" \
+            --title "v${TARGET}" \
+            --generate-notes \
+            --verify-tag
+
+      # Releases created with GITHUB_TOKEN don't fire the `release: published`
+      # event for downstream workflows, so we dispatch the wheel build
+      # explicitly against the freshly created tag. `gh workflow run` does
+      # not return the run id, so we poll briefly to surface a link.
+      - name: Dispatch wheel build + PyPI publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run build-wheels.yml \
+            --ref "v${TARGET}" \
+            -f publish_to_pypi=true
+
+          RUN_ID=""
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 3
+            RUN_ID=$(gh run list \
+              --workflow build-wheels.yml \
+              --event workflow_dispatch \
+              --limit 1 \
+              --json databaseId,headBranch \
+              --jq ".[0] | select(.headBranch == \"v${TARGET}\") | .databaseId")
+            [ -n "$RUN_ID" ] && break
+          done
+
+          {
+            echo "## Wheel build dispatch"
+            echo ""
+            if [ -n "$RUN_ID" ]; then
+              echo "Dispatched: [run #${RUN_ID}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${RUN_ID})"
+            else
+              echo ":warning: Dispatched but the run id could not be resolved within the poll window. Check the [build-wheels workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/build-wheels.yml) for the run on tag \`v${TARGET}\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Bump to next dev version
+        run: uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
+
+      - name: Commit dev bump
+        run: |
+          git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
+          git commit -m "chore: bump to ${NEXT_DEV}"
+          git push origin "release/v${TARGET}"
+
+      - name: Open PR back to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "release/v${TARGET}" \
+            --title "release: v${TARGET}" \
+            --body "Tagged \`v${TARGET}\` on the release commit. This PR also bumps to \`${NEXT_DEV}\`. **Merge with a merge commit (no squash)** so the tagged commit stays reachable from main."
