@@ -31,9 +31,11 @@ MARGIN = 16
 RADIUS = (SIZE - 2 * MARGIN) / 2
 CENTER = SIZE / 2
 
-STROKE = "#2563eb"
-DISC_FILL = "#dbeafe"
-DISC_STROKE = "#1d4ed8"
+# Blender's UI accent orange. Mid-saturation, mid-lightness, so it stays
+# legible against both white and Blender's near-black panel background.
+STROKE = "#E87D0D"
+DISC_FILL = "none"
+DISC_STROKE = STROKE
 
 
 def normalize(v: Vec3) -> Vec3:
@@ -179,14 +181,14 @@ def render(verts: list[Vec3], faces: list[Face]) -> str:
     )
     disc = (
         f'  <circle cx="{CENTER}" cy="{CENTER}" r="{RADIUS}" '
-        f'fill="{DISC_FILL}" stroke="{DISC_STROKE}" stroke-width="1.5"/>'
+        f'fill="{DISC_FILL}" stroke="{DISC_STROKE}" stroke-width="2"/>'
     )
     lines = [svg_open, disc]
     for face in visible:
         pts = " ".join(f"{projected[i][0]:.2f},{projected[i][1]:.2f}" for i in face)
         lines.append(
             f'  <polygon points="{pts}" fill="none" stroke="{STROKE}" '
-            f'stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>',
+            f'stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>',
         )
     lines.append("</svg>")
     return "\n".join(lines) + "\n"
