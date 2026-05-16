@@ -241,7 +241,7 @@ jobs:
 
           platform = "${{ matrix.platform }}"
           py = "${{ matrix.py }}"
-          out = Path(f"mmgpy-{version}-{platform}-py{py}.zip")
+          out = Path(f"mmgpy-blender-extension-{version}-{platform}-py{py}.zip")
 
           # Explicit allowlist so we never accidentally ship build artefacts
           # (``build/``, ``__pycache__``, leftover zips, ``build.sh``,
