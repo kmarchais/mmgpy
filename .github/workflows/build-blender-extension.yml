@@ -26,12 +26,17 @@ on:
 
 jobs:
   build-extension:
-    # Only run when triggered by a release-driven Build Wheels run, or
-    # explicitly via workflow_dispatch.
+    # Run when triggered by a successful Build Wheels run for a release:
+    # either the historical ``release`` event path, or the current path
+    # where the release workflow dispatches Build Wheels against the new
+    # ``v*`` tag (``workflow_run.event == 'workflow_dispatch'`` with a
+    # tag-shaped ``head_branch``). Also runs on direct workflow_dispatch.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.event == 'release' &&
-       github.event.workflow_run.conclusion == 'success')
+      (github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.event == 'release' ||
+        (github.event.workflow_run.event == 'workflow_dispatch' &&
+         startsWith(github.event.workflow_run.head_branch, 'v'))))
     strategy:
       fail-fast: false
       matrix:
@@ -99,7 +104,19 @@ jobs:
       contents: read
 
     steps:
+      # For ``workflow_run`` events, ``github.ref`` is the default branch
+      # (typically main), not the ref the upstream workflow ran on. Without
+      # an explicit ``ref``, we would read main's ``pyproject.toml`` (which
+      # is already bumped to the next dev version after a release lands)
+      # and embed the wrong version in the extension zip name and manifest.
+      # Pin to the upstream run's head_branch (e.g. ``v0.14.0``) so the
+      # version matches the wheels we are bundling.
       - uses: actions/checkout@v4
+        with:
+          ref: >-
+            ${{ github.event_name == 'workflow_run'
+                && github.event.workflow_run.head_branch
+                || github.ref }}
 
       - name: Set up Python ${{ matrix.py }}
         uses: actions/setup-python@v5
@@ -146,11 +163,30 @@ jobs:
           # ``pip download`` fans out from the local mmgpy wheel, pulling
           # the matching ABI wheels for numpy / scipy / pyvista / vtk
           # (and pure-Python wheels for the rest) into the same dir.
+          #
+          # pip's ``--platform`` is strict (no PEP 600 manylinux fallback),
+          # so on Linux we have to enumerate the manylinux generations our
+          # deps actually ship under: mmgpy is built against manylinux_2_28
+          # (cibuildwheel), numpy/scipy/vtk publish manylinux_2_17 wheels,
+          # and patchelf publishes manylinux_2_5 / manylinux1 wheels.
+          EXTRA_PLATFORMS=()
+          case "${{ matrix.platform }}" in
+            linux-x64)
+              EXTRA_PLATFORMS=(
+                --platform manylinux_2_17_x86_64
+                --platform manylinux2014_x86_64
+                --platform manylinux_2_5_x86_64
+                --platform manylinux1_x86_64
+              )
+              ;;
+          esac
+
           pip download mmgpy \
             --find-links wheels --dest wheels \
             --only-binary :all: \
             --python-version ${{ matrix.py }} \
             --platform ${{ matrix.pip_platform }} \
+            ${EXTRA_PLATFORMS[@]+"${EXTRA_PLATFORMS[@]}"} \
             --platform any
 
       - name: Inject ``wheels`` and ``platforms`` into the manifest
@@ -205,7 +241,7 @@ jobs:
 
           platform = "${{ matrix.platform }}"
           py = "${{ matrix.py }}"
-          out = Path(f"mmgpy-{version}-{platform}-py{py}.zip")
+          out = Path(f"mmgpy-blender-extension-{version}-{platform}-py{py}.zip")
 
           # Explicit allowlist so we never accidentally ship build artefacts
           # (``build/``, ``__pycache__``, leftover zips, ``build.sh``,
@@ -306,12 +342,215 @@ jobs:
             echo "| ${{ steps.zip.outputs.path }} | $size |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  upload-to-release:
+  # Combine the per-platform builds into a single zip whose manifest
+  # declares ``platforms = [linux-x64, macos-arm64, windows-x64]`` and
+  # whose ``wheels/`` directory holds wheels for every (platform, ABI).
+  # This is the zip you upload to extensions.blender.org: the marketplace
+  # expects one zip per submission, and Blender picks the right wheels at
+  # install time.
+  build-fat-extension:
     needs: build-extension
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: >-
+            ${{ github.event_name == 'workflow_run'
+                && github.event.workflow_run.head_branch
+                || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Download all per-platform extension artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blender-extension-*
+          path: per-platform/
+
+      - name: Assemble fat zip
+        id: fat
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import shutil
+          import tomllib
+          import zipfile
+          from pathlib import Path
+
+          src = Path("per-platform")
+          work = Path("fat-build")
+          if work.exists():
+              shutil.rmtree(work)
+          work.mkdir()
+          wheels_dir = work / "wheels"
+          wheels_dir.mkdir()
+
+          platforms: set[str] = set()
+          version: str | None = None
+
+          # Each artifact folder contains one single-platform zip.
+          for sub in sorted(src.iterdir()):
+              if not sub.is_dir():
+                  continue
+              zips = list(sub.glob("*.zip"))
+              if len(zips) != 1:
+                  raise SystemExit(f"expected exactly one zip in {sub}, got {zips}")
+              zpath = zips[0]
+              with zipfile.ZipFile(zpath) as zf:
+                  with zf.open("blender_manifest.toml") as f:
+                      manifest = tomllib.loads(f.read().decode())
+                  platforms.update(manifest["platforms"])
+                  if version is None:
+                      version = manifest["version"]
+                  elif version != manifest["version"]:
+                      raise SystemExit(
+                          f"version mismatch: {version!r} vs {manifest['version']!r}",
+                      )
+                  # Extract source files (first artifact wins; they're identical)
+                  for name in zf.namelist():
+                      if name.endswith("/") or name.startswith("wheels/"):
+                          continue
+                      target = work / name
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      if not target.exists():
+                          with zf.open(name) as r, target.open("wb") as w:
+                              shutil.copyfileobj(r, w)
+                  # Extract wheels; pure-Python wheels (py3-none-any) repeat
+                  # across artifacts byte-identically, so just overwrite.
+                  for name in zf.namelist():
+                      if not name.startswith("wheels/") or not name.endswith(".whl"):
+                          continue
+                      target = work / name
+                      with zf.open(name) as r, target.open("wb") as w:
+                          shutil.copyfileobj(r, w)
+
+          assert version is not None
+
+          # Rebuild the manifest with the union of platforms + all wheels.
+          manifest_path = work / "blender_manifest.toml"
+          text = manifest_path.read_text()
+          # Strip any platforms/wheels blocks that were inherited from the
+          # single-platform manifest, then append the multi-platform pair.
+          text = re.sub(
+              r"^\s*platforms\s*=\s*\[[^\]]*\]\s*\n",
+              "",
+              text,
+              flags=re.MULTILINE,
+          )
+          text = re.sub(
+              r"^\s*wheels\s*=\s*\[(?:[^\]]|\n)*\]\s*\n",
+              "",
+              text,
+              flags=re.MULTILINE,
+          )
+
+          wheels = sorted(p.name for p in wheels_dir.iterdir() if p.suffix == ".whl")
+          platforms_sorted = sorted(platforms)
+
+          tail = (
+              "platforms = ["
+              + ", ".join(f'"{p}"' for p in platforms_sorted)
+              + "]\n"
+              + "wheels = [\n"
+              + "".join(f'    "./wheels/{w}",\n' for w in wheels)
+              + "]\n"
+          )
+          manifest_path.write_text(text.rstrip() + "\n\n" + tail)
+
+          out = Path(f"mmgpy-blender-extension-{version}-all.zip")
+          with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+              for p in sorted(work.rglob("*")):
+                  if p.is_file():
+                      zf.write(p, p.relative_to(work).as_posix())
+
+          size_mb = out.stat().st_size / (1024 * 1024)
+          print(
+              f"Built {out} ({size_mb:.1f} MB), "
+              f"{len(wheels)} wheels, platforms={platforms_sorted}",
+          )
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"path={out}\n")
+          PY
+
+      - name: Validate fat zip
+        run: |
+          python - <<'PY'
+          import sys
+          import tomllib
+          import zipfile
+          from pathlib import Path
+
+          zip_path = Path("${{ steps.fat.outputs.path }}")
+          with zipfile.ZipFile(zip_path) as zf:
+              names = set(zf.namelist())
+              with zf.open("blender_manifest.toml") as f:
+                  manifest = tomllib.loads(f.read().decode())
+              for key in ("id", "version", "schema_version", "type"):
+                  if key not in manifest:
+                      sys.exit(f"manifest missing {key!r}")
+              if set(manifest["platforms"]) != {"linux-x64", "macos-arm64", "windows-x64"}:
+                  sys.exit(f"unexpected platforms: {manifest['platforms']}")
+              # Each (platform, py) pair must contribute at least an mmgpy wheel.
+              expected = {
+                  ("manylinux", "cp311"),
+                  ("manylinux", "cp313"),
+                  ("macosx", "cp311"),
+                  ("macosx", "cp313"),
+                  ("win_amd64", "cp311"),
+                  ("win_amd64", "cp313"),
+              }
+              found = set()
+              for name in names:
+                  if not name.startswith("wheels/mmgpy-"):
+                      continue
+                  for plat_marker, abi in expected:
+                      if abi in name and plat_marker in name:
+                          found.add((plat_marker, abi))
+              missing = expected - found
+              if missing:
+                  sys.exit(f"missing mmgpy wheels for: {missing}")
+              # Every declared wheel must exist.
+              decl_missing = [w for w in manifest["wheels"] if w.removeprefix("./") not in names]
+              if decl_missing:
+                  sys.exit(f"declared but absent: {decl_missing}")
+          print(f"OK: {len(names)} entries, {len(manifest['wheels'])} wheels declared")
+          PY
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-extension-all
+          path: ${{ steps.fat.outputs.path }}
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          size=$(du -h "${{ steps.fat.outputs.path }}" | cut -f1)
+          {
+            echo "## Fat zip (all platforms, all Blender Python ABIs)"
+            echo ""
+            echo "| Package | Size |"
+            echo "|---------|------|"
+            echo "| ${{ steps.fat.outputs.path }} | $size |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  upload-to-release:
+    needs: [build-extension, build-fat-extension]
+    runs-on: ubuntu-latest
+    # Mirror the build gate: any tag-driven Build Wheels completion, plus
+    # explicit dispatch with ``upload_to_release=true``.
     if: >-
-      (github.event_name == 'workflow_run'
-       && github.event.workflow_run.event == 'release') ||
+      (github.event_name == 'workflow_run' &&
+       (github.event.workflow_run.event == 'release' ||
+        (github.event.workflow_run.event == 'workflow_dispatch' &&
+         startsWith(github.event.workflow_run.head_branch, 'v')))) ||
       (github.event_name == 'workflow_dispatch'
        && inputs.upload_to_release)
     permissions:
