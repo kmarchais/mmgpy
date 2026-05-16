@@ -59,15 +59,15 @@ jobs:
           CURRENT: ${{ steps.state.outputs.current_version }}
           NEXT_DEV_BUMP: ${{ inputs.next_dev_bump }}
         run: |
-          uv run --no-project --with packaging python - <<'EOF' >> "$GITHUB_OUTPUT"
+          uv run --no-project --with packaging python - <<'EOF'
           import os
           from packaging.version import Version
 
           current = Version(os.environ["CURRENT"])
           next_dev_bump = os.environ["NEXT_DEV_BUMP"]
 
-          target = (current.major, current.minor, current.micro)
-          maj, mi, pa = target
+          maj, mi, pa = current.major, current.minor, current.micro
+          target = (maj, mi, pa)
           if next_dev_bump == "major":
               next_dev = (maj + 1, 0, 0)
           elif next_dev_bump == "minor":
@@ -78,8 +78,11 @@ jobs:
               msg = f"Unknown bump kind: {next_dev_bump}"
               raise ValueError(msg)
 
-          print(f"target_version={target[0]}.{target[1]}.{target[2]}")
-          print(f"next_dev_version={next_dev[0]}.{next_dev[1]}.{next_dev[2]}.dev0")
+          # Write directly to GITHUB_OUTPUT so uv/pip stdout chatter cannot
+          # corrupt the workflow outputs.
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"target_version={target[0]}.{target[1]}.{target[2]}\n")
+              fh.write(f"next_dev_version={next_dev[0]}.{next_dev[1]}.{next_dev[2]}.dev0\n")
           EOF
 
       - name: Validate version ordering
@@ -142,7 +145,8 @@ jobs:
             exit 1
           fi
           if [ "$RUN_SHA" != "${{ steps.state.outputs.head_sha }}" ]; then
-            echo "::warning::Latest green build-and-test run was for $RUN_SHA but main HEAD is ${{ steps.state.outputs.head_sha }}. Proceeding, but newer commits have not been validated."
+            echo "::error::Latest green build-and-test run was for $RUN_SHA but main HEAD is ${{ steps.state.outputs.head_sha }}. Refusing to release a commit that has not been validated. Trigger build-and-test on the current HEAD and retry."
+            exit 1
           fi
 
       - name: Summarise plan
@@ -209,7 +213,8 @@ jobs:
 
       # Releases created with GITHUB_TOKEN don't fire the `release: published`
       # event for downstream workflows, so we dispatch the wheel build
-      # explicitly against the freshly created tag.
+      # explicitly against the freshly created tag. `gh workflow run` does
+      # not return the run id, so we poll briefly to surface a link.
       - name: Dispatch wheel build + PyPI publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -217,6 +222,28 @@ jobs:
           gh workflow run build-wheels.yml \
             --ref "v${TARGET}" \
             -f publish_to_pypi=true
+
+          RUN_ID=""
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 3
+            RUN_ID=$(gh run list \
+              --workflow build-wheels.yml \
+              --event workflow_dispatch \
+              --limit 1 \
+              --json databaseId,headBranch \
+              --jq ".[0] | select(.headBranch == \"v${TARGET}\") | .databaseId")
+            [ -n "$RUN_ID" ] && break
+          done
+
+          {
+            echo "## Wheel build dispatch"
+            echo ""
+            if [ -n "$RUN_ID" ]; then
+              echo "Dispatched: [run #${RUN_ID}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${RUN_ID})"
+            else
+              echo ":warning: Dispatched but the run id could not be resolved within the poll window. Check the [build-wheels workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/build-wheels.yml) for the run on tag \`v${TARGET}\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Bump to next dev version
         run: uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"

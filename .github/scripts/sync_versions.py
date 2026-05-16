@@ -40,11 +40,14 @@ def python_to_semver(version: str) -> str:
 
     ``0.6.0.dev0`` -> ``0.6.0-dev.0``; ``0.6.0a1`` -> ``0.6.0-alpha.1``;
     ``0.6.0b1`` -> ``0.6.0-beta.1``; ``0.6.0rc1`` -> ``0.6.0-rc.1``;
-    ``0.6.0`` -> ``0.6.0``.
+    ``0.6.0.post1`` -> ``0.6.0-post.1``; ``0.6.0`` -> ``0.6.0``.
     """
     if ".dev" in version:
         base, dev = version.split(".dev")
         return f"{base}-dev.{dev}"
+    if ".post" in version:
+        base, post = version.split(".post")
+        return f"{base}-post.{post}"
     for suffix, label in (("a", "alpha"), ("b", "beta"), ("rc", "rc")):
         match = re.match(rf"^(\d+\.\d+\.\d+){suffix}(\d+)$", version)
         if match:
@@ -124,11 +127,15 @@ def main() -> int:
 
     if args.target:
         version = args.target
-        pyproject_changed = sync_pyproject(version, check_only=False)
+        try:
+            pyproject_changed = sync_pyproject(version, check_only=False)
+        except (OSError, re.error) as exc:
+            _err(f"Error: {exc}")
+            return 1
     else:
         try:
             version = read_pyproject_version()
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, re.error) as exc:
             _err(f"Error: {exc}")
             return 1
         pyproject_changed = False
@@ -138,7 +145,7 @@ def main() -> int:
     try:
         conda_changed = sync_conda(version, check_only=args.check)
         blender_changed = sync_blender(version, check_only=args.check)
-    except OSError as exc:
+    except (OSError, re.error) as exc:
         _err(f"Error: {exc}")
         return 1
 
@@ -152,11 +159,19 @@ def main() -> int:
             _err("Version mismatch in: " + ", ".join(out_of_sync))
             _err("Run `python .github/scripts/sync_versions.py` to fix.")
             return 1
-        if not re.match(
-            r"^\d+\.\d+\.\d+(?:(?:a|b|rc)\d+|\.dev\d+|\.post\d+)?$",
-            version,
-        ):
-            _err(f"Version {version!r} in pyproject.toml is not valid PEP 440.")
+        try:
+            from packaging.version import InvalidVersion, Version
+        except ImportError:
+            _err(
+                "The 'packaging' package is required for --check. "
+                "Run via `uv run --no-project --with packaging python ...` "
+                "or install it in the active environment.",
+            )
+            return 1
+        try:
+            Version(version)
+        except InvalidVersion as exc:
+            _err(f"Version {version!r} in pyproject.toml is not valid PEP 440: {exc}")
             return 1
         _log("All version files in sync.")
         return 0
