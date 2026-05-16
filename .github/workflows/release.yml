@@ -3,15 +3,6 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      release_bump:
-        description: "Release version, relative to current pyproject version"
-        type: choice
-        options:
-          - current # strip .devN from current (e.g. 0.14.0.dev0 -> 0.14.0)
-          - patch
-          - minor
-          - major
-        default: current
       next_dev_bump:
         description: "Next dev cycle bump, relative to the released version"
         type: choice
@@ -66,7 +57,6 @@ jobs:
         id: compute
         env:
           CURRENT: ${{ steps.state.outputs.current_version }}
-          RELEASE_BUMP: ${{ inputs.release_bump }}
           NEXT_DEV_BUMP: ${{ inputs.next_dev_bump }}
         run: |
           uv run --no-project --with packaging python - <<'EOF' >> "$GITHUB_OUTPUT"
@@ -74,32 +64,22 @@ jobs:
           from packaging.version import Version
 
           current = Version(os.environ["CURRENT"])
-          release_bump = os.environ["RELEASE_BUMP"]
           next_dev_bump = os.environ["NEXT_DEV_BUMP"]
 
-
-          def bump(base: tuple[int, int, int], kind: str) -> tuple[int, int, int]:
-              maj, mi, pa = base
-              if kind == "major":
-                  return (maj + 1, 0, 0)
-              if kind == "minor":
-                  return (maj, mi + 1, 0)
-              if kind == "patch":
-                  return (maj, mi, pa + 1)
-              if kind == "current":
-                  return base
-              msg = f"Unknown bump kind: {kind}"
+          target = (current.major, current.minor, current.micro)
+          maj, mi, pa = target
+          if next_dev_bump == "major":
+              next_dev = (maj + 1, 0, 0)
+          elif next_dev_bump == "minor":
+              next_dev = (maj, mi + 1, 0)
+          elif next_dev_bump == "patch":
+              next_dev = (maj, mi, pa + 1)
+          else:
+              msg = f"Unknown bump kind: {next_dev_bump}"
               raise ValueError(msg)
 
-
-          base = (current.major, current.minor, current.micro)
-          target = bump(base, release_bump)
-          next_dev = bump(target, next_dev_bump)
-
-          target_str = f"{target[0]}.{target[1]}.{target[2]}"
-          next_dev_str = f"{next_dev[0]}.{next_dev[1]}.{next_dev[2]}.dev0"
-          print(f"target_version={target_str}")
-          print(f"next_dev_version={next_dev_str}")
+          print(f"target_version={target[0]}.{target[1]}.{target[2]}")
+          print(f"next_dev_version={next_dev[0]}.{next_dev[1]}.{next_dev[2]}.dev0")
           EOF
 
       - name: Validate version ordering
@@ -164,8 +144,7 @@ jobs:
             echo "|---|---|"
             echo "| Current pyproject version | \`${{ steps.state.outputs.current_version }}\` |"
             echo "| Latest GitHub release | \`${{ steps.state.outputs.latest_release }}\` |"
-            echo "| Release bump | \`${{ inputs.release_bump }}\` |"
-            echo "| Computed target | \`${{ steps.compute.outputs.target_version }}\` |"
+            echo "| Target release | \`${{ steps.compute.outputs.target_version }}\` |"
             echo "| Next dev bump | \`${{ inputs.next_dev_bump }}\` |"
             echo "| Computed next dev | \`${{ steps.compute.outputs.next_dev_version }}\` |"
             echo "| main HEAD | \`${{ steps.state.outputs.head_sha }}\` |"
