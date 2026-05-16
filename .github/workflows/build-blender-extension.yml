@@ -151,11 +151,30 @@ jobs:
           # ``pip download`` fans out from the local mmgpy wheel, pulling
           # the matching ABI wheels for numpy / scipy / pyvista / vtk
           # (and pure-Python wheels for the rest) into the same dir.
+          #
+          # pip's ``--platform`` is strict (no PEP 600 manylinux fallback),
+          # so on Linux we have to enumerate the manylinux generations our
+          # deps actually ship under: mmgpy is built against manylinux_2_28
+          # (cibuildwheel), numpy/scipy/vtk publish manylinux_2_17 wheels,
+          # and patchelf publishes manylinux_2_5 / manylinux1 wheels.
+          EXTRA_PLATFORMS=()
+          case "${{ matrix.platform }}" in
+            linux-x64)
+              EXTRA_PLATFORMS=(
+                --platform manylinux_2_17_x86_64
+                --platform manylinux2014_x86_64
+                --platform manylinux_2_5_x86_64
+                --platform manylinux1_x86_64
+              )
+              ;;
+          esac
+
           pip download mmgpy \
             --find-links wheels --dest wheels \
             --only-binary :all: \
             --python-version ${{ matrix.py }} \
             --platform ${{ matrix.pip_platform }} \
+            "${EXTRA_PLATFORMS[@]}" \
             --platform any
 
       - name: Inject ``wheels`` and ``platforms`` into the manifest
