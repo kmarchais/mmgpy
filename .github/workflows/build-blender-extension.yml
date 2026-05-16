@@ -104,7 +104,19 @@ jobs:
       contents: read
 
     steps:
+      # For ``workflow_run`` events, ``github.ref`` is the default branch
+      # (typically main), not the ref the upstream workflow ran on. Without
+      # an explicit ``ref``, we would read main's ``pyproject.toml`` (which
+      # is already bumped to the next dev version after a release lands)
+      # and embed the wrong version in the extension zip name and manifest.
+      # Pin to the upstream run's head_branch (e.g. ``v0.14.0``) so the
+      # version matches the wheels we are bundling.
       - uses: actions/checkout@v4
+        with:
+          ref: >-
+            ${{ github.event_name == 'workflow_run'
+                && github.event.workflow_run.head_branch
+                || github.ref }}
 
       - name: Set up Python ${{ matrix.py }}
         uses: actions/setup-python@v5
