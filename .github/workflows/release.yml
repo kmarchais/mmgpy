@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       target_version:
-        description: "Version to release, e.g. 0.14.0. Run dry_run=true first to see current state."
+        description: "Version to release (MAJOR.MINOR.PATCH). Run with dry_run=true first to see current state."
         required: true
         type: string
       next_dev_version:
-        description: "Next dev version after release, e.g. 0.15.0.dev0."
+        description: "Next dev version (MAJOR.MINOR.PATCH.devN)."
         required: true
         type: string
       dry_run:
@@ -58,6 +58,32 @@ jobs:
             echo "latest_release=$LATEST"
             echo "head_sha=$HEAD"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Validate version ordering
+        env:
+          CURRENT: ${{ steps.state.outputs.current_version }}
+          TARGET: ${{ inputs.target_version }}
+          NEXT_DEV: ${{ inputs.next_dev_version }}
+        run: |
+          uv run --no-project --with packaging python - <<'EOF'
+          import os, sys
+          from packaging.version import Version
+
+          current = Version(os.environ["CURRENT"])
+          target = Version(os.environ["TARGET"])
+          next_dev = Version(os.environ["NEXT_DEV"])
+          errors = []
+          if target <= current:
+              errors.append(f"target_version ({target}) must be > current pyproject version ({current})")
+          if next_dev <= target:
+              errors.append(f"next_dev_version ({next_dev}) must be > target_version ({target})")
+          for e in errors:
+              print(f"::error::{e}")
+          sys.exit(1 if errors else 0)
+          EOF
 
       - name: Refuse if target already released
         env:
