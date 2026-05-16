@@ -254,12 +254,40 @@ jobs:
           git commit -m "chore: bump to ${NEXT_DEV}"
           git push origin "release/v${TARGET}"
 
+      # `gh pr create` requires the repo setting
+      # ``Settings -> Actions -> General -> Workflow permissions ->
+      # Allow GitHub Actions to create and approve pull requests``.
+      # If that setting is off, the API rejects the call; we fall back
+      # to printing the compare URL so the human can open the PR.
       - name: Open PR back to main
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr create \
-            --base main \
-            --head "release/v${TARGET}" \
-            --title "release: v${TARGET}" \
-            --body "Tagged \`v${TARGET}\` on the release commit. This PR also bumps to \`${NEXT_DEV}\`. **Merge with a merge commit (no squash)** so the tagged commit stays reachable from main."
+          BRANCH="release/v${TARGET}"
+          BODY="Tagged \`v${TARGET}\` on the release commit. This PR also bumps to \`${NEXT_DEV}\`. **Merge with a merge commit (no squash)** so the tagged commit stays reachable from main."
+          if PR_URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "release: v${TARGET}" \
+              --body "$BODY" 2>&1); then
+            {
+              echo "## Release PR"
+              echo ""
+              echo "Opened: $PR_URL"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            COMPARE="${{ github.server_url }}/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
+            {
+              echo "## Release PR (manual step required)"
+              echo ""
+              echo ":warning: \`gh pr create\` failed:"
+              echo ""
+              echo '```'
+              echo "$PR_URL"
+              echo '```'
+              echo ""
+              echo "Open it by hand: [compare main...${BRANCH}]($COMPARE)"
+              echo ""
+              echo "If the failure mentions \"GitHub Actions is not permitted to create or approve pull requests\", enable that in **Settings -> Actions -> General -> Workflow permissions**."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
