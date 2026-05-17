@@ -190,15 +190,6 @@ ignore = [
 "src/mmgpy/_pv_plugin.py" = [
     "PLR0904", # PyVista accessor exposes the full public API surface
 ]
-"src/mmgpy/_reorder.py" = [
-    "PLR0914", # RCM reordering manipulates many intermediate arrays
-]
-"src/mmgpy/_transfer.py" = [
-    "PLR0914", # field interpolation manipulates many intermediate arrays
-]
-"src/mmgpy/repair/_vertices.py" = [
-    "PLR0914", # duplicate-vertex removal manipulates many intermediate arrays
-]
 "tests/**/*.py" = [
     "S101",    # asserts allowed in tests
     "T201",    # print statements allowed in tests for debugging

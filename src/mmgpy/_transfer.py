@@ -29,6 +29,8 @@ import numpy as np
 from scipy.spatial import Delaunay, cKDTree
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from numpy.typing import NDArray
 
 _TOLERANCE = 1e-15
@@ -123,6 +125,26 @@ def _compute_barycentric_tri(
     return np.column_stack([b0, b1, b2])
 
 
+def _barycentric_interpolate_inside(
+    target_points: NDArray[np.float64],
+    source_vertices: NDArray[np.float64],
+    field: NDArray[np.float64],
+    element_vertex_indices: NDArray[np.int32],
+    bary_fn: Callable[[NDArray[np.float64], NDArray[np.float64]], NDArray[np.float64]],
+) -> NDArray[np.float64]:
+    """Barycentric interpolation for target points known to lie inside the hull.
+
+    Returns
+    -------
+    ndarray
+        Interpolated values at *target_points*, shape ``(n_inside, n_components)``.
+
+    """
+    element_vertices = source_vertices[element_vertex_indices]
+    bary = bary_fn(target_points, element_vertices)
+    return np.einsum("ij,ijk->ik", bary, field[element_vertex_indices])
+
+
 def interpolate_field(
     source_vertices: NDArray[np.float64],
     source_elements: NDArray[np.int32],
@@ -157,8 +179,6 @@ def interpolate_field(
         n_source_vertices.
 
     """
-    n_element_verts = source_elements.shape[1]
-
     field = np.atleast_2d(field)
     if field.shape[0] == 1 and field.shape[1] == len(source_vertices):
         field = field.T
@@ -181,28 +201,21 @@ def interpolate_field(
 
     result = np.zeros((len(target_points), n_components), dtype=np.float64)
 
-    inside_mask = ~outside_mask
-    inside_indices = np.where(inside_mask)[0]
+    inside_indices = np.where(~outside_mask)[0]
 
     if len(inside_indices) > 0:
-        inside_simplices = simplex_indices[inside_indices]
-        element_vertex_indices = delaunay.simplices[inside_simplices]
-
-        element_vertices = source_vertices[element_vertex_indices]
-
-        if n_element_verts == _TETRA_VERTICES:
-            bary = _compute_barycentric_tetra(
-                target_points[inside_indices],
-                element_vertices,
-            )
-        else:
-            bary = _compute_barycentric_tri(
-                target_points[inside_indices],
-                element_vertices,
-            )
-
-        field_at_vertices = field[element_vertex_indices]
-        result[inside_indices] = np.einsum("ij,ijk->ik", bary, field_at_vertices)
+        bary_fn = (
+            _compute_barycentric_tetra
+            if source_elements.shape[1] == _TETRA_VERTICES
+            else _compute_barycentric_tri
+        )
+        result[inside_indices] = _barycentric_interpolate_inside(
+            target_points[inside_indices],
+            source_vertices,
+            field,
+            delaunay.simplices[simplex_indices[inside_indices]],
+            bary_fn,
+        )
 
     if np.any(outside_mask):
         assert tree is not None  # noqa: S101

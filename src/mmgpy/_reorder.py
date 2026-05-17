@@ -318,6 +318,28 @@ def _snapshot_permuted_fields(
     return mmg_snapshots, user_snapshots
 
 
+def _apply_permuted_elements(
+    mesh: Mesh,
+    inv_perm32: NDArray[np.int32],
+    tets: tuple[NDArray[np.int32], NDArray[np.int64]] | None,
+    tris: tuple[NDArray[np.int32], NDArray[np.int64]] | None,
+    edge_block: tuple[NDArray[np.int32], NDArray[np.int64]],
+) -> None:
+    """Write each element block back to *mesh* with vertex indices remapped."""
+    from mmgpy._mesh import MeshKind  # noqa: PLC0415
+
+    if mesh.kind == MeshKind.TETRAHEDRAL and tets is not None:
+        tetrahedra, tetrahedra_refs = tets
+        impl_3d = cast("MmgMesh3D", mesh._impl)  # noqa: SLF001
+        impl_3d.set_tetrahedra(inv_perm32[tetrahedra], tetrahedra_refs)
+    if tris is not None:
+        triangles, triangle_refs = tris
+        mesh.set_triangles(inv_perm32[triangles], triangle_refs)
+    edges, edge_refs = edge_block
+    if edges.size:
+        mesh.set_edges(inv_perm32[edges], edge_refs)
+
+
 def _apply_rcm_to_mesh(mesh: Mesh) -> None:
     """In-place reverse Cuthill-McKee reordering of a :class:`Mesh`.
 
@@ -325,14 +347,12 @@ def _apply_rcm_to_mesh(mesh: Mesh) -> None:
     every MMG-known field stored on the C++ side (metric, displacement,
     levelset, tensor), and every user field. Sizes are preserved.
     """
-    from mmgpy._mesh import MeshKind  # noqa: PLC0415
-
     vertices, vertex_refs = mesh.get_vertices_with_refs()
     n_vertices = len(vertices)
     if n_vertices == 0:
         return
 
-    blocks, tets, tris, (edges, edge_refs) = _collect_mesh_element_blocks(mesh)
+    blocks, tets, tris, edge_block = _collect_mesh_element_blocks(mesh)
     if not blocks:
         return
 
@@ -342,15 +362,7 @@ def _apply_rcm_to_mesh(mesh: Mesh) -> None:
     mmg_snapshots, user_snapshots = _snapshot_permuted_fields(mesh, perm, n_vertices)
 
     mesh.set_vertices(vertices[perm], vertex_refs[perm])
-    if mesh.kind == MeshKind.TETRAHEDRAL and tets is not None:
-        tetrahedra, tetrahedra_refs = tets
-        impl_3d = cast("MmgMesh3D", mesh._impl)  # noqa: SLF001
-        impl_3d.set_tetrahedra(inv_perm32[tetrahedra], tetrahedra_refs)
-    if tris is not None:
-        triangles, triangle_refs = tris
-        mesh.set_triangles(inv_perm32[triangles], triangle_refs)
-    if edges.size:
-        mesh.set_edges(inv_perm32[edges], edge_refs)
+    _apply_permuted_elements(mesh, inv_perm32, tets, tris, edge_block)
 
     for name, permuted in mmg_snapshots.items():
         mesh._impl.set_field(name, permuted)  # noqa: SLF001
