@@ -29,13 +29,13 @@ import numpy as np
 import pyvista as pv
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
     from typing import TypeGuard
 
     from numpy.typing import NDArray
 
     from mmgpy._mesh import Mesh as _Mesh
-    from mmgpy._mesh import MeshKind
+    from mmgpy._mesh import MeshKind, ValidationCheck
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
     from mmgpy._sol import Location as _SolLocation
     from mmgpy._validation import ValidationReport
@@ -1469,14 +1469,12 @@ class MmgAccessor:
         )
         write_sol_file(sol_path, fields, dim)
 
-    def validate(  # noqa: PLR0913
+    def validate(
         self,
         *,
+        checks: Iterable[ValidationCheck] | None = None,
         detailed: bool = False,
         strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
         min_quality: float = 0.1,
     ) -> bool | ValidationReport:
         """Validate the mesh and return either a bool or a detailed report.
@@ -1492,12 +1490,17 @@ class MmgAccessor:
         """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
-        return _read_mesh(self._dataset).validate(
+        mesh = _read_mesh(self._dataset)
+        if checks is None:
+            return mesh.validate(
+                detailed=detailed,
+                strict=strict,
+                min_quality=min_quality,
+            )
+        return mesh.validate(
+            checks=checks,
             detailed=detailed,
             strict=strict,
-            check_geometry=check_geometry,
-            check_topology=check_topology,
-            check_quality=check_quality,
             min_quality=min_quality,
         )
 

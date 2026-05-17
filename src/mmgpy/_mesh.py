@@ -16,7 +16,7 @@ from collections.abc import Mapping
 from contextlib import contextmanager, nullcontext
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 import numpy as np
 import pyvista as pv
@@ -24,7 +24,7 @@ import pyvista as pv
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Sequence
+    from collections.abc import Callable, Generator, Iterable, Sequence
     from types import TracebackType
 
     from numpy.typing import NDArray
@@ -51,6 +51,11 @@ _TETRA_VERTS = 4
 _TRI_VERTS = 3
 _EDGE_VERTS = 2
 _2D_DETECTION_TOLERANCE = 1e-8
+
+ValidationCheck = Literal["geometry", "topology", "quality"]
+_ALL_CHECKS: frozenset[ValidationCheck] = frozenset(
+    ("geometry", "topology", "quality"),
+)
 
 
 _RENUM_FUTURE_WARNED = False
@@ -377,45 +382,76 @@ def _validate_refs(
     return refs_arr
 
 
-def _validate_edges(
-    edges: NDArray[np.integer] | None,
-    edge_refs: NDArray[np.integer] | None,
-) -> tuple[NDArray[np.int32] | None, NDArray[np.int64] | None]:
-    """Coerce and validate edge connectivity and reference markers.
+class _EdgeData(NamedTuple):
+    """Edge connectivity paired with optional reference markers.
+
+    Used to keep ``_create_impl`` and ``Mesh.__init__`` under
+    ``PLR0913``'s arg budget by bundling the always-paired ``edges`` and
+    ``edge_refs`` arrays into a single parameter.
+    """
+
+    edges: NDArray[np.int32]
+    refs: NDArray[np.int64] | None = None
+
+
+def _build_edge_data(
+    edges: NDArray[np.int32] | None,
+    edge_refs: NDArray[np.int64] | None,
+) -> _EdgeData | None:
+    """Bundle ``edges`` and ``edge_refs`` into ``_EdgeData`` or ``None``.
 
     Returns
     -------
-    tuple of (ndarray of int32 or None, ndarray of int64 or None)
-        ``(edges, edge_refs)`` after coercion; both are ``None`` when
-        no edges were supplied.
+    _EdgeData or None
+        ``_EdgeData(edges, edge_refs)`` when ``edges`` is provided,
+        otherwise ``None``.
 
     Raises
     ------
     ValueError
-        If ``edge_refs`` is given without ``edges``, if ``edges`` is not
-        shape ``(n_edges, 2)``, or if the lengths of ``edges`` and
-        ``edge_refs`` differ.
+        If ``edge_refs`` is supplied without ``edges``.
 
     """
     if edges is None:
         if edge_refs is not None:
             msg = "edge_refs provided without edges"
             raise ValueError(msg)
-        return None, None
-    edges_arr = np.ascontiguousarray(edges, dtype=np.int32)
+        return None
+    return _EdgeData(edges, edge_refs)
+
+
+def _validate_edges(edges: _EdgeData | None) -> _EdgeData | None:
+    """Coerce and validate edge connectivity and reference markers.
+
+    Returns
+    -------
+    _EdgeData or None
+        Edge data with arrays pinned to the MMG-side dtypes, or ``None``
+        when no edges were supplied.
+
+    Raises
+    ------
+    ValueError
+        If ``edges`` is not shape ``(n_edges, 2)`` or if the lengths of
+        ``edges.edges`` and ``edges.refs`` differ.
+
+    """
+    if edges is None:
+        return None
+    edges_arr = np.ascontiguousarray(edges.edges, dtype=np.int32)
     if edges_arr.ndim != _DIMS_2D or edges_arr.shape[1] != _EDGE_VERTS:
         msg = f"edges must have shape (n_edges, 2), got {edges_arr.shape}"
         raise ValueError(msg)
-    if edge_refs is None:
-        return edges_arr, None
-    e_refs = np.ascontiguousarray(edge_refs, dtype=np.int64)
+    if edges.refs is None:
+        return _EdgeData(edges_arr, None)
+    e_refs = np.ascontiguousarray(edges.refs, dtype=np.int64)
     if len(e_refs) != len(edges_arr):
         msg = (
             f"edge_refs length ({len(e_refs)}) must match "
             f"edges length ({len(edges_arr)})"
         )
         raise ValueError(msg)
-    return edges_arr, e_refs
+    return _EdgeData(edges_arr, e_refs)
 
 
 _KIND_CONFIG: dict[
@@ -434,8 +470,7 @@ def _create_impl(
     kind: MeshKind,
     *,
     refs: NDArray[np.int64] | None = None,
-    edges: NDArray[np.int32] | None = None,
-    edge_refs: NDArray[np.int64] | None = None,
+    edges: _EdgeData | None = None,
 ) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
     """Create the appropriate mesh implementation.
 
@@ -449,10 +484,9 @@ def _create_impl(
         Mesh kind to create.
     refs : ndarray, optional
         Reference markers for each cell.
-    edges : ndarray, optional
-        Edge connectivity, shape (n_edges, 2).
-    edge_refs : ndarray, optional
-        Reference markers for each edge.
+    edges : _EdgeData, optional
+        Edge connectivity ``(n_edges, 2)`` paired with optional reference
+        markers.
 
     Returns
     -------
@@ -472,7 +506,7 @@ def _create_impl(
     vertices = np.ascontiguousarray(vertices, dtype=np.float64)
     cells = np.ascontiguousarray(cells, dtype=np.int32)
     cell_refs = _validate_refs(refs, cells)
-    edges_arr, e_refs = _validate_edges(edges, edge_refs)
+    edge_data = _validate_edges(edges)
 
     if kind == MeshKind.TRIANGULAR_2D and vertices.shape[1] == _DIMS_3D:
         vertices = np.ascontiguousarray(vertices[:, :2])
@@ -481,14 +515,14 @@ def _create_impl(
     impl = impl_cls()
 
     size_kwargs: dict[str, int] = {"vertices": len(vertices), cell_kw: len(cells)}
-    if edges_arr is not None:
-        size_kwargs["edges"] = len(edges_arr)
+    if edge_data is not None:
+        size_kwargs["edges"] = len(edge_data.edges)
     impl.set_mesh_size(**size_kwargs)
 
     impl.set_vertices(vertices)
     getattr(impl, setter_name)(cells, cell_refs)
-    if edges_arr is not None:
-        impl.set_edges(edges_arr, e_refs)
+    if edge_data is not None:
+        impl.set_edges(edge_data.edges, edge_data.refs)
     return impl
 
 
@@ -764,8 +798,7 @@ class Mesh:
             cells,
             self._kind,
             refs=cell_refs,
-            edges=edges_arr,
-            edge_refs=e_refs,
+            edges=_build_edge_data(edges_arr, e_refs),
         )
 
     @classmethod
@@ -834,8 +867,7 @@ class Mesh:
             cells_arr,
             kind,
             refs=cell_refs,
-            edges=edges_arr,
-            edge_refs=e_refs,
+            edges=_build_edge_data(edges_arr, e_refs),
         )
         return cls._from_impl(impl, kind)
 
@@ -2722,28 +2754,23 @@ class Mesh:
     def validate(
         self,
         *,
+        checks: Iterable[ValidationCheck] = _ALL_CHECKS,
         detailed: bool = False,
         strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
         min_quality: float = 0.1,
     ) -> bool | ValidationReport:
         """Validate the mesh and check for issues.
 
         Parameters
         ----------
+        checks : iterable of {"geometry", "topology", "quality"}
+            Which check families to run. Defaults to all three. Pass a
+            subset (e.g. ``{"geometry"}``) to skip the others.
         detailed : bool
             If True, return a ValidationReport with detailed information.
             If False, return a simple boolean.
         strict : bool
             If True, raise ValidationError on any issue (including warnings).
-        check_geometry : bool
-            Check for geometric issues (inverted/degenerate elements).
-        check_topology : bool
-            Check for topological issues (orphan vertices, non-manifold edges).
-        check_quality : bool
-            Check element quality against threshold.
         min_quality : float
             Minimum acceptable element quality (0-1).
 
@@ -2767,6 +2794,8 @@ class Mesh:
         >>> report = mesh.validate(detailed=True)
         >>> print(f"Quality: {report.quality.mean:.3f}")
 
+        >>> mesh.validate(checks={"geometry"})
+
         """
         from mmgpy._validation import (  # noqa: PLC0415
             ValidationError,
@@ -2774,6 +2803,11 @@ class Mesh:
             validate_mesh_3d,
             validate_mesh_surface,
         )
+
+        checks_set = frozenset(checks)
+        check_geometry = "geometry" in checks_set
+        check_topology = "topology" in checks_set
+        check_quality = "quality" in checks_set
 
         # Dispatch to the correct validation function based on mesh kind
         if self._kind == MeshKind.TETRAHEDRAL:
