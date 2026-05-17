@@ -15,6 +15,7 @@ import warnings
 from collections.abc import Mapping
 from contextlib import contextmanager, nullcontext
 from enum import Enum
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
@@ -59,10 +60,18 @@ _ALL_CHECKS: frozenset[ValidationCheck] = frozenset(
 )
 
 
-class _RenumWarning:
-    """Holds the one-shot ``FutureWarning`` flag for the ``renum`` kwarg."""
-
-    fired = False
+@cache
+def _emit_renum_future_warning() -> None:
+    """Emit the ``renum`` migration ``FutureWarning`` exactly once per process."""
+    warnings.warn(
+        "renum=1 no longer invokes SCOTCH renumbering (the bundled "
+        "MMG is built without it); mmgpy now applies reverse "
+        "Cuthill-McKee instead. Call "
+        "mmgpy.reorder_cuthill_mckee() directly for explicit "
+        "control over the reordering.",
+        FutureWarning,
+        stacklevel=4,
+    )
 
 
 def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
@@ -105,17 +114,8 @@ def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
             raise ValueError(msg) from err
     else:
         do_rcm = bool(raw)
-    if do_rcm and not _RenumWarning.fired:
-        _RenumWarning.fired = True
-        warnings.warn(
-            "renum=1 no longer invokes SCOTCH renumbering (the bundled "
-            "MMG is built without it); mmgpy now applies reverse "
-            "Cuthill-McKee instead. Call "
-            "mmgpy.reorder_cuthill_mckee() directly for explicit "
-            "control over the reordering.",
-            FutureWarning,
-            stacklevel=3,
-        )
+    if do_rcm:
+        _emit_renum_future_warning()
     return do_rcm
 
 

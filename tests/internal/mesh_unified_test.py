@@ -740,7 +740,7 @@ class TestNonNativeRemeshWithSol:
             result = mmg2d.remesh(
                 vtu_input,
                 vtu_output,
-                sol=SolPaths(input=input_sol),
+                sol=SolPaths(in_path=input_sol),
                 options={"verbose": -1},
             )
 
@@ -765,7 +765,7 @@ class TestNonNativeRemeshWithSol:
             mmg3d.remesh(
                 vtu_input,
                 vtu_output,
-                sol=SolPaths(output=output_sol),
+                sol=SolPaths(out_path=output_sol),
                 options={"verbose": -1},
             )
 
@@ -927,7 +927,7 @@ class TestLazyFieldLoading:
             mmg3d.remesh(
                 vtk_path,
                 out_path,
-                sol=SolPaths(output=sol_path),
+                sol=SolPaths(out_path=sol_path),
                 options={"verbose": -1},
             )
 

@@ -24,7 +24,7 @@ OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 mmgs.remesh(
     INPUT_FILE,
     OUTPUT_FILE,
-    sol=SolPaths(input=SOL_FILE),
+    sol=SolPaths(in_path=SOL_FILE),
     options={"iso": 1, "ls": 0.0},
 )
 

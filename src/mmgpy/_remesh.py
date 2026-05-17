@@ -30,8 +30,8 @@ NATIVE_MESH_EXTENSIONS = frozenset({".mesh", ".meshb"})
 class SolPaths(NamedTuple):
     """Pair of input/output ``.sol`` paths consumed by the file-based remesh API."""
 
-    input: str | Path | None = None
-    output: str | Path | None = None
+    in_path: str | Path | None = None
+    out_path: str | Path | None = None
 
 
 def _is_native(path: str | Path | None) -> bool:
@@ -133,9 +133,9 @@ def _make_wrapped_remesh(
             forwarded.pop("renum", None)  # cpp bindings do not accept renum
             return cpp_remesh(
                 input_mesh=input_mesh,
-                input_sol=sol.input,
+                input_sol=sol.in_path,
                 output_mesh=output_mesh,
-                output_sol=sol.output,
+                output_sol=sol.out_path,
                 options=forwarded,
             )
 
@@ -143,9 +143,9 @@ def _make_wrapped_remesh(
 
         mesh = _read(input_mesh)
 
-        if sol.input is not None:
+        if sol.in_path is not None:
             channel = "levelset" if _is_iso_mode(options) else "metric"
-            _load_sol(mesh, sol.input, channel=channel)
+            _load_sol(mesh, sol.in_path, channel=channel)
 
         # Leave ``renum`` in forwarded so Mesh.remesh pops it (and emits the
         # one-time FutureWarning) and applies RCM in place.
@@ -158,8 +158,8 @@ def _make_wrapped_remesh(
         if output_mesh is not None:
             mesh.save(output_mesh)
 
-        if sol.output is not None:
-            _save_sol(mesh, sol.output)
+        if sol.out_path is not None:
+            _save_sol(mesh, sol.out_path)
 
         return result.success
 
@@ -192,7 +192,7 @@ class mmg3d:
         output_mesh : str or Path, optional
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
-            ``(input, output)`` solution file paths (.sol/.solb).
+            ``(in_path, out_path)`` solution file paths (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -237,7 +237,7 @@ class mmg2d:
         output_mesh : str or Path, optional
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
-            ``(input, output)`` solution file paths (.sol/.solb).
+            ``(in_path, out_path)`` solution file paths (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -280,7 +280,7 @@ class mmgs:
         output_mesh : str or Path, optional
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
-            ``(input, output)`` solution file paths (.sol/.solb).
+            ``(in_path, out_path)`` solution file paths (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False

@@ -193,7 +193,7 @@ class TestWrappedRemeshIsoRouting:
             ok = mmg2d.remesh(
                 _ASSETS / "multi-mat.mesh",
                 out,
-                sol=SolPaths(input=_ASSETS / "multi-mat-ls.sol"),
+                sol=SolPaths(in_path=_ASSETS / "multi-mat-ls.sol"),
                 options={"iso": 1, "ls": 0.0, "verbose": -1},
             )
             assert ok
@@ -212,7 +212,7 @@ class TestWrappedRemeshIsoRouting:
             ok = mmgs.remesh(
                 _ASSETS / "teapot.mesh",
                 out,
-                sol=SolPaths(input=_ASSETS / "teapot-ls.sol"),
+                sol=SolPaths(in_path=_ASSETS / "teapot-ls.sol"),
                 options={"iso": 1, "ls": 0.0, "verbose": -1},
             )
             assert ok
@@ -226,7 +226,7 @@ class TestWrappedRemeshIsoRouting:
             ok = mmg3d.remesh(
                 _ASSETS / "cube.mesh",
                 out,
-                sol=SolPaths(input=_ASSETS / "cube-ls.sol"),
+                sol=SolPaths(in_path=_ASSETS / "cube-ls.sol"),
                 options={"iso": 1, "ls": 0.0, "verbose": -1},
             )
             assert ok
@@ -270,7 +270,7 @@ class TestWrappedRemeshIsoRouting:
             ok = mmg3d.remesh(
                 _ASSETS / "cube.mesh",
                 out_mesh,
-                sol=SolPaths(output=out_sol),
+                sol=SolPaths(out_path=out_sol),
                 options={"hmax": 0.5, "verbose": -1},
             )
             assert ok
@@ -287,8 +287,28 @@ class TestWrappedRemeshIsoRouting:
             out_sol = Path(tmpdir) / "out.sol"
             ok = mmg3d.remesh(
                 input_vtk,
-                sol=SolPaths(output=out_sol),
+                sol=SolPaths(out_path=out_sol),
                 options={"hmax": 0.5, "verbose": -1},
             )
             assert ok
             assert out_sol.exists()
+
+    def test_empty_sol_paths_is_equivalent_to_none(self) -> None:
+        """``sol=SolPaths()`` (both fields ``None``) matches ``sol=None``."""
+        with TemporaryDirectory() as tmpdir:
+            out_a = Path(tmpdir) / "a.mesh"
+            out_b = Path(tmpdir) / "b.mesh"
+            ok_a = mmg3d.remesh(
+                _ASSETS / "cube.mesh",
+                out_a,
+                sol=SolPaths(),
+                options={"hmax": 0.5, "verbose": -1},
+            )
+            ok_b = mmg3d.remesh(
+                _ASSETS / "cube.mesh",
+                out_b,
+                options={"hmax": 0.5, "verbose": -1},
+            )
+            assert ok_a is ok_b is True
+            assert out_a.exists()
+            assert out_b.exists()
