@@ -26,6 +26,7 @@ from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Sequence
     from types import TracebackType
+    from typing import Self
 
     from numpy.typing import NDArray
 
@@ -58,7 +59,7 @@ _ALL_CHECKS: frozenset[ValidationCheck] = frozenset(
 )
 
 
-_RENUM_FUTURE_WARNED = False
+_RENUM_FUTURE_WARNED: list[bool] = [False]
 
 
 def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
@@ -101,19 +102,17 @@ def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
             raise ValueError(msg) from err
     else:
         do_rcm = bool(raw)
-    if do_rcm:
-        global _RENUM_FUTURE_WARNED  # noqa: PLW0603
-        if not _RENUM_FUTURE_WARNED:
-            _RENUM_FUTURE_WARNED = True
-            warnings.warn(
-                "renum=1 no longer invokes SCOTCH renumbering (the bundled "
-                "MMG is built without it); mmgpy now applies reverse "
-                "Cuthill-McKee instead. Call "
-                "mmgpy.reorder_cuthill_mckee() directly for explicit "
-                "control over the reordering.",
-                FutureWarning,
-                stacklevel=3,
-            )
+    if do_rcm and not _RENUM_FUTURE_WARNED[0]:
+        _RENUM_FUTURE_WARNED[0] = True
+        warnings.warn(
+            "renum=1 no longer invokes SCOTCH renumbering (the bundled "
+            "MMG is built without it); mmgpy now applies reverse "
+            "Cuthill-McKee instead. Call "
+            "mmgpy.reorder_cuthill_mckee() directly for explicit "
+            "control over the reordering.",
+            FutureWarning,
+            stacklevel=3,
+        )
     return do_rcm
 
 
@@ -2899,7 +2898,7 @@ class Mesh:
     # Context manager support
     # =========================================================================
 
-    def __enter__(self) -> Mesh:  # noqa: PYI034
+    def __enter__(self) -> Self:
         """Enter the context manager.
 
         Returns

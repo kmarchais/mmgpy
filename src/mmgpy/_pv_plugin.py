@@ -28,6 +28,8 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 import pyvista as pv
 
+from mmgpy._mesh import _ALL_CHECKS
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
     from typing import TypeGuard
@@ -46,6 +48,7 @@ logger = logging.getLogger("mmgpy")
 
 _MEDIT_EXTENSIONS = (".mesh", ".meshb")
 _SOL_EXTENSIONS = (".sol", ".solb")
+_NDIM_2D = 2
 
 
 def _find_companion_sol(mesh_path: Path) -> Path | None:
@@ -681,7 +684,7 @@ def _is_valid_sol_shape(arr: NDArray[Any], dim: int) -> bool:
     """
     if arr.ndim == 1:
         return True
-    if arr.ndim != 2:  # noqa: PLR2004  -- sol arrays are 1D scalar or 2D
+    if arr.ndim != _NDIM_2D:
         return False
     n_cols = arr.shape[1]
     tensor_size = dim * (dim + 1) // 2
@@ -854,7 +857,7 @@ def _coerce_metric_kwarg(
     arr = np.asarray(metric, dtype=np.float64)
     if arr.ndim == 1:
         arr = arr.reshape(-1, 1)
-    if arr.ndim != 2 or arr.shape[0] != n_points:  # noqa: PLR2004
+    if arr.ndim != _NDIM_2D or arr.shape[0] != n_points:
         msg = (
             f"metric must have shape (n_points,), (n_points, 1), "
             f"(n_points, 3) or (n_points, 6); got shape "
@@ -1490,15 +1493,8 @@ class MmgAccessor:
         """
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
-        mesh = _read_mesh(self._dataset)
-        if checks is None:
-            return mesh.validate(
-                detailed=detailed,
-                strict=strict,
-                min_quality=min_quality,
-            )
-        return mesh.validate(
-            checks=checks,
+        return _read_mesh(self._dataset).validate(
+            checks=_ALL_CHECKS if checks is None else checks,
             detailed=detailed,
             strict=strict,
             min_quality=min_quality,
