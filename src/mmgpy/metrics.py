@@ -46,7 +46,26 @@ import numpy as np
 from mmgpy._topology import two_ring_patches, vertex_adjacency
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from numpy.typing import NDArray
+
+    HessianSolver = Callable[
+        [NDArray[np.float64], NDArray[np.float64]],
+        NDArray[np.float64],
+    ]
+
+# Mesh dimensions supported by MMG.
+_DIM_2D = 2
+_DIM_3D = 3
+# Symmetric tensor storage widths: 3 components in 2D, 6 in 3D
+# (upper-triangle row-major: 2D [m11, m12, m22]; 3D [m11, m12, m13, m22, m23, m33]).
+_TENSOR_SIZE_2D = 3
+_TENSOR_SIZE_3D = 6
+# ndim of a 2D input array, shape (n_vertices, dim).
+_ARRAY_NDIM_2D = 2
+# ndim of a single (unbatched) matrix, shape (dim, dim).
+_SINGLE_MATRIX_NDIM = 2
 
 
 def create_isotropic_metric(
@@ -90,7 +109,7 @@ def create_isotropic_metric(
     (100, 6)
 
     """
-    if dim not in {2, 3}:
+    if dim not in {_DIM_2D, _DIM_3D}:
         msg = f"dim must be 2 or 3, got {dim}"
         raise ValueError(msg)
 
@@ -100,7 +119,7 @@ def create_isotropic_metric(
             msg = "n_vertices required when h is a scalar"
             raise ValueError(msg)
         h = np.full(n_vertices, h.item(), dtype=np.float64)
-    elif h.ndim == 2 and h.shape[1] == 1:
+    elif h.ndim == _ARRAY_NDIM_2D and h.shape[1] == 1:
         h = h.ravel()
 
     if h.ndim != 1:
@@ -111,13 +130,13 @@ def create_isotropic_metric(
 
     eigenvalue = 1.0 / (h * h)
 
-    if dim == 3:
-        metric = np.zeros((n_verts, 6), dtype=np.float64)
+    if dim == _DIM_3D:
+        metric = np.zeros((n_verts, _TENSOR_SIZE_3D), dtype=np.float64)
         metric[:, 0] = eigenvalue  # m11
         metric[:, 3] = eigenvalue  # m22
         metric[:, 5] = eigenvalue  # m33
     else:
-        metric = np.zeros((n_verts, 3), dtype=np.float64)
+        metric = np.zeros((n_verts, _TENSOR_SIZE_2D), dtype=np.float64)
         metric[:, 0] = eigenvalue  # m11
         metric[:, 2] = eigenvalue  # m22
 
@@ -183,14 +202,14 @@ def create_anisotropic_metric(
         single_metric = True
         sizes = sizes.reshape(1, dim)
         n_vertices = 1
-    elif sizes.ndim == 2:
+    elif sizes.ndim == _ARRAY_NDIM_2D:
         n_vertices, dim = sizes.shape
         single_metric = False
     else:
         msg = f"sizes must be 1D or 2D array, got shape {sizes.shape}"
         raise ValueError(msg)
 
-    if dim not in {2, 3}:
+    if dim not in {_DIM_2D, _DIM_3D}:
         msg = f"sizes must have 2 or 3 components, got {dim}"
         raise ValueError(msg)
 
@@ -201,7 +220,7 @@ def create_anisotropic_metric(
 
     directions = np.asarray(directions, dtype=np.float64)
 
-    if single_metric and directions.ndim == 2:
+    if single_metric and directions.ndim == _SINGLE_MATRIX_NDIM:
         directions = directions.reshape(1, dim, dim)
 
     if directions.shape[-2:] != (dim, dim):
@@ -209,29 +228,12 @@ def create_anisotropic_metric(
         raise ValueError(msg)
 
     eigenvalues = 1.0 / (sizes * sizes)
-    D = np.zeros((n_vertices, dim, dim), dtype=np.float64)
+    diag = np.zeros((n_vertices, dim, dim), dtype=np.float64)
     for i in range(dim):
-        D[:, i, i] = eigenvalues[:, i]
+        diag[:, i, i] = eigenvalues[:, i]
 
-    M = np.einsum("...ij,...jk,...lk->...il", directions, D, directions)
-
-    if dim == 3:
-        metric = np.zeros((n_vertices, 6), dtype=np.float64)
-        metric[:, 0] = M[:, 0, 0]  # m11
-        metric[:, 1] = M[:, 0, 1]  # m12
-        metric[:, 2] = M[:, 0, 2]  # m13
-        metric[:, 3] = M[:, 1, 1]  # m22
-        metric[:, 4] = M[:, 1, 2]  # m23
-        metric[:, 5] = M[:, 2, 2]  # m33
-    else:
-        metric = np.zeros((n_vertices, 3), dtype=np.float64)
-        metric[:, 0] = M[:, 0, 0]  # m11
-        metric[:, 1] = M[:, 0, 1]  # m12
-        metric[:, 2] = M[:, 1, 1]  # m22
-
-    if single_metric:
-        return metric[0]
-    return metric
+    matrices = np.einsum("...ij,...jk,...lk->...il", directions, diag, directions)
+    return matrix_to_tensor(matrices[0] if single_metric else matrices)
 
 
 def tensor_to_matrix(
@@ -262,40 +264,40 @@ def tensor_to_matrix(
 
     n_components = tensor.shape[1]
     if dim is None:
-        dim = 3 if n_components == 6 else 2
+        dim = _DIM_3D if n_components == _TENSOR_SIZE_3D else _DIM_2D
 
     n = tensor.shape[0]
-    M = np.zeros((n, dim, dim), dtype=np.float64)
+    matrix = np.zeros((n, dim, dim), dtype=np.float64)
 
-    if dim == 3:
-        M[:, 0, 0] = tensor[:, 0]  # m11
-        M[:, 0, 1] = tensor[:, 1]  # m12
-        M[:, 0, 2] = tensor[:, 2]  # m13
-        M[:, 1, 0] = tensor[:, 1]  # m21 = m12
-        M[:, 1, 1] = tensor[:, 3]  # m22
-        M[:, 1, 2] = tensor[:, 4]  # m23
-        M[:, 2, 0] = tensor[:, 2]  # m31 = m13
-        M[:, 2, 1] = tensor[:, 4]  # m32 = m23
-        M[:, 2, 2] = tensor[:, 5]  # m33
+    if dim == _DIM_3D:
+        matrix[:, 0, 0] = tensor[:, 0]  # m11
+        matrix[:, 0, 1] = tensor[:, 1]  # m12
+        matrix[:, 0, 2] = tensor[:, 2]  # m13
+        matrix[:, 1, 0] = tensor[:, 1]  # m21 = m12
+        matrix[:, 1, 1] = tensor[:, 3]  # m22
+        matrix[:, 1, 2] = tensor[:, 4]  # m23
+        matrix[:, 2, 0] = tensor[:, 2]  # m31 = m13
+        matrix[:, 2, 1] = tensor[:, 4]  # m32 = m23
+        matrix[:, 2, 2] = tensor[:, 5]  # m33
     else:
-        M[:, 0, 0] = tensor[:, 0]  # m11
-        M[:, 0, 1] = tensor[:, 1]  # m12
-        M[:, 1, 0] = tensor[:, 1]  # m21 = m12
-        M[:, 1, 1] = tensor[:, 2]  # m22
+        matrix[:, 0, 0] = tensor[:, 0]  # m11
+        matrix[:, 0, 1] = tensor[:, 1]  # m12
+        matrix[:, 1, 0] = tensor[:, 1]  # m21 = m12
+        matrix[:, 1, 1] = tensor[:, 2]  # m22
 
     if single:
-        return M[0]
-    return M
+        return matrix[0]
+    return matrix
 
 
 def matrix_to_tensor(
-    M: NDArray[np.float64],
+    matrix: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     """Convert full symmetric matrix to tensor storage format.
 
     Parameters
     ----------
-    M : array_like
+    matrix : array_like
         Full symmetric matrix. Shape (3, 3) or (n, 3, 3) for 3D,
         (2, 2) or (n, 2, 2) for 2D.
 
@@ -306,27 +308,27 @@ def matrix_to_tensor(
         (3,) or (n, 3) for 2D.
 
     """
-    M = np.asarray(M, dtype=np.float64)
-    single = M.ndim == 2
+    matrix = np.asarray(matrix, dtype=np.float64)
+    single = matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
-        M = M.reshape(1, *M.shape)
+        matrix = matrix.reshape(1, *matrix.shape)
 
-    dim = M.shape[1]
-    n = M.shape[0]
+    dim = matrix.shape[1]
+    n = matrix.shape[0]
 
-    if dim == 3:
-        tensor = np.zeros((n, 6), dtype=np.float64)
-        tensor[:, 0] = M[:, 0, 0]  # m11
-        tensor[:, 1] = M[:, 0, 1]  # m12
-        tensor[:, 2] = M[:, 0, 2]  # m13
-        tensor[:, 3] = M[:, 1, 1]  # m22
-        tensor[:, 4] = M[:, 1, 2]  # m23
-        tensor[:, 5] = M[:, 2, 2]  # m33
+    if dim == _DIM_3D:
+        tensor = np.zeros((n, _TENSOR_SIZE_3D), dtype=np.float64)
+        tensor[:, 0] = matrix[:, 0, 0]  # m11
+        tensor[:, 1] = matrix[:, 0, 1]  # m12
+        tensor[:, 2] = matrix[:, 0, 2]  # m13
+        tensor[:, 3] = matrix[:, 1, 1]  # m22
+        tensor[:, 4] = matrix[:, 1, 2]  # m23
+        tensor[:, 5] = matrix[:, 2, 2]  # m33
     else:
-        tensor = np.zeros((n, 3), dtype=np.float64)
-        tensor[:, 0] = M[:, 0, 0]  # m11
-        tensor[:, 1] = M[:, 0, 1]  # m12
-        tensor[:, 2] = M[:, 1, 1]  # m22
+        tensor = np.zeros((n, _TENSOR_SIZE_2D), dtype=np.float64)
+        tensor[:, 0] = matrix[:, 0, 0]  # m11
+        tensor[:, 1] = matrix[:, 0, 1]  # m12
+        tensor[:, 2] = matrix[:, 1, 1]  # m22
 
     if single:
         return tensor[0]
@@ -376,16 +378,16 @@ def validate_metric_tensor(
 
     """
     tensor = np.asarray(tensor, dtype=np.float64)
-    M = tensor_to_matrix(tensor, dim)
+    matrix = tensor_to_matrix(tensor, dim)
 
-    single = M.ndim == 2
+    single = matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
-        M = M.reshape(1, *M.shape)
+        matrix = matrix.reshape(1, *matrix.shape)
 
     all_valid = True
     messages = []
 
-    for i, m in enumerate(M):
+    for i, m in enumerate(matrix):
         eigvals = np.linalg.eigvalsh(m)
 
         if not np.all(eigvals > 0):
@@ -437,19 +439,19 @@ def compute_metric_eigenpairs(
     array([0.1, 1. , 1. ])
 
     """
-    M = tensor_to_matrix(tensor, dim)
+    matrix = tensor_to_matrix(tensor, dim)
 
-    single = M.ndim == 2
+    single = matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
-        M = M.reshape(1, *M.shape)
+        matrix = matrix.reshape(1, *matrix.shape)
 
-    n = M.shape[0]
-    actual_dim = M.shape[1]
+    n = matrix.shape[0]
+    actual_dim = matrix.shape[1]
 
     sizes = np.zeros((n, actual_dim), dtype=np.float64)
     directions = np.zeros((n, actual_dim, actual_dim), dtype=np.float64)
 
-    for i, m in enumerate(M):
+    for i, m in enumerate(matrix):
         eigvals, eigvecs = np.linalg.eigh(m)
         sizes[i] = 1.0 / np.sqrt(eigvals)
         directions[i] = eigvecs
@@ -500,42 +502,56 @@ def intersect_metrics(
         msg = f"Metrics must have same shape: {m1.shape} vs {m2.shape}"
         raise ValueError(msg)
 
-    M1 = tensor_to_matrix(m1, dim)
-    M2 = tensor_to_matrix(m2, dim)
+    matrix1 = tensor_to_matrix(m1, dim)
+    matrix2 = tensor_to_matrix(m2, dim)
 
-    single = M1.ndim == 2
+    single = matrix1.ndim == _SINGLE_MATRIX_NDIM
     if single:
-        M1 = M1.reshape(1, *M1.shape)
-        M2 = M2.reshape(1, *M2.shape)
+        matrix1 = matrix1.reshape(1, *matrix1.shape)
+        matrix2 = matrix2.reshape(1, *matrix2.shape)
 
-    n = M1.shape[0]
-    M_intersect = np.zeros_like(M1)
+    intersected = np.zeros_like(matrix1)
+    for i in range(matrix1.shape[0]):
+        intersected[i] = _intersect_metric_pair(matrix1[i], matrix2[i])
 
-    for i in range(n):
-        eigvals1, eigvecs1 = np.linalg.eigh(M1[i])
+    return matrix_to_tensor(intersected if not single else intersected[0])
 
-        # Guard against near-singular metrics (eigenvalues close to zero)
-        # Use machine epsilon scaled by max eigenvalue for numerical stability
-        eps = np.finfo(np.float64).eps * np.max(np.abs(eigvals1)) * 100
-        eigvals1 = np.maximum(eigvals1, eps)
 
-        sqrt_eigvals1 = np.sqrt(eigvals1)
-        inv_sqrt_eigvals1 = 1.0 / sqrt_eigvals1
+def _intersect_metric_pair(
+    matrix1: NDArray[np.float64],
+    matrix2: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """Intersect two single positive-definite matrices via simultaneous diagonalization.
 
-        M1_sqrt = eigvecs1 @ np.diag(sqrt_eigvals1) @ eigvecs1.T
-        M1_inv_sqrt = eigvecs1 @ np.diag(inv_sqrt_eigvals1) @ eigvecs1.T
+    Returns
+    -------
+    NDArray[np.float64]
+        The intersected matrix, same shape as *matrix1*.
 
-        P = M1_inv_sqrt @ M2[i] @ M1_inv_sqrt
+    """
+    eigvals1, eigvecs1 = np.linalg.eigh(matrix1)
 
-        eigvals_P, eigvecs_P = np.linalg.eigh(P)
+    # Guard against near-singular metrics (eigenvalues close to zero) using
+    # machine epsilon scaled by max eigenvalue for numerical stability.
+    eps = np.finfo(np.float64).eps * np.max(np.abs(eigvals1)) * 100
+    eigvals1 = np.maximum(eigvals1, eps)
 
-        max_eigvals = np.maximum(eigvals_P, 1.0)
+    sqrt_eigvals1 = np.sqrt(eigvals1)
+    sqrt1 = eigvecs1 @ np.diag(sqrt_eigvals1) @ eigvecs1.T
+    inv_sqrt1 = eigvecs1 @ np.diag(1.0 / sqrt_eigvals1) @ eigvecs1.T
 
-        M_intersect[i] = (
-            M1_sqrt @ eigvecs_P @ np.diag(max_eigvals) @ eigvecs_P.T @ M1_sqrt
-        )
+    transformed_eigvals, transformed_eigvecs = np.linalg.eigh(
+        inv_sqrt1 @ matrix2 @ inv_sqrt1,
+    )
+    max_eigvals = np.maximum(transformed_eigvals, 1.0)
 
-    return matrix_to_tensor(M_intersect if not single else M_intersect[0])
+    return (
+        sqrt1
+        @ transformed_eigvecs
+        @ np.diag(max_eigvals)
+        @ transformed_eigvecs.T
+        @ sqrt1
+    )
 
 
 def create_metric_from_hessian(
@@ -579,19 +595,18 @@ def create_metric_from_hessian(
 
     """
     hessian = np.asarray(hessian, dtype=np.float64)
-    H = tensor_to_matrix(hessian)
+    hessian_matrix = tensor_to_matrix(hessian)
 
-    single = H.ndim == 2
+    single = hessian_matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
-        H = H.reshape(1, *H.shape)
+        hessian_matrix = hessian_matrix.reshape(1, *hessian_matrix.shape)
 
-    n = H.shape[0]
-    M = np.zeros_like(H)
+    metric_matrix = np.zeros_like(hessian_matrix)
 
     c = 1.0 / 8.0
 
-    for i in range(n):
-        eigvals, eigvecs = np.linalg.eigh(H[i])
+    for i in range(hessian_matrix.shape[0]):
+        eigvals, eigvecs = np.linalg.eigh(hessian_matrix[i])
         abs_eigvals = np.abs(eigvals)
 
         metric_eigvals = c * abs_eigvals / target_error
@@ -610,9 +625,9 @@ def create_metric_from_hessian(
             min_eigval = 1.0 / (hmax * hmax)
             metric_eigvals = np.maximum(metric_eigvals, min_eigval)
 
-        M[i] = eigvecs @ np.diag(metric_eigvals) @ eigvecs.T
+        metric_matrix[i] = eigvecs @ np.diag(metric_eigvals) @ eigvecs.T
 
-    return matrix_to_tensor(M if not single else M[0])
+    return matrix_to_tensor(metric_matrix if not single else metric_matrix[0])
 
 
 def compute_hessian(
@@ -668,11 +683,14 @@ def compute_hessian(
     adj = vertex_adjacency(n_vertices, elements)
     patches = two_ring_patches(adj)
 
-    if n_dims == 2:
-        hessian = np.zeros((n_vertices, 3), dtype=np.float64)
+    solve: HessianSolver
+    if n_dims == _DIM_2D:
+        hessian = np.zeros((n_vertices, _TENSOR_SIZE_2D), dtype=np.float64)
+        solve = _solve_hessian_2d
         n_basis = 5
     else:
-        hessian = np.zeros((n_vertices, 6), dtype=np.float64)
+        hessian = np.zeros((n_vertices, _TENSOR_SIZE_3D), dtype=np.float64)
+        solve = _solve_hessian_3d
         n_basis = 9
 
     for i in range(n_vertices):
@@ -693,45 +711,49 @@ def compute_hessian(
         scale = float(np.linalg.norm(coords, axis=1).max())
         if not scale:
             continue
-        coords_n = coords / scale
-        scale2 = scale * scale
 
-        if n_dims == 2:
-            # Monomial basis: x, y, x^2/2, xy, y^2/2
-            x, y = coords_n[:, 0], coords_n[:, 1]
-            A = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])
-            coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
-            # H11 = d2f/dx2, H12 = d2f/dxdy, H22 = d2f/dy2
-            hessian[i] = [
-                coeffs[2] / scale2,
-                coeffs[3] / scale2,
-                coeffs[4] / scale2,
-            ]
-        else:
-            # Monomial basis: x, y, z, x^2/2, xy, xz, y^2/2, yz, z^2/2
-            x, y, z = coords_n[:, 0], coords_n[:, 1], coords_n[:, 2]
-            A = np.column_stack(
-                [
-                    x,
-                    y,
-                    z,
-                    0.5 * x * x,
-                    x * y,
-                    x * z,
-                    0.5 * y * y,
-                    y * z,
-                    0.5 * z * z,
-                ],
-            )
-            coeffs, _, _, _ = np.linalg.lstsq(A, vals, rcond=None)
-            # Returned ordering: H11, H12, H13, H22, H23, H33
-            hessian[i] = [
-                coeffs[3] / scale2,
-                coeffs[4] / scale2,
-                coeffs[5] / scale2,
-                coeffs[6] / scale2,
-                coeffs[7] / scale2,
-                coeffs[8] / scale2,
-            ]
+        hessian[i] = solve(coords / scale, vals) / (scale * scale)
 
     return hessian
+
+
+def _solve_hessian_2d(
+    coords_n: NDArray[np.float64],
+    vals: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """Least-squares quadratic fit recovering the 2D Hessian components.
+
+    Returns
+    -------
+    NDArray[np.float64]
+        Hessian components ``[H11, H12, H22]`` before the ``/ scale**2``
+        correction applied by the caller.
+
+    """
+    # Monomial basis: x, y, x^2/2, xy, y^2/2
+    x, y = coords_n[:, 0], coords_n[:, 1]
+    basis = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])
+    coeffs, _, _, _ = np.linalg.lstsq(basis, vals, rcond=None)
+    return coeffs[2:5]
+
+
+def _solve_hessian_3d(
+    coords_n: NDArray[np.float64],
+    vals: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """Least-squares quadratic fit recovering the 3D Hessian components.
+
+    Returns
+    -------
+    NDArray[np.float64]
+        Hessian components ``[H11, H12, H13, H22, H23, H33]`` before the
+        ``/ scale**2`` correction applied by the caller.
+
+    """
+    # Monomial basis: x, y, z, x^2/2, xy, xz, y^2/2, yz, z^2/2
+    x, y, z = coords_n[:, 0], coords_n[:, 1], coords_n[:, 2]
+    basis = np.column_stack(
+        [x, y, z, 0.5 * x * x, x * y, x * z, 0.5 * y * y, y * z, 0.5 * z * z],
+    )
+    coeffs, _, _, _ = np.linalg.lstsq(basis, vals, rcond=None)
+    return coeffs[3:9]

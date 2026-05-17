@@ -238,14 +238,6 @@ ignore = [
     "PLR0917", # many positional arguments acceptable for elasticity solver
     "PLR2004", # magic values (2, 3) are dimension constants in math code
 ]
-"src/mmgpy/metrics.py" = [
-    "N806",    # uppercase variable names for matrices (M, D, H) standard in math
-    "N803",    # uppercase argument names for matrices standard in math
-    "PLR2004", # magic values (2, 3, 6) are dimension constants in math code
-    "C901",    # complex functions acceptable for mathematical algorithms
-    "PLR0912", # many branches acceptable for 2D/3D dispatch
-    "PLR0914", # many locals acceptable for matrix-heavy math
-]
 "examples/**/*.py" = [
     "T201",    # print statements essential for example output
     "PLR0913", # many arguments allowed for clarity in examples
