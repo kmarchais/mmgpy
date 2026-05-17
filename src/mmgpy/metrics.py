@@ -46,7 +46,14 @@ import numpy as np
 from mmgpy._topology import two_ring_patches, vertex_adjacency
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from numpy.typing import NDArray
+
+    HessianSolver = Callable[
+        [NDArray[np.float64], NDArray[np.float64]],
+        NDArray[np.float64],
+    ]
 
 # Mesh dimensions supported by MMG.
 _DIM_2D = 2
@@ -594,12 +601,11 @@ def create_metric_from_hessian(
     if single:
         hessian_matrix = hessian_matrix.reshape(1, *hessian_matrix.shape)
 
-    n = hessian_matrix.shape[0]
     metric_matrix = np.zeros_like(hessian_matrix)
 
     c = 1.0 / 8.0
 
-    for i in range(n):
+    for i in range(hessian_matrix.shape[0]):
         eigvals, eigvecs = np.linalg.eigh(hessian_matrix[i])
         abs_eigvals = np.abs(eigvals)
 
@@ -677,6 +683,7 @@ def compute_hessian(
     adj = vertex_adjacency(n_vertices, elements)
     patches = two_ring_patches(adj)
 
+    solve: HessianSolver
     if n_dims == _DIM_2D:
         hessian = np.zeros((n_vertices, _TENSOR_SIZE_2D), dtype=np.float64)
         solve = _solve_hessian_2d
@@ -719,7 +726,8 @@ def _solve_hessian_2d(
     Returns
     -------
     NDArray[np.float64]
-        Hessian components ``[H11, H12, H22]`` in normalized coords (unscaled).
+        Hessian components ``[H11, H12, H22]`` before the ``/ scale**2``
+        correction applied by the caller.
 
     """
     # Monomial basis: x, y, x^2/2, xy, y^2/2
@@ -738,7 +746,8 @@ def _solve_hessian_3d(
     Returns
     -------
     NDArray[np.float64]
-        Hessian components ``[H11, H12, H13, H22, H23, H33]`` (unscaled).
+        Hessian components ``[H11, H12, H13, H22, H23, H33]`` before the
+        ``/ scale**2`` correction applied by the caller.
 
     """
     # Monomial basis: x, y, z, x^2/2, xy, xz, y^2/2, yz, z^2/2
