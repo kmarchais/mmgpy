@@ -539,7 +539,7 @@ def _normalize_local_parameters(
 
     The binding raises a generic ``RuntimeError`` deep in MMG for malformed
     input; routing through this helper turns shape errors into a clear
-    ``ValueError`` before the C call.
+    ``ValueError``/``TypeError`` before the C call.
 
     Returns
     -------
@@ -548,9 +548,11 @@ def _normalize_local_parameters(
 
     Raises
     ------
+    TypeError
+        If an entry is not a mapping.
     ValueError
-        If an entry is not a mapping, is missing required keys, or has an
-        unsupported ``type`` for the mesh kind.
+        If an entry is missing required keys or has an unsupported ``type``
+        for the mesh kind.
 
     """
     valid_types = (
@@ -562,7 +564,7 @@ def _normalize_local_parameters(
     for i, raw in enumerate(parameters):
         if not isinstance(raw, Mapping):
             msg = f"parameters[{i}] must be a mapping, got {type(raw).__name__}"
-            raise ValueError(msg)  # noqa: TRY004
+            raise TypeError(msg)
         missing = [k for k in _LOCAL_PARAM_KEYS if k not in raw]
         if missing:
             msg = f"parameters[{i}] missing keys: {missing}"
@@ -598,15 +600,17 @@ def _normalize_multi_materials(
 
     Raises
     ------
+    TypeError
+        If an entry is not a mapping, or if ``split`` is not a bool or int.
     ValueError
-        If an entry is not a mapping or is missing required keys.
+        If an entry is missing required keys, or if ``split`` is not 0/1.
 
     """
     normalized: list[dict[str, Any]] = []
     for i, raw in enumerate(materials):
         if not isinstance(raw, Mapping):
             msg = f"materials[{i}] must be a mapping, got {type(raw).__name__}"
-            raise ValueError(msg)  # noqa: TRY004
+            raise TypeError(msg)
         missing = [k for k in _MULTI_MATERIAL_KEYS if k not in raw]
         if missing:
             msg = f"materials[{i}] missing keys: {missing}"
@@ -617,7 +621,7 @@ def _normalize_multi_materials(
                 f"materials[{i}]['split'] must be bool or int (0/1), "
                 f"got {type(split_raw).__name__}"
             )
-            raise ValueError(msg)  # noqa: TRY004
+            raise TypeError(msg)
         split = int(split_raw)
         if split not in {0, 1}:
             msg = f"materials[{i}]['split'] must be 0 or 1, got {split}"

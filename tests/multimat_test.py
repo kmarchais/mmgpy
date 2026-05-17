@@ -222,28 +222,28 @@ class TestMeshMultiMaterials:
         with pytest.raises(ValueError, match="missing keys"):
             mesh.set_multi_materials([{"ref": 1, "split": True}])
 
-    def test_non_mapping_raises_value_error(
+    def test_non_mapping_raises_type_error(
         self,
         dense_3d_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
         """Non-mapping entries fail at the Python boundary."""
         vertices, elements = dense_3d_mesh
         mesh = Mesh(vertices, elements)
-        with pytest.raises(ValueError, match="must be a mapping"):
+        with pytest.raises(TypeError, match="must be a mapping"):
             mesh.set_multi_materials([(1, True, 10, 20)])  # type: ignore[list-item]
 
-    def test_invalid_split_type_raises_value_error(
+    def test_invalid_split_type_raises_type_error(
         self,
         dense_3d_mesh: tuple[np.ndarray, np.ndarray],
     ) -> None:
         """Non-bool/int ``split`` values are rejected upfront."""
         vertices, elements = dense_3d_mesh
         mesh = Mesh(vertices, elements)
-        with pytest.raises(ValueError, match="must be bool or int"):
+        with pytest.raises(TypeError, match="must be bool or int"):
             mesh.set_multi_materials(
                 [{"ref": 1, "split": "yes", "ref_minus": 10, "ref_plus": 20}],
             )
-        with pytest.raises(ValueError, match="must be bool or int"):
+        with pytest.raises(TypeError, match="must be bool or int"):
             mesh.set_multi_materials(
                 [{"ref": 1, "split": 1.5, "ref_minus": 10, "ref_plus": 20}],
             )

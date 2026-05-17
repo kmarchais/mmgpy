@@ -891,7 +891,7 @@ class MmgAccessor:
     Examples
     --------
     >>> import pyvista as pv
-    >>> import mmgpy  # noqa: F401  -- registers the accessor
+    >>> import mmgpy  # registers the accessor
     >>> mesh = pv.read("brain.mesh")
     >>> remeshed = mesh.mmg.remesh(hsiz=0.1)
     >>> remeshed.n_cells > 0
