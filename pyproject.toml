@@ -225,22 +225,7 @@ ignore = [
     "RUF027",                                # preview missing-f-string
 ]
 "src/mmgpy/lagrangian.py" = [
-    "N803",    # uppercase argument names (E for Young's modulus) standard in mechanics
-    "C901",    # complex functions acceptable for mathematical algorithms
-    "PLR0912", # many branches acceptable for element-type dispatch
-    "PLR0913", # many arguments acceptable for elasticity solver (E, nu, etc.)
-    "PLR0914", # many locals acceptable for elasticity solver
-    "PLR0915", # many statements acceptable for elasticity solver
-    "PLR0917", # many positional arguments acceptable for elasticity solver
-    "PLR2004", # magic values (2, 3) are dimension constants in math code
-]
-"src/mmgpy/metrics.py" = [
-    "N806",    # uppercase variable names for matrices (M, D, H) standard in math
-    "N803",    # uppercase argument names for matrices standard in math
-    "PLR2004", # magic values (2, 3, 6) are dimension constants in math code
-    "C901",    # complex functions acceptable for mathematical algorithms
-    "PLR0912", # many branches acceptable for 2D/3D dispatch
-    "PLR0914", # many locals acceptable for matrix-heavy math
+    "PLR0913", # elasticity solver and move_mesh take genuinely required parameters
 ]
 "examples/**/*.py" = [
     "T201",    # print statements essential for example output
@@ -290,12 +275,6 @@ ignore = [
     "D417",   # self parameter doesn't need documenting for methods
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
     "RUF067", # try/except for optional _version module is a packaging pattern
-]
-"src/mmgpy/_cli.py" = [
-    "C901",    # _run_mmg and _find_mmg_executable have many branches
-    "T201",    # print statements for CLI output
-    "PLR0912", # many branches in executable search and arg parsing
-    "PLR0915", # many statements in _run_mmg entry point
 ]
 "src/mmgpy/_logging.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency
