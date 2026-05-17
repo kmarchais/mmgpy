@@ -41,6 +41,8 @@ def _get_cli_logger() -> logging.Logger:  # pragma: no cover
         handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
+        # Don't double-emit if a downstream caller configures the root logger.
+        logger.propagate = False
     return logger
 
 
@@ -63,6 +65,7 @@ def _get_cli_stdout_logger() -> logging.Logger:  # pragma: no cover
         handler.setFormatter(logging.Formatter("%(message)s"))
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
+        logger.propagate = False
     return logger
 
 
@@ -126,11 +129,10 @@ def _find_in_site_packages_bin(exe_name: str) -> str | None:  # pragma: no cover
     """
     site_packages_list = site.getsitepackages()
     # On Windows, prefer the actual site-packages over the venv root.
-    site_packages = Path(
-        site_packages_list[1]
-        if sys.platform == "win32" and len(site_packages_list) > 1
-        else site_packages_list[0],
-    )
+    if sys.platform == "win32" and len(site_packages_list) > 1:
+        site_packages = Path(site_packages_list[1])
+    else:
+        site_packages = Path(site_packages_list[0])
     return _check_exe(site_packages / "mmgpy" / "bin" / exe_name)
 
 
@@ -146,6 +148,9 @@ def _find_in_venv_bin(exe_name: str) -> str | None:  # pragma: no cover
     """
     venv_bin_name = "Scripts" if sys.platform == "win32" else "bin"
     venv_bin = Path(sys.prefix) / venv_bin_name / exe_name
+    # Skip Python entry-point shims of the same name (a few hundred bytes);
+    # the real MMG binaries are well above this threshold. This size filter
+    # is why we don't reuse `_check_exe` here.
     min_native_exe_size = 1024
     if not venv_bin.exists() or venv_bin.stat().st_size <= min_native_exe_size:
         return None
@@ -299,7 +304,13 @@ _VALUE_FLAG_FIELDS: dict[str, tuple[str, Callable[[str], Any], bool]] = {
 
 
 def _apply_value_flag(parsed: _ParsedArgs, flag: str, value: str) -> None:
-    """Apply a ``-flag value`` pair to *parsed*. Unknown flags are silently skipped."""
+    """Apply a ``-flag value`` pair to *parsed*.
+
+    Flags in :data:`_VALUE_FLAG_FIELDS` route through the dispatch table.
+    Flags in :data:`_NUMERIC_OPTION_FLAGS` are forwarded as ``float`` kwargs
+    to ``mesh.remesh``. Anything else (e.g. ``-nr``, the MMG no-ridge flag,
+    or future MMG options) is consumed but silently ignored.
+    """
     field_spec = _VALUE_FLAG_FIELDS.get(flag)
     if field_spec is not None:
         name, cast, on_options = field_spec
@@ -311,7 +322,6 @@ def _apply_value_flag(parsed: _ParsedArgs, flag: str, value: str) -> None:
         return
     if flag in _NUMERIC_OPTION_FLAGS:
         parsed.remesh_options[flag.lstrip("-")] = float(value)
-    # -nr and other unknown value-flags are silently skipped.
 
 
 def _parse_args(args: list[str]) -> _ParsedArgs:
