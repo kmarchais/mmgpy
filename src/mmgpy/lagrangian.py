@@ -36,7 +36,6 @@ MeshType = "MmgMesh2D | MmgMesh3D | MmgMeshS"
 
 # Mesh dimensions supported by MMG.
 _DIM_2D = 2
-_DIM_3D = 3
 
 
 def _check_fedoo_available() -> None:
@@ -169,7 +168,6 @@ def propagate_displacement_elasticity(
     elm_type, modeling_space = _detect_fedoo_elm_type(n_dims, elements.shape[1])
     fd.ModelingSpace(modeling_space)
 
-    # Build fedoo mesh and solve
     mesh = fd.Mesh(vertices, elements, elm_type)
     material = fd.constitutivelaw.ElasticIsotrop(youngs_modulus, nu)
     wf = fd.weakform.StressEquilibrium(material)
@@ -182,9 +180,7 @@ def propagate_displacement_elasticity(
     # the mask cover enough non-collinear nodes to remove rigid body modes,
     # otherwise the linear system is singular.
     moving_indices = np.where(boundary_mask)[0]
-    disp_components = (
-        ["DispX", "DispY"] if n_dims == _DIM_2D else ["DispX", "DispY", "DispZ"]
-    )
+    disp_components = ["DispX", "DispY", "DispZ"][:n_dims]
     for i, comp in enumerate(disp_components):
         pb.bc.add(
             "Dirichlet",
