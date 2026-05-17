@@ -2790,6 +2790,9 @@ class Mesh:
         ------
         ValidationError
             If strict=True and any issues are found.
+        ValueError
+            If ``checks`` contains a name outside ``{"geometry", "topology",
+            "quality"}``.
 
         Examples
         --------
@@ -2811,6 +2814,13 @@ class Mesh:
         )
 
         checks_set = frozenset(checks)
+        unknown = checks_set - _ALL_CHECKS
+        if unknown:
+            msg = (
+                f"unknown validation checks: {sorted(unknown)}; "
+                f"expected a subset of {sorted(_ALL_CHECKS)}"
+            )
+            raise ValueError(msg)
         check_geometry = "geometry" in checks_set
         check_topology = "topology" in checks_set
         check_quality = "quality" in checks_set
