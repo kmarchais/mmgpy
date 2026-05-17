@@ -14,13 +14,15 @@ import numpy as np
 import pyvista as pv
 from scipy.sparse import csgraph, csr_matrix
 
-from mmgpy._topology import vertex_adjacency
+from mmgpy._topology import MIN_VERTICES_FOR_EDGE, vertex_adjacency
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from mmgpy._mesh import Mesh
     from mmgpy._mmgpy import MmgMesh3D
+
+_CONNECTIVITY_NDIM = 2
 
 
 def _split_legacy_cells(
@@ -41,7 +43,7 @@ def _split_legacy_cells(
     i = 0
     while i < arr.size:
         n = int(arr[i])
-        if n >= 2:  # noqa: PLR2004
+        if n >= MIN_VERTICES_FOR_EDGE:
             row = arr[i + 1 : i + 1 + n].astype(np.int32, copy=False)
             blocks_by_width.setdefault(n, []).append(row)
         i += 1 + n
@@ -70,7 +72,7 @@ def _collect_element_blocks(
     out: list[NDArray[np.int32]] = []
     for conn in dataset.cells_dict.values():
         arr = np.asarray(conn, dtype=np.int32)
-        if arr.ndim == 2 and arr.shape[1] >= 2:  # noqa: PLR2004
+        if arr.ndim == _CONNECTIVITY_NDIM and arr.shape[1] >= MIN_VERTICES_FOR_EDGE:
             out.append(arr)
     return out
 

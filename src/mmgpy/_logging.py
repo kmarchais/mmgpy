@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 import logging
 import os
+from dataclasses import dataclass
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -16,11 +17,14 @@ if TYPE_CHECKING:
 
     LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
-# Module-level state for file handler
-_file_handler: RotatingFileHandler | None = None
 
-# Track whether console handler is enabled
-_console_enabled: bool = True
+@dataclass
+class _LoggingState:
+    file_handler: RotatingFileHandler | None = None
+    console_enabled: bool = True
+
+
+_state = _LoggingState()
 
 
 @functools.lru_cache(maxsize=1)
@@ -65,7 +69,7 @@ def get_logger() -> logging.Logger:
 
 def _configure_logger(logger: logging.Logger) -> None:
     """Configure the logger with RichHandler."""
-    if _console_enabled:
+    if _state.console_enabled:
         handler = RichHandler(
             rich_tracebacks=True,
             show_path=False,
@@ -122,11 +126,10 @@ def configure_logging(*, enable_console: bool = True) -> None:
     >>> # mmgpy logs will go to the "mmgpy" logger namespace
 
     """
-    global _console_enabled  # noqa: PLW0603
     logger = logging.getLogger("mmgpy")
 
     if not enable_console:
-        _console_enabled = False
+        _state.console_enabled = False
         # Remove existing Rich handlers if logger already initialized
         for handler in logger.handlers[:]:
             if isinstance(handler, RichHandler):
@@ -185,14 +188,13 @@ def set_log_file(
     >>> mmgpy.set_log_file(None)
 
     """
-    global _file_handler  # noqa: PLW0603
     logger = get_logger()
 
     # Remove existing file handler
-    if _file_handler is not None:
-        logger.removeHandler(_file_handler)
-        _file_handler.close()
-        _file_handler = None
+    if _state.file_handler is not None:
+        logger.removeHandler(_state.file_handler)
+        _state.file_handler.close()
+        _state.file_handler = None
 
     if path is None:
         return
@@ -202,7 +204,7 @@ def set_log_file(
     path.parent.mkdir(parents=True, exist_ok=True)
 
     # Create new file handler with rotation
-    _file_handler = RotatingFileHandler(
+    file_handler = RotatingFileHandler(
         path,
         maxBytes=max_bytes,
         backupCount=backup_count,
@@ -212,18 +214,19 @@ def set_log_file(
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    _file_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
 
     # Set level for file handler
     # Use NOTSET (0) by default so handler defers to logger's level
     if level is not None:
         if isinstance(level, str):
             level = getattr(logging, level.upper())
-        _file_handler.setLevel(level)
+        file_handler.setLevel(level)
     else:
-        _file_handler.setLevel(logging.NOTSET)
+        file_handler.setLevel(logging.NOTSET)
 
-    logger.addHandler(_file_handler)
+    logger.addHandler(file_handler)
+    _state.file_handler = file_handler
 
 
 def get_log_file() -> Path | None:
@@ -245,9 +248,9 @@ def get_log_file() -> Path | None:
     None
 
     """
-    if _file_handler is None:
+    if _state.file_handler is None:
         return None
-    return Path(_file_handler.baseFilename)
+    return Path(_state.file_handler.baseFilename)
 
 
 def set_log_level(level: LogLevel | int) -> None:
