@@ -89,6 +89,7 @@ def _renum_is_truthy(raw: object) -> bool:
 def _wrapped_remesh(
     cpp_remesh: Callable[..., bool],
     input_mesh: str | Path,
+    *,
     input_sol: str | Path | None = None,
     output_mesh: str | Path | None = None,
     output_sol: str | Path | None = None,
@@ -146,6 +147,7 @@ class mmg3d:
     @staticmethod
     def remesh(
         input_mesh: str | Path,
+        *,
         input_sol: str | Path | None = None,
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
@@ -179,10 +181,10 @@ class mmg3d:
         return _wrapped_remesh(
             _mmg3d_cpp.remesh,
             input_mesh,
-            input_sol,
-            output_mesh,
-            output_sol,
-            options,
+            input_sol=input_sol,
+            output_mesh=output_mesh,
+            output_sol=output_sol,
+            options=options,
             transfer_fields=transfer_fields,
         )
 
@@ -195,6 +197,7 @@ class mmg2d:
     @staticmethod
     def remesh(
         input_mesh: str | Path,
+        *,
         input_sol: str | Path | None = None,
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
@@ -228,10 +231,10 @@ class mmg2d:
         return _wrapped_remesh(
             _mmg2d_cpp.remesh,
             input_mesh,
-            input_sol,
-            output_mesh,
-            output_sol,
-            options,
+            input_sol=input_sol,
+            output_mesh=output_mesh,
+            output_sol=output_sol,
+            options=options,
             transfer_fields=transfer_fields,
         )
 
@@ -242,6 +245,7 @@ class mmgs:
     @staticmethod
     def remesh(
         input_mesh: str | Path,
+        *,
         input_sol: str | Path | None = None,
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
@@ -275,9 +279,9 @@ class mmgs:
         return _wrapped_remesh(
             _mmgs_cpp.remesh,
             input_mesh,
-            input_sol,
-            output_mesh,
-            output_sol,
-            options,
+            input_sol=input_sol,
+            output_mesh=output_mesh,
+            output_sol=output_sol,
+            options=options,
             transfer_fields=transfer_fields,
         )

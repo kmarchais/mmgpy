@@ -428,10 +428,11 @@ _KIND_CONFIG: dict[
 }
 
 
-def _create_impl(  # noqa: PLR0913
+def _create_impl(
     vertices: NDArray[np.floating],
     cells: NDArray[np.integer],
     kind: MeshKind,
+    *,
     refs: NDArray[np.int64] | None = None,
     edges: NDArray[np.int32] | None = None,
     edge_refs: NDArray[np.int64] | None = None,
@@ -2718,7 +2719,7 @@ class Mesh:
     # Validation
     # =========================================================================
 
-    def validate(  # noqa: PLR0913
+    def validate(
         self,
         *,
         detailed: bool = False,
