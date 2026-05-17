@@ -59,7 +59,10 @@ _ALL_CHECKS: frozenset[ValidationCheck] = frozenset(
 )
 
 
-_RENUM_FUTURE_WARNED: list[bool] = [False]
+class _RenumWarning:
+    """Holds the one-shot ``FutureWarning`` flag for the ``renum`` kwarg."""
+
+    fired = False
 
 
 def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
@@ -102,8 +105,8 @@ def _pop_renum_redirect(kwargs: dict[str, Any]) -> bool:
             raise ValueError(msg) from err
     else:
         do_rcm = bool(raw)
-    if do_rcm and not _RENUM_FUTURE_WARNED[0]:
-        _RENUM_FUTURE_WARNED[0] = True
+    if do_rcm and not _RenumWarning.fired:
+        _RenumWarning.fired = True
         warnings.warn(
             "renum=1 no longer invokes SCOTCH renumbering (the bundled "
             "MMG is built without it); mmgpy now applies reverse "

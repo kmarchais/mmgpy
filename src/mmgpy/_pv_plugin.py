@@ -1475,7 +1475,7 @@ class MmgAccessor:
     def validate(
         self,
         *,
-        checks: Iterable[ValidationCheck] | None = None,
+        checks: Iterable[ValidationCheck] = _ALL_CHECKS,
         detailed: bool = False,
         strict: bool = False,
         min_quality: float = 0.1,
@@ -1494,7 +1494,7 @@ class MmgAccessor:
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).validate(
-            checks=_ALL_CHECKS if checks is None else checks,
+            checks=checks,
             detailed=detailed,
             strict=strict,
             min_quality=min_quality,
