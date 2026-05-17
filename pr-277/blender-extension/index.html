@@ -1934,8 +1934,13 @@
 
 
 <h1 id="blender-extension">Blender extension<a class="headerlink" href="#blender-extension" title="Permanent link">&para;</a></h1>
+<p><img alt="MMGpy on extensions.blender.org" src="../assets/blender/featured-image.png" /></p>
+<video controls muted loop playsinline width="100%" poster="assets/blender/featured-image.png">
+  <source src="assets/blender/preview-video.mp4" type="video/mp4">
+</video>
+
 <p>mmgpy ships a Blender 4.2+ add-on that exposes the remeshing pipeline
-through Blender's UI — no scripting required. Under the hood it builds
+through Blender's UI, no scripting required. Under the hood it builds
 a <a href="https://docs.pyvista.org/api/core/_autosummary/pyvista.PolyData"><code>pyvista.PolyData</code></a> from the active mesh and runs
 <code>polydata.mmg.remesh(...)</code> against <a href="../api/">PyVista's <code>.mmg</code> accessor</a>,
 so every option that's available from Python is reachable from the
