@@ -161,10 +161,10 @@ class TestFileLogging:
 
         try:
             # Verify handler has correct level
-            from mmgpy._logging import _file_handler
+            from mmgpy._logging import _state
 
-            assert _file_handler is not None
-            assert _file_handler.level == logging.INFO
+            assert _state.file_handler is not None
+            assert _state.file_handler.level == logging.INFO
         finally:
             mmgpy.set_log_file(None)
 
@@ -174,10 +174,10 @@ class TestFileLogging:
         mmgpy.set_log_file(log_file, level=logging.ERROR)
 
         try:
-            from mmgpy._logging import _file_handler
+            from mmgpy._logging import _state
 
-            assert _file_handler is not None
-            assert _file_handler.level == logging.ERROR
+            assert _state.file_handler is not None
+            assert _state.file_handler.level == logging.ERROR
         finally:
             mmgpy.set_log_file(None)
 
@@ -213,11 +213,11 @@ class TestFileLogging:
         mmgpy.set_log_file(log_file, max_bytes=1000, backup_count=3)
 
         try:
-            from mmgpy._logging import _file_handler
+            from mmgpy._logging import _state
 
-            assert isinstance(_file_handler, RotatingFileHandler)
-            assert _file_handler.maxBytes == 1000
-            assert _file_handler.backupCount == 3
+            assert isinstance(_state.file_handler, RotatingFileHandler)
+            assert _state.file_handler.maxBytes == 1000
+            assert _state.file_handler.backupCount == 3
         finally:
             mmgpy.set_log_file(None)
 
