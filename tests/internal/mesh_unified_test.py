@@ -725,7 +725,7 @@ class TestNonNativeRemeshWithSol:
 
     def test_remesh_vtk_with_input_sol(self) -> None:
         """Test remeshing a VTU file with an input .sol file."""
-        from mmgpy import mmg2d
+        from mmgpy import SolPaths, mmg2d
 
         input_mesh = _ASSETS / "hole.mesh"
         input_sol = _ASSETS / "hole.sol"
@@ -738,9 +738,9 @@ class TestNonNativeRemeshWithSol:
 
             vtu_output = Path(tmpdir) / "output.vtu"
             result = mmg2d.remesh(
-                input_mesh=vtu_input,
-                input_sol=input_sol,
-                output_mesh=vtu_output,
+                vtu_input,
+                vtu_output,
+                sol=SolPaths(in_path=input_sol),
                 options={"verbose": -1},
             )
 
@@ -750,7 +750,7 @@ class TestNonNativeRemeshWithSol:
 
     def test_remesh_vtk_with_output_sol(self) -> None:
         """Test remeshing a VTU file with output .sol saving."""
-        from mmgpy import mmg3d
+        from mmgpy import SolPaths, mmg3d
 
         input_mesh = _ASSETS / "cube.mesh"
 
@@ -763,9 +763,9 @@ class TestNonNativeRemeshWithSol:
             output_sol = Path(tmpdir) / "cube.sol"
 
             mmg3d.remesh(
-                input_mesh=vtu_input,
-                output_mesh=vtu_output,
-                output_sol=output_sol,
+                vtu_input,
+                vtu_output,
+                sol=SolPaths(out_path=output_sol),
                 options={"verbose": -1},
             )
 
@@ -917,7 +917,7 @@ class TestLazyFieldLoading:
 
     def test_non_native_remesh_with_output_sol(self) -> None:
         """Non-native path writes output .sol via C++ save_sol."""
-        from mmgpy import mmg3d
+        from mmgpy import SolPaths, mmg3d
 
         with TemporaryDirectory() as tmpdir:
             vtk_path = self._make_vtk_with_field(Path(tmpdir))
@@ -925,9 +925,9 @@ class TestLazyFieldLoading:
             sol_path = Path(tmpdir) / "cube.sol"
 
             mmg3d.remesh(
-                input_mesh=vtk_path,
-                output_mesh=out_path,
-                output_sol=sol_path,
+                vtk_path,
+                out_path,
+                sol=SolPaths(out_path=sol_path),
                 options={"verbose": -1},
             )
 

@@ -178,14 +178,10 @@ ignore = [
     "RUF027",                                # preview missing-f-string
 ]
 "src/mmgpy/_remesh.py" = [
-    "FBT002",  # transfer_fields has a boolean default for consistency with Mesh.remesh()
     "N801",    # class names match C++ API (mmg2d, mmg3d, mmgs)
-    "PLR0913", # _wrapped_remesh mirrors C++ function signatures
-    "PLR0917", # _wrapped_remesh mirrors C++ function signatures (positional)
 ]
 "src/mmgpy/_mesh.py" = [
     "PLR0904", # Mesh exposes the full public API (auto-detected 2D/3D/surface)
-    "PLR0917", # _create_impl mirrors a C++ constructor (positional)
 ]
 "src/mmgpy/_pv_plugin.py" = [
     "PLR0904", # PyVista accessor exposes the full public API surface

@@ -28,14 +28,16 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 import pyvista as pv
 
+from mmgpy._mesh import _ALL_CHECKS
+
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
     from typing import TypeGuard
 
     from numpy.typing import NDArray
 
     from mmgpy._mesh import Mesh as _Mesh
-    from mmgpy._mesh import MeshKind
+    from mmgpy._mesh import MeshKind, ValidationCheck
     from mmgpy._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
     from mmgpy._sol import Location as _SolLocation
     from mmgpy._validation import ValidationReport
@@ -46,6 +48,7 @@ logger = logging.getLogger("mmgpy")
 
 _MEDIT_EXTENSIONS = (".mesh", ".meshb")
 _SOL_EXTENSIONS = (".sol", ".solb")
+_NDIM_2D = 2
 
 
 def _find_companion_sol(mesh_path: Path) -> Path | None:
@@ -681,7 +684,7 @@ def _is_valid_sol_shape(arr: NDArray[Any], dim: int) -> bool:
     """
     if arr.ndim == 1:
         return True
-    if arr.ndim != 2:  # noqa: PLR2004  -- sol arrays are 1D scalar or 2D
+    if arr.ndim != _NDIM_2D:
         return False
     n_cols = arr.shape[1]
     tensor_size = dim * (dim + 1) // 2
@@ -854,7 +857,7 @@ def _coerce_metric_kwarg(
     arr = np.asarray(metric, dtype=np.float64)
     if arr.ndim == 1:
         arr = arr.reshape(-1, 1)
-    if arr.ndim != 2 or arr.shape[0] != n_points:  # noqa: PLR2004
+    if arr.ndim != _NDIM_2D or arr.shape[0] != n_points:
         msg = (
             f"metric must have shape (n_points,), (n_points, 1), "
             f"(n_points, 3) or (n_points, 6); got shape "
@@ -888,7 +891,7 @@ class MmgAccessor:
     Examples
     --------
     >>> import pyvista as pv
-    >>> import mmgpy  # noqa: F401  -- registers the accessor
+    >>> import mmgpy  # registers the accessor
     >>> mesh = pv.read("brain.mesh")
     >>> remeshed = mesh.mmg.remesh(hsiz=0.1)
     >>> remeshed.n_cells > 0
@@ -1469,14 +1472,12 @@ class MmgAccessor:
         )
         write_sol_file(sol_path, fields, dim)
 
-    def validate(  # noqa: PLR0913
+    def validate(
         self,
         *,
+        checks: Iterable[ValidationCheck] = _ALL_CHECKS,
         detailed: bool = False,
         strict: bool = False,
-        check_geometry: bool = True,
-        check_topology: bool = True,
-        check_quality: bool = True,
         min_quality: float = 0.1,
     ) -> bool | ValidationReport:
         """Validate the mesh and return either a bool or a detailed report.
@@ -1493,11 +1494,9 @@ class MmgAccessor:
         from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
 
         return _read_mesh(self._dataset).validate(
+            checks=checks,
             detailed=detailed,
             strict=strict,
-            check_geometry=check_geometry,
-            check_topology=check_topology,
-            check_quality=check_quality,
             min_quality=min_quality,
         )
 

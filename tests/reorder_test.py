@@ -143,7 +143,7 @@ def test_renum_kwarg_routes_to_rcm_with_future_warning() -> None:
     """``renum=1`` emits a one-time FutureWarning and actually reorders."""
     import mmgpy._mesh as _mesh_mod
 
-    _mesh_mod._RENUM_FUTURE_WARNED = False
+    _mesh_mod._emit_renum_future_warning.cache_clear()
 
     ug = _make_3d_grid(n=4)
     with warnings.catch_warnings(record=True) as caught:
@@ -172,7 +172,7 @@ def test_renum_warning_is_emitted_only_once() -> None:
     """The FutureWarning is gated by a process-wide flag."""
     import mmgpy._mesh as _mesh_mod
 
-    _mesh_mod._RENUM_FUTURE_WARNED = False
+    _mesh_mod._emit_renum_future_warning.cache_clear()
 
     ug = _make_3d_grid(n=4)
     with warnings.catch_warnings(record=True) as caught:
@@ -191,7 +191,7 @@ def test_renum_zero_is_a_noop() -> None:
     """``renum=0`` does not warn and produces no reordering."""
     import mmgpy._mesh as _mesh_mod
 
-    _mesh_mod._RENUM_FUTURE_WARNED = False
+    _mesh_mod._emit_renum_future_warning.cache_clear()
 
     ug = _make_3d_grid(n=4)
     with warnings.catch_warnings(record=True) as caught:

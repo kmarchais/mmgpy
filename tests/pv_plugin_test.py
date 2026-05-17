@@ -381,6 +381,24 @@ def test_accessor_validate_detailed_returns_report() -> None:
     assert hasattr(report, "is_valid")
 
 
+def test_accessor_validate_checks_subset_skips_quality() -> None:
+    """validate(checks={...}) forwards the subset to Mesh.validate."""
+    surf = _make_surface_mesh()
+    report = surf.mmg.validate(detailed=True, checks={"geometry", "topology"})
+
+    assert isinstance(report, mmgpy.ValidationReport)
+    assert report.quality is None
+
+
+def test_accessor_validate_default_runs_all_checks() -> None:
+    """validate() without ``checks`` runs the full default check set."""
+    surf = _make_surface_mesh()
+    report = surf.mmg.validate(detailed=True)
+
+    assert isinstance(report, mmgpy.ValidationReport)
+    assert report.quality is not None
+
+
 def test_accessor_element_quality_and_qualities_agree() -> None:
     """Single-element quality is one of the values in the qualities array."""
     tets = _make_tet_mesh()

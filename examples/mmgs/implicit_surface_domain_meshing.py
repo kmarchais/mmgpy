@@ -15,16 +15,16 @@ from pathlib import Path
 
 import pyvista as pv
 
-from mmgpy import mmgs
+from mmgpy import SolPaths, mmgs
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "teapot.mesh"
 SOL_FILE = Path(__file__).parent.parent.parent / "assets" / "teapot-ls.sol"
 OUTPUT_FILE = Path(__file__).parent / "output.vtk"
 
 mmgs.remesh(
-    input_mesh=INPUT_FILE,
-    input_sol=SOL_FILE,
-    output_mesh=OUTPUT_FILE,
+    INPUT_FILE,
+    OUTPUT_FILE,
+    sol=SolPaths(in_path=SOL_FILE),
     options={"iso": 1, "ls": 0.0},
 )
 

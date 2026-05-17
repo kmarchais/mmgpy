@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from mmgpy._generate import generate as _generate_2d
 from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
@@ -25,6 +25,13 @@ if TYPE_CHECKING:
 FieldTransferParam = bool | Sequence[str] | None
 
 NATIVE_MESH_EXTENSIONS = frozenset({".mesh", ".meshb"})
+
+
+class SolPaths(NamedTuple):
+    """Pair of input/output ``.sol`` paths consumed by the file-based remesh API."""
+
+    in_path: str | Path | None = None
+    out_path: str | Path | None = None
 
 
 def _is_native(path: str | Path | None) -> bool:
@@ -86,58 +93,82 @@ def _renum_is_truthy(raw: object) -> bool:
     return bool(raw)
 
 
-def _wrapped_remesh(
+def _make_wrapped_remesh(
     cpp_remesh: Callable[..., bool],
-    input_mesh: str | Path,
-    input_sol: str | Path | None = None,
-    output_mesh: str | Path | None = None,
-    output_sol: str | Path | None = None,
-    options: dict[str, Any] | None = None,
-    transfer_fields: FieldTransferParam = False,
-) -> bool:
-    forwarded = dict(options or {})
-    do_rcm = _renum_is_truthy(forwarded.get("renum"))
+) -> Callable[..., bool]:
+    """Build a wrapper bound to a specific C++ remesh entry point.
 
-    input_native = _is_native(input_mesh)
-    output_native = _is_native(output_mesh)
+    Captures ``cpp_remesh`` in the closure so the returned callable stays
+    within the ``PLR0913`` arg-count budget while still sharing one
+    implementation across the three ``mmg{2d,3d,s}.remesh`` entry points.
 
-    # Native fast path is only safe when no RCM is requested. With RCM the
-    # reordering must run on the in-memory Mesh so the saved .sol stays
-    # consistent with the saved mesh and no MMG-specific data is lost via
-    # a pv.read round-trip.
-    if not do_rcm and input_native and output_native:
-        forwarded.pop("renum", None)  # cpp bindings do not accept renum
-        return cpp_remesh(
-            input_mesh=input_mesh,
-            input_sol=input_sol,
-            output_mesh=output_mesh,
-            output_sol=output_sol,
-            options=forwarded,
+    Returns
+    -------
+    Callable[..., bool]
+        Wrapper accepting ``(input_mesh, output_mesh=None, *, sol, options,
+        transfer_fields)`` and returning the C++ success flag.
+
+    """
+
+    def _wrapped(
+        input_mesh: str | Path,
+        output_mesh: str | Path | None = None,
+        *,
+        sol: SolPaths | None = None,
+        options: dict[str, Any] | None = None,
+        transfer_fields: FieldTransferParam = False,
+    ) -> bool:
+        sol = sol or SolPaths()
+        forwarded = dict(options or {})
+        do_rcm = _renum_is_truthy(forwarded.get("renum"))
+
+        input_native = _is_native(input_mesh)
+        output_native = _is_native(output_mesh)
+
+        # Native fast path is only safe when no RCM is requested. With RCM the
+        # reordering must run on the in-memory Mesh so the saved .sol stays
+        # consistent with the saved mesh and no MMG-specific data is lost via
+        # a pv.read round-trip.
+        if not do_rcm and input_native and output_native:
+            forwarded.pop("renum", None)  # cpp bindings do not accept renum
+            return cpp_remesh(
+                input_mesh=input_mesh,
+                input_sol=sol.in_path,
+                output_mesh=output_mesh,
+                output_sol=sol.out_path,
+                options=forwarded,
+            )
+
+        from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
+
+        mesh = _read(input_mesh)
+
+        if sol.in_path is not None:
+            channel = "levelset" if _is_iso_mode(options) else "metric"
+            _load_sol(mesh, sol.in_path, channel=channel)
+
+        # Leave ``renum`` in forwarded so Mesh.remesh pops it (and emits the
+        # one-time FutureWarning) and applies RCM in place.
+        result = mesh.remesh(
+            progress=False,
+            transfer_fields=transfer_fields,
+            **forwarded,
         )
 
-    from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
+        if output_mesh is not None:
+            mesh.save(output_mesh)
 
-    mesh = _read(input_mesh)
+        if sol.out_path is not None:
+            _save_sol(mesh, sol.out_path)
 
-    if input_sol is not None:
-        channel = "levelset" if _is_iso_mode(options) else "metric"
-        _load_sol(mesh, input_sol, channel=channel)
+        return result.success
 
-    # Leave ``renum`` in forwarded so Mesh.remesh pops it (and emits the
-    # one-time FutureWarning) and applies RCM in place.
-    result = mesh.remesh(
-        progress=False,
-        transfer_fields=transfer_fields,
-        **forwarded,
-    )
+    return _wrapped
 
-    if output_mesh is not None:
-        mesh.save(output_mesh)
 
-    if output_sol is not None:
-        _save_sol(mesh, output_sol)
-
-    return result.success
+_wrapped_3d = _make_wrapped_remesh(_mmg3d_cpp.remesh)
+_wrapped_2d = _make_wrapped_remesh(_mmg2d_cpp.remesh)
+_wrapped_s = _make_wrapped_remesh(_mmgs_cpp.remesh)
 
 
 class mmg3d:
@@ -146,9 +177,9 @@ class mmg3d:
     @staticmethod
     def remesh(
         input_mesh: str | Path,
-        input_sol: str | Path | None = None,
         output_mesh: str | Path | None = None,
-        output_sol: str | Path | None = None,
+        *,
+        sol: SolPaths | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
     ) -> bool:
@@ -158,12 +189,10 @@ class mmg3d:
         ----------
         input_mesh : str or Path
             Input mesh file. Any format supported by PyVista.
-        input_sol : str or Path, optional
-            Input solution file (.sol/.solb).
         output_mesh : str or Path, optional
             Output mesh file. Any format supported by PyVista.
-        output_sol : str or Path, optional
-            Output solution file (.sol/.solb).
+        sol : SolPaths, optional
+            ``(in_path, out_path)`` solution file paths (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -176,13 +205,11 @@ class mmg3d:
             True if remeshing succeeded.
 
         """
-        return _wrapped_remesh(
-            _mmg3d_cpp.remesh,
+        return _wrapped_3d(
             input_mesh,
-            input_sol,
             output_mesh,
-            output_sol,
-            options,
+            sol=sol,
+            options=options,
             transfer_fields=transfer_fields,
         )
 
@@ -195,9 +222,9 @@ class mmg2d:
     @staticmethod
     def remesh(
         input_mesh: str | Path,
-        input_sol: str | Path | None = None,
         output_mesh: str | Path | None = None,
-        output_sol: str | Path | None = None,
+        *,
+        sol: SolPaths | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
     ) -> bool:
@@ -207,12 +234,10 @@ class mmg2d:
         ----------
         input_mesh : str or Path
             Input mesh file. Any format supported by PyVista.
-        input_sol : str or Path, optional
-            Input solution file (.sol/.solb).
         output_mesh : str or Path, optional
             Output mesh file. Any format supported by PyVista.
-        output_sol : str or Path, optional
-            Output solution file (.sol/.solb).
+        sol : SolPaths, optional
+            ``(in_path, out_path)`` solution file paths (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -225,13 +250,11 @@ class mmg2d:
             True if remeshing succeeded.
 
         """
-        return _wrapped_remesh(
-            _mmg2d_cpp.remesh,
+        return _wrapped_2d(
             input_mesh,
-            input_sol,
             output_mesh,
-            output_sol,
-            options,
+            sol=sol,
+            options=options,
             transfer_fields=transfer_fields,
         )
 
@@ -242,9 +265,9 @@ class mmgs:
     @staticmethod
     def remesh(
         input_mesh: str | Path,
-        input_sol: str | Path | None = None,
         output_mesh: str | Path | None = None,
-        output_sol: str | Path | None = None,
+        *,
+        sol: SolPaths | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
     ) -> bool:
@@ -254,12 +277,10 @@ class mmgs:
         ----------
         input_mesh : str or Path
             Input mesh file. Any format supported by PyVista.
-        input_sol : str or Path, optional
-            Input solution file (.sol/.solb).
         output_mesh : str or Path, optional
             Output mesh file. Any format supported by PyVista.
-        output_sol : str or Path, optional
-            Output solution file (.sol/.solb).
+        sol : SolPaths, optional
+            ``(in_path, out_path)`` solution file paths (.sol/.solb).
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -272,12 +293,10 @@ class mmgs:
             True if remeshing succeeded.
 
         """
-        return _wrapped_remesh(
-            _mmgs_cpp.remesh,
+        return _wrapped_s(
             input_mesh,
-            input_sol,
             output_mesh,
-            output_sol,
-            options,
+            sol=sol,
+            options=options,
             transfer_fields=transfer_fields,
         )

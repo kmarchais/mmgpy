@@ -197,7 +197,7 @@ class TestMmgMesh3DValidation:
         vertices, tetrahedra = create_test_mesh_3d()
         mesh = Mesh(vertices, tetrahedra)
 
-        report = mesh.validate(detailed=True, check_geometry=False)
+        report = mesh.validate(detailed=True, checks={"topology", "quality"})
         assert report.is_valid is True
         # No geometry-related issues should be reported
         geometry_check_names = ("inverted_elements", "degenerate_elements")
@@ -211,8 +211,16 @@ class TestMmgMesh3DValidation:
         vertices, tetrahedra = create_test_mesh_3d()
         mesh = Mesh(vertices, tetrahedra)
 
-        report = mesh.validate(detailed=True, check_quality=False)
+        report = mesh.validate(detailed=True, checks={"geometry", "topology"})
         assert report.quality is None
+
+    def test_unknown_check_name_raises(self) -> None:
+        """A typo in ``checks`` is rejected up front, not silently dropped."""
+        vertices, tetrahedra = create_test_mesh_3d()
+        mesh = Mesh(vertices, tetrahedra)
+
+        with pytest.raises(ValueError, match="unknown validation checks"):
+            mesh.validate(checks={"geomerty"})  # type: ignore[arg-type]  # codespell:ignore geomerty
 
 
 # =============================================================================

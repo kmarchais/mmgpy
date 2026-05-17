@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-from mmgpy import mmg2d, mmg3d, mmgs
+from mmgpy import SolPaths, mmg2d, mmg3d, mmgs
 from mmgpy._io import _read_mesh_internal as read
 from mmgpy._remesh import _is_iso_mode, _is_native, _load_sol, _save_sol
 
@@ -191,9 +191,9 @@ class TestWrappedRemeshIsoRouting:
         with TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "out.vtk"
             ok = mmg2d.remesh(
-                input_mesh=_ASSETS / "multi-mat.mesh",
-                input_sol=_ASSETS / "multi-mat-ls.sol",
-                output_mesh=out,
+                _ASSETS / "multi-mat.mesh",
+                out,
+                sol=SolPaths(in_path=_ASSETS / "multi-mat-ls.sol"),
                 options={"iso": 1, "ls": 0.0, "verbose": -1},
             )
             assert ok
@@ -210,9 +210,9 @@ class TestWrappedRemeshIsoRouting:
         with TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "out.vtk"
             ok = mmgs.remesh(
-                input_mesh=_ASSETS / "teapot.mesh",
-                input_sol=_ASSETS / "teapot-ls.sol",
-                output_mesh=out,
+                _ASSETS / "teapot.mesh",
+                out,
+                sol=SolPaths(in_path=_ASSETS / "teapot-ls.sol"),
                 options={"iso": 1, "ls": 0.0, "verbose": -1},
             )
             assert ok
@@ -224,9 +224,9 @@ class TestWrappedRemeshIsoRouting:
         with TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "out.vtk"
             ok = mmg3d.remesh(
-                input_mesh=_ASSETS / "cube.mesh",
-                input_sol=_ASSETS / "cube-ls.sol",
-                output_mesh=out,
+                _ASSETS / "cube.mesh",
+                out,
+                sol=SolPaths(in_path=_ASSETS / "cube-ls.sol"),
                 options={"iso": 1, "ls": 0.0, "verbose": -1},
             )
             assert ok
@@ -268,9 +268,9 @@ class TestWrappedRemeshIsoRouting:
             out_mesh = Path(tmpdir) / "out.vtk"
             out_sol = Path(tmpdir) / "out.sol"
             ok = mmg3d.remesh(
-                input_mesh=_ASSETS / "cube.mesh",
-                output_mesh=out_mesh,
-                output_sol=out_sol,
+                _ASSETS / "cube.mesh",
+                out_mesh,
+                sol=SolPaths(out_path=out_sol),
                 options={"hmax": 0.5, "verbose": -1},
             )
             assert ok
@@ -286,9 +286,29 @@ class TestWrappedRemeshIsoRouting:
 
             out_sol = Path(tmpdir) / "out.sol"
             ok = mmg3d.remesh(
-                input_mesh=input_vtk,
-                output_sol=out_sol,
+                input_vtk,
+                sol=SolPaths(out_path=out_sol),
                 options={"hmax": 0.5, "verbose": -1},
             )
             assert ok
             assert out_sol.exists()
+
+    def test_empty_sol_paths_is_equivalent_to_none(self) -> None:
+        """``sol=SolPaths()`` (both fields ``None``) matches ``sol=None``."""
+        with TemporaryDirectory() as tmpdir:
+            out_a = Path(tmpdir) / "a.mesh"
+            out_b = Path(tmpdir) / "b.mesh"
+            ok_a = mmg3d.remesh(
+                _ASSETS / "cube.mesh",
+                out_a,
+                sol=SolPaths(),
+                options={"hmax": 0.5, "verbose": -1},
+            )
+            ok_b = mmg3d.remesh(
+                _ASSETS / "cube.mesh",
+                out_b,
+                options={"hmax": 0.5, "verbose": -1},
+            )
+            assert ok_a is ok_b is True
+            assert out_a.exists()
+            assert out_b.exists()
