@@ -55,8 +55,10 @@ _DIM_3D = 3
 # (upper-triangle row-major: 2D [m11, m12, m22]; 3D [m11, m12, m13, m22, m23, m33]).
 _TENSOR_SIZE_2D = 3
 _TENSOR_SIZE_3D = 6
-# ndim of a single (dim, dim) matrix or a per-vertex (n_vertices, dim) array.
-_NDIM_2D = 2
+# ndim of a 2D input array, shape (n_vertices, dim).
+_ARRAY_NDIM_2D = 2
+# ndim of a single (unbatched) matrix, shape (dim, dim).
+_SINGLE_MATRIX_NDIM = 2
 
 
 def create_isotropic_metric(
@@ -110,7 +112,7 @@ def create_isotropic_metric(
             msg = "n_vertices required when h is a scalar"
             raise ValueError(msg)
         h = np.full(n_vertices, h.item(), dtype=np.float64)
-    elif h.ndim == _NDIM_2D and h.shape[1] == 1:
+    elif h.ndim == _ARRAY_NDIM_2D and h.shape[1] == 1:
         h = h.ravel()
 
     if h.ndim != 1:
@@ -193,7 +195,7 @@ def create_anisotropic_metric(
         single_metric = True
         sizes = sizes.reshape(1, dim)
         n_vertices = 1
-    elif sizes.ndim == _NDIM_2D:
+    elif sizes.ndim == _ARRAY_NDIM_2D:
         n_vertices, dim = sizes.shape
         single_metric = False
     else:
@@ -211,7 +213,7 @@ def create_anisotropic_metric(
 
     directions = np.asarray(directions, dtype=np.float64)
 
-    if single_metric and directions.ndim == _NDIM_2D:
+    if single_metric and directions.ndim == _SINGLE_MATRIX_NDIM:
         directions = directions.reshape(1, dim, dim)
 
     if directions.shape[-2:] != (dim, dim):
@@ -300,7 +302,7 @@ def matrix_to_tensor(
 
     """
     matrix = np.asarray(matrix, dtype=np.float64)
-    single = matrix.ndim == _NDIM_2D
+    single = matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
         matrix = matrix.reshape(1, *matrix.shape)
 
@@ -371,7 +373,7 @@ def validate_metric_tensor(
     tensor = np.asarray(tensor, dtype=np.float64)
     matrix = tensor_to_matrix(tensor, dim)
 
-    single = matrix.ndim == _NDIM_2D
+    single = matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
         matrix = matrix.reshape(1, *matrix.shape)
 
@@ -432,7 +434,7 @@ def compute_metric_eigenpairs(
     """
     matrix = tensor_to_matrix(tensor, dim)
 
-    single = matrix.ndim == _NDIM_2D
+    single = matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
         matrix = matrix.reshape(1, *matrix.shape)
 
@@ -496,7 +498,7 @@ def intersect_metrics(
     matrix1 = tensor_to_matrix(m1, dim)
     matrix2 = tensor_to_matrix(m2, dim)
 
-    single = matrix1.ndim == _NDIM_2D
+    single = matrix1.ndim == _SINGLE_MATRIX_NDIM
     if single:
         matrix1 = matrix1.reshape(1, *matrix1.shape)
         matrix2 = matrix2.reshape(1, *matrix2.shape)
@@ -588,7 +590,7 @@ def create_metric_from_hessian(
     hessian = np.asarray(hessian, dtype=np.float64)
     hessian_matrix = tensor_to_matrix(hessian)
 
-    single = hessian_matrix.ndim == _NDIM_2D
+    single = hessian_matrix.ndim == _SINGLE_MATRIX_NDIM
     if single:
         hessian_matrix = hessian_matrix.reshape(1, *hessian_matrix.shape)
 
