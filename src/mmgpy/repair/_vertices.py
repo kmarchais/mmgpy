@@ -36,6 +36,38 @@ _logger = logging.getLogger(__name__)
 _LARGE_PAIR_THRESHOLD = 100_000
 
 
+def _build_vertex_remap(
+    pairs: np.ndarray,
+    n_vertices: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Union-find over duplicate *pairs*, then compact to a dense remap.
+
+    Returns
+    -------
+    tuple[ndarray, ndarray]
+        ``(unique_indices, final_mapping)`` where ``unique_indices`` selects
+        the surviving vertices from the original array and ``final_mapping``
+        is the per-vertex old-to-new index map.
+
+    """
+    mapping = np.arange(n_vertices)
+    for i, j in pairs:
+        canonical = min(mapping[i], mapping[j])
+        mapping[i] = canonical
+        mapping[j] = canonical
+
+    for i in range(n_vertices):
+        root = i
+        while mapping[root] != root:
+            root = mapping[root]
+        mapping[i] = root
+
+    unique_indices = np.where(mapping == np.arange(n_vertices))[0]
+    old_to_new = np.zeros(n_vertices, dtype=np.int32)
+    old_to_new[unique_indices] = np.arange(len(unique_indices), dtype=np.int32)
+    return unique_indices, old_to_new[mapping]
+
+
 def remove_duplicate_vertices(
     mesh: Mesh,
     tolerance: float = 1e-10,
@@ -91,26 +123,8 @@ def remove_duplicate_vertices(
             tolerance,
         )
 
-    mapping = np.arange(n_vertices)
-    for i, j in pairs:
-        canonical = min(mapping[i], mapping[j])
-        mapping[i] = canonical
-        mapping[j] = canonical
-
-    for i in range(n_vertices):
-        root = i
-        while mapping[root] != root:
-            root = mapping[root]
-        mapping[i] = root
-
-    unique_indices = np.where(mapping == np.arange(n_vertices))[0]
+    unique_indices, final_mapping = _build_vertex_remap(pairs, n_vertices)
     new_vertices = vertices[unique_indices]
-
-    old_to_new = np.zeros(n_vertices, dtype=np.int32)
-    for new_idx, old_idx in enumerate(unique_indices):
-        old_to_new[old_idx] = new_idx
-
-    final_mapping = old_to_new[mapping]
 
     if mesh.kind == MeshKind.TETRAHEDRAL:
         elements = mesh.get_tetrahedra()
