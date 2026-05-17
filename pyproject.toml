@@ -177,12 +177,6 @@ ignore = [
     "FURB118", "FURB142", "FURB152",         # preview refactors
     "RUF027",                                # preview missing-f-string
 ]
-"src/mmgpy/_sol.py" = [
-    "C901",    # parse_sol_file has inherent complexity from the Medit format
-    "PLR0912", # many branches for different solution types (scalar, vector, tensor)
-    "PLR0915", # many statements in sol file parser
-    "PLR2004", # magic values (1, 2, 3) are Medit solution type codes
-]
 "src/mmgpy/_remesh.py" = [
     "FBT002",  # transfer_fields has a boolean default for consistency with Mesh.remesh()
     "N801",    # class names match C++ API (mmg2d, mmg3d, mmgs)
