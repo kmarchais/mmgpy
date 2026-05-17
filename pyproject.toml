@@ -280,12 +280,6 @@ ignore = [
     "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
     "RUF067", # try/except for optional _version module is a packaging pattern
 ]
-"src/mmgpy/_cli.py" = [
-    "C901",    # _run_mmg and _find_mmg_executable have many branches
-    "T201",    # print statements for CLI output
-    "PLR0912", # many branches in executable search and arg parsing
-    "PLR0915", # many statements in _run_mmg entry point
-]
 "src/mmgpy/_logging.py" = [
     "PLC0415", # imports inside functions for optional Rich dependency
 ]
