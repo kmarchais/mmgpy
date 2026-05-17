@@ -34,6 +34,10 @@ if TYPE_CHECKING:
 # Type alias for mesh union
 MeshType = "MmgMesh2D | MmgMesh3D | MmgMeshS"
 
+# Mesh dimensions supported by MMG.
+_DIM_2D = 2
+_DIM_3D = 3
+
 
 def _check_fedoo_available() -> None:
     """Check that fedoo is installed and importable.
@@ -54,12 +58,42 @@ def _check_fedoo_available() -> None:
         raise ImportError(msg) from None
 
 
+def _detect_fedoo_elm_type(n_dims: int, n_nodes_per_elm: int) -> tuple[str, str]:
+    """Map ``(n_dims, n_nodes_per_elm)`` to fedoo element type and modeling space.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(elm_type, modeling_space)`` strings to pass to ``fedoo.Mesh`` and
+        ``fedoo.ModelingSpace`` respectively. ``"2Dplane"`` enables plane-strain
+        elasticity, the standard assumption for fictitious-mesh deformation in 2D.
+
+    Raises
+    ------
+    ValueError
+        If ``n_nodes_per_elm`` is not a supported element width for ``n_dims``.
+
+    """
+    if n_dims == _DIM_2D:
+        elm_type_map = {3: "tri3", 6: "tri6", 4: "quad4"}
+        if n_nodes_per_elm not in elm_type_map:
+            msg = f"Unsupported 2D element with {n_nodes_per_elm} nodes"
+            raise ValueError(msg)
+        return elm_type_map[n_nodes_per_elm], "2Dplane"
+    elm_type_map = {4: "tet4", 10: "tet10", 8: "hex8"}
+    if n_nodes_per_elm not in elm_type_map:
+        msg = f"Unsupported 3D element with {n_nodes_per_elm} nodes"
+        raise ValueError(msg)
+    return elm_type_map[n_nodes_per_elm], "3D"
+
+
 def propagate_displacement_elasticity(
     vertices: NDArray[np.float64],
     elements: NDArray[np.int32],
     boundary_mask: NDArray[np.bool_],
     boundary_displacement: NDArray[np.float64],
-    E: float = 1e6,
+    *,
+    youngs_modulus: float = 1e6,
     nu: float = 0.3,
 ) -> NDArray[np.float64]:
     """Propagate displacement from boundary to interior using linear elasticity.
@@ -83,10 +117,10 @@ def propagate_displacement_elasticity(
     boundary_displacement : ndarray
         Nxdim array of displacement vectors. Only values at boundary
         vertices (where ``boundary_mask`` is True) are used.
-    E : float
+    youngs_modulus : float
         Young's modulus for the fictitious elastic material. With only
         Dirichlet BCs (no body forces, no tractions) the displacement
-        field is independent of ``E``; only ``nu`` affects the result.
+        field is independent of this value; only ``nu`` affects the result.
         Default 1e6.
     nu : float
         Poisson's ratio. Default is 0.3.
@@ -132,29 +166,12 @@ def propagate_displacement_elasticity(
     if n_boundary == n_vertices:
         return boundary_displacement.copy()
 
-    # Determine element type
-    n_nodes_per_elm = elements.shape[1]
-    elm_type_map_2d = {3: "tri3", 6: "tri6", 4: "quad4"}
-    elm_type_map_3d = {4: "tet4", 10: "tet10", 8: "hex8"}
-
-    if n_dims == 2:
-        if n_nodes_per_elm not in elm_type_map_2d:
-            msg = f"Unsupported 2D element with {n_nodes_per_elm} nodes"
-            raise ValueError(msg)
-        elm_type = elm_type_map_2d[n_nodes_per_elm]
-        # "2Dplane" enables plane-strain elasticity, which is the standard
-        # assumption for fictitious-mesh deformation in 2D.
-        fd.ModelingSpace("2Dplane")
-    else:
-        if n_nodes_per_elm not in elm_type_map_3d:
-            msg = f"Unsupported 3D element with {n_nodes_per_elm} nodes"
-            raise ValueError(msg)
-        elm_type = elm_type_map_3d[n_nodes_per_elm]
-        fd.ModelingSpace("3D")
+    elm_type, modeling_space = _detect_fedoo_elm_type(n_dims, elements.shape[1])
+    fd.ModelingSpace(modeling_space)
 
     # Build fedoo mesh and solve
     mesh = fd.Mesh(vertices, elements, elm_type)
-    material = fd.constitutivelaw.ElasticIsotrop(E, nu)
+    material = fd.constitutivelaw.ElasticIsotrop(youngs_modulus, nu)
     wf = fd.weakform.StressEquilibrium(material)
     assembly = fd.Assembly.create(wf, mesh)
     pb = fd.problem.Linear(assembly)
@@ -165,7 +182,9 @@ def propagate_displacement_elasticity(
     # the mask cover enough non-collinear nodes to remove rigid body modes,
     # otherwise the linear system is singular.
     moving_indices = np.where(boundary_mask)[0]
-    disp_components = ["DispX", "DispY"] if n_dims == 2 else ["DispX", "DispY", "DispZ"]
+    disp_components = (
+        ["DispX", "DispY"] if n_dims == _DIM_2D else ["DispX", "DispY", "DispZ"]
+    )
     for i, comp in enumerate(disp_components):
         pb.bc.add(
             "Dirichlet",
@@ -176,9 +195,7 @@ def propagate_displacement_elasticity(
 
     pb.solve()
 
-    # Extract displacement
-    columns = [pb.get_disp(comp) for comp in disp_components]
-    return np.column_stack(columns)
+    return np.column_stack([pb.get_disp(comp) for comp in disp_components])
 
 
 def _build_laplacian_system(
