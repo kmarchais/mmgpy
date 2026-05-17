@@ -133,17 +133,13 @@ except ValidationError as e:
 # Only check geometry
 report = mesh.mmg.validate(
     detailed=True,
-    check_geometry=True,
-    check_topology=False,
-    check_quality=False,
+    checks={"geometry"},
 )
 
 # Only check quality with a custom threshold
 report = mesh.mmg.validate(
     detailed=True,
-    check_geometry=False,
-    check_topology=False,
-    check_quality=True,
+    checks={"quality"},
     min_quality=0.2,
 )
 ```
