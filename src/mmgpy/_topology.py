@@ -10,6 +10,8 @@ from scipy import sparse
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+MIN_VERTICES_FOR_EDGE = 2
+
 
 def vertex_adjacency(
     n_vertices: int,
@@ -41,7 +43,7 @@ def vertex_adjacency(
 
     """
     n_per_elm = int(elements.shape[1])
-    if n_per_elm < 2:  # noqa: PLR2004 - lone vertices have no edges
+    if n_per_elm < MIN_VERTICES_FOR_EDGE:
         return sparse.csr_matrix((n_vertices, n_vertices), dtype=np.float64)
 
     ii, jj = np.triu_indices(n_per_elm, k=1)

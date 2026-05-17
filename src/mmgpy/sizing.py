@@ -96,7 +96,15 @@ class SphereSize(SizingConstraint):
     radius: float
     size: float
 
-    def __post_init__(self) -> None:  # noqa: D105
+    def __post_init__(self) -> None:
+        """Coerce ``center`` to ``float64`` and validate positive radius/size.
+
+        Raises
+        ------
+        ValueError
+            If ``radius`` or ``size`` is not strictly positive.
+
+        """
         self.center = np.asarray(self.center, dtype=np.float64)
         if self.radius <= 0:
             msg = f"radius must be positive, got {self.radius}"
@@ -105,10 +113,18 @@ class SphereSize(SizingConstraint):
             msg = f"size must be positive, got {self.size}"
             raise ValueError(msg)
 
-    def compute_sizes(  # noqa: D102
+    def compute_sizes(
         self,
         vertices: NDArray[np.float64],
     ) -> NDArray[np.float64]:
+        """Return ``self.size`` inside the sphere, ``np.inf`` elsewhere.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Per-vertex target size, shape ``(n_vertices,)``.
+
+        """
         distances = np.linalg.norm(vertices - self.center, axis=1)
 
         sizes = np.full(len(vertices), np.inf, dtype=np.float64)
@@ -136,7 +152,16 @@ class BoxSize(SizingConstraint):
     bounds: NDArray[np.float64]
     size: float
 
-    def __post_init__(self) -> None:  # noqa: D105
+    def __post_init__(self) -> None:
+        """Coerce ``bounds`` to ``float64`` and validate shape/size.
+
+        Raises
+        ------
+        ValueError
+            If ``bounds`` does not have shape ``(2, dim)`` or ``size`` is not
+            strictly positive.
+
+        """
         self.bounds = np.asarray(self.bounds, dtype=np.float64)
         if self.bounds.shape[0] != _BOUNDS_DIM_COUNT:
             msg = f"bounds must have shape (2, dim), got {self.bounds.shape}"
@@ -145,10 +170,18 @@ class BoxSize(SizingConstraint):
             msg = f"size must be positive, got {self.size}"
             raise ValueError(msg)
 
-    def compute_sizes(  # noqa: D102
+    def compute_sizes(
         self,
         vertices: NDArray[np.float64],
     ) -> NDArray[np.float64]:
+        """Return ``self.size`` inside the box, ``np.inf`` elsewhere.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Per-vertex target size, shape ``(n_vertices,)``.
+
+        """
         min_corner = self.bounds[0]
         max_corner = self.bounds[1]
 
@@ -185,7 +218,15 @@ class CylinderSize(SizingConstraint):
     radius: float
     size: float
 
-    def __post_init__(self) -> None:  # noqa: D105
+    def __post_init__(self) -> None:
+        """Coerce endpoints to ``float64`` and validate positive radius/size.
+
+        Raises
+        ------
+        ValueError
+            If ``radius`` or ``size`` is not strictly positive.
+
+        """
         self.point1 = np.asarray(self.point1, dtype=np.float64)
         self.point2 = np.asarray(self.point2, dtype=np.float64)
         if self.radius <= 0:
@@ -195,10 +236,23 @@ class CylinderSize(SizingConstraint):
             msg = f"size must be positive, got {self.size}"
             raise ValueError(msg)
 
-    def compute_sizes(  # noqa: D102
+    def compute_sizes(
         self,
         vertices: NDArray[np.float64],
     ) -> NDArray[np.float64]:
+        """Return ``self.size`` inside the cylinder, ``np.inf`` elsewhere.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Per-vertex target size, shape ``(n_vertices,)``.
+
+        Raises
+        ------
+        ValueError
+            If the cylinder axis (``point2 - point1``) has zero length.
+
+        """
         axis = self.point2 - self.point1
         axis_length = np.linalg.norm(axis)
         if axis_length < _ZERO_LENGTH_THRESHOLD:
@@ -247,7 +301,16 @@ class PointSize(SizingConstraint):
     far_size: float
     influence_radius: float
 
-    def __post_init__(self) -> None:  # noqa: D105
+    def __post_init__(self) -> None:
+        """Coerce ``point`` to ``float64`` and validate positive sizes/radius.
+
+        Raises
+        ------
+        ValueError
+            If ``near_size``, ``far_size``, or ``influence_radius`` is not
+            strictly positive.
+
+        """
         self.point = np.asarray(self.point, dtype=np.float64)
         if self.near_size <= 0:
             msg = f"near_size must be positive, got {self.near_size}"
@@ -259,10 +322,18 @@ class PointSize(SizingConstraint):
             msg = f"influence_radius must be positive, got {self.influence_radius}"
             raise ValueError(msg)
 
-    def compute_sizes(  # noqa: D102
+    def compute_sizes(
         self,
         vertices: NDArray[np.float64],
     ) -> NDArray[np.float64]:
+        """Linearly interpolate from ``near_size`` to ``far_size`` by distance.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Per-vertex target size, shape ``(n_vertices,)``.
+
+        """
         distances = np.linalg.norm(vertices - self.point, axis=1)
         t = np.clip(distances / self.influence_radius, 0.0, 1.0)
         return self.near_size + t * (self.far_size - self.near_size)

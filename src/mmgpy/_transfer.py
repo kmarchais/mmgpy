@@ -178,6 +178,11 @@ def interpolate_field(
         Shape matches input field shape with n_target_points replacing
         n_source_vertices.
 
+    Raises
+    ------
+    RuntimeError
+        If the internal KDTree fails to build when one is required.
+
     """
     field = np.atleast_2d(field)
     if field.shape[0] == 1 and field.shape[1] == len(source_vertices):
@@ -195,7 +200,9 @@ def interpolate_field(
         tree = cKDTree(source_vertices)
 
     if method == "nearest":
-        assert tree is not None  # noqa: S101
+        if tree is None:
+            msg = "KDTree was not built for nearest-neighbor query"
+            raise RuntimeError(msg)
         _, nearest_idx = tree.query(target_points)
         return field[nearest_idx].reshape(len(target_points), n_components).squeeze()
 
@@ -218,7 +225,9 @@ def interpolate_field(
         )
 
     if np.any(outside_mask):
-        assert tree is not None  # noqa: S101
+        if tree is None:
+            msg = "KDTree was not built for outside-point fallback"
+            raise RuntimeError(msg)
         outside_indices = np.where(outside_mask)[0]
         _, nearest_idx = tree.query(target_points[outside_indices])
         result[outside_indices] = field[nearest_idx]
