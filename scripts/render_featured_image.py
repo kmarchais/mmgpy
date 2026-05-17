@@ -14,7 +14,7 @@ Run (downloads bpy ~370 MB on first call)::
            --with matplotlib --with pillow \\
            python scripts/render_featured_image.py
 
-Output: ``assets/featured-image.png`` (1920 x 1080).
+Output: ``docs/assets/blender/featured-image.png`` (1920 x 1080).
 """
 
 from __future__ import annotations
@@ -53,7 +53,13 @@ QUALITY_FLOOR = 0.5
 QUALITY_CEIL = 1.0
 BG_RGBA = (24, 28, 34, 255)
 TEXT_RGBA = (244, 246, 248, 255)
-OUT_PATH = Path(__file__).resolve().parent.parent / "assets" / "featured-image.png"
+OUT_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "docs"
+    / "assets"
+    / "blender"
+    / "featured-image.png"
+)
 
 
 def setup_scene(engine: str = "BLENDER_EEVEE") -> bpy.types.Scene:
