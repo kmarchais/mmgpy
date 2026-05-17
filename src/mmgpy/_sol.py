@@ -26,6 +26,9 @@ _TYPE_SCALAR = 1
 _TYPE_VECTOR = 2
 _TYPE_TENSOR = 3
 
+# Expected ndim for the (N, k) "table" layout used by vector/tensor blocks.
+_TABLE_NDIM = 2
+
 
 def _parse_sol_block(
     lines: list[str],
@@ -90,20 +93,20 @@ def _fields_from_block(
     fields: dict[str, dict] = {}
     col_idx = 0
     for sol_idx, sol_type in enumerate(sol_types):
-        if sol_type == 1:
+        if sol_type == _TYPE_SCALAR:
             base = f"solution_{sol_idx}" if n_solutions > 1 else "solution"
             payload = data if data.ndim == 1 else data[:, col_idx]
             fields[f"{base}@{location}"] = {"data": payload, "location": location}
             col_idx += 1
-        elif sol_type == 2:
+        elif sol_type == _TYPE_VECTOR:
             base = f"vector_{sol_idx}" if n_solutions > 1 else "vector"
             fields[f"{base}@{location}"] = {
                 "data": data[:, col_idx : col_idx + dimension],
                 "location": location,
             }
             col_idx += dimension
-        elif sol_type == 3:
-            tensor_size = 6 if dimension == 3 else 3
+        elif sol_type == _TYPE_TENSOR:
+            tensor_size = dimension * (dimension + 1) // 2
             base = f"tensor_{sol_idx}" if n_solutions > 1 else "tensor"
             fields[f"{base}@{location}"] = {
                 "data": data[:, col_idx : col_idx + tensor_size],
@@ -212,7 +215,7 @@ def infer_sol_type(array: NDArray[np.float64], dimension: int) -> int:
     """
     if array.ndim == 1:
         return _TYPE_SCALAR
-    if array.ndim != 2:
+    if array.ndim != _TABLE_NDIM:
         msg = (
             f"Sol arrays must be 1D (scalar) or 2D (vector/tensor); "
             f"got shape {array.shape}"
@@ -305,7 +308,8 @@ def write_sol_file(
         # Concatenate each row across all blocks. This is the per-vertex
         # "all values" layout Medit expects.
         per_row_chunks = [
-            arr if arr.ndim == 2 else arr.reshape(-1, 1) for _, arr, _ in group
+            arr if arr.ndim == _TABLE_NDIM else arr.reshape(-1, 1)
+            for _, arr, _ in group
         ]
         joined = np.concatenate(per_row_chunks, axis=1)
         # %.17g is the shortest round-trip-safe double format and matches
