@@ -176,6 +176,49 @@ jobs:
             *) echo "Unexpected wheel: ${wheels[0]}" >&2; exit 1 ;;
           esac
 
+      - name: Strip pyvista/scipy/rich from the bundled wheel METADATA
+        working-directory: blender_mmgpy/wheels
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The Blender extension never imports the lazy pyvista- or
+          # scipy-coupled paths, so the bundled mmgpy wheel's METADATA
+          # ``Requires-Dist`` is rewritten to drop those deps. The numpy
+          # floor is also widened from ``>=2.0.2`` to ``>=1.26`` so the
+          # extension can install on Blender 4.2 LTS (which ships numpy
+          # 1.26.x) as well as Blender 5.0 (numpy 2.x). The compiled
+          # ``_mmgpy.so`` and every Python module in the wheel are left
+          # untouched -- this is a METADATA-only strip.
+          for wheel in mmgpy-*.whl; do
+            python ../../.github/scripts/strip_blender_wheel_metadata.py "$wheel"
+          done
+
+      - name: Verify the stripped METADATA matches the slim contract
+        working-directory: blender_mmgpy/wheels
+        shell: bash
+        run: |
+          set -euo pipefail
+          for wheel in mmgpy-*.whl; do
+            metadata=$(unzip -p "$wheel" '*.dist-info/METADATA')
+            if [[ -z "$metadata" ]]; then
+              echo "FAIL: no METADATA found in $wheel" >&2
+              exit 1
+            fi
+            for forbidden in pyvista scipy rich patchelf typing-extensions; do
+              if echo "$metadata" | grep -qE "^Requires-Dist:\\s*${forbidden}(\\W|$)"; then
+                echo "FAIL: $wheel still requires $forbidden" >&2
+                echo "$metadata" | grep -E "^Requires-Dist:" >&2
+                exit 1
+              fi
+            done
+            if ! echo "$metadata" | grep -qE "^Requires-Dist:\\s*numpy>=1\\.26"; then
+              echo "FAIL: $wheel does not declare loosened numpy floor" >&2
+              echo "$metadata" | grep -E "^Requires-Dist:\\s*numpy" >&2
+              exit 1
+            fi
+            echo "OK: $wheel METADATA matches the slim contract"
+          done
+
       - name: Inject ``wheels`` and ``platforms`` into the manifest
         working-directory: blender_mmgpy
         shell: bash

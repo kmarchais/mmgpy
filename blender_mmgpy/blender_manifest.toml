@@ -29,5 +29,5 @@ tags = ["Mesh", "Modeling"]
 # hard-coded list here because the right set depends on the target.
 
 # No ``[permissions]`` block: the remesh path is fully in-memory
-# (Blender mesh -> NumPy -> PyVista -> MMG -> Blender mesh). MMG runs in
+# (Blender mesh -> NumPy -> MmgMeshS -> Blender mesh). MMG runs in
 # the process; no filesystem, network or clipboard access is taken.
