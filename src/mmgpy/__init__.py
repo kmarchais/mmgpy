@@ -66,27 +66,28 @@ if TYPE_CHECKING:
     from ._pyvista import from_pyvista, polydata_from_2d_triangles, to_pyvista
     from ._reorder import reorder_cuthill_mckee
 
-# Maps lazy attribute name -> (module path, attribute on module or None for the
-# module itself). The Blender subset omits these modules entirely; attempting
-# to access them there will raise ImportError, which is the desired behaviour.
+# Maps lazy attribute name -> (relative module path, attribute on module or
+# None for the module itself). The Blender subset omits these modules
+# entirely; attempting to access them there raises ImportError, which is the
+# desired behaviour. Relative paths keep this working under vendoring.
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
-    "interactive": ("mmgpy.interactive", None),
-    "read": ("mmgpy._io", "read"),
-    "MeshKind": ("mmgpy._mesh", "MeshKind"),
-    "from_pyvista": ("mmgpy._pyvista", "from_pyvista"),
-    "polydata_from_2d_triangles": ("mmgpy._pyvista", "polydata_from_2d_triangles"),
-    "to_pyvista": ("mmgpy._pyvista", "to_pyvista"),
-    "reorder_cuthill_mckee": ("mmgpy._reorder", "reorder_cuthill_mckee"),
+    "interactive": (".interactive", None),
+    "read": ("._io", "read"),
+    "MeshKind": ("._mesh", "MeshKind"),
+    "from_pyvista": ("._pyvista", "from_pyvista"),
+    "polydata_from_2d_triangles": ("._pyvista", "polydata_from_2d_triangles"),
+    "to_pyvista": ("._pyvista", "to_pyvista"),
+    "reorder_cuthill_mckee": ("._reorder", "reorder_cuthill_mckee"),
 }
 
 
 def __getattr__(name: str) -> Any:  # noqa: ANN401  -- value is a module or attribute
     target = _LAZY_IMPORTS.get(name)
     if target is None:
-        msg = f"module 'mmgpy' has no attribute {name!r}"
+        msg = f"module {__name__!r} has no attribute {name!r}"
         raise AttributeError(msg)
     module_name, attr_name = target
-    module = importlib.import_module(module_name)
+    module = importlib.import_module(module_name, package=__name__)
     value = module if attr_name is None else getattr(module, attr_name)
     globals()[name] = value
     return value
