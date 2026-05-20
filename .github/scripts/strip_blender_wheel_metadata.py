@@ -102,8 +102,6 @@ def rewrite_record(
     out_lines: list[str] = []
     for line in record_text.splitlines():
         parts = line.split(",")
-        # Tolerate a literal comma in any field by reassembling on the
-        # known structure: path is everything before the last two commas.
         if len(parts) >= 3 and parts[0] == metadata_path_in_record:
             out_lines.append(f"{metadata_path_in_record},{new_hash},{new_size}")
             updated = True
@@ -117,7 +115,15 @@ def rewrite_record(
 
 
 def strip_wheel(wheel_path: Path) -> None:
-    """Rewrite ``wheel_path`` in place so its METADATA matches the slim contract."""
+    """Rewrite ``wheel_path`` in place so its METADATA matches the slim contract.
+
+    Only the METADATA entry of RECORD is recomputed; sha256+size for every
+    other file in RECORD is carried over verbatim. That stays correct
+    because we extract and repack the wheel byte-for-byte for those files
+    (the round trip leaves them untouched on disk). If a future change
+    were to rewrite a second file in the wheel, RECORD would need to be
+    refreshed for that file too.
+    """
     if not wheel_path.is_file() or wheel_path.suffix != ".whl":
         msg = f"not a wheel file: {wheel_path}"
         raise SystemExit(msg)
