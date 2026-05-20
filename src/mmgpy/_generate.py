@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from mmgpy._mmgpy import MmgMesh2D
-from mmgpy._pyvista import to_pyvista
 
 if TYPE_CHECKING:
     import pyvista as pv
@@ -129,6 +128,8 @@ def generate(  # noqa: PLR0913  -- the standard MMG sizing knobs are explicit by
             options.setdefault(name, value)
 
     mesh.remesh(**options)
+    from mmgpy._pyvista import to_pyvista  # noqa: PLC0415
+
     return to_pyvista(mesh, include_refs=True, include_edges=True)
 
 
