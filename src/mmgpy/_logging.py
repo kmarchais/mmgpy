@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Literal
 
+    from rich.logging import RichHandler
+
     LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
@@ -65,12 +67,27 @@ def get_logger() -> logging.Logger:
     return logger
 
 
+def _rich_handler_cls() -> type[RichHandler]:
+    """Return the ``rich.logging.RichHandler`` class, importing on demand.
+
+    Keeping the import deferred lets ``import mmgpy`` skip loading ``rich``
+    so slim distributions (e.g. the Blender add-on) don't need to bundle it.
+
+    Returns
+    -------
+    type[RichHandler]
+        The ``RichHandler`` class.
+
+    """
+    from rich.logging import RichHandler
+
+    return RichHandler
+
+
 def _configure_logger(logger: logging.Logger) -> None:
     """Configure the logger with RichHandler."""
     if _state.console_enabled:
-        from rich.logging import RichHandler
-
-        handler = RichHandler(
+        handler = _rich_handler_cls()(
             rich_tracebacks=True,
             show_path=False,
             markup=True,
@@ -131,10 +148,9 @@ def configure_logging(*, enable_console: bool = True) -> None:
     if not enable_console:
         _state.console_enabled = False
         # Remove existing Rich handlers if logger already initialized
-        from rich.logging import RichHandler
-
+        rich_handler_cls = _rich_handler_cls()
         for handler in logger.handlers[:]:
-            if isinstance(handler, RichHandler):
+            if isinstance(handler, rich_handler_cls):
                 logger.removeHandler(handler)
                 handler.close()
 

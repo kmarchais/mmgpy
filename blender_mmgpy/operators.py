@@ -34,11 +34,12 @@ try:
 except ImportError as exc:
     _MMGPY_IMPORT_ERROR = exc
 
-# Errors we expect from mmgpy / numpy on bad geometry or option combinations.
-# The surface remesh path runs in-memory only — no file I/O — so ``OSError``
-# is intentionally excluded. Anything outside this set is genuinely
-# unexpected and bubbles up to Blender's own error popup with a full
-# traceback.
+# Errors we expect from the three mmgpy callsites the operator wraps:
+# ``MmgMeshS(...)`` construction, ``apply_sizing_constraints``, and
+# ``mesh.remesh``. The surface remesh path runs in-memory only — no file
+# I/O — so ``OSError`` is intentionally excluded. Anything outside this
+# set is genuinely unexpected and bubbles up to Blender's own error
+# popup with a full traceback.
 _REMESH_EXC_TYPES = (RuntimeError, ValueError, TypeError)
 
 # Above this raw triangle estimate we round to 2 significant figures for the

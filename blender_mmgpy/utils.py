@@ -11,6 +11,8 @@ import bpy
 import mathutils
 import numpy as np
 
+from mmgpy._mmgpy import MmgMeshS  # noqa: PLC2701
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -398,8 +400,6 @@ def apply_quality_visualization(obj: bpy.types.Object) -> int:
     # ``blender_to_arrays`` would route via ``bmesh.ops.triangulate``
     # which is documented to reorder faces.
     vertices, triangles = direct_triangle_arrays(mesh)
-    from mmgpy._mmgpy import MmgMeshS  # noqa: PLC0415, PLC2701
-
     qualities = MmgMeshS(
         vertices.astype(np.float64, copy=False),
         triangles.astype(np.int32, copy=False),
