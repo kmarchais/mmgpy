@@ -118,15 +118,17 @@ jobs:
             exit 1
           fi
 
-      - name: Refuse if release branch already exists
+      - name: Refuse if release or bump branch already exists
         env:
           TARGET: ${{ steps.compute.outputs.target_version }}
+          NEXT_DEV: ${{ steps.compute.outputs.next_dev_version }}
         run: |
-          BRANCH="release/v${TARGET}"
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "::error::Remote branch $BRANCH already exists. Delete it before retrying."
-            exit 1
-          fi
+          for BRANCH in "release/v${TARGET}" "bump/v${NEXT_DEV}"; do
+            if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+              echo "::error::Remote branch $BRANCH already exists. Delete it before retrying."
+              exit 1
+            fi
+          done
 
       - name: Check build-and-test is green on main
         env:
@@ -187,26 +189,38 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
 
-      - name: Bump to release version
-        run: uv run --no-project python .github/scripts/sync_versions.py --set "${TARGET}"
-
-      - name: Commit release on release branch
+      - name: Create release branch with release commit
         run: |
-          BRANCH="release/v${TARGET}"
-          git checkout -b "$BRANCH"
+          RELEASE_BRANCH="release/v${TARGET}"
+          git checkout -b "$RELEASE_BRANCH"
+          uv run --no-project python .github/scripts/sync_versions.py --set "${TARGET}"
           git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
           git commit -m "release: v${TARGET}"
-          git push origin "$BRANCH"
+          git push origin "$RELEASE_BRANCH"
 
       - name: Tag release commit
         run: |
           git tag -a "v${TARGET}" -m "v${TARGET}"
           git push origin "v${TARGET}"
 
+      - name: Create bump branch with next-dev commit
+        run: |
+          BUMP_BRANCH="bump/v${NEXT_DEV}"
+          # Branch off the release branch tip so the bump diff is just the
+          # version-string change. After the release PR is merged and its
+          # branch is deleted, GitHub auto-retargets the bump PR's base to
+          # main; the diff against main then collapses to this one commit
+          # (the release diff already landed via the release PR).
+          git checkout -b "$BUMP_BRANCH"
+          uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
+          git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
+          git commit -m "chore: bump to ${NEXT_DEV}"
+          git push origin "$BUMP_BRANCH"
+
       # Pin previous_tag_name to the latest published release so the
       # changelog is correct even if a prior release PR was squashed
-      # (which would orphan its tagged commit from main's first-parent
-      # history and confuse GitHub's default tag-walking heuristic).
+      # (which orphans its tagged commit from main's first-parent
+      # history and confuses GitHub's default tag-walking heuristic).
       # If there is no prior release, fall back to the default behaviour.
       - name: Create GitHub release
         env:
@@ -231,13 +245,22 @@ jobs:
               --verify-tag
           fi
 
-      # Releases created with GITHUB_TOKEN don't fire the `release: published`
-      # event for downstream workflows, so we dispatch the wheel build
-      # explicitly against the freshly created tag. `gh workflow run` does
-      # not return the run id, so we poll briefly to surface a link.
+      # Two GitHub gotchas conspire here:
+      #   (1) Releases created with GITHUB_TOKEN don't fire the
+      #       ``release: published`` event for downstream workflows.
+      #   (2) Workflows dispatched with GITHUB_TOKEN don't fire
+      #       ``workflow_run`` events on their completion either.
+      # So GITHUB_TOKEN alone breaks the chain twice: once on the
+      # release event (Build Wheels never starts) and once on the
+      # dispatch event (Build Blender Extension never starts after
+      # Build Wheels). We dispatch via a fine-grained PAT
+      # (``RELEASE_DISPATCH_PAT``) so the workflow_run hop fires.
+      # The PAT needs Actions:R/W + Contents:R/W on this repo;
+      # see the README for setup. ``gh workflow run`` does not return
+      # the run id, so we poll briefly to surface a link.
       - name: Dispatch wheel build + PyPI publish
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_PAT }}
         run: |
           gh workflow run build-wheels.yml \
             --ref "v${TARGET}" \
@@ -265,16 +288,7 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Bump to next dev version
-        run: uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
-
-      - name: Commit dev bump
-        run: |
-          git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
-          git commit -m "chore: bump to ${NEXT_DEV}"
-          git push origin "release/v${TARGET}"
-
-      - name: Open PR back to main
+      - name: Open release PR (1 commit, base=main)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -282,4 +296,30 @@ jobs:
             --base main \
             --head "release/v${TARGET}" \
             --title "release: v${TARGET}" \
-            --body "Tagged \`v${TARGET}\` on the release commit. This PR also bumps to \`${NEXT_DEV}\`. **Merge with a merge commit (no squash)** so the tagged commit stays reachable from main."
+            --body "$(cat <<EOF
+          Tagged \`v${TARGET}\` on this commit. The follow-up dev-bump
+          to \`${NEXT_DEV}\` is in a separate PR (\`bump/v${NEXT_DEV}\`)
+          so this one stays a single squash-safe commit.
+
+          Merge this PR first. When the \`release/v${TARGET}\` branch is
+          deleted, the bump PR's base auto-retargets to main.
+          EOF
+          )"
+
+      - name: Open bump PR (1 commit, base=release branch)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --base "release/v${TARGET}" \
+            --head "bump/v${NEXT_DEV}" \
+            --title "chore: bump to ${NEXT_DEV}" \
+            --body "$(cat <<EOF
+          Opens the next dev cycle. Base is \`release/v${TARGET}\` so the
+          diff shown is just the version bump; when that branch is deleted
+          on release merge, GitHub auto-retargets this PR to main and the
+          diff stays a single commit.
+
+          Merge after the release PR.
+          EOF
+          )"
