@@ -10,8 +10,6 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from rich.logging import RichHandler
-
 if TYPE_CHECKING:
     from typing import Literal
 
@@ -70,6 +68,8 @@ def get_logger() -> logging.Logger:
 def _configure_logger(logger: logging.Logger) -> None:
     """Configure the logger with RichHandler."""
     if _state.console_enabled:
+        from rich.logging import RichHandler
+
         handler = RichHandler(
             rich_tracebacks=True,
             show_path=False,
@@ -131,6 +131,8 @@ def configure_logging(*, enable_console: bool = True) -> None:
     if not enable_console:
         _state.console_enabled = False
         # Remove existing Rich handlers if logger already initialized
+        from rich.logging import RichHandler
+
         for handler in logger.handlers[:]:
             if isinstance(handler, RichHandler):
                 logger.removeHandler(handler)

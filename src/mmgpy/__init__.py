@@ -24,29 +24,15 @@ try:
 except ImportError:
     __version__ = "unknown"
 
-# Eagerly imported: numpy-only, no PyVista in their transitive closure. These
-# stay available even in headless distributions that ship mmgpy without
-# pyvista (e.g. the Blender add-on).
-from . import lagrangian, metrics, progress, repair, sizing
+# Eagerly imported: numpy-only (no pyvista, no scipy in their transitive
+# closure). These stay available even in slim distributions that ship mmgpy
+# without those heavy deps (e.g. the Blender add-on).
+from . import progress, sizing
 from ._mmgpy import MMG_VERSION  # type: ignore[attr-defined]
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import CancellationError, ProgressEvent, rich_progress
 from ._remesh import SolPaths, mmg2d, mmg3d, mmgs  # noqa: F401
 from ._result import RemeshResult
-from ._transfer import interpolate_field, transfer_fields
-from ._validation import (
-    IssueSeverity,
-    QualityStats,
-    ValidationError,
-    ValidationIssue,
-    ValidationReport,
-)
-from .lagrangian import (
-    detect_boundary_vertices,
-    move_mesh,
-    propagate_displacement,
-    propagate_displacement_elasticity,
-)
 from .sizing import (
     BoxSize,
     CylinderSize,
@@ -57,20 +43,35 @@ from .sizing import (
 )
 
 if TYPE_CHECKING:
-    # Surface PyVista-coupled names to type checkers without importing pyvista
-    # at runtime. Real loading happens on first attribute access via the
-    # __getattr__ below.
-    from . import interactive
+    # Surface pyvista- and scipy-coupled names to type checkers without
+    # importing the heavy deps at runtime. Real loading happens on first
+    # attribute access via the __getattr__ below.
+    from . import interactive, lagrangian, metrics, repair
     from ._io import read
     from ._mesh import MeshKind
     from ._pyvista import from_pyvista, polydata_from_2d_triangles, to_pyvista
     from ._reorder import reorder_cuthill_mckee
+    from ._transfer import interpolate_field, transfer_fields
+    from ._validation import (
+        IssueSeverity,
+        QualityStats,
+        ValidationError,
+        ValidationIssue,
+        ValidationReport,
+    )
+    from .lagrangian import (
+        detect_boundary_vertices,
+        move_mesh,
+        propagate_displacement,
+        propagate_displacement_elasticity,
+    )
 
 # Maps lazy attribute name -> (relative module path, attribute on module or
-# None for the module itself). The Blender subset omits these modules
+# None for the module itself). Slim distributions can omit these modules
 # entirely; attempting to access them there raises ImportError, which is the
 # desired behaviour. Relative paths keep this working under vendoring.
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    # PyVista-coupled
     "interactive": (".interactive", None),
     "read": ("._io", "read"),
     "MeshKind": ("._mesh", "MeshKind"),
@@ -78,6 +79,24 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "polydata_from_2d_triangles": ("._pyvista", "polydata_from_2d_triangles"),
     "to_pyvista": ("._pyvista", "to_pyvista"),
     "reorder_cuthill_mckee": ("._reorder", "reorder_cuthill_mckee"),
+    # scipy-coupled
+    "lagrangian": (".lagrangian", None),
+    "metrics": (".metrics", None),
+    "repair": (".repair", None),
+    "detect_boundary_vertices": (".lagrangian", "detect_boundary_vertices"),
+    "move_mesh": (".lagrangian", "move_mesh"),
+    "propagate_displacement": (".lagrangian", "propagate_displacement"),
+    "propagate_displacement_elasticity": (
+        ".lagrangian",
+        "propagate_displacement_elasticity",
+    ),
+    "interpolate_field": ("._transfer", "interpolate_field"),
+    "transfer_fields": ("._transfer", "transfer_fields"),
+    "IssueSeverity": ("._validation", "IssueSeverity"),
+    "QualityStats": ("._validation", "QualityStats"),
+    "ValidationError": ("._validation", "ValidationError"),
+    "ValidationIssue": ("._validation", "ValidationIssue"),
+    "ValidationReport": ("._validation", "ValidationReport"),
 }
 
 
