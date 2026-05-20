@@ -20,17 +20,26 @@ if TYPE_CHECKING:
     from .properties import MMGPYSettings
 
 try:
-    import mmgpy  # noqa: F401 -- registers the .mmg PyVista accessor
+    import numpy as np
+
+    from mmgpy._mmgpy import MmgMeshS  # noqa: PLC2701
+    from mmgpy.sizing import (
+        BoxSize,
+        SizingConstraint,
+        SphereSize,
+        apply_sizing_constraints,
+    )
 
     _MMGPY_IMPORT_ERROR: ImportError | None = None
 except ImportError as exc:
     _MMGPY_IMPORT_ERROR = exc
 
-# Errors we expect from mmgpy / PyVista / numpy on bad geometry or option
-# combinations. The surface remesh path runs in-memory only — no file I/O
-# — so ``OSError`` is intentionally excluded. Anything outside this set
-# is genuinely unexpected and bubbles up to Blender's own error popup
-# with a full traceback.
+# Errors we expect from the three mmgpy callsites the operator wraps:
+# ``MmgMeshS(...)`` construction, ``apply_sizing_constraints``, and
+# ``mesh.remesh``. The surface remesh path runs in-memory only — no file
+# I/O — so ``OSError`` is intentionally excluded. Anything outside this
+# set is genuinely unexpected and bubbles up to Blender's own error
+# popup with a full traceback.
 _REMESH_EXC_TYPES = (RuntimeError, ValueError, TypeError)
 
 # Above this raw triangle estimate we round to 2 significant figures for the
@@ -151,24 +160,31 @@ class MMGPY_OT_remesh(Operator):
         n_tris_before = len(triangles)
 
         try:
-            polydata = utils.arrays_to_polydata(vertices, triangles)
+            mesh = MmgMeshS(
+                vertices.astype(np.float64, copy=False),
+                triangles.astype(np.int32, copy=False),
+            )
         except _REMESH_EXC_TYPES as e:
-            self.report({"ERROR"}, f"Failed to build PyVista mesh: {e}")
+            self.report({"ERROR"}, f"Failed to build mmgpy mesh: {e}")
             return {"CANCELLED"}
 
         remesh_kwargs = self._build_remesh_options(settings)
-        local_sizing = self._build_local_sizing(settings)
+        constraints = self._build_sizing_constraints(settings)
+        if constraints:
+            try:
+                apply_sizing_constraints(mesh, constraints)
+            except _REMESH_EXC_TYPES as e:
+                self.report({"ERROR"}, f"Failed to apply sizing constraints: {e}")
+                return {"CANCELLED"}
 
         try:
-            result = polydata.mmg.remesh(
-                local_sizing=local_sizing or None,
-                **remesh_kwargs,
-            )
+            mesh.remesh(**remesh_kwargs)
         except _REMESH_EXC_TYPES as e:
             self.report({"ERROR"}, f"Remeshing failed: {e}")
             return {"CANCELLED"}
 
-        new_vertices, new_triangles = utils.polydata_to_arrays(result)
+        new_vertices = mesh.get_vertices()
+        new_triangles = mesh.get_triangles()
 
         utils.replace_mesh_data(obj, new_vertices, new_triangles)
 
@@ -197,7 +213,7 @@ class MMGPY_OT_remesh(Operator):
 
     @staticmethod
     def _build_remesh_options(settings: MMGPYSettings) -> dict[str, Any]:
-        """Translate settings into ``polydata.mmg.remesh`` keyword arguments.
+        """Translate settings into ``MmgMeshS.remesh`` keyword arguments.
 
         Returns
         -------
@@ -236,20 +252,22 @@ class MMGPY_OT_remesh(Operator):
         return kwargs
 
     @staticmethod
-    def _build_local_sizing(settings: MMGPYSettings) -> list[dict[str, Any]]:
-        """Translate sizing-constraint empties into ``.mmg.remesh`` specs.
+    def _build_sizing_constraints(
+        settings: MMGPYSettings,
+    ) -> list[SizingConstraint]:
+        """Translate sizing-constraint empties into ``SizingConstraint`` objects.
 
-        Each sphere/box empty becomes one entry in the ``local_sizing`` list
-        forwarded to :meth:`mmgpy.MmgAccessor.remesh`. Empties without a
-        target object are skipped.
+        Each sphere/box empty becomes one ``SphereSize`` / ``BoxSize``
+        instance passed to :func:`mmgpy.sizing.apply_sizing_constraints`.
+        Empties without a target object are skipped.
 
         Returns
         -------
-        list of dict
-            One spec per active sphere/box constraint.
+        list of SizingConstraint
+            One constraint per active sphere/box empty.
 
         """
-        specs: list[dict[str, Any]] = []
+        constraints: list[SizingConstraint] = []
         for constraint in settings.sizing_constraints:
             empty = constraint.empty_object
             if empty is None:
@@ -259,20 +277,18 @@ class MMGPY_OT_remesh(Operator):
             size = constraint.target_size
 
             if constraint.constraint_type == "SPHERE":
-                specs.append(
-                    {
-                        "shape": "sphere",
-                        "center": [location.x, location.y, location.z],
-                        "radius": empty.empty_display_size,
-                        "size": size,
-                    },
+                constraints.append(
+                    SphereSize(
+                        center=[location.x, location.y, location.z],
+                        radius=empty.empty_display_size,
+                        size=size,
+                    ),
                 )
             elif constraint.constraint_type == "BOX":
                 half_size = empty.empty_display_size
-                specs.append(
-                    {
-                        "shape": "box",
-                        "bounds": [
+                constraints.append(
+                    BoxSize(
+                        bounds=[
                             [
                                 location.x - half_size,
                                 location.y - half_size,
@@ -284,10 +300,10 @@ class MMGPY_OT_remesh(Operator):
                                 location.z + half_size,
                             ],
                         ],
-                        "size": size,
-                    },
+                        size=size,
+                    ),
                 )
-        return specs
+        return constraints
 
 
 class MMGPY_OT_autofit(Operator):

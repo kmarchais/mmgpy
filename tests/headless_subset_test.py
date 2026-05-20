@@ -1,10 +1,10 @@
-"""Regression test for the PyVista-free import subset.
+"""Regression test for the heavy-dep-free import subset.
 
-The Blender add-on ships mmgpy without bundling pyvista/vtk wheels. This
-test pins the contract that ``import mmgpy`` plus access to the headless
-public API does not pull pyvista (or vtk) into ``sys.modules``. PyVista
-is only loaded on first access to the pyvista-coupled names exposed via
-the module's ``__getattr__``.
+The Blender add-on ships mmgpy without bundling pyvista/vtk/scipy/matplotlib
+wheels. This test pins the contract that ``import mmgpy`` plus access to the
+headless public API does not pull any of those heavy deps into
+``sys.modules``. The heavy deps load only on first access to the lazy names
+exposed via the module's ``__getattr__``.
 
 Runs in a subprocess because ``tests/conftest.py`` imports pyvista at
 collection time, so any in-process check would observe it already loaded.
@@ -23,7 +23,7 @@ HEADLESS_PROBE = textwrap.dedent(
     import mmgpy
 
     # Touch the headless public API surface. Any name that should remain
-    # available in the PyVista-free Blender subset goes here.
+    # available in the slim Blender subset (no pyvista, no scipy) goes here.
     _ = mmgpy.MMG_VERSION
     _ = mmgpy.__version__
     _ = mmgpy.mmg2d
@@ -34,25 +34,11 @@ HEADLESS_PROBE = textwrap.dedent(
     _ = mmgpy.Mmg3DOptions
     _ = mmgpy.MmgSOptions
     _ = mmgpy.RemeshResult
-    _ = mmgpy.ValidationReport
-    _ = mmgpy.QualityStats
-    _ = mmgpy.IssueSeverity
-    _ = mmgpy.ValidationError
-    _ = mmgpy.ValidationIssue
     _ = mmgpy.CancellationError
     _ = mmgpy.ProgressEvent
     _ = mmgpy.rich_progress
-    _ = mmgpy.transfer_fields
-    _ = mmgpy.interpolate_field
-    _ = mmgpy.lagrangian
-    _ = mmgpy.metrics
     _ = mmgpy.progress
-    _ = mmgpy.repair
     _ = mmgpy.sizing
-    _ = mmgpy.move_mesh
-    _ = mmgpy.propagate_displacement
-    _ = mmgpy.propagate_displacement_elasticity
-    _ = mmgpy.detect_boundary_vertices
     _ = mmgpy.apply_sizing_constraints
     _ = mmgpy.BoxSize
     _ = mmgpy.CylinderSize
@@ -62,19 +48,38 @@ HEADLESS_PROBE = textwrap.dedent(
     _ = mmgpy.configure_logging
     _ = mmgpy.enable_debug
 
+    heavy_deps = ("pyvista", "vtk", "vtkmodules", "scipy", "rich", "matplotlib")
     leaked = sorted(
         m for m in sys.modules
-        if m == "pyvista"
-        or m.startswith("pyvista.")
-        or m == "vtk"
-        or m.startswith("vtk.")
-        or m.startswith("vtkmodules")
+        if any(m == d or m.startswith(d + ".") for d in heavy_deps)
     )
     if leaked:
         print("LEAKED:" + ",".join(leaked))
         raise SystemExit(1)
 
-    # Lazy access must succeed and now pyvista is allowed.
+    # Scipy-coupled lazy access. None loaded yet.
+    _ = mmgpy.move_mesh
+    _ = mmgpy.propagate_displacement
+    _ = mmgpy.propagate_displacement_elasticity
+    _ = mmgpy.detect_boundary_vertices
+    _ = mmgpy.transfer_fields
+    _ = mmgpy.interpolate_field
+    _ = mmgpy.lagrangian
+    _ = mmgpy.metrics
+    _ = mmgpy.repair
+    _ = mmgpy.IssueSeverity
+    _ = mmgpy.QualityStats
+    _ = mmgpy.ValidationError
+    _ = mmgpy.ValidationIssue
+    _ = mmgpy.ValidationReport
+    if "scipy" not in sys.modules:
+        print("LAZY FAILED: scipy not loaded after move_mesh access")
+        raise SystemExit(2)
+    if "pyvista" in sys.modules:
+        print("LEAKED: pyvista loaded via scipy-only path")
+        raise SystemExit(3)
+
+    # PyVista-coupled lazy access.
     _ = mmgpy.read
     _ = mmgpy.MeshKind
     _ = mmgpy.from_pyvista
@@ -84,15 +89,15 @@ HEADLESS_PROBE = textwrap.dedent(
     _ = mmgpy.interactive
     if "pyvista" not in sys.modules:
         print("LAZY FAILED: pyvista not loaded after read access")
-        raise SystemExit(2)
+        raise SystemExit(4)
 
     print("OK")
     """
 )
 
 
-def test_headless_subset_does_not_import_pyvista() -> None:
-    """``import mmgpy`` + headless API access must not load pyvista or vtk."""
+def test_headless_subset_does_not_import_heavy_deps() -> None:
+    """``import mmgpy`` + headless attr access must not load heavy deps."""
     result = subprocess.run(
         [sys.executable, "-c", HEADLESS_PROBE],
         capture_output=True,

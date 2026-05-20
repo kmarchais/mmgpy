@@ -10,7 +10,8 @@ import bmesh
 import bpy
 import mathutils
 import numpy as np
-import pyvista as pv
+
+from mmgpy._mmgpy import MmgMeshS  # noqa: PLC2701
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -139,56 +140,6 @@ def replace_mesh_data(
     mesh.clear_geometry()
     mesh.from_pydata(local_verts, [], triangles.tolist())
     mesh.update()
-
-
-def arrays_to_polydata(
-    vertices: NDArray[np.float64],
-    triangles: NDArray[np.int32],
-) -> pv.PolyData:
-    """Build a PyVista PolyData surface from vertex + triangle arrays.
-
-    Parameters
-    ----------
-    vertices : ndarray
-        Vertex coordinates (Nx3) in world space.
-    triangles : ndarray
-        Triangle connectivity (Mx3), 0-indexed.
-
-    Returns
-    -------
-    pv.PolyData
-        Triangle surface mesh ready for ``mesh.mmg.remesh()``.
-
-    """
-    faces = np.column_stack(
-        [np.full(len(triangles), 3, dtype=np.int32), triangles.astype(np.int32)],
-    ).ravel()
-    return pv.PolyData(vertices.astype(np.float64), faces=faces)
-
-
-def polydata_to_arrays(
-    polydata: pv.PolyData,
-) -> tuple[NDArray[np.float64], NDArray[np.int32]]:
-    """Extract vertices and triangle connectivity from a PolyData.
-
-    Handles the polygon stream produced by ``.mmg.remesh()`` — line cells
-    (MMG ridges) sit in ``polydata.lines`` and are ignored here.
-
-    Returns
-    -------
-    vertices : ndarray
-        Vertex coordinates (Nx3).
-    triangles : ndarray
-        Triangle connectivity (Mx3), 0-indexed.
-
-    """
-    vertices = np.asarray(polydata.points, dtype=np.float64)
-    faces = np.asarray(polydata.faces)
-    if faces.size == 0:
-        triangles = np.empty((0, 3), dtype=np.int32)
-    else:
-        triangles = faces.reshape(-1, 4)[:, 1:].astype(np.int32, copy=False)
-    return vertices, triangles
 
 
 QUALITY_ATTR_NAME = "mmgpy_quality"
@@ -449,8 +400,10 @@ def apply_quality_visualization(obj: bpy.types.Object) -> int:
     # ``blender_to_arrays`` would route via ``bmesh.ops.triangulate``
     # which is documented to reorder faces.
     vertices, triangles = direct_triangle_arrays(mesh)
-    polydata = arrays_to_polydata(vertices, triangles)
-    qualities = polydata.mmg.element_qualities()
+    qualities = MmgMeshS(
+        vertices.astype(np.float64, copy=False),
+        triangles.astype(np.int32, copy=False),
+    ).get_element_qualities()
 
     if len(qualities) != len(mesh.polygons):
         msg = (
