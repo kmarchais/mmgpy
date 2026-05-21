@@ -58,6 +58,35 @@ uv pip install "mmgpy[ui]"
 uv pip install "mmgpy[fem]"
 ```
 
+### PyVista accessor (`mesh.mmg.remesh(...)`)
+
+The `.mmg` accessor and the Medit `.mesh` / `.meshb` reader/writer (see [How it works](#how-it-works)) activate whenever **pyvista >= 0.48** is importable in the same environment as mmgpy. Either of these gives you that:
+
+```bash
+pip install mmgpy pyvista        # mmgpy + latest pyvista
+pip install "mmgpy[pyvista]"     # same effect, version-pinned to >=0.48,<1
+```
+
+If pyvista isn't installed (or is older than 0.48, which predates the plugin entry-point system), the accessor simply isn't registered. `import mmgpy` still works, and the in-memory `MmgMesh2D` / `MmgMesh3D` / `MmgMeshS` API and `mmgpy.mmgs.remesh(...)` file path stay available.
+
+### Without PyVista
+
+For headless / server / CI use, the slim install (`pip install mmgpy`, no pyvista, no VTK) exposes the C-binding mesh classes directly. Build a mesh from numpy arrays, attach fields via item syntax, and remesh in place:
+
+```python
+import numpy as np
+from mmgpy import MmgMeshS
+
+mesh = MmgMeshS(vertices, triangles)        # numpy arrays, shape (Nv, 3) and (Nt, 3)
+mesh["metric"] = sizing_array               # optional: per-vertex isotropic size
+mesh.remesh(hmin=0.01, hmax=0.1, hausd=0.005)
+
+verts_out = mesh.get_vertices()
+tris_out = mesh.get_triangles()
+```
+
+`MmgMesh2D` (planar triangular) and `MmgMesh3D` (tetrahedral) follow the same pattern. File-based round trips are also available without pyvista via `mmgpy.mmg2d.remesh(in_path, out_path, options={...})` and its `mmg3d` / `mmgs` siblings.
+
 ### Using uv for project management
 
 ```bash

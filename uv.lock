@@ -1441,13 +1441,12 @@ wheels = [
 
 [[package]]
 name = "mmgpy"
-version = "0.15.0.dev0"
+version = "0.16.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "patchelf", marker = "sys_platform == 'linux'" },
-    { name = "pyvista" },
     { name = "rich" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1458,7 +1457,11 @@ dependencies = [
 fem = [
     { name = "fedoo" },
 ]
+pyvista = [
+    { name = "pyvista" },
+]
 ui = [
+    { name = "pyvista" },
     { name = "pywebview" },
     { name = "trame" },
     { name = "trame-vtk" },
@@ -1481,6 +1484,7 @@ dev = [
     { name = "pytest-codeblocks" },
     { name = "pytest-cov" },
     { name = "pytest-pyvista" },
+    { name = "pyvista" },
     { name = "ruff" },
     { name = "scikit-build-core" },
 ]
@@ -1501,9 +1505,10 @@ ui = [
 [package.metadata]
 requires-dist = [
     { name = "fedoo", marker = "extra == 'fem'", specifier = ">=0.8.3,<1" },
+    { name = "mmgpy", extras = ["pyvista"], marker = "extra == 'ui'" },
     { name = "numpy", specifier = ">=2.0.2,<3" },
     { name = "patchelf", marker = "sys_platform == 'linux'", specifier = ">=0.17.2.4,<1" },
-    { name = "pyvista", specifier = ">=0.48,<1" },
+    { name = "pyvista", marker = "extra == 'pyvista'", specifier = ">=0.48,<1" },
     { name = "pywebview", marker = "extra == 'ui'", specifier = ">=6.1,<7" },
     { name = "rich", specifier = ">=13.0.0,<15" },
     { name = "scipy", specifier = ">=1.11.0,<2" },
@@ -1513,7 +1518,7 @@ requires-dist = [
     { name = "trame-vuetify", marker = "extra == 'ui'", specifier = ">=3.2.0,<4" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0,<5" },
 ]
-provides-extras = ["fem", "ui"]
+provides-extras = ["fem", "pyvista", "ui"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1529,6 +1534,7 @@ dev = [
     { name = "pytest-codeblocks", specifier = ">=0.17.0" },
     { name = "pytest-cov", specifier = ">=4.1.0" },
     { name = "pytest-pyvista", specifier = ">=0.2" },
+    { name = "pyvista", specifier = ">=0.48,<1" },
     { name = "ruff", specifier = ">=0.15" },
     { name = "scikit-build-core", specifier = ">=0.11.5" },
 ]
