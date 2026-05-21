@@ -37,31 +37,37 @@ uvx --from "mmgpy[ui]" mmgpy-ui
 The recommended way to install mmgpy:
 
 ```bash
-uv pip install "mmgpy[pyvista]"
+uv pip install mmgpy
 ```
 
-This uses pre-built wheels from PyPI that bundle all native libraries (MMG, VTK), no compiler needed. The `[pyvista]` extra enables the PyVista accessor (`mesh.mmg.remesh(...)`) and the Medit reader/writer plugin shown below.
+This uses pre-built wheels from PyPI that bundle all native libraries (MMG, VTK), no compiler needed.
 
 ### Other install methods
 
 ```bash
-# Slim install: programmatic in-memory API only (no PyVista, no VTK)
-uv pip install mmgpy
-
 # pip
-pip install "mmgpy[pyvista]"
+pip install mmgpy
 
 # conda-forge
 conda install -c conda-forge mmgpy
 
-# With UI support (implies [pyvista])
+# With UI support
 uv pip install "mmgpy[ui]"
 
 # With elasticity-based displacement propagation
 uv pip install "mmgpy[fem]"
 ```
 
-The slim install (`mmgpy` without `[pyvista]`) is intended for headless server / CI deployments that only use the low-level `MmgMesh2D` / `MmgMesh3D` / `MmgMeshS` API and avoid the ~140 MB VTK transitive cost.
+### PyVista accessor (`mesh.mmg.remesh(...)`)
+
+The `.mmg` accessor and the Medit `.mesh` / `.meshb` reader/writer shown in the next section activate whenever **pyvista >= 0.48** is importable in the same environment as mmgpy. Either of these gives you that:
+
+```bash
+pip install mmgpy pyvista        # mmgpy + latest pyvista
+pip install "mmgpy[pyvista]"     # same effect, version-pinned to >=0.48,<1
+```
+
+If pyvista isn't installed (or is older than 0.48, which predates the plugin entry-point system), the accessor simply isn't registered — `import mmgpy` still works and the in-memory `MmgMesh2D` / `MmgMesh3D` / `MmgMeshS` API and `mmgpy.mmgs.remesh(...)` file path stay available.
 
 ### Using uv for project management
 
