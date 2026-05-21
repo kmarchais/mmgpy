@@ -75,7 +75,7 @@ For headless / server / CI use, the slim install (`pip install mmgpy`, no pyvist
 
 ```python
 import numpy as np
-from mmgpy._mmgpy import MmgMeshS
+from mmgpy import MmgMeshS
 
 mesh = MmgMeshS(vertices, triangles)        # numpy arrays, shape (Nv, 3) and (Nt, 3)
 mesh["metric"] = sizing_array               # optional: per-vertex isotropic size
