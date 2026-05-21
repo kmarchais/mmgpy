@@ -372,14 +372,19 @@ jobs:
             echo "| ${{ steps.zip.outputs.path }} | $size |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # Combine the per-platform builds into a single zip whose manifest
-  # declares ``platforms = [linux-x64, macos-arm64, windows-x64]`` and
-  # whose ``wheels/`` directory holds wheels for every (platform, ABI).
-  # This is the zip you upload to extensions.blender.org: the marketplace
-  # expects one zip per submission, and Blender picks the right wheels at
-  # install time.
-  build-fat-extension:
+  # For each OS, combine the two per-(OS, Python) artifacts produced by
+  # ``build-extension`` into a single per-OS zip that carries both Python
+  # ABI wheels (cp311 for Blender 4.2 LTS, cp313 for Blender 5.0+) and
+  # declares ``platforms = [<that-OS>]`` in its manifest. These three
+  # zips are what gets uploaded to extensions.blender.org: the marketplace
+  # accepts one zip per OS for a given extension version and serves the
+  # right one based on the user's platform.
+  build-per-os-extension:
     needs: build-extension
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux-x64, macos-arm64, windows-x64]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -396,14 +401,16 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Download all per-platform extension artifacts
+      - name: Download per-(OS, Python) artifacts for this OS
         uses: actions/download-artifact@v4
         with:
-          pattern: blender-extension-*
-          path: per-platform/
+          pattern: blender-extension-${{ matrix.os }}-py*
+          path: intermediates/
 
-      - name: Assemble fat zip
-        id: fat
+      - name: Assemble per-OS zip
+        id: per_os
+        env:
+          OS_TAG: ${{ matrix.os }}
         run: |
           python - <<'PY'
           import os
@@ -413,18 +420,21 @@ jobs:
           import zipfile
           from pathlib import Path
 
-          src = Path("per-platform")
-          work = Path("fat-build")
+          os_tag = os.environ["OS_TAG"]
+          src = Path("intermediates")
+          work = Path("per-os-build")
           if work.exists():
               shutil.rmtree(work)
           work.mkdir()
           wheels_dir = work / "wheels"
           wheels_dir.mkdir()
 
-          platforms: set[str] = set()
           version: str | None = None
+          source_files_extracted = False
 
-          # Each artifact folder contains one single-platform zip.
+          # The downloaded directory holds one subfolder per (OS, py) variant,
+          # each containing exactly one zip. Both zips for this OS contribute
+          # identical source files; only their bundled wheels differ.
           for sub in sorted(src.iterdir()):
               if not sub.is_dir():
                   continue
@@ -435,24 +445,26 @@ jobs:
               with zipfile.ZipFile(zpath) as zf:
                   with zf.open("blender_manifest.toml") as f:
                       manifest = tomllib.loads(f.read().decode())
-                  platforms.update(manifest["platforms"])
+                  if manifest.get("platforms") != [os_tag]:
+                      raise SystemExit(
+                          f"{zpath} declares platforms={manifest.get('platforms')!r}, "
+                          f"expected [{os_tag!r}]",
+                      )
                   if version is None:
                       version = manifest["version"]
                   elif version != manifest["version"]:
                       raise SystemExit(
                           f"version mismatch: {version!r} vs {manifest['version']!r}",
                       )
-                  # Extract source files (first artifact wins; they're identical)
-                  for name in zf.namelist():
-                      if name.endswith("/") or name.startswith("wheels/"):
-                          continue
-                      target = work / name
-                      target.parent.mkdir(parents=True, exist_ok=True)
-                      if not target.exists():
+                  if not source_files_extracted:
+                      for name in zf.namelist():
+                          if name.endswith("/") or name.startswith("wheels/"):
+                              continue
+                          target = work / name
+                          target.parent.mkdir(parents=True, exist_ok=True)
                           with zf.open(name) as r, target.open("wb") as w:
                               shutil.copyfileobj(r, w)
-                  # Extract wheels; pure-Python wheels (py3-none-any) repeat
-                  # across artifacts byte-identically, so just overwrite.
+                      source_files_extracted = True
                   for name in zf.namelist():
                       if not name.startswith("wheels/") or not name.endswith(".whl"):
                           continue
@@ -462,38 +474,23 @@ jobs:
 
           assert version is not None
 
-          # Rebuild the manifest with the union of platforms + all wheels.
+          # Rewrite the wheels list with everything in wheels/. Platforms
+          # is already correct (single-OS) on the inherited manifest.
           manifest_path = work / "blender_manifest.toml"
           text = manifest_path.read_text()
-          # Strip any platforms/wheels blocks that were inherited from the
-          # single-platform manifest, then append the multi-platform pair.
-          text = re.sub(
-              r"^\s*platforms\s*=\s*\[[^\]]*\]\s*\n",
-              "",
-              text,
-              flags=re.MULTILINE,
-          )
           text = re.sub(
               r"^\s*wheels\s*=\s*\[(?:[^\]]|\n)*\]\s*\n",
               "",
               text,
               flags=re.MULTILINE,
           )
-
           wheels = sorted(p.name for p in wheels_dir.iterdir() if p.suffix == ".whl")
-          platforms_sorted = sorted(platforms)
-
-          tail = (
-              "platforms = ["
-              + ", ".join(f'"{p}"' for p in platforms_sorted)
-              + "]\n"
-              + "wheels = [\n"
-              + "".join(f'    "./wheels/{w}",\n' for w in wheels)
-              + "]\n"
-          )
+          tail = "wheels = [\n" + "".join(
+              f'    "./wheels/{w}",\n' for w in wheels
+          ) + "]\n"
           manifest_path.write_text(text.rstrip() + "\n\n" + tail)
 
-          out = Path(f"mmgpy-blender-extension-{version}-all.zip")
+          out = Path(f"mmgpy-blender-extension-{version}-{os_tag}.zip")
           with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
               for p in sorted(work.rglob("*")):
                   if p.is_file():
@@ -502,22 +499,26 @@ jobs:
           size_mb = out.stat().st_size / (1024 * 1024)
           print(
               f"Built {out} ({size_mb:.1f} MB), "
-              f"{len(wheels)} wheels, platforms={platforms_sorted}",
+              f"{len(wheels)} wheels, platforms=[{os_tag!r}]",
           )
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
               fh.write(f"path={out}\n")
           PY
 
-      - name: Validate fat zip
+      - name: Validate per-OS zip
+        env:
+          OS_TAG: ${{ matrix.os }}
         run: |
           python - <<'PY'
+          import os
           import sys
           import tomllib
           import zipfile
           from pathlib import Path
 
-          zip_path = Path("${{ steps.fat.outputs.path }}")
+          os_tag = os.environ["OS_TAG"]
+          zip_path = Path("${{ steps.per_os.outputs.path }}")
           with zipfile.ZipFile(zip_path) as zf:
               names = set(zf.namelist())
               with zf.open("blender_manifest.toml") as f:
@@ -525,54 +526,51 @@ jobs:
               for key in ("id", "version", "schema_version", "type"):
                   if key not in manifest:
                       sys.exit(f"manifest missing {key!r}")
-              if set(manifest["platforms"]) != {"linux-x64", "macos-arm64", "windows-x64"}:
-                  sys.exit(f"unexpected platforms: {manifest['platforms']}")
-              # Each (platform, py) pair must contribute at least an mmgpy wheel.
-              expected = {
-                  ("manylinux", "cp311"),
-                  ("manylinux", "cp313"),
-                  ("macosx", "cp311"),
-                  ("macosx", "cp313"),
-                  ("win_amd64", "cp311"),
-                  ("win_amd64", "cp313"),
-              }
-              found = set()
-              for name in names:
-                  if not name.startswith("wheels/mmgpy-"):
-                      continue
-                  for plat_marker, abi in expected:
-                      if abi in name and plat_marker in name:
-                          found.add((plat_marker, abi))
-              missing = expected - found
-              if missing:
-                  sys.exit(f"missing mmgpy wheels for: {missing}")
-              # Every declared wheel must exist.
-              decl_missing = [w for w in manifest["wheels"] if w.removeprefix("./") not in names]
+              if manifest.get("platforms") != [os_tag]:
+                  sys.exit(
+                      f"platforms mismatch: manifest has "
+                      f"{manifest.get('platforms')!r}, expected [{os_tag!r}]",
+                  )
+              # Both Python ABIs must be present.
+              wheels_in_manifest = manifest.get("wheels", [])
+              if len(wheels_in_manifest) != 2:
+                  sys.exit(
+                      f"expected 2 wheels for {os_tag} (cp311 + cp313), "
+                      f"got {len(wheels_in_manifest)}",
+                  )
+              abis_seen = {abi for abi in ("cp311", "cp313")
+                           if any(abi in w for w in wheels_in_manifest)}
+              if abis_seen != {"cp311", "cp313"}:
+                  sys.exit(f"missing ABIs: {{'cp311','cp313'}} - {abis_seen}")
+              decl_missing = [
+                  w for w in wheels_in_manifest
+                  if w.removeprefix("./") not in names
+              ]
               if decl_missing:
                   sys.exit(f"declared but absent: {decl_missing}")
-          print(f"OK: {len(names)} entries, {len(manifest['wheels'])} wheels declared")
+          print(f"OK: {len(names)} entries, {len(wheels_in_manifest)} wheels declared")
           PY
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blender-extension-all
-          path: ${{ steps.fat.outputs.path }}
+          name: blender-extension-release-${{ matrix.os }}
+          path: ${{ steps.per_os.outputs.path }}
           retention-days: 30
 
       - name: Summary
         run: |
-          size=$(du -h "${{ steps.fat.outputs.path }}" | cut -f1)
+          size=$(du -h "${{ steps.per_os.outputs.path }}" | cut -f1)
           {
-            echo "## Fat zip (all platforms, all Blender Python ABIs)"
+            echo "## Per-OS zip: ${{ matrix.os }}"
             echo ""
             echo "| Package | Size |"
             echo "|---------|------|"
-            echo "| ${{ steps.fat.outputs.path }} | $size |"
+            echo "| ${{ steps.per_os.outputs.path }} | $size |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   upload-to-release:
-    needs: [build-extension, build-fat-extension]
+    needs: build-per-os-extension
     runs-on: ubuntu-latest
     # Mirror the build gate: any tag-driven Build Wheels completion, plus
     # explicit dispatch with ``upload_to_release=true``.
@@ -587,10 +585,10 @@ jobs:
       contents: write
 
     steps:
-      - name: Download all extension artifacts
+      - name: Download per-OS extension artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: blender-extension-*
+          pattern: blender-extension-release-*
           merge-multiple: true
           path: extensions/
 
