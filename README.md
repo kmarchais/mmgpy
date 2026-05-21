@@ -37,26 +37,31 @@ uvx --from "mmgpy[ui]" mmgpy-ui
 The recommended way to install mmgpy:
 
 ```bash
-uv pip install mmgpy
+uv pip install "mmgpy[pyvista]"
 ```
 
-This uses pre-built wheels from PyPI that bundle all native libraries (MMG, VTK), no compiler needed.
+This uses pre-built wheels from PyPI that bundle all native libraries (MMG, VTK), no compiler needed. The `[pyvista]` extra enables the PyVista accessor (`mesh.mmg.remesh(...)`) and the Medit reader/writer plugin shown below.
 
 ### Other install methods
 
 ```bash
+# Slim install: programmatic in-memory API only (no PyVista, no VTK)
+uv pip install mmgpy
+
 # pip
-pip install mmgpy
+pip install "mmgpy[pyvista]"
 
 # conda-forge
 conda install -c conda-forge mmgpy
 
-# With UI support
+# With UI support (implies [pyvista])
 uv pip install "mmgpy[ui]"
 
 # With elasticity-based displacement propagation
 uv pip install "mmgpy[fem]"
 ```
+
+The slim install (`mmgpy` without `[pyvista]`) is intended for headless server / CI deployments that only use the low-level `MmgMesh2D` / `MmgMesh3D` / `MmgMeshS` API and avoid the ~140 MB VTK transitive cost.
 
 ### Using uv for project management
 
