@@ -118,17 +118,15 @@ jobs:
             exit 1
           fi
 
-      - name: Refuse if release or bump branch already exists
+      - name: Refuse if release branch already exists
         env:
           TARGET: ${{ steps.compute.outputs.target_version }}
-          NEXT_DEV: ${{ steps.compute.outputs.next_dev_version }}
         run: |
-          for BRANCH in "release/v${TARGET}" "bump/v${NEXT_DEV}"; do
-            if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-              echo "::error::Remote branch $BRANCH already exists. Delete it before retrying."
-              exit 1
-            fi
-          done
+          BRANCH="release/v${TARGET}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Remote branch $BRANCH already exists. Delete it before retrying."
+            exit 1
+          fi
 
       - name: Check build-and-test is green on main
         env:
@@ -189,33 +187,28 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
 
-      - name: Create release branch with release commit
+      - name: Create release branch with release + bump commits
         run: |
           RELEASE_BRANCH="release/v${TARGET}"
           git checkout -b "$RELEASE_BRANCH"
+
           uv run --no-project python .github/scripts/sync_versions.py --set "${TARGET}"
           git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
           git commit -m "release: v${TARGET}"
-          git push origin "$RELEASE_BRANCH"
 
-      - name: Tag release commit
-        run: |
+          # Tag the release commit before stacking the bump on top, so the
+          # tag points to the release commit itself (not the bump). The
+          # release PR must be merged with a merge commit (not squash) to
+          # keep both commits as distinct ancestors of main and preserve
+          # the tag's first-parent reachability.
           git tag -a "v${TARGET}" -m "v${TARGET}"
-          git push origin "v${TARGET}"
 
-      - name: Create bump branch with next-dev commit
-        run: |
-          BUMP_BRANCH="bump/v${NEXT_DEV}"
-          # Branch off the release branch tip so the bump diff is just the
-          # version-string change. After the release PR is merged and its
-          # branch is deleted, GitHub auto-retargets the bump PR's base to
-          # main; the diff against main then collapses to this one commit
-          # (the release diff already landed via the release PR).
-          git checkout -b "$BUMP_BRANCH"
           uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
           git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
           git commit -m "chore: bump to ${NEXT_DEV}"
-          git push origin "$BUMP_BRANCH"
+
+          git push origin "$RELEASE_BRANCH"
+          git push origin "v${TARGET}"
 
       # Pin previous_tag_name to the latest published release so the
       # changelog is correct even if a prior release PR was squashed
@@ -288,38 +281,31 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Open release PR (1 commit, base=main)
+      # PR is opened via PAT (not GITHUB_TOKEN) so the pull_request event
+      # actually fires downstream workflows. PRs created with the default
+      # workflow token are deliberately excluded from triggering CI, which
+      # would leave auto-merge waiting on checks that never start.
+      - name: "Open release PR (2 commits: release + bump, base=main)"
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_PAT }}
         run: |
-          gh pr create \
+          PR_URL=$(gh pr create \
             --base main \
             --head "release/v${TARGET}" \
             --title "release: v${TARGET}" \
             --body "$(cat <<EOF
-          Tagged \`v${TARGET}\` on this commit. The follow-up dev-bump
-          to \`${NEXT_DEV}\` is in a separate PR (\`bump/v${NEXT_DEV}\`)
-          so this one stays a single squash-safe commit.
+          Two commits: the \`v${TARGET}\` release commit (tagged), then the
+          dev-bump to \`${NEXT_DEV}\` opening the next cycle.
 
-          Merge this PR first. When the \`release/v${TARGET}\` branch is
-          deleted, the bump PR's base auto-retargets to main.
+          **Merge with a merge commit, not squash.** Squashing collapses
+          both commits and orphans the \`v${TARGET}\` tag from main's
+          history.
           EOF
-          )"
+          )")
+          echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
 
-      - name: Open bump PR (1 commit, base=release branch)
+      - name: Enable auto-merge (merge commit)
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_PAT }}
         run: |
-          gh pr create \
-            --base "release/v${TARGET}" \
-            --head "bump/v${NEXT_DEV}" \
-            --title "chore: bump to ${NEXT_DEV}" \
-            --body "$(cat <<EOF
-          Opens the next dev cycle. Base is \`release/v${TARGET}\` so the
-          diff shown is just the version bump; when that branch is deleted
-          on release merge, GitHub auto-retargets this PR to main and the
-          diff stays a single commit.
-
-          Merge after the release PR.
-          EOF
-          )"
+          gh pr merge "$PR_URL" --auto --merge
