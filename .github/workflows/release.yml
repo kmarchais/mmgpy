@@ -3,8 +3,8 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      next_dev_bump:
-        description: "Next dev cycle bump, relative to the released version"
+      release_kind:
+        description: "Patch = bump latest released version's patch number, main untouched. Minor/major = release current main pyproject version, bump main forward."
         type: choice
         options:
           - patch
@@ -30,6 +30,7 @@ jobs:
       head_sha: ${{ steps.state.outputs.head_sha }}
       target_version: ${{ steps.compute.outputs.target_version }}
       next_dev_version: ${{ steps.compute.outputs.next_dev_version }}
+      bump_main: ${{ steps.compute.outputs.bump_main }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -56,55 +57,75 @@ jobs:
       - name: Compute target + next dev versions
         id: compute
         env:
+          RELEASE_KIND: ${{ inputs.release_kind }}
           CURRENT: ${{ steps.state.outputs.current_version }}
-          NEXT_DEV_BUMP: ${{ inputs.next_dev_bump }}
+          LATEST: ${{ steps.state.outputs.latest_release }}
         run: |
           uv run --no-project --with packaging python - <<'EOF'
           import os
+          import sys
           from packaging.version import Version
 
+          kind = os.environ["RELEASE_KIND"]
           current = Version(os.environ["CURRENT"])
-          next_dev_bump = os.environ["NEXT_DEV_BUMP"]
+          latest_str = os.environ["LATEST"]
 
-          maj, mi, pa = current.major, current.minor, current.micro
-          target = (maj, mi, pa)
-          if next_dev_bump == "major":
-              next_dev = (maj + 1, 0, 0)
-          elif next_dev_bump == "minor":
-              next_dev = (maj, mi + 1, 0)
-          elif next_dev_bump == "patch":
-              next_dev = (maj, mi, pa + 1)
+          errors: list[str] = []
+          target_str = ""
+          next_dev_str = ""
+          bump_main = "true"
+
+          def _parse_latest() -> Version | None:
+              if latest_str in ("", "(none)"):
+                  return None
+              return Version(latest_str.lstrip("v"))
+
+          if kind == "patch":
+              latest = _parse_latest()
+              if latest is None:
+                  errors.append("Patch releases require a prior published release")
+              else:
+                  target_str = f"{latest.major}.{latest.minor}.{latest.micro + 1}"
+                  bump_main = "false"
+          elif kind == "minor":
+              target_str = f"{current.major}.{current.minor}.{current.micro}"
+              next_dev_str = f"{current.major}.{current.minor + 1}.0.dev0"
+              target = Version(target_str)
+              next_dev = Version(next_dev_str)
+              if target <= current:
+                  errors.append(
+                      f"target ({target}) must be > current pyproject ({current}); "
+                      f"main should be in .devN form for a minor release"
+                  )
+              if next_dev <= target:
+                  errors.append(f"next_dev ({next_dev}) must be > target ({target})")
+              latest = _parse_latest()
+              if latest is not None and target <= latest:
+                  errors.append(f"target ({target}) must be > latest released ({latest})")
+          elif kind == "major":
+              new_major = current.major + 1
+              target_str = f"{new_major}.0.0"
+              next_dev_str = f"{new_major}.1.0.dev0"
+              target = Version(target_str)
+              next_dev = Version(next_dev_str)
+              if target <= current:
+                  errors.append(f"target ({target}) must be > current pyproject ({current})")
+              if next_dev <= target:
+                  errors.append(f"next_dev ({next_dev}) must be > target ({target})")
+              latest = _parse_latest()
+              if latest is not None and target <= latest:
+                  errors.append(f"target ({target}) must be > latest released ({latest})")
           else:
-              msg = f"Unknown bump kind: {next_dev_bump}"
-              raise ValueError(msg)
+              errors.append(f"Unknown release_kind: {kind}")
 
-          # Write directly to GITHUB_OUTPUT so uv/pip stdout chatter cannot
-          # corrupt the workflow outputs.
-          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-              fh.write(f"target_version={target[0]}.{target[1]}.{target[2]}\n")
-              fh.write(f"next_dev_version={next_dev[0]}.{next_dev[1]}.{next_dev[2]}.dev0\n")
-          EOF
-
-      - name: Validate version ordering
-        env:
-          CURRENT: ${{ steps.state.outputs.current_version }}
-          TARGET: ${{ steps.compute.outputs.target_version }}
-          NEXT_DEV: ${{ steps.compute.outputs.next_dev_version }}
-        run: |
-          uv run --no-project --with packaging python - <<'EOF'
-          import os, sys
-          from packaging.version import Version
-
-          current = Version(os.environ["CURRENT"])
-          target = Version(os.environ["TARGET"])
-          next_dev = Version(os.environ["NEXT_DEV"])
-          errors = []
-          if target <= current:
-              errors.append(f"target ({target}) must be > current pyproject version ({current})")
-          if next_dev <= target:
-              errors.append(f"next dev ({next_dev}) must be > target ({target})")
           for e in errors:
               print(f"::error::{e}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"target_version={target_str}\n")
+              fh.write(f"next_dev_version={next_dev_str}\n")
+              fh.write(f"bump_main={bump_main}\n")
+
           sys.exit(1 if errors else 0)
           EOF
 
@@ -118,7 +139,17 @@ jobs:
             exit 1
           fi
 
-      - name: Refuse if release branch already exists
+      - name: Refuse if tag already exists on origin
+        env:
+          TARGET: ${{ steps.compute.outputs.target_version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "v${TARGET}" >/dev/null 2>&1; then
+            echo "::error::Tag v${TARGET} already exists on origin. Delete it before retrying."
+            exit 1
+          fi
+
+      - name: Refuse if release branch already exists (minor/major)
+        if: inputs.release_kind != 'patch'
         env:
           TARGET: ${{ steps.compute.outputs.target_version }}
         run: |
@@ -156,11 +187,14 @@ jobs:
             echo ""
             echo "| Field | Value |"
             echo "|---|---|"
-            echo "| Current pyproject version | \`${{ steps.state.outputs.current_version }}\` |"
+            echo "| Release kind | \`${{ inputs.release_kind }}\` |"
             echo "| Latest GitHub release | \`${{ steps.state.outputs.latest_release }}\` |"
+            echo "| Current pyproject version | \`${{ steps.state.outputs.current_version }}\` |"
             echo "| Target release | \`${{ steps.compute.outputs.target_version }}\` |"
-            echo "| Next dev bump | \`${{ inputs.next_dev_bump }}\` |"
-            echo "| Computed next dev | \`${{ steps.compute.outputs.next_dev_version }}\` |"
+            echo "| Bumps main forward | \`${{ steps.compute.outputs.bump_main }}\` |"
+            if [ "${{ steps.compute.outputs.bump_main }}" = "true" ]; then
+              echo "| Next dev version | \`${{ steps.compute.outputs.next_dev_version }}\` |"
+            fi
             echo "| main HEAD | \`${{ steps.state.outputs.head_sha }}\` |"
             echo "| Dry run | \`${{ inputs.dry_run }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -172,6 +206,7 @@ jobs:
     env:
       TARGET: ${{ needs.preflight.outputs.target_version }}
       NEXT_DEV: ${{ needs.preflight.outputs.next_dev_version }}
+      BUMP_MAIN: ${{ needs.preflight.outputs.bump_main }}
       LATEST_RELEASE: ${{ needs.preflight.outputs.latest_release }}
     steps:
       - uses: actions/checkout@v6
@@ -187,7 +222,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
 
-      - name: Create release branch with release + bump commits
+      - name: Stage release commit (+ bump for minor/major)
         run: |
           RELEASE_BRANCH="release/v${TARGET}"
           git checkout -b "$RELEASE_BRANCH"
@@ -196,18 +231,20 @@ jobs:
           git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
           git commit -m "release: v${TARGET}"
 
-          # Tag the release commit before stacking the bump on top, so the
-          # tag points to the release commit itself (not the bump). The
-          # release PR must be merged with a merge commit (not squash) to
-          # keep both commits as distinct ancestors of main and preserve
-          # the tag's first-parent reachability.
+          # Tag the release commit before stacking any bump on top, so the
+          # tag points to the release commit itself.
           git tag -a "v${TARGET}" -m "v${TARGET}"
 
-          uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
-          git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
-          git commit -m "chore: bump to ${NEXT_DEV}"
-
-          git push origin "$RELEASE_BRANCH"
+          if [ "$BUMP_MAIN" = "true" ]; then
+            uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
+            git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
+            git commit -m "chore: bump to ${NEXT_DEV}"
+            git push origin "$RELEASE_BRANCH"
+          fi
+          # For patch releases the branch is intentionally not pushed: the tag
+          # is the deliverable, main's version pin stays put, and we don't want
+          # an orphan branch accumulating per patch. The release commit stays
+          # alive via the tag ref.
           git push origin "v${TARGET}"
 
       # Pin previous_tag_name to the latest published release so the
@@ -285,7 +322,9 @@ jobs:
       # actually fires downstream workflows. PRs created with the default
       # workflow token are deliberately excluded from triggering CI, which
       # would leave auto-merge waiting on checks that never start.
-      - name: "Open release PR (2 commits: release + bump, base=main)"
+      # Patch releases skip this entirely: there's no PR back to main.
+      - name: "Open release PR (release + bump, base=main)"
+        if: needs.preflight.outputs.bump_main == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_PAT }}
         run: |
@@ -305,6 +344,7 @@ jobs:
           echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
 
       - name: Enable auto-merge (merge commit)
+        if: needs.preflight.outputs.bump_main == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_PAT }}
         run: |
