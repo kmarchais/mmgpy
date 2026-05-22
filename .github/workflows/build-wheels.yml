@@ -186,7 +186,11 @@ jobs:
     needs: [build-wheels-linux-x86_64, build-sdist]
     runs-on: ubuntu-latest
     name: Validate release (docs codeblocks + examples)
-    if: (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    # Also run on pull_request so we catch regressions in docs codeblocks /
+    # examples before tagging, not after; v0.16.0 shipped a slim install
+    # that broke pytest-pyvista's PIL import and the publish chain only
+    # surfaced it during the wheel-build dispatch.
+    if: github.event_name == 'pull_request' || (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -216,7 +220,11 @@ jobs:
           # build mmgpy from source and shadow the wheel under test.
           # --find-links makes the local wheel win for mmgpy; PyPI is still
           # used for transitive deps (numpy, pyvista, ...).
-          uv pip install --python .venv/bin/python --find-links wheelhouse mmgpy
+          # mmgpy[pyvista] because the docs codeblocks and examples this
+          # gate validates use pyvista; the slim mmgpy core no longer
+          # pulls pyvista (and therefore Pillow), which crashed
+          # pytest-pyvista's plugin import at module load time.
+          uv pip install --python .venv/bin/python --find-links wheelhouse 'mmgpy[pyvista]'
           # fedoo is needed for the elasticity_propagation example.
           uv pip install --python .venv/bin/python pytest pytest-codeblocks pytest-pyvista fedoo
       - name: Verify the installed mmgpy is the wheel
