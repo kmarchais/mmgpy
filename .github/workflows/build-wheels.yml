@@ -216,7 +216,11 @@ jobs:
           # build mmgpy from source and shadow the wheel under test.
           # --find-links makes the local wheel win for mmgpy; PyPI is still
           # used for transitive deps (numpy, pyvista, ...).
-          uv pip install --python .venv/bin/python --find-links wheelhouse mmgpy
+          # mmgpy[pyvista] because the docs codeblocks and examples this
+          # gate validates use pyvista; the slim mmgpy core no longer
+          # pulls pyvista (and therefore Pillow), which crashed
+          # pytest-pyvista's plugin import at module load time.
+          uv pip install --python .venv/bin/python --find-links wheelhouse 'mmgpy[pyvista]'
           # fedoo is needed for the elasticity_propagation example.
           uv pip install --python .venv/bin/python pytest pytest-codeblocks pytest-pyvista fedoo
       - name: Verify the installed mmgpy is the wheel
