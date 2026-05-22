@@ -1441,15 +1441,13 @@ wheels = [
 
 [[package]]
 name = "mmgpy"
-version = "0.16.0.dev0"
+version = "0.17.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "patchelf", marker = "sys_platform == 'linux'" },
     { name = "rich" },
-    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 
@@ -1463,6 +1461,8 @@ pyvista = [
 ui = [
     { name = "pyvista" },
     { name = "pywebview" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "trame" },
     { name = "trame-vtk" },
     { name = "trame-vtklocal" },
@@ -1487,6 +1487,8 @@ dev = [
     { name = "pyvista" },
     { name = "ruff" },
     { name = "scikit-build-core" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
 docs = [
     { name = "mike" },
@@ -1511,7 +1513,7 @@ requires-dist = [
     { name = "pyvista", marker = "extra == 'pyvista'", specifier = ">=0.48,<1" },
     { name = "pywebview", marker = "extra == 'ui'", specifier = ">=6.1,<7" },
     { name = "rich", specifier = ">=13.0.0,<15" },
-    { name = "scipy", specifier = ">=1.11.0,<2" },
+    { name = "scipy", marker = "extra == 'ui'", specifier = ">=1.11.0,<2" },
     { name = "trame", marker = "extra == 'ui'", specifier = ">=3.12.0,<4" },
     { name = "trame-vtk", marker = "extra == 'ui'", specifier = ">=2.10.2,<3" },
     { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.16.0,<1" },
@@ -1537,6 +1539,7 @@ dev = [
     { name = "pyvista", specifier = ">=0.48,<1" },
     { name = "ruff", specifier = ">=0.15" },
     { name = "scikit-build-core", specifier = ">=0.11.5" },
+    { name = "scipy", specifier = ">=1.11.0,<2" },
 ]
 docs = [
     { name = "mike", git = "https://github.com/squidfunk/mike.git?rev=0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3" },

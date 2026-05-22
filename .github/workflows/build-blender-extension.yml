@@ -176,19 +176,23 @@ jobs:
             *) echo "Unexpected wheel: ${wheels[0]}" >&2; exit 1 ;;
           esac
 
-      - name: Strip pyvista/scipy/rich from the bundled wheel METADATA
+      - name: Strip rich/patchelf from the bundled wheel METADATA
         working-directory: blender_mmgpy/wheels
         shell: bash
         run: |
           set -euo pipefail
-          # The Blender extension never imports the lazy pyvista- or
-          # scipy-coupled paths, so the bundled mmgpy wheel's METADATA
-          # ``Requires-Dist`` is rewritten to drop those deps. The numpy
-          # floor is also widened from ``>=2.0.2`` to ``>=1.26`` so the
-          # extension can install on Blender 4.2 LTS (which ships numpy
-          # 1.26.x) as well as Blender 5.0 (numpy 2.x). The compiled
+          # The Blender extension never reaches mmgpy's rich-formatted CLI
+          # paths and doesn't run the Linux RPATH fixer (manylinux wheels
+          # have RPATH baked in already), so the bundled mmgpy wheel's
+          # METADATA ``Requires-Dist`` is rewritten to drop those two deps.
+          # The numpy floor is also widened from ``>=2.0.2`` to ``>=1.26``
+          # so the extension can install on Blender 4.2 LTS (which ships
+          # numpy 1.26.x) as well as Blender 5.0 (numpy 2.x). The compiled
           # ``_mmgpy.so`` and every Python module in the wheel are left
           # untouched -- this is a METADATA-only strip.
+          # pyvista and scipy are no longer in the published wheel's
+          # Requires-Dist (both opt-in via extras / direct install), so
+          # they don't need stripping.
           for wheel in mmgpy-*.whl; do
             python ../../.github/scripts/strip_blender_wheel_metadata.py "$wheel"
           done
@@ -204,7 +208,7 @@ jobs:
               echo "FAIL: no METADATA found in $wheel" >&2
               exit 1
             fi
-            for forbidden in pyvista scipy rich patchelf typing-extensions; do
+            for forbidden in rich patchelf; do
               if echo "$metadata" | grep -qE "^Requires-Dist:\\s*${forbidden}(\\W|$)"; then
                 echo "FAIL: $wheel still requires $forbidden" >&2
                 echo "$metadata" | grep -E "^Requires-Dist:" >&2

@@ -1,10 +1,12 @@
 """Regression test for the heavy-dep-free import subset.
 
 The Blender add-on ships mmgpy without bundling pyvista/vtk/scipy/matplotlib
-wheels. This test pins the contract that ``import mmgpy`` plus access to the
-headless public API does not pull any of those heavy deps into
-``sys.modules``. The heavy deps load only on first access to the lazy names
-exposed via the module's ``__getattr__``.
+wheels. ``pyvista`` and ``scipy`` are both opt-in for end users too (pyvista
+via the ``[pyvista]`` extra, scipy via a plain ``pip install scipy``); this
+test pins the contract that ``import mmgpy`` plus access to the headless
+public API does not pull any of those heavy deps into ``sys.modules``. The
+heavy deps load only on first access to the lazy names exposed via the
+module's ``__getattr__``.
 
 Runs in a subprocess because ``tests/conftest.py`` imports pyvista at
 collection time, so any in-process check would observe it already loaded.

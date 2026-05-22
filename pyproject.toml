@@ -19,7 +19,6 @@ dependencies = [
     "numpy>=2.0.2,<3",
     "patchelf>=0.17.2.4,<1; sys_platform == 'linux'",
     "rich>=13.0.0,<15",
-    "scipy>=1.11.0,<2",
     "typing-extensions>=4.0.0,<5; python_version < '3.11'",
 ]
 authors = [{ name = "Kevin Marchais", email = "kevinmarchais@gmail.com" }]
@@ -48,6 +47,7 @@ pyvista = [
 ui = [
     "mmgpy[pyvista]",
     "pywebview>=6.1,<7",
+    "scipy>=1.11.0,<2",
     "trame>=3.12.0,<4",
     "trame-vtk>=2.10.2,<3",
     "trame-vtklocal>=0.16.0,<1",
@@ -125,6 +125,7 @@ dev = [
     "pytest-codeblocks>=0.17.0",
     "pytest-pyvista>=0.2",
     "pyvista>=0.48,<1",
+    "scipy>=1.11.0,<2",
 ]
 docs = [
     "mike @ git+https://github.com/squidfunk/mike.git@0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3",
