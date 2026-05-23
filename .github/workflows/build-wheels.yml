@@ -95,6 +95,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.0.0
+      # ``repair-wheel-command`` is overridden in pyproject.toml so that
+      # delvewheel vendors the MSVC runtime into ``mmgpy.libs/`` (see #299).
+      # Overriding the default also disables cibuildwheel's auto-install of
+      # delvewheel, so we put it on PATH ourselves. ``uv tool install``
+      # links the entry-point into uv's tool bin dir, which setup-uv has
+      # already added to PATH for the rest of the job (cibuildwheel
+      # subprocesses inherit it).
+      - name: Install delvewheel for the override repair-wheel-command
+        shell: bash
+        run: uv tool install delvewheel
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
