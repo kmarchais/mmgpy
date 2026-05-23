@@ -23,6 +23,11 @@ on:
         required: false
         default: false
         type: boolean
+      publish_to_extensions_org:
+        description: "Submit the per-OS zips to extensions.blender.org"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-extension:
@@ -621,6 +626,136 @@ jobs:
             echo "## Blender Extension Release"
             echo ""
             echo "Uploaded to \`${{ steps.tag.outputs.tag }}\`:"
+            echo ""
+            for zip in extensions/*.zip; do
+              echo "- $(basename "$zip")"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Submit each per-OS zip to https://extensions.blender.org as a new
+  # version. The marketplace API (``POST /api/v1/extensions/<id>/versions/upload/``)
+  # accepts one zip per call and creates one *pending build* per platform;
+  # the version becomes downloadable only after a moderator approves it.
+  # The Blender release GitHub artifact is the immediate, authoritative
+  # download — this submission is the marketplace listing.
+  #
+  # Setup (one-time):
+  #   1. Sign in at https://extensions.blender.org and generate an API
+  #      token under "Profile -> API tokens".
+  #   2. Add it as the ``BLENDER_EXTENSIONS_TOKEN`` secret in a GitHub
+  #      Environment named ``blender-extensions`` (so the secret is
+  #      scoped to this job and protection rules can be added).
+  #   3. The extension must already exist on the marketplace; the API
+  #      cannot create the listing, only upload new versions of an
+  #      existing one.
+  publish-to-extensions-blender-org:
+    needs: upload-to-release
+    runs-on: ubuntu-latest
+    # Mirror ``upload-to-release`` exactly: real release path or
+    # explicit dispatch with the publish flag flipped on.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       (github.event.workflow_run.event == 'release' ||
+        (github.event.workflow_run.event == 'workflow_dispatch' &&
+         startsWith(github.event.workflow_run.head_branch, 'v')))) ||
+      (github.event_name == 'workflow_dispatch'
+       && inputs.publish_to_extensions_org)
+    environment: blender-extensions
+    permissions:
+      contents: read
+    steps:
+      # Need the manifest at the release ref so the extension id matches
+      # the version we are publishing (see the ``upload-to-release`` ref
+      # logic for why we cannot use the default checkout on workflow_run).
+      - uses: actions/checkout@v4
+        with:
+          ref: >-
+            ${{ github.event_name == 'workflow_run'
+                && github.event.workflow_run.head_branch
+                || github.ref }}
+
+      - name: Read extension id from manifest
+        id: ext
+        run: |
+          ext_id=$(python3 -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('blender_mmgpy/blender_manifest.toml').read_text())['id'])")
+          echo "id=$ext_id" >> "$GITHUB_OUTPUT"
+          echo "Extension id: $ext_id"
+
+      - name: Download per-OS extension artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blender-extension-release-*
+          merge-multiple: true
+          path: extensions/
+
+      - name: Resolve the release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            TAG="${{ github.event.workflow_run.head_branch }}"
+          else
+            TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' \
+                  --repo "${{ github.repository }}")
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ steps.tag.outputs.tag }}" \
+              --repo "${{ github.repository }}" --json body -q .body \
+              > release_notes.md
+          # extensions.blender.org rejects empty release notes
+          if [ ! -s release_notes.md ]; then
+            echo "Release ${{ steps.tag.outputs.tag }}" > release_notes.md
+          fi
+
+      - name: Submit zips to extensions.blender.org
+        env:
+          TOKEN: ${{ secrets.BLENDER_EXTENSIONS_TOKEN }}
+          EXTENSION_ID: ${{ steps.ext.outputs.id }}
+        run: |
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error::BLENDER_EXTENSIONS_TOKEN secret is not set on the blender-extensions environment"
+            exit 1
+          fi
+          shopt -s nullglob
+          zips=( extensions/*.zip )
+          if (( ${#zips[@]} == 0 )); then
+            echo "::error::No extension zips found in extensions/"
+            exit 1
+          fi
+          fail=0
+          for zip in "${zips[@]}"; do
+            echo "::group::Submitting $(basename "$zip")"
+            http_code=$(curl -sS -o response.json -w "%{http_code}" \
+              -X POST "https://extensions.blender.org/api/v1/extensions/${EXTENSION_ID}/versions/upload/" \
+              -H "Authorization: bearer ${TOKEN}" \
+              -F "version_file=@${zip}" \
+              -F "release_notes=<release_notes.md")
+            echo "HTTP ${http_code}"
+            cat response.json 2>/dev/null || true
+            echo
+            if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
+              echo "::error::Upload failed for $(basename "$zip") (HTTP ${http_code})"
+              fail=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "${fail}"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## extensions.blender.org submission"
+            echo ""
+            echo "Submitted \`${{ steps.tag.outputs.tag }}\` of \`${{ steps.ext.outputs.id }}\` for moderator review."
+            echo ""
+            echo "Each per-OS zip becomes a pending build under the version; the marketplace listing goes live after Blender's moderators approve it."
             echo ""
             for zip in extensions/*.zip; do
               echo "- $(basename "$zip")"
