@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows wheels now vendor the MSVC runtime (MSVCP140 / VCRUNTIME140 / Concrt140 family) into `mmgpy.libs/` with mangled names via `delvewheel --add-dll`. Without this, hosts that preload an older MSVC runtime — notably Blender 4.2 LTS / 4.5 / 5.0, which ship `MSVCP140.dll 14.29` in `blender.crt` — would hand our wheel that older copy via the Windows loader's basename cache, and the first call into a 14.40+-only stdlib symbol (e.g. inside `std::this_thread::yield`) crashed Blender on add-on enable ([#299](https://github.com/kmarchais/mmgpy/issues/299)).
+
 ## [0.12.0] - 2026-05-07
 
 ### Added

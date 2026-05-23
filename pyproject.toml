@@ -382,6 +382,17 @@ repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
+# Force delvewheel to vendor the MSVC runtime into ``mmgpy.libs/`` with
+# mangled names. Without ``--add-dll``, delvewheel treats MSVCP140 /
+# VCRUNTIME140 as "system" DLLs and leaves the .pyd importing them by
+# basename. That breaks inside hosts that preload an older MSVC runtime —
+# notably Blender 4.2 LTS / 4.5 / 5.0, which ship MSVCP140 14.29 in
+# ``blender.crt``; the Windows loader's basename cache then hands our
+# wheel that older copy and we crash on the first stdlib call that
+# requires 14.40+ symbols (issue #299). Mangled, vendored copies cannot
+# collide and are guaranteed to match what the binaries were built
+# against.
+repair-wheel-command = "delvewheel repair --add-dll \"msvcp140.dll;msvcp140_1.dll;msvcp140_2.dll;msvcp140_atomic_wait.dll;msvcp140_codecvt_ids.dll;vcruntime140.dll;vcruntime140_1.dll;concrt140.dll\" -w {dest_dir} {wheel}"
 
 [tool.coverage.run]
 source = ["src/mmgpy"]
