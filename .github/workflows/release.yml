@@ -228,7 +228,8 @@ jobs:
           git checkout -b "$RELEASE_BRANCH"
 
           uv run --no-project python .github/scripts/sync_versions.py --set "${TARGET}"
-          git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
+          uv lock
+          git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml uv.lock
           git commit -m "release: v${TARGET}"
 
           # Tag the release commit before stacking any bump on top, so the
@@ -237,7 +238,8 @@ jobs:
 
           if [ "$BUMP_MAIN" = "true" ]; then
             uv run --no-project python .github/scripts/sync_versions.py --set "${NEXT_DEV}"
-            git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml
+            uv lock
+            git add pyproject.toml conda/recipe.yaml blender_mmgpy/blender_manifest.toml uv.lock
             git commit -m "chore: bump to ${NEXT_DEV}"
             git push origin "$RELEASE_BRANCH"
           fi
