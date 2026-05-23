@@ -4,7 +4,7 @@
 schema_version = "1.0.0"
 
 id = "mmgpy"
-version = "0.17.0-dev.0"
+version = "0.16.2"
 name = "MMGpy - Mesh Remeshing"
 tagline = "Adaptive surface remeshing via the MMG library"
 maintainer = "Kevin Marchais <kevinmarchais@gmail.com>"
