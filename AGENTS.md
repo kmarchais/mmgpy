@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents (Claude Code, Codex, Cursor, etc.) when working with code in this repository. `CLAUDE.md` is a symlink to this file.
+This file provides guidance to AI coding agents (Claude Code, Codex, Cursor, etc.) when working with code in this repository. Claude Code does not read `AGENTS.md` natively, so `CLAUDE.md` imports this file via `@AGENTS.md` (Anthropic's recommended cross-platform pattern; works on Windows without Developer Mode).
 
 ## Project Overview
 
