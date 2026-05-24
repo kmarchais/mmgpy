@@ -16,6 +16,13 @@ jobs:
   benchmark:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
+    # Share the gh-pages mutex with mike deploys (docs.yml, redeploy-docs.yml,
+    # build-wheels.yml deploy-versioned-docs). Without this, the benchmark
+    # auto-push step can interleave with a mike push and reject it with a
+    # non-fast-forward error.
+    concurrency:
+      group: docs-deploy
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v6
