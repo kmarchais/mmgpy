@@ -1525,7 +1525,7 @@ dev = [
     { name = "mypy", specifier = ">=1.19.1" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "prek", specifier = ">=0.4" },
-    { name = "pybind11", specifier = ">=3.0.0" },
+    { name = "pybind11", specifier = ">=3.0.4" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-codeblocks", specifier = ">=0.17.0" },
@@ -1533,7 +1533,7 @@ dev = [
     { name = "pytest-pyvista", specifier = ">=0.2" },
     { name = "pyvista", specifier = ">=0.48,<1" },
     { name = "ruff", specifier = ">=0.15" },
-    { name = "scikit-build-core", specifier = ">=0.11.5" },
+    { name = "scikit-build-core", specifier = ">=0.12.2" },
 ]
 docs = [
     { name = "mike", git = "https://github.com/squidfunk/mike.git?rev=0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3" },
