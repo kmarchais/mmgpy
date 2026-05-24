@@ -1,0 +1,67 @@
+# Dependabot keeps mechanical churn off our plates; manual audits still
+# handle judgment calls (upper-bound caps, stale workarounds, breaking
+# majors). See dependency-audit.md §11 for the rationale behind the
+# groups and ignore rules below.
+
+version: 2
+updates:
+  # ---- GitHub Actions ---------------------------------------------------
+  # SHA-pinned third-party actions get auto-PRs with a fresh SHA + version
+  # comment so we never silently track a mutable tag. First-party
+  # actions/* use floating majors so most weeks there is nothing to do.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions-core:
+        patterns:
+          - "actions/*"
+      actions-third-party:
+        patterns:
+          - "*/*"
+        exclude-patterns:
+          - "actions/*"
+    ignore:
+      # cibuildwheel majors will drop Python 3.x build targets and change
+      # default Windows repair tool defaults — staged migration, not auto.
+      - dependency-name: "pypa/cibuildwheel"
+        update-types: ["version-update:semver-major"]
+
+  # ---- Python (uv) ------------------------------------------------------
+  # Dependabot's uv support refreshes uv.lock (security advisories,
+  # transitive pins). It does not edit pyproject.toml floors today, so
+  # this slot mostly catches CVE-driven lock bumps; manual floor bumps
+  # stay with the maintainer.
+  - package-ecosystem: uv
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      python-deps:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "mypy"
+          - "pytest-cov"
+          - "mkdocstrings-python"
+          - "ruff"
+    ignore:
+      # `build` 1.5+ drops Python 3.9; hold until we drop 3.9 too.
+      - dependency-name: "build"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
+      # mypy is being replaced by ty — see issue #309.
+      - dependency-name: "mypy"
+      # Majors need staged migration PRs (see issues #308 / #305).
+      - dependency-name: "pytest-cov"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mkdocstrings-python"
+        update-types: ["version-update:semver-major"]
+      # ruff ships rule churn in patch releases; humans triage.
+      - dependency-name: "ruff"
+        update-types: ["version-update:semver-patch"]
