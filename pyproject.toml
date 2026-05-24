@@ -18,7 +18,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy>=2.0.2,<3",
     "patchelf>=0.17.2.4,<1; sys_platform == 'linux'",
-    "rich>=13.0.0,<15",
+    "rich>=13.0.0,<16",
     "scipy>=1.11.0,<2",
     "typing-extensions>=4.0.0,<5; python_version < '3.11'",
 ]
@@ -133,7 +133,7 @@ docs = [
     # passes filename=None for separate-signature blocks rendered by
     # mkdocstrings, which silently kills the build. Pin until pymdownx
     # ships a fix.
-    "pygments<2.20",
+    "pygments<2.21",
     "zensical>=0.0.28",
 ]
 ui = [
