@@ -43,8 +43,6 @@ print(f"Triangles: {mesh.n_cells} -> {remeshed.n_cells}")
 
 The `hausd` parameter is crucial for surface meshes - it controls how closely the remeshed surface approximates the original:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 # Tight approximation (more triangles, better geometry)
 tight = mesh.mmg.remesh(hmax=0.1, hausd=0.0001)
@@ -60,8 +58,6 @@ Setting `hausd` too large can cause loss of geometric features. Start with small
 
 MMG can detect and preserve sharp edges based on the angle between adjacent faces:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -74,8 +70,6 @@ remeshed = mesh.mmg.remesh(
 
 To prevent vertex movement during remeshing (vertices stay in place, but edges may still be swapped or split):
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -86,8 +80,6 @@ remeshed = mesh.mmg.remesh(
 ## Smooth Surface Remeshing
 
 For smooth surfaces without sharp features:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import MmgSOptions
@@ -105,8 +97,6 @@ remeshed = mesh.mmg.remesh(opts)
 ## Mechanical Part Remeshing
 
 For industrial/CAD parts with sharp edges:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import MmgSOptions

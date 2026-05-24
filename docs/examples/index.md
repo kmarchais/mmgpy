@@ -52,7 +52,7 @@ remeshed = mesh.mmg.remesh(
 
 Remesh while applying mesh displacement.
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 """Lagrangian mesh motion remeshing."""
@@ -164,7 +164,7 @@ walkthrough.
 
 ![2D Hessian adaptation](../assets/hessian_adaptation_2d.png)
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
@@ -192,7 +192,7 @@ demo on an L-bracket cantilever.
 
 ![Laplacian vs elasticity on a 2D L-bracket](../assets/elasticity_propagation_2d.gif)
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 from mmgpy.lagrangian import propagate_displacement_elasticity
@@ -336,7 +336,7 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 Clone the repository and run examples:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```bash
 git clone https://github.com/kmarchais/mmgpy.git

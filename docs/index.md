@@ -41,7 +41,7 @@ remeshed.save("output.vtk")
 
 === "pip"
 
-    <!-- pytest-codeblocks:skip -->
+    <!-- mmgpy-test:skip -->
 
     ```bash
     pip install mmgpy

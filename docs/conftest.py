@@ -1,12 +1,9 @@
-"""Pytest-codeblocks fixtures for documentation code snippets.
+"""Module-level fixtures for documentation code snippets run by pytest-examples.
 
 Monkeypatches mmgpy I/O so that code blocks referencing files like
-``mmgpy.read("input.mesh")`` work without real files on disk.
-
-Since pytest-codeblocks' TestBlock inherits from pytest.Item (not
-pytest.Function), autouse fixtures are not applied. Instead, we apply
-patches at module level when this conftest is loaded, and use
-pytest_runtest_setup/teardown hooks for per-test tmp_path management.
+``mmgpy.read("input.mesh")`` work without real files on disk. Patches are
+applied at module load time and apply to every code block exec'd by the
+pytest-examples runner in ``tests/test_docs.py``.
 """
 
 from __future__ import annotations
@@ -31,7 +28,7 @@ pv.OFF_SCREEN = True
 
 # ---------------------------------------------------------------------------
 # Mesh factories — use scipy/numpy only (no VTK objects) to avoid segfaults
-# when pytest-codeblocks runs code via exec() with PyPI VTK wheels.
+# when pytest-examples runs code via exec() with PyPI VTK wheels.
 # ---------------------------------------------------------------------------
 
 
