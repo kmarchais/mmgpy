@@ -20,6 +20,7 @@ applies at module load time — same as before.
 
 from __future__ import annotations
 
+import importlib.util
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -34,6 +35,20 @@ if TYPE_CHECKING:
 _DOCS = Path(__file__).resolve().parent.parent / "docs"
 _SKIP_MARKER = "<!-- mmgpy-test:skip -->"
 _FENCE_RE = re.compile(r"^\s*```")
+
+# ``docs/conftest.py`` monkeypatches mmgpy/pv I/O so doc snippets that
+# reference fake mesh files (``mmgpy.read("input.mesh")``) work without those
+# files on disk. With pytest-codeblocks, that conftest was auto-loaded because
+# ``--codeblocks docs/`` treated ``docs/`` as a test path. With pytest-examples
+# called from ``tests/``, pytest never scans ``docs/``, so we load the patches
+# explicitly here at module import time — same effect.
+_DOCS_CONFTEST = _DOCS / "conftest.py"
+_spec = importlib.util.spec_from_file_location("_mmgpy_docs_conftest", _DOCS_CONFTEST)
+if _spec is None or _spec.loader is None:  # pragma: no cover
+    msg = f"could not load {_DOCS_CONFTEST}"
+    raise RuntimeError(msg)
+_module = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_module)
 
 
 def _skipped_lines(path: Path) -> set[int]:
@@ -54,9 +69,9 @@ def _skipped_lines(path: Path) -> set[int]:
             # blank line — preserve pending_skip
             continue
         if _FENCE_RE.match(raw) and pending_skip:
-            # opening fence — pytest-examples reports start_line as the
-            # FIRST line of the code body, i.e. the line after the fence
-            skip_at.add(idx + 1)
+            # pytest-examples' ``CodeExample.start_line`` is the line of the
+            # opening fence itself (1-indexed), not the first code line.
+            skip_at.add(idx)
             pending_skip = False
             continue
         # any other content line clears the pending skip
