@@ -1,9 +1,13 @@
-"""Module-level fixtures for documentation code snippets run by pytest-examples.
+"""Helpers for documentation code-snippet tests.
 
-Monkeypatches mmgpy I/O so that code blocks referencing files like
-``mmgpy.read("input.mesh")`` work without real files on disk. Patches are
-applied at module load time and apply to every code block exec'd by the
-pytest-examples runner in ``tests/test_docs.py``.
+Monkeypatches mmgpy / PyVista I/O so doc code blocks that reference files
+like ``mmgpy.read("input.mesh")`` work without real files on disk.
+
+Patches are NOT applied at import time. The runner in
+``tests/docs_test.py`` calls :func:`apply_patches` and
+:func:`restore_patches` from a session-scoped autouse fixture so the
+patches are reverted at session teardown and cannot leak into other test
+files sharing the same pytest process.
 """
 
 from __future__ import annotations
@@ -133,15 +137,19 @@ def _classify_filename(name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Module-level monkeypatches (applied once at import time)
+# Monkeypatch installers (NO side effects at import; called by the runner)
 # ---------------------------------------------------------------------------
 
 import mmgpy  # noqa: E402
 import mmgpy._io as _io_mod  # noqa: E402
 from mmgpy._mesh import Mesh  # noqa: E402
 
+# Originals captured ONCE at import, before any patching can occur.
 _real_read = _io_mod.read
 _real_save = Mesh.save
+_real_pv_read = pv.read
+_real_pv_polydata_save = pv.PolyData.save
+_real_pv_unstructured_save = pv.UnstructuredGrid.save
 
 # Temp dir for save redirects (cleaned up at process exit)
 _tmp_dir = tempfile.mkdtemp(prefix="mmgpy_docs_")
@@ -167,14 +175,6 @@ def _fake_read(
 def _patched_save(self: MeshType, filename: str | Path) -> None:
     dest = Path(_tmp_dir) / Path(filename).name
     _real_save(self, str(dest))
-
-
-_io_mod.read = _fake_read
-mmgpy.read = _fake_read
-Mesh.save = _patched_save
-
-# Also patch pv.read so docs like `pv.read("mesh.vtk")` work
-_real_pv_read = pv.read
 
 
 def _fake_pv_read(
@@ -209,13 +209,6 @@ def _fake_pv_read(
     )
 
 
-pv.read = _fake_pv_read  # type: ignore[assignment]
-
-# Patch pv.PolyData.save and pv.UnstructuredGrid.save to redirect to tmp_dir
-_real_pv_polydata_save = pv.PolyData.save
-_real_pv_unstructured_save = pv.UnstructuredGrid.save
-
-
 def _patched_pv_save(
     self: pv.PolyData | pv.UnstructuredGrid,
     filename: str,
@@ -228,21 +221,26 @@ def _patched_pv_save(
         _real_pv_unstructured_save(self, dest, **kwargs)
 
 
-pv.PolyData.save = _patched_pv_save  # type: ignore[assignment]
-pv.UnstructuredGrid.save = _patched_pv_save  # type: ignore[assignment]
+def apply_patches() -> None:
+    """Install all docs I/O monkeypatches. Idempotent."""
+    _io_mod.read = _fake_read
+    mmgpy.read = _fake_read
+    Mesh.save = _patched_save
+    pv.read = _fake_pv_read  # type: ignore[assignment]
+    pv.PolyData.save = _patched_pv_save  # type: ignore[assignment]
+    pv.UnstructuredGrid.save = _patched_pv_save  # type: ignore[assignment]
 
 
-# ---------------------------------------------------------------------------
-# Restore originals on pytest teardown (avoids polluting other test suites
-# when running `pytest tests/ docs/` in a single invocation)
-# ---------------------------------------------------------------------------
-
-
-def pytest_unconfigure() -> None:
-    """Restore all monkeypatched functions."""
+def restore_patches() -> None:
+    """Revert all docs I/O monkeypatches to their originals."""
     _io_mod.read = _real_read
     mmgpy.read = _real_read
     Mesh.save = _real_save
     pv.read = _real_pv_read  # type: ignore[assignment]
     pv.PolyData.save = _real_pv_polydata_save  # type: ignore[assignment]
     pv.UnstructuredGrid.save = _real_pv_unstructured_save  # type: ignore[assignment]
+
+
+def pytest_unconfigure() -> None:
+    """Legacy safety net if pytest ever loads this file as a real conftest."""
+    restore_patches()
