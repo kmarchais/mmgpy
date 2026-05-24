@@ -1,7 +1,7 @@
 [build-system]
 requires = [
-    "scikit-build-core>=0.11.5",
-    "pybind11>=3.0.0",
+    "scikit-build-core>=0.12.2",
+    "pybind11>=3.0.4",
     # Add numpy to build requirements for headers
     "numpy>=2.0.2",
     # patchelf is needed during install to set RPATH on Linux
@@ -64,7 +64,7 @@ no-build-isolation-package = ["mmgpy"]
 [tool.scikit-build]
 # Build configuration
 build.verbose = true
-cmake.version = ">=3.15"
+cmake.version = ">=3.25"
 cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
 cmake.define = { BUILD_TESTING = "OFF", BUILD_SHARED_LIBS = "ON", MMGPY_SKIP_EXECUTABLES = "OFF" }
 
@@ -109,8 +109,8 @@ mmgpy-ui = "mmgpy.ui.__main__:main"
 [dependency-groups]
 dev = [
     # Build dependencies (needed for editable installs without build isolation)
-    "scikit-build-core>=0.11.5",
-    "pybind11>=3.0.0",
+    "scikit-build-core>=0.12.2",
+    "pybind11>=3.0.4",
     "numpy>=2.0.2",
     # Dev tools
     "build>=1.4.0",
