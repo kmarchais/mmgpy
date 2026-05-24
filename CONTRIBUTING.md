@@ -193,7 +193,7 @@ class TestNewFeature:
    ```bash
    uv run ruff check src/ tests/
    uv run ruff format src/ tests/
-   uv run mypy src/mmgpy/
+   uv run ty check src/mmgpy/
    uv run pytest
    ```
 5. **Commit**: Use conventional commits (`feat:`, `fix:`, `docs:`, etc.)
