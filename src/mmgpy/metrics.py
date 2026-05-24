@@ -43,8 +43,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from mmgpy._topology import two_ring_patches, vertex_adjacency
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -674,6 +672,10 @@ def compute_hessian(
     if len(field) != n_vertices:
         msg = f"field length {len(field)} != n_vertices {n_vertices}"
         raise ValueError(msg)
+
+    # `_topology` depends on scipy.sparse; import it lazily so the rest of
+    # this module (pure numpy) stays usable on the slim install.
+    from mmgpy._topology import two_ring_patches, vertex_adjacency  # noqa: PLC0415
 
     # Quadratic fit has 5 monomials in 2D and 9 in 3D. The 1-ring around a
     # boundary vertex on a structured grid often spans only 2 distinct values

@@ -62,10 +62,28 @@ Requires-Dist: pywebview<7,>=6.1; extra == "ui"
 
 
 def test_rewrite_metadata_strips_heavy_deps() -> None:
-    """Each forbidden dep is removed from ``Requires-Dist``."""
+    """``rich`` and ``patchelf`` are removed from ``Requires-Dist``."""
     result = strip_mod.rewrite_metadata(METADATA_INPUT)
-    for forbidden in ("pyvista", "scipy", "rich", "patchelf", "typing-extensions"):
+    for forbidden in ("rich", "patchelf"):
         assert f"Requires-Dist: {forbidden}" not in result, forbidden
+
+
+def test_rewrite_metadata_preserves_non_strip_deps() -> None:
+    """Deps that aren't in ``STRIP_DEPS`` (pyvista/scipy/typing-extensions) survive.
+
+    pyvista and scipy are no longer in the published wheel's Requires-Dist
+    anyway (both opt-in via extras / direct install). typing-extensions is
+    environment-conditional on ``python_version < '3.11'``. None of them
+    needs stripping by this script, and stripping unknown deps would be a
+    bug, so we explicitly pin the surviving-line contract.
+    """
+    result = strip_mod.rewrite_metadata(METADATA_INPUT)
+    for kept in (
+        "Requires-Dist: pyvista<1,>=0.48",
+        "Requires-Dist: scipy<2,>=1.11.0",
+        'Requires-Dist: typing-extensions<5,>=4.0.0; python_version < "3.11"',
+    ):
+        assert kept in result, kept
 
 
 def test_rewrite_metadata_loosens_numpy() -> None:
@@ -103,14 +121,6 @@ def test_rewrite_metadata_raises_when_numpy_missing() -> None:
     )
     with pytest.raises(SystemExit, match="numpy"):
         strip_mod.rewrite_metadata(no_numpy + "\n")
-
-
-def test_rewrite_metadata_normalises_underscores() -> None:
-    """``typing_extensions`` is matched against the canonical PEP 503 spelling."""
-    input_text = METADATA_INPUT.replace("typing-extensions", "typing_extensions")
-    result = strip_mod.rewrite_metadata(input_text)
-    assert "typing_extensions" not in result
-    assert "typing-extensions" not in result
 
 
 def _b64_sha256(data: bytes) -> str:

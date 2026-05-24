@@ -3,11 +3,17 @@
 """Derive a slim "core" variant of an mmgpy wheel for the Blender bundle.
 
 Rewrites the wheel's ``*.dist-info/METADATA`` in place to drop runtime deps
-the Blender extension code path does not reach (``pyvista``, ``scipy``,
-``rich``, ``patchelf``, ``typing-extensions``) and to widen the ``numpy``
-floor so Blender 4.2 LTS (numpy 1.26) is covered alongside Blender 5.0
-(numpy 2.x). The compiled ``_mmgpy.so`` and every Python module in the
-wheel are left untouched — this is a METADATA-only strip.
+the Blender extension code path does not reach (``rich``, ``patchelf``) and
+to widen the ``numpy`` floor so Blender 4.2 LTS (numpy 1.26) is covered
+alongside Blender 5.0 (numpy 2.x). The compiled ``_mmgpy.so`` and every
+Python module in the wheel are left untouched, this is a METADATA-only
+strip.
+
+``pyvista`` and ``scipy`` are no longer in the published wheel's
+``Requires-Dist`` (both moved to extras / opt-in installs), so they no
+longer need stripping. ``typing-extensions`` is environment-conditional on
+``python_version < '3.11'`` and never activates on Blender's Python
+3.11 / 3.13.
 
 The PyPI ``mmgpy`` wheel keeps its full ``Requires-Dist``; only the copy
 that ends up inside the Blender extension zip is rewritten.
@@ -31,9 +37,7 @@ from pathlib import Path
 
 # Hard-coded by design: this script encodes the Blender add-on's contract
 # with mmgpy, not a general-purpose wheel surgery tool.
-STRIP_DEPS: frozenset[str] = frozenset(
-    {"pyvista", "scipy", "rich", "patchelf", "typing-extensions"},
-)
+STRIP_DEPS: frozenset[str] = frozenset({"rich", "patchelf"})
 # Blender 4.2 LTS ships numpy 1.26.x; Blender 5.0 ships numpy 2.x.
 # mmgpy's compiled extension is built against numpy's stable ABI so both
 # work at runtime; the bundled METADATA just needs to advertise that.

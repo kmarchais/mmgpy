@@ -87,6 +87,19 @@ tris_out = mesh.get_triangles()
 
 `MmgMesh2D` (planar triangular) and `MmgMesh3D` (tetrahedral) follow the same pattern. File-based round trips are also available without pyvista via `mmgpy.mmg2d.remesh(in_path, out_path, options={...})` and its `mmg3d` / `mmgs` siblings.
 
+### Features that need SciPy
+
+A few helpers reach for `scipy` (sparse adjacency, KD-trees, sparse linear solves) and are not installed by `pip install mmgpy`. `pip install scipy` separately to unlock them:
+
+- `mmgpy.move_mesh`, `mmgpy.propagate_displacement`, `mmgpy.detect_boundary_vertices` (lagrangian motion)
+- `mmgpy.transfer_fields`, `mmgpy.interpolate_field` (field transfer between meshes)
+- `mmgpy.repair` (duplicate-vertex repair via KD-tree)
+- `mmgpy.ValidationReport` and the rest of `mmgpy.IssueSeverity` / `QualityStats` / `ValidationError` / `ValidationIssue`
+- `mmgpy.reorder_cuthill_mckee`
+- `mmgpy.metrics.compute_hessian` (least-squares Hessian recovery from a scalar field)
+
+`import mmgpy` still works without scipy; access raises `ImportError` only when you reach one of these names. The rest of `mmgpy.metrics` (`create_isotropic_metric`, `create_anisotropic_metric`, tensor conversions, validation, intersection) is pure numpy and works on the slim install.
+
 ### Using uv for project management
 
 ```bash
