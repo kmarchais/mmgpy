@@ -23,7 +23,7 @@ uv run pytest tests/mmg3d_test.py -v    # Specific test file
 # Linting and formatting
 uv run ruff check --fix src/ tests/
 uv run ruff format src/ tests/
-uv run mypy src/mmgpy/
+uv run ty check src/mmgpy/
 
 # Build wheel
 python -m build --wheel
