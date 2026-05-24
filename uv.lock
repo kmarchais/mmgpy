@@ -1344,7 +1344,7 @@ wheels = [
 [[package]]
 name = "mike"
 version = "2.2.0+zensical.0.1.0"
-source = { git = "https://github.com/squidfunk/mike.git?rev=0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3#0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3" }
+source = { git = "https://github.com/squidfunk/mike.git?rev=2d4ad799442f4592db8ad53b179bfb33db8c69ac#2d4ad799442f4592db8ad53b179bfb33db8c69ac" }
 dependencies = [
     { name = "jinja2" },
     { name = "pyparsing" },
@@ -1488,7 +1488,7 @@ dev = [
 docs = [
     { name = "mike" },
     { name = "mkdocstrings-python" },
-    { name = "pygments" },
+    { name = "pymdown-extensions" },
     { name = "zensical" },
 ]
 ui = [
@@ -1536,10 +1536,10 @@ dev = [
     { name = "scikit-build-core", specifier = ">=0.12.2" },
 ]
 docs = [
-    { name = "mike", git = "https://github.com/squidfunk/mike.git?rev=0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3" },
-    { name = "mkdocstrings-python", specifier = ">=0.24.0" },
-    { name = "pygments", specifier = "<2.21" },
-    { name = "zensical", specifier = ">=0.0.28" },
+    { name = "mike", git = "https://github.com/squidfunk/mike.git?rev=2d4ad799442f4592db8ad53b179bfb33db8c69ac" },
+    { name = "mkdocstrings-python", specifier = ">=2.0.0,<3" },
+    { name = "pymdown-extensions", specifier = ">=10.21.2" },
+    { name = "zensical", specifier = ">=0.0.41,<0.1" },
 ]
 ui = [
     { name = "pywebview", specifier = ">=6.1" },
