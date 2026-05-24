@@ -19,7 +19,7 @@ Thank you for your interest in contributing! This guide covers everything you ne
 
 - Python 3.9+
 - C++17 compiler (GCC 9+, Clang 10+, MSVC 2019+)
-- CMake 3.18+
+- CMake 3.25+
 - Git
 
 ### Quick Start
