@@ -116,7 +116,7 @@ jobs:
       # and embed the wrong version in the extension zip name and manifest.
       # Pin to the upstream run's head_branch (e.g. ``v0.14.0``) so the
       # version matches the wheels we are bundling.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
@@ -124,18 +124,18 @@ jobs:
                 || github.ref }}
 
       - name: Set up Python ${{ matrix.py }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.py }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       - name: Sync version + dependency pin from pyproject.toml
         run: uv run --no-project python .github/scripts/sync_versions.py
 
       - name: Download wheels artifact from build-wheels run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.wheels_artifact }}
           path: blender_mmgpy/wheels/
@@ -359,7 +359,7 @@ jobs:
           PY
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blender-extension-${{ matrix.platform }}-py${{ matrix.py }}
           path: blender_mmgpy/${{ steps.zip.outputs.path }}
@@ -394,7 +394,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
@@ -402,12 +402,12 @@ jobs:
                 || github.ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
       - name: Download per-(OS, Python) artifacts for this OS
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: blender-extension-${{ matrix.os }}-py*
           path: intermediates/
@@ -557,7 +557,7 @@ jobs:
           PY
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blender-extension-release-${{ matrix.os }}
           path: ${{ steps.per_os.outputs.path }}
@@ -591,7 +591,7 @@ jobs:
 
     steps:
       - name: Download per-OS extension artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: blender-extension-release-*
           merge-multiple: true
@@ -667,7 +667,7 @@ jobs:
       # Need the manifest at the release ref so the extension id matches
       # the version we are publishing (see the ``upload-to-release`` ref
       # logic for why we cannot use the default checkout on workflow_run).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
@@ -682,7 +682,7 @@ jobs:
           echo "Extension id: $ext_id"
 
       - name: Download per-OS extension artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: blender-extension-release-*
           merge-multiple: true
