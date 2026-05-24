@@ -127,14 +127,12 @@ dev = [
     "pyvista>=0.48,<1",
 ]
 docs = [
-    "mike @ git+https://github.com/squidfunk/mike.git@0f62791256ebeba60d20d2f1d8fe6ec3b7d1e2b3",
-    "mkdocstrings-python>=0.24.0",
-    # Pygments 2.20 strictened html.escape to reject None; pymdownx 10.20 still
-    # passes filename=None for separate-signature blocks rendered by
-    # mkdocstrings, which silently kills the build. Pin until pymdownx
-    # ships a fix.
-    "pygments<2.21",
-    "zensical>=0.0.28",
+    "mike @ git+https://github.com/squidfunk/mike.git@2d4ad799442f4592db8ad53b179bfb33db8c69ac",
+    "mkdocstrings-python>=2.0.0,<3",
+    # Belt-and-braces: pymdown-extensions 10.21.2 fixed the html.escape(None)
+    # crash that previously forced a `pygments<2.20` cap (see git history).
+    "pymdown-extensions>=10.21.2",
+    "zensical>=0.0.41,<0.1",
 ]
 ui = [
     "pywebview>=6.1",
