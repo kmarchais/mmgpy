@@ -90,10 +90,10 @@ pip install git+https://github.com/kmarchais/mmgpy.git
 
 Building from source requires:
 
-- CMake >= 3.15
+- CMake >= 3.25
 - C++ compiler with C++17 support
-- pybind11 >= 3.0.0
-- scikit-build-core >= 0.11.5
+- pybind11 >= 3.0.4
+- scikit-build-core >= 0.12.2
 
 ## Verifying Installation
 
