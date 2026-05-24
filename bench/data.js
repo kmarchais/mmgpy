@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779623361903,
+  "lastUpdate": 1779624731130,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -10494,6 +10494,156 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00010473946660307907",
             "extra": "mean: 73.93076864283492 msec\nrounds: 14"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2e79c9b921094bf80f1e6af101f0e9a71b417725",
+          "message": "chore(deps): bump the python-deps group with 14 updates (#316)\n\nBumps the python-deps group with 14 updates:\n\n| Package | From | To |\n| --- | --- | --- |\n| [rich](https://github.com/Textualize/rich) | `14.2.0` | `15.0.0` |\n| [pyvista](https://github.com/pyvista/pyvista) | `0.48.0` | `0.48.4` |\n| [pywebview](https://github.com/r0x0r/pywebview) | `6.1` | `6.2.1` |\n| [trame](https://github.com/Kitware/trame) | `3.12.0` | `3.13.2` |\n| [trame-vtk](https://github.com/Kitware/trame-vtk) | `2.10.2` | `2.11.8` |\n| [trame-vtklocal](https://github.com/Kitware/trame-vtklocal) | `0.16.0` | `0.17.1` |\n| [trame-vuetify](https://github.com/Kitware/trame-vuetify) | `3.2.0` | `3.2.2` |\n| [scikit-build-core](https://github.com/scikit-build/scikit-build-core) | `0.11.6` | `0.12.2` |\n| [pybind11](https://github.com/pybind/pybind11) | `3.0.1` | `3.0.4` |\n| [build](https://github.com/pypa/build) | `1.4.0` | `1.4.4` |\n| [imageio](https://github.com/imageio/imageio) | `2.37.2` | `2.37.3` |\n| [prek](https://github.com/j178/prek) | `0.4.0` | `0.4.1` |\n| [pygments](https://github.com/pygments/pygments) | `2.19.2` | `2.20.0` |\n| [zensical](https://github.com/zensical/zensical) | `0.0.31` | `0.0.43` |\n\n\nUpdates `rich` from 14.2.0 to 15.0.0\n- [Release notes](https://github.com/Textualize/rich/releases)\n- [Changelog](https://github.com/Textualize/rich/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Textualize/rich/compare/v14.2.0...v15.0.0)\n\nUpdates `pyvista` from 0.48.0 to 0.48.4\n- [Release notes](https://github.com/pyvista/pyvista/releases)\n- [Commits](https://github.com/pyvista/pyvista/compare/v0.48.0...v0.48.4)\n\nUpdates `pywebview` from 6.1 to 6.2.1\n- [Release notes](https://github.com/r0x0r/pywebview/releases)\n- [Changelog](https://github.com/r0x0r/pywebview/blob/master/docs/CHANGELOG.md)\n- [Commits](https://github.com/r0x0r/pywebview/compare/6.1...6.2.1)\n\nUpdates `trame` from 3.12.0 to 3.13.2\n- [Release notes](https://github.com/Kitware/trame/releases)\n- [Changelog](https://github.com/Kitware/trame/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Kitware/trame/compare/v3.12.0...v3.13.2)\n\nUpdates `trame-vtk` from 2.10.2 to 2.11.8\n- [Release notes](https://github.com/Kitware/trame-vtk/releases)\n- [Changelog](https://github.com/Kitware/trame-vtk/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Kitware/trame-vtk/compare/v2.10.2...v2.11.8)\n\nUpdates `trame-vtklocal` from 0.16.0 to 0.17.1\n- [Release notes](https://github.com/Kitware/trame-vtklocal/releases)\n- [Changelog](https://github.com/Kitware/trame-vtklocal/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Kitware/trame-vtklocal/compare/v0.16.0...v0.17.1)\n\nUpdates `trame-vuetify` from 3.2.0 to 3.2.2\n- [Release notes](https://github.com/Kitware/trame-vuetify/releases)\n- [Changelog](https://github.com/Kitware/trame-vuetify/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Kitware/trame-vuetify/compare/v3.2.0...v3.2.2)\n\nUpdates `scikit-build-core` from 0.11.6 to 0.12.2\n- [Release notes](https://github.com/scikit-build/scikit-build-core/releases)\n- [Commits](https://github.com/scikit-build/scikit-build-core/compare/v0.11.6...v0.12.2)\n\nUpdates `pybind11` from 3.0.1 to 3.0.4\n- [Release notes](https://github.com/pybind/pybind11/releases)\n- [Changelog](https://github.com/pybind/pybind11/blob/master/docs/changelog.md)\n- [Commits](https://github.com/pybind/pybind11/compare/v3.0.1...v3.0.4)\n\nUpdates `build` from 1.4.0 to 1.4.4\n- [Release notes](https://github.com/pypa/build/releases)\n- [Changelog](https://github.com/pypa/build/blob/main/CHANGELOG.rst)\n- [Commits](https://github.com/pypa/build/compare/1.4.0...1.4.4)\n\nUpdates `imageio` from 2.37.2 to 2.37.3\n- [Release notes](https://github.com/imageio/imageio/releases)\n- [Changelog](https://github.com/imageio/imageio/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/imageio/imageio/compare/v2.37.2...v2.37.3)\n\nUpdates `prek` from 0.4.0 to 0.4.1\n- [Release notes](https://github.com/j178/prek/releases)\n- [Changelog](https://github.com/j178/prek/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/j178/prek/compare/v0.4.0...v0.4.1)\n\nUpdates `pygments` from 2.19.2 to 2.20.0\n- [Release notes](https://github.com/pygments/pygments/releases)\n- [Changelog](https://github.com/pygments/pygments/blob/master/CHANGES)\n- [Commits](https://github.com/pygments/pygments/compare/2.19.2...2.20.0)\n\nUpdates `zensical` from 0.0.31 to 0.0.43\n- [Release notes](https://github.com/zensical/zensical/releases)\n- [Commits](https://github.com/zensical/zensical/compare/v0.0.31...v0.0.43)\n\n---\nupdated-dependencies:\n- dependency-name: rich\n  dependency-version: 15.0.0\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n  dependency-group: python-deps\n- dependency-name: pyvista\n  dependency-version: 0.48.4\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: pywebview\n  dependency-version: 6.2.1\n  dependency-type: direct:development\n  update-type: version-update:semver-minor\n  dependency-group: python-deps\n- dependency-name: trame\n  dependency-version: 3.13.2\n  dependency-type: direct:development\n  update-type: version-update:semver-minor\n  dependency-group: python-deps\n- dependency-name: trame-vtk\n  dependency-version: 2.11.8\n  dependency-type: direct:development\n  update-type: version-update:semver-minor\n  dependency-group: python-deps\n- dependency-name: trame-vtklocal\n  dependency-version: 0.17.1\n  dependency-type: direct:development\n  update-type: version-update:semver-minor\n  dependency-group: python-deps\n- dependency-name: trame-vuetify\n  dependency-version: 3.2.2\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: scikit-build-core\n  dependency-version: 0.12.2\n  dependency-type: direct:development\n  update-type: version-update:semver-minor\n  dependency-group: python-deps\n- dependency-name: pybind11\n  dependency-version: 3.0.4\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: build\n  dependency-version: 1.4.4\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: imageio\n  dependency-version: 2.37.3\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: prek\n  dependency-version: 0.4.1\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: pygments\n  dependency-version: 2.20.0\n  dependency-type: direct:development\n  update-type: version-update:semver-minor\n  dependency-group: python-deps\n- dependency-name: zensical\n  dependency-version: 0.0.43\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Kevin Marchais <kevinmarchais@gmail.com>",
+          "timestamp": "2026-05-24T12:04:36Z",
+          "tree_id": "ac3e89a60a0f5fa1ea72951fbe4ae879e68f100b",
+          "url": "https://github.com/kmarchais/mmgpy/commit/2e79c9b921094bf80f1e6af101f0e9a71b417725"
+        },
+        "date": 1779624729854,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 42.761563418465826,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0007484833091380119",
+            "extra": "mean: 23.38548734090877 msec\nrounds: 44"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 21.724477890450903,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0014722912154415753",
+            "extra": "mean: 46.03102569565341 msec\nrounds: 23"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 35.543105828116865,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00014691370504739696",
+            "extra": "mean: 28.134851378377185 msec\nrounds: 37"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3381.214934397976,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000008007483871899696",
+            "extra": "mean: 295.75168080169675 usec\nrounds: 3443"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 75.54829175192229,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00008345427897350169",
+            "extra": "mean: 13.236566662336948 msec\nrounds: 77"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 8584.086528499092,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000005433204044033996",
+            "extra": "mean: 116.4946318609451 usec\nrounds: 17727"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.10264761915796514,
+            "unit": "iter/sec",
+            "range": "stddev: 0.11986985634414106",
+            "extra": "mean: 9.742067163399991 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.09359182708110644,
+            "unit": "iter/sec",
+            "range": "stddev: 0.13250971714172785",
+            "extra": "mean: 10.684693644599998 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.3997168618400125,
+            "unit": "iter/sec",
+            "range": "stddev: 0.004486122639494648",
+            "extra": "mean: 2.501770866999982 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 5.25809693031758,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004383268515464284",
+            "extra": "mean: 190.18287666667297 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 5.2458689922665185,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0012287312766687526",
+            "extra": "mean: 190.62618633332326 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 5.256834770979204,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003303404015950761",
+            "extra": "mean: 190.22853933332348 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.364004601983124,
+            "unit": "iter/sec",
+            "range": "stddev: 0.001436769684780162",
+            "extra": "mean: 186.42787883334222 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 1.9980953132449648,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0038423408845370943",
+            "extra": "mean: 500.47662559999253 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 1.9486399645862453,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002578296153316575",
+            "extra": "mean: 513.1784312000036 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.7977580289136834,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0009450985441304399",
+            "extra": "mean: 357.4290519999977 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 164.09310682418902,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000030022302776731663",
+            "extra": "mean: 6.094101204820322 msec\nrounds: 166"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 13.575753560625422,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000104159148903217",
+            "extra": "mean: 73.66073607142961 msec\nrounds: 14"
           }
         ]
       }
