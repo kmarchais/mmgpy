@@ -114,16 +114,16 @@ dev = [
     "numpy>=2.1.0",
     # Dev tools
     "build>=1.4.0",
-    "imageio>=2.37.2",
+    "imageio>=2.37.3",
     "meshio>=5.3.5,<6",
     "ty>=0.0.39",
-    "prek>=0.4",
+    "prek>=0.4.1",
     "pytest>=9.0.3",
-    "pytest-benchmark>=5.0.0",
-    "pytest-cov>=4.1.0",
-    "ruff>=0.15",
+    "pytest-benchmark>=5.2.3",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.14",
     "pytest-codeblocks>=0.17.0",
-    "pytest-pyvista>=0.2",
+    "pytest-pyvista>=0.3.3",
     "pyvista>=0.48,<1",
 ]
 docs = [
