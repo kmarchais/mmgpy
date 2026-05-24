@@ -47,11 +47,11 @@ pyvista = [
 ]
 ui = [
     "mmgpy[pyvista]",
-    "pywebview>=6.1,<7",
-    "trame>=3.12.0,<4",
-    "trame-vtk>=2.10.2,<3",
-    "trame-vtklocal>=0.16.0,<1",
-    "trame-vuetify>=3.2.0,<4",
+    "pywebview>=6.2.1,<7",
+    "trame>=3.13.1,<4",
+    "trame-vtk>=2.11.6,<3",
+    "trame-vtklocal>=0.17.1,<1",
+    "trame-vuetify>=3.2.1,<4",
 ]
 
 [tool.mmgpy]
@@ -135,11 +135,11 @@ docs = [
     "zensical>=0.0.41,<0.1",
 ]
 ui = [
-    "pywebview>=6.1",
-    "trame>=3.12.0",
-    "trame-vtk>=2.10.2",
-    "trame-vtklocal>=0.16.0",
-    "trame-vuetify>=3.2.0",
+    "pywebview>=6.2.1",
+    "trame>=3.13.1",
+    "trame-vtk>=2.11.6",
+    "trame-vtklocal>=0.17.1",
+    "trame-vuetify>=3.2.1",
 ]
 
 [tool.pytest.ini_options]
