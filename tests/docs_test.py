@@ -13,7 +13,7 @@ Design notes:
 - ``<!-- mmgpy-test:skip -->`` (replaces ``<!-- pytest-codeblocks:skip -->``)
   is recognised when it appears alone on a line OUTSIDE any code fence
   immediately before a Python fence. Marker matching is whitespace-tolerant.
-  Intervening non-Python fences (bash, yaml) do NOT consume the skip — the
+  Intervening non-Python fences (bash, yaml) do NOT consume the skip; the
   marker still applies to the next ``python``/``py`` block.
 - ``docs/conftest.py`` monkeypatches mmgpy / pv I/O. Patches are applied and
   reverted by a session-scoped autouse fixture so they cannot leak into
@@ -49,7 +49,7 @@ if not _DOCS_CONFTEST.exists():
 _SKIP_RE = re.compile(r"^\s*<!--\s*mmgpy-test:skip\s*-->\s*$")
 # Opening fence for python/py blocks (the only language pytest-examples runs).
 _FENCE_PY_OPEN_RE = re.compile(r"^\s*```\s*(?:py|python)\b")
-# Any fence line — used for tracking in-fence / out-of-fence state.
+# Any fence line: used for tracking in-fence / out-of-fence state.
 _FENCE_ANY_RE = re.compile(r"^\s*```")
 
 
@@ -59,7 +59,7 @@ def _skipped_lines(path: Path) -> set[int]:
     A state machine tracks whether we are inside a code fence, so a marker
     appearing as data inside a code block is ignored. Outside a fence, a
     marker sets a pending flag that attaches to the next OPENING PYTHON
-    fence — non-Python fences (bash, yaml) are passed through, so a marker
+    fence; non-Python fences (bash, yaml) are passed through, so a marker
     placed before docs-only blocks still skips the python block following.
     """
     lines = path.read_text(encoding="utf-8").splitlines()
@@ -87,7 +87,7 @@ def _skipped_lines(path: Path) -> set[int]:
 
 
 # Load docs/conftest.py to access ``apply_patches`` / ``restore_patches``.
-# This import is now a no-op for side effects — the helpers must be invoked
+# This import is now a no-op for side effects: the helpers must be invoked
 # explicitly (see the session-scoped autouse fixture below).
 _spec = importlib.util.spec_from_file_location(
     "_mmgpy_docs_conftest",
@@ -127,6 +127,11 @@ _SKIPS_BY_FILE: dict[Path, set[int]] = {p: _skipped_lines(p) for p in _EXAMPLES_
 # never desync if the dict is mutated between two list comprehensions.
 _FILE_PATHS = sorted(_EXAMPLES_BY_FILE)
 _FILE_IDS = [str(p.relative_to(_DOCS)) for p in _FILE_PATHS]
+
+# Fail loudly if discovery returns nothing (e.g., docs restructured, fence
+# syntax changed). Otherwise parametrize generates zero tests and CI silently
+# reports success for the doc-codeblocks step.
+assert _FILE_PATHS, f"pytest-examples discovered no code blocks under {_DOCS}"
 
 
 @pytest.mark.parametrize("doc_path", _FILE_PATHS, ids=_FILE_IDS)

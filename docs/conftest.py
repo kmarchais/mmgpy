@@ -31,7 +31,7 @@ os.environ["PYVISTA_OFF_SCREEN"] = "true"
 pv.OFF_SCREEN = True
 
 # ---------------------------------------------------------------------------
-# Mesh factories — use scipy/numpy only (no VTK objects) to avoid segfaults
+# Mesh factories: use scipy/numpy only (no VTK objects) to avoid segfaults
 # when pytest-examples runs code via exec() with PyPI VTK wheels.
 # ---------------------------------------------------------------------------
 
