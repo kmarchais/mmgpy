@@ -131,7 +131,29 @@ remeshed = mesh.mmg.remesh(ar=30)
 ```
 
 - Edges with dihedral angle greater than `ar` are treated as ridges and preserved during remeshing.
-- `ar=180` disables ridge detection.
+- `ar` is only the _threshold_; it does not turn detection on or off. To disable ridge detection entirely, use `detect_ridges` below (CLI `-nr`) rather than relying on `ar=180`.
+
+---
+
+### detect_ridges
+
+Ridge (feature-edge) detection toggle. CLI equivalent: `-nr`. C API: `MMG*_IPARAM_angle`.
+
+| Property | Value       |
+| -------- | ----------- |
+| Type     | `bool`      |
+| Default  | `None` (on) |
+
+<!-- pytest-codeblocks:cont -->
+
+```python
+# Raw kwarg form: angle=0 disables detection (-nr), angle=1 forces it on.
+remeshed = mesh.mmg.remesh(angle=0, hmax=0.1)
+```
+
+- Detection is **on** by default; sharp edges are preserved as ridges and the slivers on them are kept.
+- Disabling it (`angle=0`) frees the remesher to collapse short edges and slivers at sharp or thin features (e.g. impeller blade rims). This is a trade-off: the slivers go away but the sharp edges are rounded, so it suits collision / FEM meshes that need a hard guarantee against degenerate triangles more than feature fidelity.
+- The typed options expose this as the boolean `detect_ridges` (e.g. `MmgSOptions(detect_ridges=False)`), which is clearer than the raw `angle=0`/`angle=1`.
 
 ---
 
