@@ -1095,10 +1095,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#uniform-sliver-free-cad-surface" class="md-nav__link">
+  <a href="#collapsing-feature-edge-slivers-on-a-cad-surface" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Uniform, Sliver-Free CAD Surface
+        Collapsing Feature-Edge Slivers on a CAD Surface
       </span>
     </span>
   </a>
@@ -1894,10 +1894,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#uniform-sliver-free-cad-surface" class="md-nav__link">
+  <a href="#collapsing-feature-edge-slivers-on-a-cad-surface" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Uniform, Sliver-Free CAD Surface
+        Collapsing Feature-Edge Slivers on a CAD Surface
       </span>
     </span>
   </a>
@@ -2218,11 +2218,13 @@ demo on an L-bracket cantilever.</p>
 <p><a href="https://github.com/kmarchais/mmgpy/blob/main/examples/mmg2d/implicit_2d_domain_meshing.py">View full example</a></p>
 <hr />
 <h2 id="surface-meshing-mmgs">Surface Meshing (mmgs)<a class="headerlink" href="#surface-meshing-mmgs" title="Permanent link">&para;</a></h2>
-<h3 id="uniform-sliver-free-cad-surface">Uniform, Sliver-Free CAD Surface<a class="headerlink" href="#uniform-sliver-free-cad-surface" title="Permanent link">&para;</a></h3>
-<p>Clean a CAD part (here a compressor wheel with thin blades) into a uniform,
-sliver-free mesh. Thin/sharp features have near-90° dihedrals that MMGS keeps as
-ridges by default, protecting the degenerate slivers on them. <code>detect_ridges=False</code>
-(the CLI <code>-nr</code> toggle) frees the remesher to collapse them.</p>
+<h3 id="collapsing-feature-edge-slivers-on-a-cad-surface">Collapsing Feature-Edge Slivers on a CAD Surface<a class="headerlink" href="#collapsing-feature-edge-slivers-on-a-cad-surface" title="Permanent link">&para;</a></h3>
+<p>A CAD part (here a compressor wheel with thin blades) has near-90° dihedrals
+that MMGS keeps as ridges by default, protecting the degenerate slivers on them.
+<code>detect_ridges=False</code> (the CLI <code>-nr</code> toggle) frees the remesher to collapse
+them. It is a trade-off: the slivers vanish and worst-element quality jumps, but
+the sharp blade edges are rounded, so use it when a hard guarantee against
+degenerate triangles matters more than feature fidelity.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="sd">&quot;&quot;&quot;Uniform, sliver-free remesh of a CAD surface.&quot;&quot;&quot;</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>

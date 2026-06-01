@@ -2446,7 +2446,7 @@
 </span></code></pre></div>
 <ul>
 <li>Detection is <strong>on</strong> by default; sharp edges are preserved as ridges and the slivers on them are kept.</li>
-<li>Disabling it (<code>angle=0</code>) frees the remesher to collapse short edges and slivers at sharp or thin features (e.g. impeller blade rims). This is the most effective control for a uniform, sliver-free CAD surface.</li>
+<li>Disabling it (<code>angle=0</code>) frees the remesher to collapse short edges and slivers at sharp or thin features (e.g. impeller blade rims). This is a trade-off: the slivers go away but the sharp edges are rounded, so it suits collision / FEM meshes that need a hard guarantee against degenerate triangles more than feature fidelity.</li>
 <li>The typed options expose this as the boolean <code>detect_ridges</code> (e.g. <code>MmgSOptions(detect_ridges=False)</code>), which is clearer than the raw <code>angle=0</code>/<code>angle=1</code>.</li>
 </ul>
 <hr />

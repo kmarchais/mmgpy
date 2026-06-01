@@ -3436,7 +3436,10 @@ exposed as fields on the dataclasses:</p>
 near-90° dihedral angles. By default MMGS detects these as ridges and refuses
 to collapse the sub-<code>hmin</code> slivers sitting on them, leaving degenerate,
 high-aspect-ratio triangles that hurt downstream solvers. Disable ridge
-detection so those slivers can be collapsed:</p>
+detection so those slivers can be collapsed. This is a trade-off: the slivers
+go away but the sharp edges are rounded, so reach for it when a hard guarantee
+against degenerate triangles (collision / FEM meshes) matters more than feature
+fidelity.</p>
 <!-- pytest-codeblocks:skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MmgSOptions</span>
