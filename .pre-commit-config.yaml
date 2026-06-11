@@ -56,15 +56,14 @@ repos:
       - id: codespell
         files: ^.*\.(py|rst|md)$
 
-  - repo: local
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    # v0.0.48
+    rev: a71646c845a122391e3ce3a43502fcf4003d1efa
     hooks:
       - id: ty
-        name: ty type checker
-        entry: uvx ty check
-        language: system
-        types: [python]
-        pass_filenames: false
 
+  - repo: local
+    hooks:
       - id: sync-versions
         name: sync downstream version files with pyproject.toml
         entry: uv run --no-project python .github/scripts/sync_versions.py

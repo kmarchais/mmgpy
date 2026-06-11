@@ -734,7 +734,7 @@ def _solve_hessian_2d(
     x, y = coords_n[:, 0], coords_n[:, 1]
     basis = np.column_stack([x, y, 0.5 * x * x, x * y, 0.5 * y * y])
     coeffs, _, _, _ = np.linalg.lstsq(basis, vals, rcond=None)
-    return coeffs[2:5]
+    return np.asarray(coeffs[2:5], dtype=np.float64)
 
 
 def _solve_hessian_3d(
@@ -756,4 +756,4 @@ def _solve_hessian_3d(
         [x, y, z, 0.5 * x * x, x * y, x * z, 0.5 * y * y, y * z, 0.5 * z * z],
     )
     coeffs, _, _, _ = np.linalg.lstsq(basis, vals, rcond=None)
-    return coeffs[3:9]
+    return np.asarray(coeffs[3:9], dtype=np.float64)
