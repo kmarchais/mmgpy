@@ -342,12 +342,14 @@ ignore = [
 ]
 
 [tool.ty.src]
-# Exclude tests, scripts, examples, and certain modules from type checking
+# Keep ty's full-project pre-commit hook focused on the package source,
+# matching `uv run ty check src/mmgpy/`.
+include = ["src/mmgpy"]
+# Exclude modules that rely on runtime integrations or incomplete third-party stubs.
 # Progress module uses union types that cause complex type inference issues
 # Interactive module uses PyVista types that have incomplete stubs
 # UI module uses trame which has no type stubs
-# Blender extension uses bpy property decorators that ty doesn't understand
-exclude = ["tests/**", "scripts/**", "examples/**", "docs/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**", "blender_mmgpy/**"]
+exclude = ["src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time
