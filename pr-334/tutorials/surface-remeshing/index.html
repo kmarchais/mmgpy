@@ -1889,8 +1889,6 @@
 </span></code></pre></div>
 <h2 id="geometric-fidelity">Geometric Fidelity<a class="headerlink" href="#geometric-fidelity" title="Permanent link">&para;</a></h2>
 <p>The <code>hausd</code> parameter is crucial for surface meshes - it controls how closely the remeshed surface approximates the original:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Tight approximation (more triangles, better geometry)</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">tight</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">hausd</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">)</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -1903,8 +1901,6 @@
 <p>Setting <code>hausd</code> too large can cause loss of geometric features. Start with small values (0.001) and increase if needed.</p>
 <h2 id="sharp-feature-detection">Sharp Feature Detection<a class="headerlink" href="#sharp-feature-detection" title="Permanent link">&para;</a></h2>
 <p>MMG can detect and preserve sharp edges based on the angle between adjacent faces:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
@@ -1913,8 +1909,6 @@
 </span></code></pre></div>
 <h2 id="preserving-boundaries">Preserving Boundaries<a class="headerlink" href="#preserving-boundaries" title="Permanent link">&para;</a></h2>
 <p>To prevent vertex movement during remeshing (vertices stay in place, but edges may still be swapped or split):</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">nomove</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -1922,8 +1916,6 @@
 </span></code></pre></div>
 <h2 id="smooth-surface-remeshing">Smooth Surface Remeshing<a class="headerlink" href="#smooth-surface-remeshing" title="Permanent link">&para;</a></h2>
 <p>For smooth surfaces without sharp features:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MmgSOptions</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">MmgSOptions</span><span class="p">(</span>
@@ -1937,8 +1929,6 @@
 </span></code></pre></div>
 <h2 id="mechanical-part-remeshing">Mechanical Part Remeshing<a class="headerlink" href="#mechanical-part-remeshing" title="Permanent link">&para;</a></h2>
 <p>For industrial/CAD parts with sharp edges:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MmgSOptions</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">MmgSOptions</span><span class="p">(</span>

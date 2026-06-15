@@ -1807,7 +1807,7 @@ along graph distances, so the bracket pivots like a rigid body. Linear
 elasticity captures the bending: the post curves backward at the
 re-entrant corner and the foot bows visibly.</p>
 <p><img alt="Laplacian vs elasticity on a 2D L-bracket" src="../../assets/elasticity_propagation_2d.gif" /></p>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy.lagrangian</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">propagate_displacement</span><span class="p">,</span>
@@ -1837,7 +1837,7 @@ loading through the corner, bending the entire bracket.</p>
 <h2 id="pyvista-accessor">PyVista accessor<a class="headerlink" href="#pyvista-accessor" title="Permanent link">&para;</a></h2>
 <p>The accessor's <code>move()</code> method exposes the propagator via the
 <code>propagation_method</code> keyword:</p>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
@@ -1858,7 +1858,7 @@ loading through the corner, bending the entire bracket.</p>
 </span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="installing-the-fedoo-extra">Installing the <code>fedoo</code> extra<a class="headerlink" href="#installing-the-fedoo-extra" title="Permanent link">&para;</a></h2>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>fem
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># or</span>
@@ -1871,7 +1871,7 @@ and <code>propagation_method="elasticity"</code> need it.</p>
 <p><code>fedoo</code> is published on PyPI but not on conda-forge, so the <code>[fem]</code> extra
 isn't reachable via <code>conda install mmgpy</code>. Install fedoo separately into
 the same environment:</p>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>mmgpy
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pip<span class="w"> </span>install<span class="w"> </span>fedoo<span class="w">                </span><span class="c1"># PyPI (recommended)</span>
