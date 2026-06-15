@@ -83,8 +83,6 @@ remeshed_plane = plane.mmg.remesh(hsiz=0.1)
 
 Use PyVista's `save()`:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 # MMG native (registered reader/writer)
 remeshed_volume.save("output.mesh")

@@ -75,7 +75,7 @@ should call the `move`/`move_mesh` API directly.
 
 ## Accessor Method
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 import numpy as np
@@ -95,7 +95,7 @@ moved = mesh.mmg.move(displacement)
 
 ### Basic Lagrangian Remeshing
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 import numpy as np
@@ -120,7 +120,7 @@ print(f"Cells: {mesh.n_cells} -> {remeshed.n_cells}")
 
 Move only boundary vertices and let `move()` propagate the displacement into the interior. PyVista's `extract_surface` gives the boundary vertex set for any mesh kind:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 import numpy as np
@@ -147,7 +147,7 @@ moved = mesh.mmg.move(
 
 For large deformations, use multiple sub-steps via the `n_steps` argument:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 moved = mesh.mmg.move(total_displacement, n_steps=10, hmax=0.1, verbose=-1)
@@ -157,7 +157,7 @@ moved = mesh.mmg.move(total_displacement, n_steps=10, hmax=0.1, verbose=-1)
 
 Combine with remeshing parameters:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 remeshed = mesh.mmg.move(
@@ -173,7 +173,7 @@ remeshed = mesh.mmg.move(
 
 Deform a sphere into an ellipsoid:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 import numpy as np

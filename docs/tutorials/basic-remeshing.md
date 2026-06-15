@@ -41,8 +41,6 @@ print(f"Cells:    {mesh.n_cells} -> {remeshed.n_cells}")
 
 `dataset.mmg.remesh(...)` returns a fresh PyVista dataset. Stats come from the dataset itself plus the accessor's quality helpers:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 qualities_before = mesh.mmg.element_qualities()
 qualities_after = remeshed.mmg.element_qualities()
@@ -57,8 +55,6 @@ print(f"Mean quality: {qualities_before.mean():.3f} -> {qualities_after.mean():.
 
 Control the range of edge lengths in the output mesh:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmin=0.01,  # Minimum edge length (prevents over-refinement)
@@ -67,8 +63,6 @@ remeshed = mesh.mmg.remesh(
 ```
 
 For a uniform mesh with a single target size:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 # Using hsiz parameter
@@ -84,8 +78,6 @@ uniform = mesh.mmg.remesh_uniform(size=0.05)
 
 The `hausd` parameter controls how closely the output mesh approximates the input geometry:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -98,8 +90,6 @@ remeshed = mesh.mmg.remesh(
 ## Using Options Objects
 
 For complex configurations, use typed options objects:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -118,8 +108,6 @@ remeshed = mesh.mmg.remesh(opts)
 
 Options can also be unpacked as kwargs:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(**opts.to_dict())
 ```
@@ -127,8 +115,6 @@ remeshed = mesh.mmg.remesh(**opts.to_dict())
 ## Optimization Without Topology Changes
 
 To improve quality without inserting/removing vertices:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 mesh = pv.read("input.mesh")
@@ -144,8 +130,6 @@ This only moves existing vertices to improve element quality.
 ## Factory Presets
 
 Options classes provide factory methods for common scenarios:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -166,8 +150,6 @@ optimized = mesh.mmg.remesh(opt_opts)
 ## Saving Results
 
 Save the remeshed output to any supported format:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 # Save to MMG native format

@@ -236,7 +236,7 @@ jobs:
           # pytest-pyvista's plugin import at module load time.
           uv pip install --python .venv/bin/python --find-links wheelhouse 'mmgpy[pyvista]'
           # fedoo is needed for the elasticity_propagation example.
-          uv pip install --python .venv/bin/python pytest pytest-codeblocks pytest-pyvista fedoo
+          uv pip install --python .venv/bin/python pytest pytest-examples pytest-pyvista fedoo
       - name: Verify the installed mmgpy is the wheel
         run: |
           .venv/bin/python -c "import mmgpy; print(mmgpy.__version__, mmgpy.__file__); assert 'site-packages' in mmgpy.__file__"
@@ -244,7 +244,7 @@ jobs:
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
-        run: .venv/bin/pytest --codeblocks docs/ -v
+        run: .venv/bin/pytest tests/docs_test.py -v
       - name: Run examples (smoke; image-regression diffs are a build-and-test concern)
         env:
           PYVISTA_OFF_SCREEN: "true"

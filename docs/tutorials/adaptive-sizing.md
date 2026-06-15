@@ -39,8 +39,6 @@ remeshed = mesh.mmg.remesh(
 
 Multiple spheres can be combined; where they overlap, the minimum size wins:
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -85,7 +83,7 @@ remeshed = mesh.mmg.remesh(
 
 For 2D meshes pass 2D bounds:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -188,8 +186,6 @@ remeshed = mesh.mmg.remesh(
 ## Custom Metric Fields
 
 For total control, compute the per-vertex sizing metric yourself and place it on `point_data["metric"]`. The accessor will pick it up:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 import numpy as np

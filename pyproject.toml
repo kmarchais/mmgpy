@@ -122,7 +122,7 @@ dev = [
     "pytest-benchmark>=5.2.3",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.14",
-    "pytest-codeblocks>=0.17.0",
+    "pytest-examples>=0.0.18",
     "pytest-pyvista>=0.3.3",
     "pyvista>=0.48,<1",
 ]
