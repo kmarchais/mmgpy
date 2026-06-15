@@ -2039,7 +2039,7 @@
 <hr />
 <h3 id="lagrangian-motion">Lagrangian Motion<a class="headerlink" href="#lagrangian-motion" title="Permanent link">&para;</a></h3>
 <p>Remesh while applying mesh displacement.</p>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="sd">&quot;&quot;&quot;Lagrangian mesh motion remeshing.&quot;&quot;&quot;</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -2125,7 +2125,7 @@ vertex budget, elements concentrate around fronts and stay coarse
 elsewhere. See the <a href="../tutorials/hessian-adaptation/">tutorial</a> for a
 walkthrough.</p>
 <p><img alt="2D Hessian adaptation" src="../assets/hessian_adaptation_2d.png" /></p>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_hessian</span><span class="p">,</span> <span class="n">create_metric_from_hessian</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
@@ -2146,7 +2146,7 @@ displacements through the mesh. See the
 <a href="../tutorials/elasticity-propagation/">tutorial</a> for a side-by-side
 demo on an L-bracket cantilever.</p>
 <p><img alt="Laplacian vs elasticity on a 2D L-bracket" src="../assets/elasticity_propagation_2d.gif" /></p>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy.lagrangian</span><span class="w"> </span><span class="kn">import</span> <span class="n">propagate_displacement_elasticity</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
@@ -2251,7 +2251,7 @@ demo on an L-bracket cantilever.</p>
 <hr />
 <h2 id="running-examples">Running Examples<a class="headerlink" href="#running-examples" title="Permanent link">&para;</a></h2>
 <p>Clone the repository and run examples:</p>
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/kmarchais/mmgpy.git
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nb">cd</span><span class="w"> </span>mmgpy
