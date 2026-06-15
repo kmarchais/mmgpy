@@ -13,7 +13,7 @@ Installing mmgpy gives you access to the MMG command-line executables:
 
 The executables are included with mmgpy:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 pip install mmgpy
@@ -21,7 +21,7 @@ pip install mmgpy
 
 If you only need the CLI tools (no Python API):
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 uv tool install mmgpy
@@ -31,7 +31,7 @@ uv tool install mmgpy
 
 The `mmg` command automatically detects the mesh type and delegates to the appropriate executable:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 mmg input.mesh -o output.mesh -hmax 0.1
@@ -45,7 +45,7 @@ This is equivalent to running `mmg3d`, `mmg2d`, or `mmgs` depending on the input
 
 ### Version Information
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 mmg --version
@@ -57,7 +57,7 @@ mmg --help
 
 ## Quick Examples
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 # Auto-detect mesh type

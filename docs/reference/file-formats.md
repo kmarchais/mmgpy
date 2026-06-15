@@ -80,6 +80,8 @@ mesh = pv.read("input.mesh")
 
 Use `.mesh` format:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 mesh.save("output.mesh")
 ```
@@ -91,6 +93,8 @@ mesh.save("output.mesh")
 ### For Visualization (ParaView)
 
 Use VTK formats:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 mesh.save("output.vtk")   # Legacy
@@ -175,6 +179,8 @@ if "temperature" in mesh.point_data:
 | Human readable | Yes                 | No              |
 | Precision      | Text representation | Full precision  |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 # ASCII
 mesh.save("output.mesh")
@@ -223,6 +229,8 @@ Some formats do not support all features:
 ### Large Files
 
 For large meshes:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # Use binary format

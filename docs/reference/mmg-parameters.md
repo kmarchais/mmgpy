@@ -20,6 +20,8 @@ Minimum edge length.
 | Default  | Auto-computed |
 | Range    | > 0           |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(hmin=0.01)
 ```
@@ -37,6 +39,8 @@ Maximum edge length.
 | Type     | `float`       |
 | Default  | Auto-computed |
 | Range    | > hmin        |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(hmax=0.1)
@@ -56,6 +60,8 @@ Uniform target edge size.
 | Default  | None    |
 | Range    | > 0     |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(hsiz=0.05)
 ```
@@ -73,6 +79,8 @@ Gradation parameter controlling size transition.
 | Type     | `float` |
 | Default  | 1.3     |
 | Range    | >= 1.0  |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(hgrad=1.2)
@@ -96,6 +104,8 @@ Hausdorff distance, maximum distance between input and output geometry.
 | Default  | 0.01 \* bounding box diagonal |
 | Range    | > 0                           |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(hausd=0.001)
 ```
@@ -113,6 +123,8 @@ Ridge detection angle (degrees).
 | Type     | `float` |
 | Default  | 45.0    |
 | Range    | 0 - 180 |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(ar=30)
@@ -135,6 +147,8 @@ Enable optimization mode (no topology changes).
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(optim=1)
 ```
@@ -153,6 +167,8 @@ Disable vertex insertion.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(noinsert=1)
 ```
@@ -164,6 +180,8 @@ Prevents adding new vertices during remeshing.
 ### noswap
 
 Disable edge/face swapping.
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(noswap=1)
@@ -177,6 +195,8 @@ Prevents topology changes via edge/face swaps.
 
 Disable vertex movement.
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(nomove=1)
 ```
@@ -188,6 +208,8 @@ Keeps vertices at their original positions.
 ### nosurf
 
 Preserve surface vertices.
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(nosurf=1)
@@ -209,6 +231,8 @@ Verbosity level.
 | Default  | 1        |
 | Range    | -1 to 10 |
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 silent = mesh.mmg.remesh(verbose=-1)  # Silent
 errors = mesh.mmg.remesh(verbose=0)   # Errors only
@@ -222,11 +246,15 @@ debug = mesh.mmg.remesh(verbose=5)    # Debug output
 
 ### Quality optimization only
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 optimized = mesh.mmg.remesh(optim=1, noinsert=1)
 ```
 
 Or use the convenience method:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 optimized = mesh.mmg.remesh_optimize()
@@ -236,11 +264,15 @@ optimized = mesh.mmg.remesh_optimize()
 
 ### Uniform remeshing
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 uniform = mesh.mmg.remesh(hsiz=0.05)
 ```
 
 Or use the convenience method:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 uniform = mesh.mmg.remesh_uniform(size=0.05)
@@ -249,6 +281,8 @@ uniform = mesh.mmg.remesh_uniform(size=0.05)
 ---
 
 ### High-quality surface approximation
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -262,6 +296,8 @@ remeshed = mesh.mmg.remesh(
 
 ### Preserve sharp features
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -274,6 +310,8 @@ remeshed = mesh.mmg.remesh(
 
 ### Fast coarse remeshing
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.5,
@@ -285,6 +323,8 @@ remeshed = mesh.mmg.remesh(
 ---
 
 ### Volume interior only
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(

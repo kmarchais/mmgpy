@@ -55,6 +55,8 @@ mesh = pv.read("unit_cube.mesh")
 
 ### Sphere
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 def sphere_levelset(coords, center=(0.5, 0.5, 0.5), radius=0.3):
     return (np.linalg.norm(coords - np.array(center), axis=1) - radius).reshape(-1, 1)
@@ -64,6 +66,8 @@ levelset = sphere_levelset(np.asarray(mesh.points))
 ```
 
 ### Torus
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 def torus_levelset(coords, R=0.5, r=0.15):
@@ -77,6 +81,8 @@ levelset = torus_levelset(np.asarray(mesh.points))
 ```
 
 ### Gyroid
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 def gyroid_levelset(coords, scale=2 * np.pi):
@@ -95,7 +101,7 @@ levelset = gyroid_levelset(np.asarray(mesh.points))
 
 Combine shapes using min/max operations:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```python
 def union(ls1, ls2):
@@ -157,7 +163,7 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 Combine level-set extraction with size parameters:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```python
 discretized = mesh.mmg.remesh_levelset(
@@ -171,7 +177,7 @@ discretized = mesh.mmg.remesh_levelset(
 
 ## Complete Example: Implicit Domain Meshing
 
-<!-- mmgpy-test:skip -->
+<!--pytest.mark.skip-->
 
 ```python
 import numpy as np
@@ -207,6 +213,8 @@ discretized.save("double_sphere.vtk")
 
 ## Visualization
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 discretized.plot(show_edges=True)
 ```
@@ -218,7 +226,7 @@ discretized.plot(show_edges=True)
 3. **Narrow band**: If your level-set is only valid near the surface, ensure the background mesh is refined in that region
 4. **Validation**: After extraction, validate the mesh to ensure quality:
 
-   <!-- mmgpy-test:skip -->
+   <!-- pytest.mark.skip -->
 
    ```python
    assert discretized.mmg.validate(), "Extracted mesh has quality issues"

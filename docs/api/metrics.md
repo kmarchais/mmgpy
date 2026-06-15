@@ -89,6 +89,8 @@ remeshed = mesh.mmg.remesh()
 
 Size varying with position:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 import numpy as np
 
@@ -106,6 +108,8 @@ remeshed = mesh.mmg.remesh()
 
 Different sizes in different directions:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 import numpy as np
 
@@ -122,7 +126,7 @@ remeshed = mesh.mmg.remesh()
 
 Adapt mesh to solution curvature:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```python
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
@@ -144,6 +148,8 @@ adapted = mesh.mmg.remesh(hgrad=2.0)
 
 Combine multiple metrics (minimum size wins):
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 sizes1 = np.ones(mesh.n_points) * 0.05
 sizes2 = np.ones(mesh.n_points) * 0.08
@@ -155,6 +161,8 @@ mesh.point_data["metric"] = combined
 ```
 
 ### Extracting Metric Information
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 metric = np.asarray(mesh.point_data["metric"])
@@ -170,6 +178,8 @@ print(f"Size range: {sizes.min():.4f} to {sizes.max():.4f}")
 ### Tensor Format Conversion
 
 MMG uses symmetric tensors in Voigt notation:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 # 3D: 6 components per vertex
@@ -188,6 +198,8 @@ tensor_back = metrics.matrix_to_tensor(matrix)
 ### Validation
 
 Check metric tensor validity:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 metric = np.asarray(mesh.point_data["metric"])

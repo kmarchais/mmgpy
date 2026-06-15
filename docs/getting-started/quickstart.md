@@ -147,6 +147,8 @@ remeshed.plot(color="lightblue", opacity=0.8)
 
 For custom plotters, use the dataset directly:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 plotter = pv.Plotter()
 plotter.add_mesh(remeshed, show_edges=True)
