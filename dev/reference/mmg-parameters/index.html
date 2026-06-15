@@ -2233,8 +2233,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmin</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Edges shorter than <code>hmin</code> will be collapsed or lengthened.</p>
@@ -2263,8 +2261,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Edges longer than <code>hmax</code> will be split.</p>
@@ -2293,8 +2289,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
 </span></code></pre></div>
 <p>When set, overrides <code>hmin</code> and <code>hmax</code> with uniform sizing.</p>
@@ -2323,8 +2317,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hgrad</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
@@ -2358,8 +2350,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Smaller values produce a closer geometric approximation at the cost of more elements.</p>
@@ -2388,8 +2378,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">ar</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
@@ -2422,8 +2410,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>When enabled, only moves vertices to improve quality.</p>
@@ -2452,32 +2438,24 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prevents adding new vertices during remeshing.</p>
 <hr />
 <h3 id="noswap">noswap<a class="headerlink" href="#noswap" title="Permanent link">&para;</a></h3>
 <p>Disable edge/face swapping.</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">noswap</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prevents topology changes via edge/face swaps.</p>
 <hr />
 <h3 id="nomove">nomove<a class="headerlink" href="#nomove" title="Permanent link">&para;</a></h3>
 <p>Disable vertex movement.</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">nomove</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Keeps vertices at their original positions.</p>
 <hr />
 <h3 id="nosurf">nosurf<a class="headerlink" href="#nosurf" title="Permanent link">&para;</a></h3>
 <p>Preserve surface vertices.</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prevents modification of surface mesh vertices.</p>
@@ -2507,8 +2485,6 @@
 </tr>
 </tbody>
 </table>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">silent</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Silent</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">errors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>   <span class="c1"># Errors only</span>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># Standard info</span>
@@ -2517,30 +2493,20 @@
 <hr />
 <h2 id="common-combinations">Common Combinations<a class="headerlink" href="#common-combinations" title="Permanent link">&para;</a></h2>
 <h3 id="quality-optimization-only">Quality optimization only<a class="headerlink" href="#quality-optimization-only" title="Permanent link">&para;</a></h3>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Or use the convenience method:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_optimize</span><span class="p">()</span>
 </span></code></pre></div>
 <hr />
 <h3 id="uniform-remeshing">Uniform remeshing<a class="headerlink" href="#uniform-remeshing" title="Permanent link">&para;</a></h3>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">uniform</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Or use the convenience method:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">uniform</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h3 id="high-quality-surface-approximation">High-quality surface approximation<a class="headerlink" href="#high-quality-surface-approximation" title="Permanent link">&para;</a></h3>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span>  <span class="c1"># Tight geometric tolerance</span>
@@ -2549,8 +2515,6 @@
 </span></code></pre></div>
 <hr />
 <h3 id="preserve-sharp-features">Preserve sharp features<a class="headerlink" href="#preserve-sharp-features" title="Permanent link">&para;</a></h3>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">ar</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>         <span class="c1"># Detect more ridges</span>
@@ -2559,8 +2523,6 @@
 </span></code></pre></div>
 <hr />
 <h3 id="fast-coarse-remeshing">Fast coarse remeshing<a class="headerlink" href="#fast-coarse-remeshing" title="Permanent link">&para;</a></h3>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>     <span class="c1"># Allow large size variations</span>
@@ -2569,8 +2531,6 @@
 </span></code></pre></div>
 <hr />
 <h3 id="volume-interior-only">Volume interior only<a class="headerlink" href="#volume-interior-only" title="Permanent link">&para;</a></h3>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>      <span class="c1"># Keep surface fixed</span>

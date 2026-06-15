@@ -1863,8 +1863,6 @@
 </span></code></pre></div>
 <h2 id="inspecting-the-result">Inspecting the Result<a class="headerlink" href="#inspecting-the-result" title="Permanent link">&para;</a></h2>
 <p><code>dataset.mmg.remesh(...)</code> returns a fresh PyVista dataset. Stats come from the dataset itself plus the accessor's quality helpers:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">qualities_before</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">element_qualities</span><span class="p">()</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">qualities_after</span> <span class="o">=</span> <span class="n">remeshed</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">element_qualities</span><span class="p">()</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -1875,16 +1873,12 @@
 </span></code></pre></div>
 <h2 id="edge-length-control">Edge Length Control<a class="headerlink" href="#edge-length-control" title="Permanent link">&para;</a></h2>
 <p>Control the range of edge lengths in the output mesh:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">hmin</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>  <span class="c1"># Minimum edge length (prevents over-refinement)</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>   <span class="c1"># Maximum edge length</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span>
 </span></code></pre></div>
 <p>For a uniform mesh with a single target size:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Using hsiz parameter</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">uniform</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
@@ -1895,8 +1889,6 @@
 </span></code></pre></div>
 <h2 id="geometric-approximation">Geometric Approximation<a class="headerlink" href="#geometric-approximation" title="Permanent link">&para;</a></h2>
 <p>The <code>hausd</code> parameter controls how closely the output mesh approximates the input geometry:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>  <span class="c1"># Maximum Hausdorff distance to input surface</span>
@@ -1905,8 +1897,6 @@
 <p>!!! tip "Choosing hausd" - Smaller <code>hausd</code> = better surface approximation but more elements - Typical values: 0.001 to 0.01 of the model size - For smooth surfaces, use smaller values</p>
 <h2 id="using-options-objects">Using Options Objects<a class="headerlink" href="#using-options-objects" title="Permanent link">&para;</a></h2>
 <p>For complex configurations, use typed options objects:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mmg3DOptions</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">Mmg3DOptions</span><span class="p">(</span>
@@ -1921,14 +1911,10 @@
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Options can also be unpacked as kwargs:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
 </span></code></pre></div>
 <h2 id="optimization-without-topology-changes">Optimization Without Topology Changes<a class="headerlink" href="#optimization-without-topology-changes" title="Permanent link">&para;</a></h2>
 <p>To improve quality without inserting/removing vertices:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_optimize</span><span class="p">()</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
@@ -1939,8 +1925,6 @@
 <p>This only moves existing vertices to improve element quality.</p>
 <h2 id="factory-presets">Factory Presets<a class="headerlink" href="#factory-presets" title="Permanent link">&para;</a></h2>
 <p>Options classes provide factory methods for common scenarios:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mmg3DOptions</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
@@ -1957,8 +1941,6 @@
 </span></code></pre></div>
 <h2 id="saving-results">Saving Results<a class="headerlink" href="#saving-results" title="Permanent link">&para;</a></h2>
 <p>Save the remeshed output to any supported format:</p>
-<!-- pytest-codeblocks:cont -->
-
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Save to MMG native format</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">remeshed</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;output.mesh&quot;</span><span class="p">)</span>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
