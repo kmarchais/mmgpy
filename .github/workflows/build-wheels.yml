@@ -25,7 +25,7 @@ jobs:
   build-wheels-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: Build manylinux_2_28 x86_64 wheels
         env:
@@ -59,7 +59,7 @@ jobs:
   build-wheels-linux-aarch64:
     runs-on: ubuntu-24.04-arm # Native ARM runner (no QEMU needed)
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: Build manylinux_2_28 aarch64 wheels
         env:
@@ -93,7 +93,7 @@ jobs:
   build-wheels-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       # ``repair-wheel-command`` is overridden in pyproject.toml so that
       # delvewheel vendors the MSVC runtime into ``mmgpy.libs/`` (see #299).
@@ -135,7 +135,7 @@ jobs:
   build-wheels-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: Build wheels
         env:
@@ -169,7 +169,7 @@ jobs:
     name: Build source distribution
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
       - name: Install build dependencies
@@ -203,7 +203,7 @@ jobs:
     if: github.event_name == 'pull_request' || (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # examples_test.py discovers examples via `git ls-files`, so the
           # checkout must include the .git directory.
@@ -340,7 +340,7 @@ jobs:
     name: Test uvx (${{ matrix.os }})
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -435,7 +435,7 @@ jobs:
       group: docs-deploy
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
