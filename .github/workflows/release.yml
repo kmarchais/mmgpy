@@ -32,7 +32,7 @@ jobs:
       next_dev_version: ${{ steps.compute.outputs.next_dev_version }}
       bump_main: ${{ steps.compute.outputs.bump_main }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
@@ -209,7 +209,7 @@ jobs:
       BUMP_MAIN: ${{ needs.preflight.outputs.bump_main }}
       LATEST_RELEASE: ${{ needs.preflight.outputs.latest_release }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.preflight.outputs.head_sha }}
           fetch-depth: 0
