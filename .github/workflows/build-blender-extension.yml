@@ -116,7 +116,7 @@ jobs:
       # and embed the wrong version in the extension zip name and manifest.
       # Pin to the upstream run's head_branch (e.g. ``v0.14.0``) so the
       # version matches the wheels we are bundling.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
@@ -394,7 +394,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
@@ -667,7 +667,7 @@ jobs:
       # Need the manifest at the release ref so the extension id matches
       # the version we are publishing (see the ``upload-to-release`` ref
       # logic for why we cannot use the default checkout on workflow_run).
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
