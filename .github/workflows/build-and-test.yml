@@ -38,14 +38,14 @@ jobs:
       - run: uv sync --extra fem -v
       - run: uv run python -c "import mmgpy"
       - name: Run tests with coverage
-        run: uv run pytest --ignore=tests/examples_test.py --ignore=tests/docs_test.py --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+        run: uv run pytest --ignore=tests/examples_test.py --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Test documentation code blocks
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
-        run: uv run pytest tests/docs_test.py -v
+        run: uv run pytest --codeblocks docs/ -v
 
       - name: Run examples
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'

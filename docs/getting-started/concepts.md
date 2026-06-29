@@ -88,6 +88,8 @@ print(mesh_2d.mmg.kind)  # MeshKind.TRIANGULAR_2D
 
 The default `remesh()` operation modifies the mesh topology to achieve target element sizes:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 remeshed = mesh_3d.mmg.remesh(
     hmin=0.01,
@@ -159,7 +161,7 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 Remesh while preserving a displacement field (useful for moving meshes):
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```python
 displacement = np.zeros((mesh.n_points, 3))
@@ -184,6 +186,8 @@ Control edge lengths globally:
 ### Local Sizing
 
 Refine specific regions with sizing constraints passed to `remesh()`:
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -245,6 +249,8 @@ mmgpy uses normalized quality measures:
 
 Per-element quality is available via the accessor:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 qualities = remeshed.mmg.element_qualities()
 
@@ -267,6 +273,8 @@ mmgpy supports 40+ file formats through PyVista. VTK-native formats (`.vtk`, `.v
 
 Use `pv.read` and `dataset.save` for everything:
 
+<!-- pytest-codeblocks:cont -->
+
 ```python
 mesh = pv.read("model.stl")
 mesh.save("output.vtk")
@@ -282,6 +290,8 @@ Control output verbosity:
 | `0`   | Errors only        |
 | `1`   | Standard info      |
 | `2+`  | Debug output       |
+
+<!-- pytest-codeblocks:cont -->
 
 ```python
 silent = mesh.mmg.remesh(hmax=0.1, verbose=-1)

@@ -11,19 +11,23 @@ The fastest way to install mmgpy:
 
 === "uv (recommended)"
 
+    <!-- pytest.mark.skip -->
+
     ```bash
     uv pip install mmgpy
     ```
 
 === "pip"
 
-    <!-- mmgpy-test:skip -->
+    <!-- pytest.mark.skip -->
 
     ```bash
     pip install mmgpy
     ```
 
 === "pipx (CLI only)"
+
+    <!-- pytest.mark.skip -->
 
     ```bash
     pipx install mmgpy
@@ -43,7 +47,7 @@ PyPI wheels bundle all native libraries (MMG, VTK), so no compiler or system pac
 
 If you use conda or mamba for scientific computing:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 conda install -c conda-forge mmgpy
@@ -51,7 +55,7 @@ conda install -c conda-forge mmgpy
 
 or with [pixi](https://pixi.sh/):
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 pixi add mmgpy
@@ -70,7 +74,7 @@ Use **PyPI** for the fastest, most portable setup. Use **conda-forge** when you 
 
 Lagrangian motion is available on every install channel via `mmgpy.move_mesh`. The default Laplacian propagator has no extra dependencies; the elasticity propagator requires the optional [`fedoo`](https://github.com/3MAH/fedoo) extra:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 uv pip install "mmgpy[fem]"
@@ -80,7 +84,7 @@ uv pip install "mmgpy[fem]"
 
 To install the latest development version:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 pip install git+https://github.com/kmarchais/mmgpy.git

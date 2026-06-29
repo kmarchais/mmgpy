@@ -41,13 +41,15 @@ remeshed.save("output.vtk")
 
 === "pip"
 
-    <!-- mmgpy-test:skip -->
+    <!-- pytest.mark.skip -->
 
     ```bash
     pip install mmgpy
     ```
 
 === "uv"
+
+    <!-- pytest.mark.skip -->
 
     ```bash
     uv pip install mmgpy

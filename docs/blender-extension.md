@@ -170,7 +170,7 @@ against an unreleased mmgpy version, the canonical pipeline lives in
 
 In short:
 
-<!-- mmgpy-test:skip -->
+<!-- pytest.mark.skip -->
 
 ```bash
 # 1. Build the mmgpy wheel into ./blender_mmgpy/wheels
