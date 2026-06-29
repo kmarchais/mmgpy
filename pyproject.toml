@@ -50,7 +50,7 @@ ui = [
     "pywebview>=6.2.1,<7",
     "trame>=3.13.1,<4",
     "trame-vtk>=2.11.6,<3",
-    "trame-vtklocal>=0.17.1,<1",
+    "trame-vtklocal>=0.17.1,<2",
     "trame-vuetify>=3.2.1,<4",
 ]
 
