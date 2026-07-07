@@ -238,15 +238,15 @@ class TestNewFeature:
        def new_method(self, param: float) -> None: ...
    ```
 
-4. **Rebuild**: C++ changes are automatically rebuilt on import. For faster incremental builds:
+4. **Rebuild**: C++ changes are automatically rebuilt on import. To refresh the editable install manually without knowing the build directory:
    ```bash
-   cmake --build build  # Fast incremental rebuild
+   uv run python -c "import mmgpy; mmgpy.__loader__.rebuild()"
    ```
 
 ### Debugging C++ Code
 
 ```bash
-# Build with debug symbols
+# Build with debug symbols. scikit-build-core honors CMAKE_BUILD_TYPE.
 CMAKE_BUILD_TYPE=Debug uv pip install -e .
 
 # Run with gdb

@@ -1520,7 +1520,7 @@ dev = [
     { name = "pytest-pyvista", specifier = ">=0.3.3" },
     { name = "pyvista", specifier = ">=0.48,<1" },
     { name = "ruff", specifier = ">=0.15.14" },
-    { name = "scikit-build-core", specifier = ">=0.12.2" },
+    { name = "scikit-build-core", specifier = ">=1.0.0" },
     { name = "ty", specifier = ">=0.0.39" },
 ]
 docs = [
@@ -2724,7 +2724,7 @@ wheels = [
 
 [[package]]
 name = "scikit-build-core"
-version = "0.12.2"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
@@ -2733,9 +2733,9 @@ dependencies = [
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/28/cd/9ebb50029b6d8a3ee9e38cdce514ebd70190ec1edf28ab0a1f66d0b84670/scikit_build_core-0.12.2.tar.gz", hash = "sha256:562e0bbc9de1a354c87825ccf732080268d6582a0200f648e8c4a2dcb1e3736d", size = 303553, upload-time = "2026-03-05T18:25:57.666Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/29/e2/4c0431fe84f9d8c24c1fc77b27264f568c71724ca888f514766986f270b0/scikit_build_core-1.0.0.tar.gz", hash = "sha256:b82a8b41dd66926b96096a61e8fc8df22214bbec437d251c0fda1bfb9d7df558", size = 466325, upload-time = "2026-07-06T16:58:35.859Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/49/b2f0fbe3165d55c02e7f9eec6a10685d518af0ef6e919ff2f589c2d15c85/scikit_build_core-0.12.2-py3-none-any.whl", hash = "sha256:6ea4730da400f9a998ec3287bd3ebc1d751fe45ad0a93451bead8618adbc02b1", size = 192625, upload-time = "2026-03-05T18:25:56.207Z" },
+    { url = "https://files.pythonhosted.org/packages/98/47/471ffd83e97c221bedb0c16ab8bdf6087683686c2bdbecda743b24c01002/scikit_build_core-1.0.0-py3-none-any.whl", hash = "sha256:3d52323489b3d83c87922e7bd5bd781cc4bcf0d43961eb565a78d28e74b98fef", size = 275217, upload-time = "2026-07-06T16:58:33.971Z" },
 ]
 
 [[package]]

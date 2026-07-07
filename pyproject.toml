@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "scikit-build-core>=0.12.2",
+    "scikit-build-core>=1.0.0",
     "pybind11>=3.0.4",
     # Add numpy to build requirements for headers
     "numpy>=2.1.0",
@@ -62,10 +62,11 @@ mmg_version = "5.8.0"
 no-build-isolation-package = ["mmgpy"]
 
 [tool.scikit-build]
+minimum-version = "build-system.requires"
+
 # Build configuration
 build.verbose = true
 cmake.version = ">=3.25"
-cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
 cmake.define = { BUILD_TESTING = "OFF", BUILD_SHARED_LIBS = "ON", MMGPY_SKIP_EXECUTABLES = "OFF" }
 
 build-dir = "build"
@@ -109,7 +110,7 @@ mmgpy-ui = "mmgpy.ui.__main__:main"
 [dependency-groups]
 dev = [
     # Build dependencies (needed for editable installs without build isolation)
-    "scikit-build-core>=0.12.2",
+    "scikit-build-core>=1.0.0",
     "pybind11>=3.0.4",
     "numpy>=2.1.0",
     # Dev tools

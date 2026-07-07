@@ -93,7 +93,7 @@ Building from source requires:
 - CMake >= 3.25
 - C++ compiler with C++17 support
 - pybind11 >= 3.0.4
-- scikit-build-core >= 0.12.2
+- scikit-build-core >= 1.0.0
 
 ## Verifying Installation
 
