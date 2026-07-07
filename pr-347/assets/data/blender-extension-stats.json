@@ -1,0 +1,894 @@
+{
+  "generated_at": "2026-07-07T11:24:47Z",
+  "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
+  "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
+  "daily": [
+    {
+      "date": "2026-05-21",
+      "downloads": 0,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.15.1",
+      "updated_at": "2026-05-21T17:03:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=8.1 MB; macOS Apple Silicon=14.8 MB; Linux=18.8 MB"
+    },
+    {
+      "date": "2026-05-22",
+      "downloads": 127,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.15.1",
+      "updated_at": "2026-05-21T17:03:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=8.1 MB; macOS Apple Silicon=14.8 MB; Linux=18.8 MB"
+    },
+    {
+      "date": "2026-05-25",
+      "downloads": 265,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-05-27",
+      "downloads": 376,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-05-28",
+      "downloads": 422,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-05-29",
+      "downloads": 475,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-05-30",
+      "downloads": 532,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-05-31",
+      "downloads": 593,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-01",
+      "downloads": 653,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-02",
+      "downloads": 711,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-03",
+      "downloads": 774,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-04",
+      "downloads": 834,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-05",
+      "downloads": 886,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-06",
+      "downloads": 929,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-07",
+      "downloads": 978,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-08",
+      "downloads": 1033,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-09",
+      "downloads": 1091,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-10",
+      "downloads": 1151,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-11",
+      "downloads": 1200,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-12",
+      "downloads": 1279,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-13",
+      "downloads": 1328,
+      "reviews": 0,
+      "rating": null,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-14",
+      "downloads": 1386,
+      "reviews": 1,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-15",
+      "downloads": 1503,
+      "reviews": 1,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-16",
+      "downloads": 1595,
+      "reviews": 1,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-17",
+      "downloads": 1686,
+      "reviews": 1,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-18",
+      "downloads": 1776,
+      "reviews": 1,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-19",
+      "downloads": 1887,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-20",
+      "downloads": 1962,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-21",
+      "downloads": 2041,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-22",
+      "downloads": 2137,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-23",
+      "downloads": 2215,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-24",
+      "downloads": 2284,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-25",
+      "downloads": 2382,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-26",
+      "downloads": 2442,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-27",
+      "downloads": 2518,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-28",
+      "downloads": 2589,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-29",
+      "downloads": 2675,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-06-30",
+      "downloads": 2748,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-01",
+      "downloads": 2822,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-02",
+      "downloads": 2919,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-03",
+      "downloads": 2999,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-04",
+      "downloads": 3057,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-05",
+      "downloads": 3120,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-06",
+      "downloads": 3212,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-07",
+      "downloads": 3294,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    }
+  ],
+  "reviews": [
+    {
+      "review_id": "7732",
+      "date": "2026-06-14",
+      "reviewed_at": "June 14, 2026, 9:08 a.m.",
+      "score": 5,
+      "version": "v0.16.2",
+      "author": "Trantor",
+      "body": "This is what I need. Thank you!",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-7732"
+    },
+    {
+      "review_id": "7828",
+      "date": "2026-06-19",
+      "reviewed_at": "June 19, 2026, 7:02 p.m.",
+      "score": 5,
+      "version": "v0.16.2",
+      "author": "cheteron",
+      "body": "The addon is great, but it's still not entirely clear how some of the settings work. A tutorial video would be very helpful.",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-7828"
+    }
+  ],
+  "events": [
+    {
+      "date": "2026-05-16",
+      "type": "github_release",
+      "label": "GitHub release v0.14.0",
+      "version": "v0.14.0",
+      "value": "v0.14.0",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.14.0"
+    },
+    {
+      "date": "2026-05-16",
+      "type": "version_release",
+      "label": "Blender extension v0.14.0",
+      "version": "0.14.0",
+      "value": "9",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-16",
+      "type": "version_release",
+      "label": "Blender extension v0.14.0",
+      "version": "0.14.0",
+      "value": "10",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-16",
+      "type": "version_release",
+      "label": "Blender extension v0.14.0",
+      "version": "0.14.0",
+      "value": "11",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-17",
+      "type": "github_docs",
+      "label": "Docs update: refactor: eliminate PLR0913 in _remesh.py and _mesh.py (#283)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/84a8a51d52f174f9f059ac3ef7ae641824d8a3b8"
+    },
+    {
+      "date": "2026-05-20",
+      "type": "github_release",
+      "label": "GitHub release v0.15.0",
+      "version": "v0.15.0",
+      "value": "v0.15.0",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.15.0"
+    },
+    {
+      "date": "2026-05-20",
+      "type": "platform_package_change",
+      "label": "Platform/package metadata changed",
+      "version": "0.15.0",
+      "value": "Windows; macOS Apple Silicon; Linux; all=40.5 MB",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-20",
+      "type": "version_release",
+      "label": "Blender extension v0.15.0",
+      "version": "0.15.0",
+      "value": "9",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-20",
+      "type": "version_release",
+      "label": "Blender extension v0.15.0",
+      "version": "0.15.0",
+      "value": "10",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-20",
+      "type": "version_release",
+      "label": "Blender extension v0.15.0",
+      "version": "0.15.0",
+      "value": "11",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "github_docs",
+      "label": "Docs update: Make pyvista an optional dependency (#292)",
+      "version": "",
+      "value": "/README.md",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/2caf21aa6a8984372006855a47197daf324378ee"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "github_release",
+      "label": "GitHub release v0.16.0",
+      "version": "v0.16.0",
+      "value": "v0.16.0",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.16.0"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "platform_package_change",
+      "label": "Platform/package metadata changed",
+      "version": "0.15.1",
+      "value": "Windows; macOS Apple Silicon; Linux; Windows=8.1 MB; macOS Apple Silicon=14.8 MB; Linux=18.8 MB",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "version_release",
+      "label": "Blender extension v0.15.1",
+      "version": "0.15.1",
+      "value": "138",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "version_release",
+      "label": "Blender extension v0.15.1",
+      "version": "0.15.1",
+      "value": "139",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "version_release",
+      "label": "Blender extension v0.15.1",
+      "version": "0.15.1",
+      "value": "141",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "version_release",
+      "label": "Blender extension v0.15.1",
+      "version": "0.15.1",
+      "value": "142",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "version_release",
+      "label": "Blender extension v0.15.1",
+      "version": "0.15.1",
+      "value": "143",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-21",
+      "type": "version_release",
+      "label": "Blender extension v0.15.1",
+      "version": "0.15.1",
+      "value": "144",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-22",
+      "type": "github_release",
+      "label": "GitHub release v0.16.1",
+      "version": "v0.16.1",
+      "value": "v0.16.1",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.16.1"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "github_docs",
+      "label": "Docs update: fix(windows): vendor MSVC runtime so wheels load in Blender 4.2/4.5/5.0 (#299) (#300)",
+      "version": "",
+      "value": "/CHANGELOG.md",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/34fdcd35727f5171ac85886c3fa59acc101d0662"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "github_release",
+      "label": "GitHub release v0.16.2",
+      "version": "v0.16.2",
+      "value": "v0.16.2",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.16.2"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "platform_package_change",
+      "label": "Platform/package metadata changed",
+      "version": "0.16.2",
+      "value": "Windows; macOS Apple Silicon; Linux; Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "1828",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "1834",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "1913",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2009",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2086",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2155",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2251",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2310",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2385",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2456",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2542",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2616",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2690",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2786",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2866",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2924",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "2988",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "3080",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-23",
+      "type": "version_release",
+      "label": "Blender extension v0.16.2",
+      "version": "0.16.2",
+      "value": "3162",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-05-24",
+      "type": "github_docs",
+      "label": "Docs update: build: bump pybind11, scikit-build-core, CMake floor (closes #304) (#314)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/ea997b257c80ad8acec88b3105ebe6f5d1cf3f2c"
+    },
+    {
+      "date": "2026-06-14",
+      "type": "review",
+      "label": "5-star review for v0.16.2",
+      "version": "v0.16.2",
+      "value": "5",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
+    },
+    {
+      "date": "2026-06-15",
+      "type": "github_docs",
+      "label": "Docs update: deps: migrate pytest-codeblocks to pytest-examples for doc code blocks",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/bfdcd4139d0ae0cd8cbd323d2c21ae79500f3405"
+    },
+    {
+      "date": "2026-06-19",
+      "type": "review",
+      "label": "5-star review for v0.16.2",
+      "version": "v0.16.2",
+      "value": "5",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
+    }
+  ]
+}
