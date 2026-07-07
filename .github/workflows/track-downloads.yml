@@ -5,6 +5,13 @@ on:
     - cron: "17 6 * * *" # 06:17 UTC daily
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
 jobs:
   track:
     runs-on: ubuntu-latest
@@ -18,3 +25,26 @@ jobs:
           GIST_ID: ${{ secrets.GIST_ID }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         run: uv run --no-project --python 3.14 scripts/track_downloads.py
+
+      - name: Publish stats JSON to gh-pages
+        env:
+          GIST_ID: ${{ secrets.GIST_ID }}
+          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
+        run: |
+          gh gist view "$GIST_ID" --filename mmgpy_blender_stats.json > blender-extension-stats.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages:gh-pages
+          git worktree add gh-pages-data gh-pages
+
+          cp blender-extension-stats.json gh-pages-data/blender-extension-stats.json
+          cd gh-pages-data
+          git add blender-extension-stats.json
+
+          if git diff --cached --quiet; then
+            echo "gh-pages stats already up to date"
+          else
+            git commit -m "Update Blender extension stats"
+            git push origin HEAD:gh-pages
+          fi

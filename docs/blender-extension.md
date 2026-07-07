@@ -22,7 +22,6 @@ N-panel.
 <div
   id="blender-extension-stats"
   class="mmgpy-extension-stats"
-  data-stats-url="https://gist.githubusercontent.com/kmarchais/35f450e406e3e1e6762d48591764a0f6/raw/mmgpy_blender_stats.json"
 >
   <p class="mmgpy-empty-state">Loading Blender Extensions stats...</p>
 </div>
