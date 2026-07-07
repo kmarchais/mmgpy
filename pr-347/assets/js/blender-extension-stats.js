@@ -1,7 +1,7 @@
 /**
  * Blender extension marketplace stats renderer.
  *
- * Loads the public stats gist maintained by scripts/track_downloads.py and
+ * Loads the public stats JSON published by the daily tracker to gh-pages and
  * renders a graph-first marketplace pulse on the Blender extension docs page.
  */
 (function () {
@@ -10,14 +10,6 @@
   const root = document.getElementById("blender-extension-stats");
   if (!root) return;
 
-  const GIST_BASE =
-    "https://gist.githubusercontent.com/kmarchais/35f450e406e3e1e6762d48591764a0f6/raw/";
-  const DEFAULT_STATS_URL = GIST_BASE + "mmgpy_blender_stats.json";
-  const CSV_URLS = {
-    daily: GIST_BASE + "mmgpy_downloads.csv",
-    reviews: GIST_BASE + "mmgpy_reviews.csv",
-    events: GIST_BASE + "mmgpy_events.csv",
-  };
   const EXTENSION_URL = "https://extensions.blender.org/add-ons/mmgpy/";
   const REVIEWS_URL = EXTENSION_URL + "reviews/";
   const numberFormat = new Intl.NumberFormat();
@@ -73,125 +65,24 @@
     return "\u2605".repeat(rounded) + "\u2606".repeat(5 - rounded);
   }
 
-  function toInt(value) {
-    if (value === undefined || value === null || value === "") return null;
-    return Number.parseInt(value, 10);
-  }
-
-  function toFloat(value) {
-    if (value === undefined || value === null || value === "") return null;
-    return Number.parseFloat(value);
-  }
-
-  function parseCsv(text) {
-    const rows = [];
-    let row = [];
-    let field = "";
-    let quoted = false;
-
-    for (let index = 0; index < text.length; index += 1) {
-      const char = text[index];
-      const next = text[index + 1];
-      if (quoted) {
-        if (char === '"' && next === '"') {
-          field += '"';
-          index += 1;
-        } else if (char === '"') {
-          quoted = false;
-        } else {
-          field += char;
-        }
-      } else if (char === '"') {
-        quoted = true;
-      } else if (char === ",") {
-        row.push(field);
-        field = "";
-      } else if (char === "\n") {
-        row.push(field);
-        rows.push(row);
-        row = [];
-        field = "";
-      } else if (char !== "\r") {
-        field += char;
-      }
+  function siteRoot() {
+    const hostname = window.location.hostname;
+    if (hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1") {
+      return window.location.origin;
     }
-    if (field || row.length) {
-      row.push(field);
-      rows.push(row);
+    const canonical = document.querySelector("link[rel='canonical']")?.href;
+    if (canonical) {
+      return canonical.split("/").slice(0, 4).join("/");
     }
-
-    const headers = rows.shift() || [];
-    return rows
-      .filter((values) => values.some((value) => value !== ""))
-      .map((values) =>
-        Object.fromEntries(headers.map((header, index) => [header, values[index] || ""])),
-      );
-  }
-
-  async function fetchText(url) {
-    const response = await fetch(url, { cache: "no-cache" });
-    if (!response.ok) throw new Error("HTTP " + response.status + " for " + url);
-    return response.text();
-  }
-
-  function payloadFromCsv(dailyCsv, reviewsCsv, eventsCsv) {
-    const daily = parseCsv(dailyCsv)
-      .map((row) => ({
-        date: row.date,
-        downloads: toInt(row.downloads),
-        reviews: toInt(row.reviews),
-        rating: toFloat(row.rating),
-        current_version: row.current_version || "",
-        updated_at: row.updated_at || "",
-        compatibility: row.compatibility || "",
-        platforms: row.platforms || "",
-        package_sizes: row.package_sizes || "",
-      }))
-      .filter((row) => row.date && row.downloads !== null)
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    const reviews = parseCsv(reviewsCsv)
-      .map((row) => ({
-        review_id: row.review_id,
-        date: row.date,
-        reviewed_at: row.reviewed_at || "",
-        score: toInt(row.score),
-        version: row.version || "",
-        author: row.author || "",
-        body: row.body || "",
-        source_url: REVIEWS_URL + "#review-" + row.review_id,
-      }))
-      .filter((row) => row.review_id && row.date && row.score !== null)
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    const events = parseCsv(eventsCsv)
-      .filter((row) => row.date && row.type)
-      .sort((a, b) => a.date.localeCompare(b.date) || a.type.localeCompare(b.type));
-
-    return {
-      generated_at: daily.length ? daily[daily.length - 1].date + "T00:00:00Z" : "",
-      source_url: EXTENSION_URL,
-      reviews_url: REVIEWS_URL,
-      daily,
-      reviews,
-      events,
-    };
+    return window.location.origin + "/mmgpy";
   }
 
   async function loadPayload() {
-    const statsUrl = root.dataset.statsUrl || DEFAULT_STATS_URL;
-    try {
-      const response = await fetch(statsUrl, { cache: "no-cache" });
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      return await response.json();
-    } catch (_error) {
-      const [dailyCsv, reviewsCsv, eventsCsv] = await Promise.all([
-        fetchText(CSV_URLS.daily),
-        fetchText(CSV_URLS.reviews),
-        fetchText(CSV_URLS.events),
-      ]);
-      return payloadFromCsv(dailyCsv, reviewsCsv, eventsCsv);
-    }
+    const statsUrl =
+      root.dataset.statsUrl || siteRoot() + "/blender-extension-stats.json";
+    const response = await fetch(statsUrl, { cache: "no-cache" });
+    if (!response.ok) throw new Error("HTTP " + response.status + " for " + statsUrl);
+    return response.json();
   }
 
   function newestFirst(rows) {
