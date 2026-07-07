@@ -4,8 +4,8 @@
 
 .mmgpy-pulse-shell {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
+  gap: 0.9rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .mmgpy-chart-panel,
@@ -49,7 +49,7 @@
 }
 
 .mmgpy-chart-wrap {
-  height: 19rem;
+  height: 23rem;
   position: relative;
 }
 
@@ -76,21 +76,31 @@
 
 .mmgpy-stat-card {
   align-self: stretch;
-  padding: 0.9rem;
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0.85rem 1rem;
 }
 
 .mmgpy-stats-kicker {
   color: var(--md-accent-fg-color);
   font-size: 0.7rem;
   font-weight: 700;
+  grid-column: 1 / -1;
   letter-spacing: 0;
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.45rem;
   text-transform: uppercase;
 }
 
 .mmgpy-stat-row {
   border-top: 1px solid var(--md-default-fg-color--lightest);
+  display: block;
   padding: 0.72rem 0;
+}
+
+.mmgpy-stat-row + .mmgpy-stat-row {
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+  padding-left: 1rem;
 }
 
 .mmgpy-stat-label {
@@ -101,13 +111,13 @@
 
 .mmgpy-stat-value {
   color: var(--md-default-fg-color);
-  flex: 0 0 auto;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.2;
-  max-width: 7rem;
+  margin-top: 0.4rem;
+  max-width: 100%;
   overflow-wrap: anywhere;
-  text-align: right;
+  text-align: left;
 }
 
 .mmgpy-stat-detail,
@@ -125,6 +135,7 @@
 
 .mmgpy-stats-updated {
   font-size: 0.7rem;
+  grid-column: 1 / -1;
   margin: 0.5rem 0 0;
 }
 
@@ -200,19 +211,19 @@
 }
 
 @media (max-width: 58rem) {
-  .mmgpy-pulse-shell {
-    grid-template-columns: 1fr;
-  }
-
   .mmgpy-stat-card {
-    display: grid;
     gap: 0 1rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mmgpy-stats-kicker,
-  .mmgpy-stats-updated {
-    grid-column: 1 / -1;
+  .mmgpy-stat-row + .mmgpy-stat-row {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .mmgpy-stat-row:nth-of-type(2n) {
+    border-left: 1px solid var(--md-default-fg-color--lightest);
+    padding-left: 1rem;
   }
 }
 
@@ -234,10 +245,15 @@
   }
 
   .mmgpy-chart-wrap {
-    height: 16rem;
+    height: 18rem;
   }
 
   .mmgpy-stat-card {
     display: block;
+  }
+
+  .mmgpy-stat-row + .mmgpy-stat-row {
+    border-left: 0;
+    padding-left: 0;
   }
 }
