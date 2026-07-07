@@ -1,5 +1,5 @@
 ---
-icon: lucide/check-square
+icon: material/checkbox-marked-outline
 ---
 
 # MMG C API Binding Coverage

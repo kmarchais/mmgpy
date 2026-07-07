@@ -97,18 +97,26 @@ def test_parse_review_events() -> None:
     """Parse exact review dates from review-page article cards."""
     html = b"""
     <article id="review-7828" class="comment-card mb-2">
+      <header><a href="/reviews-by/3222/">cheteron</a></header>
       <a class="stars-helper" href="/add-ons/mmgpy/reviews/?score=5">
         <span class="stars me-1 " title="Rated 5 out of 5"></span>
       </a>
       <a href="/add-ons/mmgpy/versions/#v0162">v0.16.2</a>
       <a href="#review-7828" title="June 19, 2026, 7:02 p.m.">15 h</a>
+      <div class="comment-card-content">
+        <p>The addon is great, but a tutorial video would be helpful.</p>
+      </div>
     </article>
     <article id="review-7732" class="comment-card mb-2">
+      <header><a href="/reviews-by/2655/">Trantor</a></header>
       <a class="stars-helper" href="/add-ons/mmgpy/reviews/?score=5">
         <span class="stars me-1 " title="Rated 5 out of 5"></span>
       </a>
       <a href="/add-ons/mmgpy/versions/#v0162">v0.16.2</a>
       <a href="#review-7732" title="June 14, 2026, 9:08 a.m.">6 d</a>
+      <div class="comment-card-content">
+        <p>This is what I need. Thank you!</p>
+      </div>
     </article>
     """
 
@@ -121,6 +129,8 @@ def test_parse_review_events() -> None:
             reviewed_at="June 19, 2026, 7:02 p.m.",
             score=5,
             version="v0.16.2",
+            author="cheteron",
+            body="The addon is great, but a tutorial video would be helpful.",
         ),
         ReviewEvent(
             review_id="7732",
@@ -128,6 +138,8 @@ def test_parse_review_events() -> None:
             reviewed_at="June 14, 2026, 9:08 a.m.",
             score=5,
             version="v0.16.2",
+            author="Trantor",
+            body="This is what I need. Thank you!",
         ),
     ]
 
@@ -387,15 +399,18 @@ def test_update_reviews_csv_merges_by_review_id() -> None:
                 reviewed_at="June 19, 2026, 7:02 p.m.",
                 score=5,
                 version="v0.16.2",
+                author="cheteron",
+                body="The addon is great.",
             ),
         ],
     )
 
     assert changed is True
     assert updated == (
-        "review_id,date,reviewed_at,score,version\n"
-        '7732,2026-06-14,"June 14, 2026, 9:08 a.m.",5,v0.16.2\n'
-        '7828,2026-06-19,"June 19, 2026, 7:02 p.m.",5,v0.16.2\n'
+        "review_id,date,reviewed_at,score,version,author,body\n"
+        '7732,2026-06-14,"June 14, 2026, 9:08 a.m.",5,v0.16.2,,\n'
+        '7828,2026-06-19,"June 19, 2026, 7:02 p.m.",5,v0.16.2,'
+        "cheteron,The addon is great.\n"
     )
 
 

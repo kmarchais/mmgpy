@@ -64,6 +64,14 @@ REVIEW_ARTICLE_PATTERN = re.compile(
     rb'<article id="review-(\d+)".*?</article>',
     re.DOTALL,
 )
+REVIEW_AUTHOR_PATTERN = re.compile(
+    rb"<header>.*?<a href=\"/reviews-by/\d+/\">\s*([^<]+)\s*</a>",
+    re.DOTALL,
+)
+REVIEW_BODY_PATTERN = re.compile(
+    rb'<div class="comment-card-content">\s*(.*?)\s*</div>',
+    re.DOTALL,
+)
 REVIEW_SCORE_PATTERN = re.compile(rb'title="Rated (\d+) out of 5"')
 REVIEW_VERSION_PATTERN = re.compile(
     rb'href="/add-ons/mmgpy/versions/#[^"]+">\s*([^<]+)\s*</a>',
@@ -106,6 +114,8 @@ class ReviewEvent:
     reviewed_at: str
     score: int
     version: str
+    author: str = ""
+    body: str = ""
 
 
 @dataclass(frozen=True)
@@ -353,6 +363,8 @@ def parse_review_events(body: bytes) -> list[ReviewEvent]:
         date_match = REVIEW_DATE_PATTERN.search(article)
         score_match = REVIEW_SCORE_PATTERN.search(article)
         version_match = REVIEW_VERSION_PATTERN.search(article)
+        author_match = REVIEW_AUTHOR_PATTERN.search(article)
+        body_match = REVIEW_BODY_PATTERN.search(article)
         if date_match is None or score_match is None or version_match is None:
             msg = "review article markup did not contain date, score, and version"
             raise RuntimeError(msg)
@@ -364,6 +376,8 @@ def parse_review_events(body: bytes) -> list[ReviewEvent]:
                 reviewed_at=reviewed_at,
                 score=int(score_match.group(1)),
                 version=_decode(version_match.group(1)),
+                author=_decode(author_match.group(1)) if author_match else "",
+                body=_text_from_html(body_match.group(1)) if body_match else "",
             ),
         )
     return events
@@ -537,6 +551,8 @@ def _csv_review_events(content: str) -> list[ReviewEvent]:
             reviewed_at=row.get("reviewed_at", ""),
             score=int(row.get("score", "0")),
             version=row.get("version", ""),
+            author=row.get("author", ""),
+            body=row.get("body", ""),
         )
         for row in _csv_rows(content)
         if row.get("review_id") and row.get("date") and row.get("score")
@@ -609,7 +625,7 @@ def update_reviews_csv(
     review_events: list[ReviewEvent],
 ) -> tuple[str, bool]:
     """Merge currently visible public review events into the review-event CSV."""
-    fields = ["review_id", "date", "reviewed_at", "score", "version"]
+    fields = ["review_id", "date", "reviewed_at", "score", "version", "author", "body"]
     rows_by_id = {
         row["review_id"]: {field: row.get(field, "") for field in fields}
         for row in _csv_rows(content)
@@ -622,6 +638,8 @@ def update_reviews_csv(
             "reviewed_at": event.reviewed_at,
             "score": str(event.score),
             "version": event.version,
+            "author": event.author,
+            "body": event.body,
         }
 
     rows = sorted(

@@ -68,6 +68,9 @@ plugins:
             show_symbol_type_heading: true
             show_symbol_type_toc: true
 
+extra_css:
+  - assets/css/blender-extension-stats.css
+
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -126,6 +129,7 @@ nav:
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js
   - assets/js/benchmarks.js
+  - assets/js/blender-extension-stats.js
 
 extra:
   version:

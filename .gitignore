@@ -33,6 +33,9 @@ htmlcov/
 !docs/assets/**/*.png
 !docs/assets/**/*.gif
 
+# Generated during docs builds from the Blender Extensions tracker gist
+docs/assets/data/blender-extension-stats.json
+
 # Allow committed regression baselines for example tests
 !tests/image_cache/**/*.png
 

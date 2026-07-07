@@ -56,6 +56,12 @@ jobs:
 
       - run: uv sync --group docs
 
+      - name: Bundle Blender extension stats
+        env:
+          GIST_ID: ${{ secrets.GIST_ID }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        run: uv run --no-project --python 3.12 scripts/export_blender_extension_stats.py
+
       - name: Configure Git for mike
         run: |
           git config user.name "github-actions[bot]"
