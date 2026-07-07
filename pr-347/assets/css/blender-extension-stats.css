@@ -1,42 +1,56 @@
 .mmgpy-extension-stats {
-  margin: 1.5rem 0 2.25rem;
+  margin: 1.25rem 0 2.25rem;
 }
 
-.mmgpy-stats-header,
+.mmgpy-pulse-shell {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
+}
+
+.mmgpy-chart-panel,
+.mmgpy-stat-card,
+.mmgpy-review-card {
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px;
+}
+
+.mmgpy-chart-panel {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.mmgpy-chart-heading,
 .mmgpy-panel-heading,
 .mmgpy-review-footer,
-.mmgpy-review-meta {
+.mmgpy-review-meta,
+.mmgpy-stat-row {
   align-items: center;
   display: flex;
   gap: 0.75rem;
   justify-content: space-between;
 }
 
-.mmgpy-stats-heading {
-  min-width: 0;
+.mmgpy-chart-heading {
+  margin-bottom: 0.75rem;
 }
 
-.mmgpy-stats-kicker {
-  color: var(--md-accent-fg-color);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  margin: 0 0 0.15rem;
-  text-transform: uppercase;
-}
-
-.mmgpy-stats-summary,
-.mmgpy-panel-heading p,
-.mmgpy-stats-updated,
-.mmgpy-stat-detail,
-.mmgpy-review-version,
-.mmgpy-empty-detail {
-  color: var(--md-default-fg-color--light);
-}
-
-.mmgpy-stats-summary,
-.mmgpy-panel-heading p {
+.mmgpy-chart-heading h3,
+.mmgpy-panel-heading h3 {
+  font-size: 1rem;
   margin: 0;
+}
+
+.mmgpy-chart-heading p {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.78rem;
+  margin: 0.2rem 0 0;
+}
+
+.mmgpy-chart-wrap {
+  height: 19rem;
+  position: relative;
 }
 
 .mmgpy-stats-source,
@@ -45,6 +59,7 @@
   border-radius: 6px;
   color: var(--md-accent-fg-color);
   display: inline-flex;
+  flex: 0 0 auto;
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
@@ -59,88 +74,79 @@
   color: var(--md-accent-bg-color);
 }
 
-.mmgpy-stat-grid {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
-  margin: 1rem 0 0.35rem;
-}
-
-.mmgpy-stat-card,
-.mmgpy-chart-panel,
-.mmgpy-review-card {
-  background: var(--md-code-bg-color);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 8px;
-}
-
 .mmgpy-stat-card {
-  min-height: 7rem;
-  padding: 0.85rem;
+  align-self: stretch;
+  padding: 0.9rem;
 }
 
-.mmgpy-stat-label {
-  color: var(--md-default-fg-color--light);
+.mmgpy-stats-kicker {
+  color: var(--md-accent-fg-color);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0;
+  margin: 0 0 0.35rem;
   text-transform: uppercase;
+}
+
+.mmgpy-stat-row {
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  padding: 0.72rem 0;
+}
+
+.mmgpy-stat-label {
+  color: var(--md-default-fg-color);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .mmgpy-stat-value {
   color: var(--md-default-fg-color);
-  font-size: 1.55rem;
+  flex: 0 0 auto;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1.15;
-  margin-top: 0.35rem;
+  line-height: 1.2;
+  max-width: 7rem;
   overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.mmgpy-stat-detail,
+.mmgpy-stats-updated,
+.mmgpy-review-version,
+.mmgpy-empty-detail {
+  color: var(--md-default-fg-color--light);
 }
 
 .mmgpy-stat-detail {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   line-height: 1.35;
-  margin-top: 0.45rem;
+  margin-top: 0.15rem;
 }
 
 .mmgpy-stats-updated {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   margin: 0.5rem 0 0;
 }
 
-.mmgpy-chart-panel,
 .mmgpy-reviews-section {
   margin-top: 1.5rem;
-}
-
-.mmgpy-chart-panel {
-  padding: 1rem;
 }
 
 .mmgpy-panel-heading {
   margin-bottom: 0.75rem;
 }
 
-.mmgpy-panel-heading h3 {
-  font-size: 1rem;
-  margin: 0;
-}
-
-.mmgpy-chart-wrap {
-  height: 20rem;
-  position: relative;
-}
-
 .mmgpy-review-grid {
   display: grid;
   gap: 0.85rem;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
 }
 
 .mmgpy-review-card {
   display: flex;
   flex-direction: column;
-  min-height: 11rem;
-  padding: 0.9rem;
+  min-height: 9.5rem;
+  padding: 0.85rem;
 }
 
 .mmgpy-review-meta {
@@ -149,14 +155,14 @@
 }
 
 .mmgpy-review-score {
-  color: #e79b20;
-  font-size: 0.85rem;
+  color: #f0b400;
+  font-size: 0.82rem;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
 .mmgpy-review-version {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   line-height: 1.35;
   text-align: right;
 }
@@ -164,24 +170,20 @@
 .mmgpy-review-body {
   color: var(--md-default-fg-color);
   flex: 1;
-  font-size: 0.82rem;
-  line-height: 1.55;
-  margin: 0.8rem 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 0.7rem 0;
 }
 
 .mmgpy-review-footer {
   border-top: 1px solid var(--md-default-fg-color--lightest);
   color: var(--md-default-fg-color--light);
-  font-size: 0.72rem;
-  padding-top: 0.7rem;
+  font-size: 0.7rem;
+  padding-top: 0.65rem;
 }
 
 .mmgpy-review-footer a {
   font-weight: 700;
-}
-
-.mmgpy-review-link {
-  margin-top: 0.9rem;
 }
 
 .mmgpy-empty-state {
@@ -197,8 +199,25 @@
   margin-top: 0.35rem;
 }
 
+@media (max-width: 58rem) {
+  .mmgpy-pulse-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .mmgpy-stat-card {
+    display: grid;
+    gap: 0 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mmgpy-stats-kicker,
+  .mmgpy-stats-updated {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 42rem) {
-  .mmgpy-stats-header,
+  .mmgpy-chart-heading,
   .mmgpy-panel-heading {
     align-items: flex-start;
     flex-direction: column;
@@ -216,5 +235,9 @@
 
   .mmgpy-chart-wrap {
     height: 16rem;
+  }
+
+  .mmgpy-stat-card {
+    display: block;
   }
 }

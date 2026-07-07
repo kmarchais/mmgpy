@@ -1,8 +1,8 @@
 /**
  * Blender extension marketplace stats renderer.
  *
- * Consumes the static JSON asset exported by scripts/export_blender_extension_stats.py
- * and renders summary metrics, a download trend, and public review cards.
+ * Loads the public stats gist maintained by scripts/track_downloads.py and
+ * renders a graph-first marketplace pulse on the Blender extension docs page.
  */
 (function () {
   "use strict";
@@ -10,25 +10,29 @@
   const root = document.getElementById("blender-extension-stats");
   if (!root) return;
 
-  const statsUrl = new URL(
-    root.dataset.statsUrl || "../assets/data/blender-extension-stats.json",
-    window.location.href,
-  );
+  const GIST_BASE =
+    "https://gist.githubusercontent.com/kmarchais/35f450e406e3e1e6762d48591764a0f6/raw/";
+  const DEFAULT_STATS_URL = GIST_BASE + "mmgpy_blender_stats.json";
+  const CSV_URLS = {
+    daily: GIST_BASE + "mmgpy_downloads.csv",
+    reviews: GIST_BASE + "mmgpy_reviews.csv",
+    events: GIST_BASE + "mmgpy_events.csv",
+  };
+  const EXTENSION_URL = "https://extensions.blender.org/add-ons/mmgpy/";
+  const REVIEWS_URL = EXTENSION_URL + "reviews/";
   const numberFormat = new Intl.NumberFormat();
 
   function getThemeColors() {
     const isDark =
       document.body.getAttribute("data-md-color-scheme") === "slate";
     return {
-      text: isDark ? "#d8d8d8" : "#222222",
-      muted: isDark ? "rgba(255,255,255,0.62)" : "rgba(0,0,0,0.56)",
-      grid: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-      downloads: "#d0472f",
-      downloadsFill: isDark
-        ? "rgba(208,71,47,0.22)"
-        : "rgba(208,71,47,0.14)",
-      reviews: "#f2a900",
-      releases: "#3f7cac",
+      text: isDark ? "#e4e2ea" : "#202124",
+      muted: isDark ? "rgba(255,255,255,0.62)" : "rgba(0,0,0,0.58)",
+      grid: isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)",
+      line: "#f0b400",
+      lineFill: isDark ? "rgba(240,180,0,0.18)" : "rgba(240,180,0,0.14)",
+      review: "#ffca28",
+      release: "#5aa6ff",
     };
   }
 
@@ -69,6 +73,127 @@
     return "\u2605".repeat(rounded) + "\u2606".repeat(5 - rounded);
   }
 
+  function toInt(value) {
+    if (value === undefined || value === null || value === "") return null;
+    return Number.parseInt(value, 10);
+  }
+
+  function toFloat(value) {
+    if (value === undefined || value === null || value === "") return null;
+    return Number.parseFloat(value);
+  }
+
+  function parseCsv(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let quoted = false;
+
+    for (let index = 0; index < text.length; index += 1) {
+      const char = text[index];
+      const next = text[index + 1];
+      if (quoted) {
+        if (char === '"' && next === '"') {
+          field += '"';
+          index += 1;
+        } else if (char === '"') {
+          quoted = false;
+        } else {
+          field += char;
+        }
+      } else if (char === '"') {
+        quoted = true;
+      } else if (char === ",") {
+        row.push(field);
+        field = "";
+      } else if (char === "\n") {
+        row.push(field);
+        rows.push(row);
+        row = [];
+        field = "";
+      } else if (char !== "\r") {
+        field += char;
+      }
+    }
+    if (field || row.length) {
+      row.push(field);
+      rows.push(row);
+    }
+
+    const headers = rows.shift() || [];
+    return rows
+      .filter((values) => values.some((value) => value !== ""))
+      .map((values) =>
+        Object.fromEntries(headers.map((header, index) => [header, values[index] || ""])),
+      );
+  }
+
+  async function fetchText(url) {
+    const response = await fetch(url, { cache: "no-cache" });
+    if (!response.ok) throw new Error("HTTP " + response.status + " for " + url);
+    return response.text();
+  }
+
+  function payloadFromCsv(dailyCsv, reviewsCsv, eventsCsv) {
+    const daily = parseCsv(dailyCsv)
+      .map((row) => ({
+        date: row.date,
+        downloads: toInt(row.downloads),
+        reviews: toInt(row.reviews),
+        rating: toFloat(row.rating),
+        current_version: row.current_version || "",
+        updated_at: row.updated_at || "",
+        compatibility: row.compatibility || "",
+        platforms: row.platforms || "",
+        package_sizes: row.package_sizes || "",
+      }))
+      .filter((row) => row.date && row.downloads !== null)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const reviews = parseCsv(reviewsCsv)
+      .map((row) => ({
+        review_id: row.review_id,
+        date: row.date,
+        reviewed_at: row.reviewed_at || "",
+        score: toInt(row.score),
+        version: row.version || "",
+        author: row.author || "",
+        body: row.body || "",
+        source_url: REVIEWS_URL + "#review-" + row.review_id,
+      }))
+      .filter((row) => row.review_id && row.date && row.score !== null)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const events = parseCsv(eventsCsv)
+      .filter((row) => row.date && row.type)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.type.localeCompare(b.type));
+
+    return {
+      generated_at: daily.length ? daily[daily.length - 1].date + "T00:00:00Z" : "",
+      source_url: EXTENSION_URL,
+      reviews_url: REVIEWS_URL,
+      daily,
+      reviews,
+      events,
+    };
+  }
+
+  async function loadPayload() {
+    const statsUrl = root.dataset.statsUrl || DEFAULT_STATS_URL;
+    try {
+      const response = await fetch(statsUrl, { cache: "no-cache" });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return await response.json();
+    } catch (_error) {
+      const [dailyCsv, reviewsCsv, eventsCsv] = await Promise.all([
+        fetchText(CSV_URLS.daily),
+        fetchText(CSV_URLS.reviews),
+        fetchText(CSV_URLS.events),
+      ]);
+      return payloadFromCsv(dailyCsv, reviewsCsv, eventsCsv);
+    }
+  }
+
   function newestFirst(rows) {
     return [...rows].sort((a, b) => {
       const dateCompare = String(b.date).localeCompare(String(a.date));
@@ -88,117 +213,64 @@
     return laterIndex === -1 ? daily.length - 1 : laterIndex;
   }
 
-  function appendMetric(grid, label, value, detail) {
-    const card = createElement("div", "mmgpy-stat-card");
-    card.appendChild(createElement("div", "mmgpy-stat-label", label));
-    card.appendChild(createElement("div", "mmgpy-stat-value", value));
-    if (detail) card.appendChild(createElement("div", "mmgpy-stat-detail", detail));
-    grid.appendChild(card);
-  }
-
-  function renderHeader(parent, payload, latest) {
-    const header = createElement("div", "mmgpy-stats-header");
-    const copy = createElement("div", "mmgpy-stats-heading");
-    copy.appendChild(createElement("p", "mmgpy-stats-kicker", "Marketplace pulse"));
-    copy.appendChild(
-      createElement(
-        "p",
-        "mmgpy-stats-summary",
-        "Daily Blender Extensions stats with public review signals.",
-      ),
-    );
-    header.appendChild(copy);
-
-    const source = createElement("a", "mmgpy-stats-source", "Open listing");
-    source.href = payload.source_url || "https://extensions.blender.org/add-ons/mmgpy/";
-    source.target = "_blank";
-    source.rel = "noopener";
-    header.appendChild(source);
-    parent.appendChild(header);
-
-    const grid = createElement("div", "mmgpy-stat-grid");
-    const first = payload.daily[0];
-    const gained =
-      first && latest.downloads !== undefined
-        ? latest.downloads - first.downloads
-        : null;
-    appendMetric(
-      grid,
-      "Downloads",
-      formatNumber(latest.downloads),
-      gained && gained > 0
-        ? "+" + formatNumber(gained) + " since " + formatDate(first.date)
-        : "Current marketplace total",
-    );
-    appendMetric(
-      grid,
-      "Reviews",
-      formatNumber(latest.reviews ?? payload.reviews.length),
-      formatRating(latest.rating) + " average rating",
-    );
-    appendMetric(
-      grid,
-      "Current version",
-      normalizeVersion(latest.current_version),
-      latest.compatibility || "Blender Extensions listing",
-    );
-    appendMetric(
-      grid,
-      "Platforms",
-      latest.platforms || "Windows, macOS, Linux",
-      latest.package_sizes || "Bundled extension zips",
-    );
-    parent.appendChild(grid);
-
-    if (payload.generated_at) {
-      parent.appendChild(
-        createElement(
-          "p",
-          "mmgpy-stats-updated",
-          "Stats asset generated " +
-            new Date(payload.generated_at).toLocaleString(undefined, {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }),
-        ),
-      );
-    }
+  function appendMetric(parent, label, value, detail) {
+    const item = createElement("div", "mmgpy-stat-row");
+    const copy = createElement("div", "");
+    copy.appendChild(createElement("div", "mmgpy-stat-label", label));
+    copy.appendChild(createElement("div", "mmgpy-stat-detail", detail || ""));
+    item.appendChild(copy);
+    item.appendChild(createElement("div", "mmgpy-stat-value", value));
+    parent.appendChild(item);
   }
 
   function renderChart(parent, payload) {
-    const panel = createElement("div", "mmgpy-chart-panel");
-    const heading = createElement("div", "mmgpy-panel-heading");
-    heading.appendChild(createElement("h3", "", "Download trend"));
-    heading.appendChild(
+    const daily = payload.daily;
+    const latest = daily[daily.length - 1];
+    const first = daily[0];
+    const gained = latest.downloads - first.downloads;
+    const panel = createElement("section", "mmgpy-chart-panel");
+    const heading = createElement("div", "mmgpy-chart-heading");
+    const copy = createElement("div", "");
+    copy.appendChild(createElement("h3", "", "Downloads over time"));
+    copy.appendChild(
       createElement(
         "p",
         "",
-        "Review and release markers are plotted on the cumulative download line.",
+        daily.length +
+          " tracker samples since " +
+          formatDate(first.date) +
+          (gained > 0 ? " · +" + formatNumber(gained) + " downloads" : ""),
       ),
     );
+    heading.appendChild(copy);
+
+    const listing = createElement("a", "mmgpy-stats-source", "Open listing");
+    listing.href = payload.source_url || EXTENSION_URL;
+    listing.target = "_blank";
+    listing.rel = "noopener";
+    heading.appendChild(listing);
     panel.appendChild(heading);
 
-    if (!window.Chart || payload.daily.length < 2) {
+    if (!window.Chart || daily.length < 2) {
       panel.appendChild(
         createElement(
           "p",
           "mmgpy-empty-state",
-          "Historical download data will appear here after the tracker has at least two samples.",
+          "Historical download data will appear after the tracker has at least two samples.",
         ),
       );
       parent.appendChild(panel);
       return;
     }
 
-    const canvasWrap = createElement("div", "mmgpy-chart-wrap");
+    const chartWrap = createElement("div", "mmgpy-chart-wrap");
     const canvas = document.createElement("canvas");
-    canvas.setAttribute("aria-label", "Blender extension download trend");
-    canvasWrap.appendChild(canvas);
-    panel.appendChild(canvasWrap);
+    canvas.setAttribute("aria-label", "Blender extension cumulative downloads");
+    chartWrap.appendChild(canvas);
+    panel.appendChild(chartWrap);
     parent.appendChild(panel);
 
     const colors = getThemeColors();
-    const daily = payload.daily;
     const releaseEvents = payload.events.filter(
       (event) => event.type === "version_release",
     );
@@ -230,20 +302,20 @@
               y: row.downloads,
               row,
             })),
-            borderColor: colors.downloads,
-            backgroundColor: colors.downloadsFill,
-            borderWidth: 2,
-            pointRadius: 2,
+            borderColor: colors.line,
+            backgroundColor: colors.lineFill,
+            borderWidth: 3,
+            pointRadius: 0,
             pointHoverRadius: 5,
             fill: true,
-            tension: 0.28,
+            tension: 0.24,
           },
           {
             label: "Reviews",
             type: "scatter",
             data: reviewMarkers,
-            borderColor: colors.reviews,
-            backgroundColor: colors.reviews,
+            borderColor: colors.review,
+            backgroundColor: colors.review,
             pointRadius: 6,
             pointHoverRadius: 8,
             pointStyle: "star",
@@ -252,8 +324,8 @@
             label: "Releases",
             type: "scatter",
             data: releaseMarkers,
-            borderColor: colors.releases,
-            backgroundColor: colors.releases,
+            borderColor: colors.release,
+            backgroundColor: colors.release,
             pointRadius: 5,
             pointHoverRadius: 7,
             pointStyle: "triangle",
@@ -266,6 +338,7 @@
         interaction: { intersect: false, mode: "nearest" },
         plugins: {
           legend: {
+            align: "end",
             labels: { color: colors.text, boxWidth: 12, usePointStyle: true },
           },
           tooltip: {
@@ -298,7 +371,7 @@
             max: daily.length - 1,
             ticks: {
               color: colors.muted,
-              maxTicksLimit: 6,
+              maxTicksLimit: 7,
               callback: (value) => {
                 const row = daily[Math.round(value)];
                 return row ? formatDate(row.date).replace(", ", " ") : "";
@@ -319,17 +392,46 @@
     });
   }
 
+  function renderStats(parent, payload) {
+    const latest = payload.daily[payload.daily.length - 1];
+    const card = createElement("aside", "mmgpy-stat-card");
+    card.appendChild(createElement("p", "mmgpy-stats-kicker", "Marketplace pulse"));
+    appendMetric(card, "Downloads", formatNumber(latest.downloads), "Current total");
+    appendMetric(
+      card,
+      "Reviews",
+      formatNumber(latest.reviews ?? payload.reviews.length),
+      formatRating(latest.rating),
+    );
+    appendMetric(
+      card,
+      "Current version",
+      normalizeVersion(latest.current_version),
+      latest.compatibility || "Blender Extensions listing",
+    );
+    appendMetric(
+      card,
+      "Platforms",
+      latest.platforms ? latest.platforms.split(";").length + " OSes" : "3 OSes",
+      latest.platforms || "Windows, macOS, Linux",
+    );
+    if (latest.date) {
+      card.appendChild(
+        createElement("p", "mmgpy-stats-updated", "Updated " + formatDate(latest.date)),
+      );
+    }
+    parent.appendChild(card);
+  }
+
   function renderReviews(parent, payload) {
-    const section = createElement("div", "mmgpy-reviews-section");
+    const section = createElement("section", "mmgpy-reviews-section");
     const heading = createElement("div", "mmgpy-panel-heading");
     heading.appendChild(createElement("h3", "", "Latest reviews"));
-    heading.appendChild(
-      createElement(
-        "p",
-        "",
-        "Public reviews from the Blender Extensions listing.",
-      ),
-    );
+    const reviewsLink = createElement("a", "mmgpy-review-link", "Read all reviews");
+    reviewsLink.href = payload.reviews_url || REVIEWS_URL;
+    reviewsLink.target = "_blank";
+    reviewsLink.rel = "noopener";
+    heading.appendChild(reviewsLink);
     section.appendChild(heading);
 
     if (payload.reviews.length === 0) {
@@ -345,7 +447,7 @@
     }
 
     const grid = createElement("div", "mmgpy-review-grid");
-    for (const review of newestFirst(payload.reviews).slice(0, 4)) {
+    for (const review of newestFirst(payload.reviews).slice(0, 3)) {
       const card = createElement("article", "mmgpy-review-card");
       const meta = createElement("div", "mmgpy-review-meta");
       meta.appendChild(
@@ -355,21 +457,25 @@
         createElement(
           "span",
           "mmgpy-review-version",
-          normalizeVersion(review.version) + " - " + formatDate(review.date),
+          normalizeVersion(review.version) + " · " + formatDate(review.date),
         ),
       );
       card.appendChild(meta);
 
-      if (review.body) {
-        card.appendChild(createElement("p", "mmgpy-review-body", review.body));
-      }
+      card.appendChild(
+        createElement(
+          "p",
+          "mmgpy-review-body",
+          review.body || review.score + " / 5 review for " + normalizeVersion(review.version),
+        ),
+      );
 
       const footer = createElement("div", "mmgpy-review-footer");
       footer.appendChild(
         createElement("span", "", review.author || "Blender Extensions user"),
       );
       const link = createElement("a", "", "View");
-      link.href = review.source_url || payload.reviews_url;
+      link.href = review.source_url || payload.reviews_url || REVIEWS_URL;
       link.target = "_blank";
       link.rel = "noopener";
       footer.appendChild(link);
@@ -377,23 +483,19 @@
       grid.appendChild(card);
     }
     section.appendChild(grid);
-
-    const allReviews = createElement("a", "mmgpy-review-link", "Read all reviews");
-    allReviews.href = payload.reviews_url;
-    allReviews.target = "_blank";
-    allReviews.rel = "noopener";
-    section.appendChild(allReviews);
     parent.appendChild(section);
   }
 
   function render(payload) {
-    const daily = Array.isArray(payload.daily) ? payload.daily : [];
-    const reviews = Array.isArray(payload.reviews) ? payload.reviews : [];
-    const events = Array.isArray(payload.events) ? payload.events : [];
-    const normalizedPayload = { ...payload, daily, reviews, events };
+    const normalizedPayload = {
+      ...payload,
+      daily: Array.isArray(payload.daily) ? payload.daily : [],
+      reviews: Array.isArray(payload.reviews) ? payload.reviews : [],
+      events: Array.isArray(payload.events) ? payload.events : [],
+    };
     root.textContent = "";
 
-    if (daily.length === 0) {
+    if (normalizedPayload.daily.length === 0) {
       root.appendChild(
         createElement(
           "p",
@@ -404,17 +506,14 @@
       return;
     }
 
-    const latest = daily[daily.length - 1];
-    renderHeader(root, normalizedPayload, latest);
-    renderChart(root, normalizedPayload);
+    const shell = createElement("div", "mmgpy-pulse-shell");
+    renderChart(shell, normalizedPayload);
+    renderStats(shell, normalizedPayload);
+    root.appendChild(shell);
     renderReviews(root, normalizedPayload);
   }
 
-  fetch(statsUrl, { cache: "no-cache" })
-    .then((response) => {
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      return response.json();
-    })
+  loadPayload()
     .then(render)
     .catch((error) => {
       root.textContent = "";
@@ -422,7 +521,7 @@
         createElement(
           "p",
           "mmgpy-empty-state",
-          "Blender Extensions stats are not available in this docs build.",
+          "Blender Extensions stats are not available in this browser session.",
         ),
       );
       root.appendChild(createElement("p", "mmgpy-empty-detail", error.message));
