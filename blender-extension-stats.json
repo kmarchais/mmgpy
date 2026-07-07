@@ -489,7 +489,7 @@
     },
     {
       "date": "2026-07-07",
-      "downloads": 3299,
+      "downloads": 3304,
       "reviews": 2,
       "rating": 5.0,
       "current_version": "0.16.2",
@@ -535,23 +535,7 @@
       "type": "version_release",
       "label": "Blender extension v0.14.0",
       "version": "0.14.0",
-      "value": "9",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-16",
-      "type": "version_release",
-      "label": "Blender extension v0.14.0",
-      "version": "0.14.0",
-      "value": "10",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-16",
-      "type": "version_release",
-      "label": "Blender extension v0.14.0",
-      "version": "0.14.0",
-      "value": "11",
+      "value": "",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
     },
     {
@@ -583,23 +567,7 @@
       "type": "version_release",
       "label": "Blender extension v0.15.0",
       "version": "0.15.0",
-      "value": "9",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-20",
-      "type": "version_release",
-      "label": "Blender extension v0.15.0",
-      "version": "0.15.0",
-      "value": "10",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-20",
-      "type": "version_release",
-      "label": "Blender extension v0.15.0",
-      "version": "0.15.0",
-      "value": "11",
+      "value": "",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
     },
     {
@@ -631,47 +599,7 @@
       "type": "version_release",
       "label": "Blender extension v0.15.1",
       "version": "0.15.1",
-      "value": "138",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-21",
-      "type": "version_release",
-      "label": "Blender extension v0.15.1",
-      "version": "0.15.1",
-      "value": "139",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-21",
-      "type": "version_release",
-      "label": "Blender extension v0.15.1",
-      "version": "0.15.1",
-      "value": "141",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-21",
-      "type": "version_release",
-      "label": "Blender extension v0.15.1",
-      "version": "0.15.1",
-      "value": "142",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-21",
-      "type": "version_release",
-      "label": "Blender extension v0.15.1",
-      "version": "0.15.1",
-      "value": "143",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-21",
-      "type": "version_release",
-      "label": "Blender extension v0.15.1",
-      "version": "0.15.1",
-      "value": "144",
+      "value": "",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
     },
     {
@@ -711,159 +639,7 @@
       "type": "version_release",
       "label": "Blender extension v0.16.2",
       "version": "0.16.2",
-      "value": "1828",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "1834",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "1913",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2009",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2086",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2155",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2251",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2310",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2385",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2456",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2542",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2616",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2690",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2786",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2866",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2924",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "2988",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "3080",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "3162",
-      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
-    },
-    {
-      "date": "2026-05-23",
-      "type": "version_release",
-      "label": "Blender extension v0.16.2",
-      "version": "0.16.2",
-      "value": "3168",
+      "value": "",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
     },
     {
