@@ -583,6 +583,50 @@ def test_update_events_csv_preserves_manual_rows() -> None:
     assert updated == existing
 
 
+def test_update_events_csv_replaces_stale_generated_rows() -> None:
+    """Regenerate owned marker rows instead of preserving historical duplicates."""
+    existing = (
+        "date,type,label,version,value,source_url\n"
+        "2026-05-23,version_release,Blender extension v0.16.2,0.16.2,1828,"
+        "https://extensions.blender.org/add-ons/mmgpy/versions/\n"
+        "2026-05-23,version_release,Blender extension v0.16.2,0.16.2,1913,"
+        "https://extensions.blender.org/add-ons/mmgpy/versions/\n"
+        "2026-06-01,promotion,Forum post,,,"
+        "https://example.com/forum\n"
+    )
+
+    updated, changed = update_events_csv(
+        existing,
+        EventSources(
+            daily_csv="date,downloads,reviews,rating\n2026-06-19,1887,2,5.0\n",
+            reviews=[],
+            versions=[
+                VersionEvent(
+                    version="0.16.2",
+                    date="2026-05-23",
+                    published_at="2026-05-23T15:22:00Z",
+                    downloads=2009,
+                    compatibility="Blender 4.2 LTS and newer",
+                    platforms="Windows; macOS Apple Silicon; Linux",
+                    package_sizes="Windows=9.1 MB",
+                    status="Approved",
+                ),
+            ],
+            github_releases=[],
+            github_docs=[],
+        ),
+    )
+
+    assert changed is True
+    assert updated == (
+        "date,type,label,version,value,source_url\n"
+        "2026-05-23,version_release,Blender extension v0.16.2,0.16.2,,"
+        "https://extensions.blender.org/add-ons/mmgpy/versions/\n"
+        "2026-06-01,promotion,Forum post,,,"
+        "https://example.com/forum\n"
+    )
+
+
 def test_public_stats_json_combines_render_inputs() -> None:
     """Expose daily, review, and marker CSVs as one docs-friendly JSON file."""
     content = public_stats_json(

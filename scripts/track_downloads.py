@@ -52,6 +52,15 @@ GITHUB_RELEASES_GIST_FILENAME = "mmgpy_github_releases.csv"
 GITHUB_DOCS_GIST_FILENAME = "mmgpy_github_docs.csv"
 EVENTS_GIST_FILENAME = "mmgpy_events.csv"
 PUBLIC_STATS_GIST_FILENAME = "mmgpy_blender_stats.json"
+GENERATED_EVENT_TYPES = {
+    "review",
+    "version_release",
+    "compatibility_change",
+    "platform_package_change",
+    "github_release",
+    "github_docs",
+    "rating_change",
+}
 DOWNLOADS_PATTERN = re.compile(
     rb"<dt>\s*Downloads\s*</dt>\s*<dd>\s*([\d,]+)\s*</dd>",
     re.DOTALL,
@@ -788,7 +797,6 @@ def generated_event_rows(
                 type="version_release",
                 label=f"Blender extension v{event.version}",
                 version=event.version,
-                value=str(event.downloads),
                 source_url=VERSIONS_URL,
             ).as_row(),
         )
@@ -858,7 +866,11 @@ def update_events_csv(
     rows = [
         {field: row.get(field, "") for field in fields}
         for row in _csv_rows(content)
-        if row.get("date") and row.get("type")
+        if (
+            row.get("date")
+            and row.get("type")
+            and row.get("type") not in GENERATED_EVENT_TYPES
+        )
     ]
     rows.extend(
         generated_event_rows(
