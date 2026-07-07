@@ -17,6 +17,15 @@ N-panel.
       (numpy, pyvista, scipy, vtk, matplotlib, …). No separate `pip
       install` is needed inside Blender's Python.
 
+## Marketplace pulse
+
+<div
+  id="blender-extension-stats"
+  class="mmgpy-extension-stats"
+>
+  <p class="mmgpy-empty-state">Loading Blender Extensions stats...</p>
+</div>
+
 ## Install
 
 ### Option 1 — extensions.blender.org (recommended once published)

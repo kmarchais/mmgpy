@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import json
+
 from scripts.track_downloads import (
     EventSources,
     ExtensionStats,
@@ -18,6 +20,7 @@ from scripts.track_downloads import (
     parse_github_releases,
     parse_review_events,
     parse_version_events,
+    public_stats_json,
     update_daily_csv,
     update_events_csv,
     update_github_docs_csv,
@@ -97,18 +100,26 @@ def test_parse_review_events() -> None:
     """Parse exact review dates from review-page article cards."""
     html = b"""
     <article id="review-7828" class="comment-card mb-2">
+      <header><a href="/reviews-by/3222/">cheteron</a></header>
       <a class="stars-helper" href="/add-ons/mmgpy/reviews/?score=5">
         <span class="stars me-1 " title="Rated 5 out of 5"></span>
       </a>
       <a href="/add-ons/mmgpy/versions/#v0162">v0.16.2</a>
       <a href="#review-7828" title="June 19, 2026, 7:02 p.m.">15 h</a>
+      <div class="comment-card-content">
+        <p>The addon is great, but a tutorial video would be helpful.</p>
+      </div>
     </article>
     <article id="review-7732" class="comment-card mb-2">
+      <header><a href="/reviews-by/2655/">Trantor</a></header>
       <a class="stars-helper" href="/add-ons/mmgpy/reviews/?score=5">
         <span class="stars me-1 " title="Rated 5 out of 5"></span>
       </a>
       <a href="/add-ons/mmgpy/versions/#v0162">v0.16.2</a>
       <a href="#review-7732" title="June 14, 2026, 9:08 a.m.">6 d</a>
+      <div class="comment-card-content">
+        <p>This is what I need. Thank you!</p>
+      </div>
     </article>
     """
 
@@ -121,6 +132,8 @@ def test_parse_review_events() -> None:
             reviewed_at="June 19, 2026, 7:02 p.m.",
             score=5,
             version="v0.16.2",
+            author="cheteron",
+            body="The addon is great, but a tutorial video would be helpful.",
         ),
         ReviewEvent(
             review_id="7732",
@@ -128,6 +141,8 @@ def test_parse_review_events() -> None:
             reviewed_at="June 14, 2026, 9:08 a.m.",
             score=5,
             version="v0.16.2",
+            author="Trantor",
+            body="This is what I need. Thank you!",
         ),
     ]
 
@@ -387,15 +402,18 @@ def test_update_reviews_csv_merges_by_review_id() -> None:
                 reviewed_at="June 19, 2026, 7:02 p.m.",
                 score=5,
                 version="v0.16.2",
+                author="cheteron",
+                body="The addon is great.",
             ),
         ],
     )
 
     assert changed is True
     assert updated == (
-        "review_id,date,reviewed_at,score,version\n"
-        '7732,2026-06-14,"June 14, 2026, 9:08 a.m.",5,v0.16.2\n'
-        '7828,2026-06-19,"June 19, 2026, 7:02 p.m.",5,v0.16.2\n'
+        "review_id,date,reviewed_at,score,version,author,body\n"
+        '7732,2026-06-14,"June 14, 2026, 9:08 a.m.",5,v0.16.2,,\n'
+        '7828,2026-06-19,"June 19, 2026, 7:02 p.m.",5,v0.16.2,'
+        "cheteron,The addon is great.\n"
     )
 
 
@@ -563,3 +581,80 @@ def test_update_events_csv_preserves_manual_rows() -> None:
 
     assert changed is False
     assert updated == existing
+
+
+def test_update_events_csv_replaces_stale_generated_rows() -> None:
+    """Regenerate owned marker rows instead of preserving historical duplicates."""
+    existing = (
+        "date,type,label,version,value,source_url\n"
+        "2026-05-23,version_release,Blender extension v0.16.2,0.16.2,1828,"
+        "https://extensions.blender.org/add-ons/mmgpy/versions/\n"
+        "2026-05-23,version_release,Blender extension v0.16.2,0.16.2,1913,"
+        "https://extensions.blender.org/add-ons/mmgpy/versions/\n"
+        "2026-06-01,promotion,Forum post,,,"
+        "https://example.com/forum\n"
+    )
+
+    updated, changed = update_events_csv(
+        existing,
+        EventSources(
+            daily_csv="date,downloads,reviews,rating\n2026-06-19,1887,2,5.0\n",
+            reviews=[],
+            versions=[
+                VersionEvent(
+                    version="0.16.2",
+                    date="2026-05-23",
+                    published_at="2026-05-23T15:22:00Z",
+                    downloads=2009,
+                    compatibility="Blender 4.2 LTS and newer",
+                    platforms="Windows; macOS Apple Silicon; Linux",
+                    package_sizes="Windows=9.1 MB",
+                    status="Approved",
+                ),
+            ],
+            github_releases=[],
+            github_docs=[],
+        ),
+    )
+
+    assert changed is True
+    assert updated == (
+        "date,type,label,version,value,source_url\n"
+        "2026-05-23,version_release,Blender extension v0.16.2,0.16.2,,"
+        "https://extensions.blender.org/add-ons/mmgpy/versions/\n"
+        "2026-06-01,promotion,Forum post,,,"
+        "https://example.com/forum\n"
+    )
+
+
+def test_public_stats_json_combines_render_inputs() -> None:
+    """Expose daily, review, and marker CSVs as one docs-friendly JSON file."""
+    content = public_stats_json(
+        (
+            "date,downloads,reviews,rating,current_version,updated_at,"
+            "compatibility,platforms,package_sizes\n"
+            "2026-06-19,1887,2,5.0,0.16.2,2026-05-23T15:22:00Z,"
+            "Blender 4.2 LTS and newer,Windows; Linux,Windows=9.1 MB\n"
+        ),
+        (
+            "review_id,date,reviewed_at,score,version,author,body\n"
+            '7828,2026-06-19,"June 19, 2026, 7:02 p.m.",5,v0.16.2,'
+            "cheteron,The addon is great.\n"
+        ),
+        (
+            "date,type,label,version,value,source_url\n"
+            "2026-06-19,review,5-star review for v0.16.2,v0.16.2,5,"
+            "https://extensions.blender.org/add-ons/mmgpy/reviews/\n"
+        ),
+        "2026-07-07T00:00:00Z",
+    )
+
+    payload = json.loads(content)
+
+    assert payload["generated_at"] == "2026-07-07T00:00:00Z"
+    assert payload["source_url"] == "https://extensions.blender.org/add-ons/mmgpy/"
+    assert payload["daily"][0]["downloads"] == 1887
+    assert payload["daily"][0]["rating"] == 5.0
+    assert payload["reviews"][0]["author"] == "cheteron"
+    assert payload["reviews"][0]["body"] == "The addon is great."
+    assert payload["events"][0]["type"] == "review"
