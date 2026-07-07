@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import json
+
 from scripts.track_downloads import (
     EventSources,
     ExtensionStats,
@@ -18,6 +20,7 @@ from scripts.track_downloads import (
     parse_github_releases,
     parse_review_events,
     parse_version_events,
+    public_stats_json,
     update_daily_csv,
     update_events_csv,
     update_github_docs_csv,
@@ -578,3 +581,36 @@ def test_update_events_csv_preserves_manual_rows() -> None:
 
     assert changed is False
     assert updated == existing
+
+
+def test_public_stats_json_combines_render_inputs() -> None:
+    """Expose daily, review, and marker CSVs as one docs-friendly JSON file."""
+    content = public_stats_json(
+        (
+            "date,downloads,reviews,rating,current_version,updated_at,"
+            "compatibility,platforms,package_sizes\n"
+            "2026-06-19,1887,2,5.0,0.16.2,2026-05-23T15:22:00Z,"
+            "Blender 4.2 LTS and newer,Windows; Linux,Windows=9.1 MB\n"
+        ),
+        (
+            "review_id,date,reviewed_at,score,version,author,body\n"
+            '7828,2026-06-19,"June 19, 2026, 7:02 p.m.",5,v0.16.2,'
+            "cheteron,The addon is great.\n"
+        ),
+        (
+            "date,type,label,version,value,source_url\n"
+            "2026-06-19,review,5-star review for v0.16.2,v0.16.2,5,"
+            "https://extensions.blender.org/add-ons/mmgpy/reviews/\n"
+        ),
+        "2026-07-07T00:00:00Z",
+    )
+
+    payload = json.loads(content)
+
+    assert payload["generated_at"] == "2026-07-07T00:00:00Z"
+    assert payload["source_url"] == "https://extensions.blender.org/add-ons/mmgpy/"
+    assert payload["daily"][0]["downloads"] == 1887
+    assert payload["daily"][0]["rating"] == 5.0
+    assert payload["reviews"][0]["author"] == "cheteron"
+    assert payload["reviews"][0]["body"] == "The addon is great."
+    assert payload["events"][0]["type"] == "review"

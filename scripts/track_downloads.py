@@ -51,6 +51,7 @@ VERSIONS_GIST_FILENAME = "mmgpy_versions.csv"
 GITHUB_RELEASES_GIST_FILENAME = "mmgpy_github_releases.csv"
 GITHUB_DOCS_GIST_FILENAME = "mmgpy_github_docs.csv"
 EVENTS_GIST_FILENAME = "mmgpy_events.csv"
+PUBLIC_STATS_GIST_FILENAME = "mmgpy_blender_stats.json"
 DOWNLOADS_PATTERN = re.compile(
     rb"<dt>\s*Downloads\s*</dt>\s*<dd>\s*([\d,]+)\s*</dd>",
     re.DOTALL,
@@ -878,6 +879,99 @@ def update_events_csv(
     return updated, updated != content
 
 
+def _int_or_none(value: str | None) -> int | None:
+    if not value:
+        return None
+    return int(value)
+
+
+def _float_or_none(value: str | None) -> float | None:
+    if not value:
+        return None
+    return float(value)
+
+
+def public_stats_payload(
+    daily_csv: str,
+    reviews_csv: str,
+    events_csv: str,
+    generated_at: str,
+) -> dict[str, Any]:
+    """Build the public JSON payload consumed by the docs page."""
+    daily = []
+    for row in _csv_rows(daily_csv):
+        date = row.get("date", "")
+        downloads = _int_or_none(row.get("downloads"))
+        if not date or downloads is None:
+            continue
+        daily.append(
+            {
+                "date": date,
+                "downloads": downloads,
+                "reviews": _int_or_none(row.get("reviews")),
+                "rating": _float_or_none(row.get("rating")),
+                "current_version": row.get("current_version", ""),
+                "updated_at": row.get("updated_at", ""),
+                "compatibility": row.get("compatibility", ""),
+                "platforms": row.get("platforms", ""),
+                "package_sizes": row.get("package_sizes", ""),
+            },
+        )
+
+    reviews = []
+    for row in _csv_rows(reviews_csv):
+        review_id = row.get("review_id", "")
+        date = row.get("date", "")
+        score = _int_or_none(row.get("score"))
+        if not review_id or not date or score is None:
+            continue
+        reviews.append(
+            {
+                "review_id": review_id,
+                "date": date,
+                "reviewed_at": row.get("reviewed_at", ""),
+                "score": score,
+                "version": row.get("version", ""),
+                "author": row.get("author", ""),
+                "body": row.get("body", ""),
+                "source_url": f"{REVIEWS_URL}#review-{review_id}",
+            },
+        )
+
+    event_fields = ("date", "type", "label", "version", "value", "source_url")
+    events = [
+        {field: row.get(field, "") for field in event_fields}
+        for row in _csv_rows(events_csv)
+        if row.get("date") and row.get("type")
+    ]
+
+    return {
+        "generated_at": generated_at,
+        "source_url": EXTENSION_URL,
+        "reviews_url": REVIEWS_URL,
+        "daily": sorted(daily, key=lambda row: row["date"]),
+        "reviews": sorted(reviews, key=lambda row: (row["date"], row["review_id"])),
+        "events": sorted(events, key=lambda row: (row["date"], row["type"])),
+    }
+
+
+def public_stats_json(
+    daily_csv: str,
+    reviews_csv: str,
+    events_csv: str,
+    generated_at: str,
+) -> str:
+    """Return a stable public JSON representation of the tracked stats."""
+    return (
+        json.dumps(
+            public_stats_payload(daily_csv, reviews_csv, events_csv, generated_at),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n"
+    )
+
+
 def _gist_file_content(gist: dict[str, Any], filename: str) -> str:
     if filename not in gist["files"]:
         if filename in {
@@ -886,6 +980,7 @@ def _gist_file_content(gist: dict[str, Any], filename: str) -> str:
             GITHUB_RELEASES_GIST_FILENAME,
             GITHUB_DOCS_GIST_FILENAME,
             EVENTS_GIST_FILENAME,
+            PUBLIC_STATS_GIST_FILENAME,
         }:
             return ""
         msg = f"gist {os.environ['GIST_ID']} has no file named {filename!r}"
@@ -952,6 +1047,22 @@ def build_gist_file_updates(
         ),
     )
     update_inputs.append((EVENTS_GIST_FILENAME, (events_csv, events_changed)))
+    content_by_name[EVENTS_GIST_FILENAME] = events_csv
+    stats_json = public_stats_json(
+        content_by_name[GIST_FILENAME],
+        content_by_name[REVIEWS_GIST_FILENAME],
+        content_by_name[EVENTS_GIST_FILENAME],
+        f"{today}T00:00:00Z",
+    )
+    update_inputs.append(
+        (
+            PUBLIC_STATS_GIST_FILENAME,
+            (
+                stats_json,
+                stats_json != _gist_file_content(gist, PUBLIC_STATS_GIST_FILENAME),
+            ),
+        ),
+    )
 
     return {
         filename: {"content": content}
