@@ -252,6 +252,14 @@ ignore = [
     "EXE001",  # shebang is fine in scripts
     "PLR2004", # magic values allowed in scripts
     "S603",    # subprocess calls are safe (calling our own executables)
+    "ANN001", "ANN003",                      # one-off render scripts: types optional
+    "C408",                                  # ``dict(...)`` reads better for kwargs bags
+    "D103",                                  # nested helpers don't need docstrings
+    "D205", "D301",                          # docstring style tolerances for scripts
+    "E501",                                  # long lines OK in render configuration
+    "I001",                                  # bpy must precede bmesh; isort can't know
+    "E402",                                  # likewise — import order is load-order-sensitive
+    "PLR0911", "PLR0912", "PLR0914", "PLR0915",  # render scripts are long by nature
     "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
     "PLC2701", "S404", "PLW1514",            # preview imports / IO
     "FURB118", "FURB142", "FURB152",         # preview refactors
