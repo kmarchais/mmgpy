@@ -152,7 +152,8 @@ def test_parse_version_events() -> None:
     html = b"""
     <details open id="v0162">
       <summary>
-        0.16.2
+        <span class="version-string">0.16.2</span>
+        <li class="show-on-collapse"><i class="i-download"></i> 1,828</li>
         <a href="#v0162" title="Saturday 23rd, May 2026 - 15:22">
           May 23rd, 2026
         </a>
@@ -166,9 +167,6 @@ def test_parse_version_events() -> None:
       <li><i class="i-macos"></i> macOS <span>Apple Silicon</span></li>
       <li><i class="i-windows"></i> Windows</li>
       <li><i class="i-linux"></i> Linux</li>
-      <div class="dl-row">
-        <div class="dl-col"><dt>Downloads</dt><dd>1,828</dd></div>
-      </div>
       <div class="dl-row">
         <div class="dl-col">
           <dt>Status</dt><dd><span title="Approved"></span></dd>

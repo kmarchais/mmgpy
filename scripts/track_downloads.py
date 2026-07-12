@@ -91,8 +91,14 @@ VERSION_DETAILS_PATTERN = re.compile(
     rb'<details[^>]*id="v\d+"[^>]*>.*?</details>',
     re.DOTALL,
 )
-VERSION_NUMBER_PATTERN = re.compile(rb"<summary>\s*([0-9.]+)")
+VERSION_NUMBER_PATTERN = re.compile(
+    rb"<summary>.*?([0-9]+(?:\.[0-9]+)+)",
+    re.DOTALL,
+)
 VERSION_DATE_PATTERN = re.compile(rb'href="#v\d+"\s+title="([^"]+)"')
+VERSION_DOWNLOADS_PATTERN = re.compile(
+    rb'<i\s+class="i-download"[^>]*></i>\s*([\d,]+)',
+)
 VERSION_STATUS_PATTERN = re.compile(
     rb"<dt>\s*Status\s*</dt>.*?<span[^>]*title=\"([^\"]+)\"",
     re.DOTALL,
@@ -400,7 +406,9 @@ def parse_version_events(body: bytes) -> list[VersionEvent]:
         details = details_match.group(0)
         version_match = VERSION_NUMBER_PATTERN.search(details)
         date_match = VERSION_DATE_PATTERN.search(details)
-        downloads_match = DOWNLOADS_PATTERN.search(details)
+        downloads_match = VERSION_DOWNLOADS_PATTERN.search(details)
+        if downloads_match is None:
+            downloads_match = DOWNLOADS_PATTERN.search(details)
         if version_match is None or date_match is None or downloads_match is None:
             msg = "version card markup did not contain version, date, and downloads"
             raise RuntimeError(msg)
