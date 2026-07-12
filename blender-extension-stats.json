@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-07T00:00:00Z",
+  "generated_at": "2026-07-12T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -497,6 +497,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-12",
+      "downloads": 3711,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
     }
   ],
   "reviews": [
@@ -673,6 +684,30 @@
       "version": "v0.16.2",
       "value": "5",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
+    },
+    {
+      "date": "2026-07-07",
+      "type": "github_docs",
+      "label": "Docs update: Add Blender extension marketplace stats to docs (#347)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/355f4c33898aeb625e8eb0b370bf4ec5a26f1e72"
+    },
+    {
+      "date": "2026-07-07",
+      "type": "github_docs",
+      "label": "Docs update: Add Blender extension marketplace stats to docs (#347)",
+      "version": "",
+      "value": "/mkdocs.yml",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/355f4c33898aeb625e8eb0b370bf4ec5a26f1e72"
+    },
+    {
+      "date": "2026-07-07",
+      "type": "github_docs",
+      "label": "Docs update: Adopt scikit-build-core 1.0.0 (#346)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/ce48bd4c6c7c0f6753f0f2ed625eba83fbb1c28e"
     }
   ]
 }
