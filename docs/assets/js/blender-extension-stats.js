@@ -50,6 +50,10 @@
     }).format(new Date(value + "T00:00:00Z"));
   }
 
+  function dateValue(value) {
+    return Date.parse(value + "T00:00:00Z");
+  }
+
   function formatRating(value) {
     if (value === null || value === undefined || value === "") return "n/a";
     return Number(value).toFixed(1) + " / 5";
@@ -97,9 +101,9 @@
     const exactIndex = daily.findIndex((row) => row.date === date);
     if (exactIndex !== -1) return exactIndex;
 
-    const target = Date.parse(date + "T00:00:00Z");
+    const target = dateValue(date);
     const laterIndex = daily.findIndex(
-      (row) => Date.parse(row.date + "T00:00:00Z") >= target,
+      (row) => dateValue(row.date) >= target,
     );
     return laterIndex === -1 ? daily.length - 1 : laterIndex;
   }
@@ -168,7 +172,7 @@
     const reviewMarkers = payload.reviews.map((review) => {
       const index = indexForDate(daily, review.date);
       return {
-        x: index,
+        x: dateValue(review.date),
         y: daily[index].downloads,
         review,
       };
@@ -176,7 +180,7 @@
     const releaseMarkers = releaseEvents.map((event) => {
       const index = indexForDate(daily, event.date);
       return {
-        x: index,
+        x: dateValue(event.date),
         y: daily[index].downloads,
         event,
       };
@@ -188,8 +192,8 @@
         datasets: [
           {
             label: "Downloads",
-            data: daily.map((row, index) => ({
-              x: index,
+            data: daily.map((row) => ({
+              x: dateValue(row.date),
               y: row.downloads,
               row,
             })),
@@ -258,14 +262,14 @@
         scales: {
           x: {
             type: "linear",
-            min: 0,
-            max: daily.length - 1,
+            min: dateValue(first.date),
+            max: dateValue(latest.date),
             ticks: {
               color: colors.muted,
               maxTicksLimit: 7,
               callback: (value) => {
-                const row = daily[Math.round(value)];
-                return row ? formatDate(row.date).replace(", ", " ") : "";
+                const date = new Date(Number(value)).toISOString().slice(0, 10);
+                return formatDate(date).replace(", ", " ");
               },
             },
             grid: { color: colors.grid },
