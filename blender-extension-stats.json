@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-12T00:00:00Z",
+  "generated_at": "2026-07-13T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -508,6 +508,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-07-13",
+      "downloads": 3782,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
     }
   ],
   "reviews": [
@@ -708,6 +719,14 @@
       "version": "",
       "value": "/docs/",
       "source_url": "https://github.com/kmarchais/mmgpy/commit/ce48bd4c6c7c0f6753f0f2ed625eba83fbb1c28e"
+    },
+    {
+      "date": "2026-07-12",
+      "type": "github_docs",
+      "label": "Docs update: Fix stats chart dates and release docs deployment (#349)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/08f799fc2e471308ee5a1da3f1af59f612c66893"
     }
   ]
 }
