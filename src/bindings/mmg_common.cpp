@@ -191,8 +191,13 @@ py::dict prepare_levelset_options(const py::dict &options) {
   for (auto item : options) {
     merged[item.first] = item.second;
   }
-  if (!merged.contains("iso") && !merged.contains("isosurf")) {
-    merged["iso"] = py::int_(1);
+  const bool has_iso = merged.contains("iso");
+  const bool has_isosurf = merged.contains("isosurf");
+  if (!has_iso) {
+    merged["iso"] = py::int_(has_isosurf ? 0 : 1);
+  }
+  if (!has_isosurf) {
+    merged["isosurf"] = py::int_(0);
   }
   return merged;
 }

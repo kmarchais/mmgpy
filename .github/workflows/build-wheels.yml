@@ -224,22 +224,18 @@ jobs:
           path: wheelhouse/
       - name: Create venv and install the freshly built wheel
         run: |
-          uv venv .venv
-          # Let uv pick the matching wheel for the venv's Python from
-          # wheelhouse/. We deliberately do NOT `uv sync` here, which would
-          # build mmgpy from source and shadow the wheel under test.
-          # --find-links makes the local wheel win for mmgpy; PyPI is still
-          # used for transitive deps (numpy, pyvista, ...).
-          # mmgpy[pyvista] because the docs codeblocks and examples this
-          # gate validates use pyvista; the slim mmgpy core no longer
-          # pulls pyvista (and therefore Pillow), which crashed
-          # pytest-pyvista's plugin import at module load time.
-          uv pip install --python .venv/bin/python --find-links wheelhouse 'mmgpy[pyvista]'
+          uv venv --python 3.10 .venv
+          shopt -s nullglob
+          wheels=(wheelhouse/mmgpy-*-cp310-cp310-manylinux*.whl)
+          test "${#wheels[@]}" -eq 1
+          # Install the artifact by path so PyPI can never satisfy the mmgpy
+          # requirement. PyPI remains available for runtime dependencies.
+          uv pip install --python .venv/bin/python "${wheels[0]}" 'pyvista>=0.48,<1'
           # fedoo is needed for the elasticity_propagation example.
           uv pip install --python .venv/bin/python pytest pytest-examples pytest-pyvista fedoo
       - name: Verify the installed mmgpy is the wheel
         run: |
-          .venv/bin/python -c "import mmgpy; print(mmgpy.__version__, mmgpy.__file__); assert 'site-packages' in mmgpy.__file__"
+          .venv/bin/python -c "import mmgpy; from mmgpy._mmgpy import MmgMesh3D; print(mmgpy.__version__, mmgpy.__file__); assert 'site-packages' in mmgpy.__file__; assert 'surface_only' in MmgMesh3D.remesh_levelset.__doc__"
       - name: Test documentation code blocks
         env:
           PYVISTA_OFF_SCREEN: "true"

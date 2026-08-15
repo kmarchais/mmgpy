@@ -119,7 +119,7 @@ void set_mesh_options_surface(MMG5_pMesh mesh, MMG5_pSol met,
 
 std::string path_to_string(const py::object &path);
 
-// Enable standard level-set mode unless the caller selected iso or isosurf.
+// Select the requested level-set mode and explicitly clear the inactive mode.
 py::dict prepare_levelset_options(const py::dict &options);
 
 // Build the remesh result dictionary from before/after stats

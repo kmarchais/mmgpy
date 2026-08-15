@@ -53,6 +53,32 @@ class TestLevelset3D:
         assert {2, 3}.issubset(set(boundary_refs))
         assert np.any(np.isclose(mesh.get_vertices()[:, 0], 0.37, atol=1e-8))
 
+    def test_surface_only_mode_does_not_leak_into_next_call(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Each call resets MMG's mutable iso and isosurf mode flags."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+
+        mesh.remesh_levelset(
+            (vertices[:, 0] - 0.37).reshape(-1, 1),
+            surface_only=True,
+            hmax=0.25,
+            verbose=False,
+        )
+        _, surface_only_refs = mesh.get_elements_with_refs()
+        assert set(surface_only_refs) == {0}
+
+        remeshed_vertices = mesh.get_vertices()
+        mesh.remesh_levelset(
+            (remeshed_vertices[:, 0] - 0.63).reshape(-1, 1),
+            hmax=0.25,
+            verbose=False,
+        )
+        _, default_refs = mesh.get_elements_with_refs()
+        assert {2, 3}.issubset(set(default_refs))
+
     def test_remesh_levelset_element_refs(
         self,
         dense_3d_mesh_fine: tuple[np.ndarray, np.ndarray],
