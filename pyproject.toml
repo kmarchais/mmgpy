@@ -154,6 +154,14 @@ markers = [
 [tool.ruff]
 preview = true
 
+[tool.complexipy]
+# Lower this incrementally as the highest-complexity functions are refactored.
+# The UI is currently out of scope.
+paths = ["src/mmgpy"]
+max-complexity-allowed = 21
+exclude = ["ui/**"]
+failed = true
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [

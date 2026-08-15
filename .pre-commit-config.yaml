@@ -33,6 +33,17 @@ repos:
         args: [--fix]
       - id: ruff-format
 
+  - repo: https://github.com/rohaquinlop/complexipy-pre-commit
+    rev: "v7.0.1"
+    hooks:
+      - id: complexipy
+        args: [--plain]
+        files: ^src/mmgpy/.*\.py$
+        exclude: ^src/mmgpy/ui/
+        # Analyze the configured package path so the threshold applies to the
+        # complete non-UI source tree, not only the files staged for this commit.
+        pass_filenames: false
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.21.2
     hooks:
