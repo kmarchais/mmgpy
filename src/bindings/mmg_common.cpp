@@ -186,14 +186,18 @@ std::string path_to_string(const py::object &path) {
   }
 }
 
-py::dict merge_options_with_default(const py::dict &options, const char *key,
-                                    py::object default_value) {
+py::dict prepare_levelset_options(const py::dict &options) {
   py::dict merged;
   for (auto item : options) {
     merged[item.first] = item.second;
   }
-  if (!merged.contains(key)) {
-    merged[key] = default_value;
+  const bool has_iso = merged.contains("iso");
+  const bool has_isosurf = merged.contains("isosurf");
+  if (!has_iso) {
+    merged["iso"] = py::int_(has_isosurf ? 0 : 1);
+  }
+  if (!has_isosurf) {
+    merged["isosurf"] = py::int_(0);
   }
   return merged;
 }

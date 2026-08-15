@@ -725,9 +725,6 @@ Some differences do not correspond to a missing C callable:
   private, unlike MMG3D and MMG2D. The filename setter is bound, but in-memory MMGS parsing
   needs an upstream API change ([#373](https://github.com/kmarchais/mmgpy/issues/373)).
 
-- Boundary-only level-set splitting is already reachable through the mapped `isosurf`
-  parameter, but lacks a first-class convenience API
-  ([#372](https://github.com/kmarchais/mmgpy/issues/372)).
 - Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
   PyVista conversion path does not currently round-trip VTK wedge cells.
 - Native `MMG3D_mmg3dmov` and `MMG2D_mmg2dmov` are skipped because ELAS is not available

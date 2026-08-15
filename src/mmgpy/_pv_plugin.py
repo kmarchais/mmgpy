@@ -236,6 +236,8 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
 
 def _to_pyvista_with_user_fields(
     mesh: _Mesh,
+    *,
+    include_boundary: bool = False,
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Convert *mesh* back to PyVista, restoring any non-MMG point_data.
 
@@ -249,10 +251,15 @@ def _to_pyvista_with_user_fields(
     -------
     pv.UnstructuredGrid or pv.PolyData
         The PyVista dataset with user fields re-attached where their
-        length matches the new vertex count.
+        length matches the new vertex count. When requested, an MMG3D
+        result also includes referenced boundary faces as TRIANGLE cells.
 
     """
-    result = mesh.to_pyvista(include_refs=True, include_edges=True)
+    result = mesh.to_pyvista(
+        include_refs=True,
+        include_edges=True,
+        include_boundary=include_boundary,
+    )
     n_points = result.n_points
     for name, arr in mesh.get_user_fields().items():
         if arr.shape[0] != n_points:
@@ -1108,6 +1115,7 @@ class MmgAccessor:
         self,
         levelset: NDArray[np.float64],
         *,
+        surface_only: bool = False,
         local_sizing: list[Mapping[str, Any]] | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_levelset
     ) -> pv.UnstructuredGrid | pv.PolyData:
@@ -1118,6 +1126,11 @@ class MmgAccessor:
         levelset : ndarray
             Per-vertex level-set field; the zero isosurface becomes an
             explicit boundary in the output mesh.
+        surface_only : bool, default=False
+            If ``True``, split only boundary entities at the isovalue using
+            MMG's ``-lssurf`` / ``*_IPARAM_isosurf`` mode. The interior
+            domain is not split into level-set materials. MMG3D results
+            include the referenced boundary faces as TRIANGLE cells.
         local_sizing : list of dict, optional
             Sizing constraints; see :meth:`remesh`.
         **options : object
@@ -1136,8 +1149,8 @@ class MmgAccessor:
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
         _apply_pending_mmg_config(mesh, self._dataset)
-        mesh.remesh_levelset(levelset, **options)
-        return _to_pyvista_with_user_fields(mesh)
+        mesh.remesh_levelset(levelset, surface_only=surface_only, **options)
+        return _to_pyvista_with_user_fields(mesh, include_boundary=surface_only)
 
     def remesh_optimize(
         self,

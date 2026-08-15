@@ -153,6 +153,41 @@ levelset = vertices[:, 2].reshape(-1, 1)
 discretized = mesh.mmg.remesh_levelset(levelset)
 ```
 
+## Boundary-Only Level-Set Splitting
+
+Set `surface_only=True` to discretize the level set only on the mesh boundary while
+leaving the interior regions unsplit:
+
+<!-- mmgpy-test:skip -->
+
+```python
+boundary_split = mesh.mmg.remesh_levelset(levelset, surface_only=True)
+```
+
+This is MMG's `-lssurf` mode (`*_IPARAM_isosurf`). In 3D it splits boundary faces
+without creating an interior material interface. In 2D and on surface meshes it splits
+the applicable boundary or referenced edges. The default, `surface_only=False`, keeps
+MMG's standard full-domain level-set behavior.
+
+MMG requires the relevant boundary entities and references to be present where the
+selected engine uses them; for example, an MMGS mesh needs explicit referenced boundary
+edges.
+
+For MMG3D, the returned `UnstructuredGrid` contains both tetrahedra and the
+referenced boundary triangles. Select a boundary patch through its cell type and
+reference:
+
+<!-- mmgpy-test:skip -->
+
+```python
+import pyvista as pv
+
+is_patch = (boundary_split.celltypes == pv.CellType.TRIANGLE) & (
+    boundary_split.cell_data["refs"] == 3
+)
+patch = boundary_split.extract_cells(is_patch)
+```
+
 ## Controlling Output Quality
 
 Combine level-set extraction with size parameters:

@@ -1,6 +1,7 @@
 """Tests for level-set discretization functionality."""
 
 import numpy as np
+import pytest
 
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
@@ -28,6 +29,55 @@ class TestLevelset3D:
 
         assert len(new_vertices) > 0
         assert len(new_elements) > 0
+
+    def test_surface_only_splits_boundary_not_volume(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """``surface_only`` splits boundary faces without materializing an interior."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+        levelset = (vertices[:, 0] - 0.37).reshape(-1, 1)
+
+        mesh.remesh_levelset(
+            levelset,
+            surface_only=True,
+            hmax=0.25,
+            verbose=False,
+        )
+
+        _, element_refs = mesh.get_elements_with_refs()
+        _, boundary_refs = mesh.get_triangles_with_refs()
+
+        assert set(element_refs) == {0}
+        assert {2, 3}.issubset(set(boundary_refs))
+        assert np.any(np.isclose(mesh.get_vertices()[:, 0], 0.37, atol=1e-8))
+
+    def test_surface_only_mode_does_not_leak_into_next_call(
+        self,
+        dense_3d_mesh: tuple[np.ndarray, np.ndarray],
+    ) -> None:
+        """Each call resets MMG's mutable iso and isosurf mode flags."""
+        vertices, elements = dense_3d_mesh
+        mesh = MmgMesh3D(vertices, elements)
+
+        mesh.remesh_levelset(
+            (vertices[:, 0] - 0.37).reshape(-1, 1),
+            surface_only=True,
+            hmax=0.25,
+            verbose=False,
+        )
+        _, surface_only_refs = mesh.get_elements_with_refs()
+        assert set(surface_only_refs) == {0}
+
+        remeshed_vertices = mesh.get_vertices()
+        mesh.remesh_levelset(
+            (remeshed_vertices[:, 0] - 0.63).reshape(-1, 1),
+            hmax=0.25,
+            verbose=False,
+        )
+        _, default_refs = mesh.get_elements_with_refs()
+        assert {2, 3}.issubset(set(default_refs))
 
     def test_remesh_levelset_element_refs(
         self,
@@ -187,6 +237,30 @@ class TestLevelset2D:
         assert len(new_vertices) > 0
         assert len(new_triangles) > 0
 
+    def test_surface_only_splits_reference_edges_not_triangles(self) -> None:
+        """MMG2D ``lssurf`` preserves area refs and splits reference edges."""
+        vertices = np.array(
+            [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        mesh = MmgMesh2D()
+        mesh.set_mesh_size(vertices=4, triangles=2)
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles, refs=np.array([4, 8], dtype=np.int64))
+
+        mesh.remesh_levelset(
+            (vertices[:, 0] - 0.37).reshape(-1, 1),
+            surface_only=True,
+            hmax=0.3,
+            verbose=False,
+        )
+
+        _, triangle_refs = mesh.get_triangles_with_refs()
+        _, edge_refs = mesh.get_edges_with_refs()
+        assert set(triangle_refs) == {4, 8}
+        assert {2, 3}.issubset(set(edge_refs))
+
     def test_remesh_levelset_element_refs(
         self,
         dense_2d_mesh_fine: tuple[np.ndarray, np.ndarray],
@@ -277,3 +351,48 @@ class TestLevelsetSurface:
 
         assert len(new_vertices) > 0
         assert len(new_triangles) > 0
+
+    def test_surface_only_splits_reference_edges_not_surface(self) -> None:
+        """MMGS ``lssurf`` splits referenced edges without splitting faces."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ],
+            dtype=np.float64,
+        )
+        triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+        edges = np.array([[0, 1], [1, 2], [2, 3], [3, 0]], dtype=np.int32)
+        mesh = MmgMeshS()
+        mesh.set_mesh_size(vertices=4, triangles=2, edges=4)
+        mesh.set_vertices(vertices)
+        mesh.set_triangles(triangles, refs=np.ones(2, dtype=np.int64))
+        mesh.set_edges(edges, refs=np.ones(4, dtype=np.int64))
+
+        mesh.remesh_levelset(
+            (vertices[:, 0] - 0.37).reshape(-1, 1),
+            surface_only=True,
+            hmax=0.3,
+            verbose=False,
+        )
+
+        _, triangle_refs = mesh.get_triangles_with_refs()
+        _, edge_refs = mesh.get_edges_with_refs()
+        assert set(triangle_refs) == {1}
+        assert {2, 3}.issubset(set(edge_refs))
+
+
+@pytest.mark.parametrize("mesh_type", [MmgMesh3D, MmgMesh2D, MmgMeshS])
+def test_surface_only_rejects_raw_mode_options(
+    mesh_type: type[MmgMesh3D | MmgMesh2D | MmgMeshS],
+) -> None:
+    """The typed mode cannot be combined with MMG's mutually exclusive flags."""
+    mesh = mesh_type()
+    with pytest.raises(TypeError, match="surface_only cannot be combined"):
+        mesh.remesh_levelset(
+            np.empty((0, 1), dtype=np.float64),
+            surface_only=True,
+            iso=1,
+        )

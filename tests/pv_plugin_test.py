@@ -347,6 +347,26 @@ def test_accessor_remesh_levelset_carves_isosurface() -> None:
     assert carved.n_cells > 0
 
 
+def test_accessor_remesh_levelset_surface_only_preserves_volume_refs() -> None:
+    """The accessor exposes boundary-only splitting without raw MMG options."""
+    tets = _dense_tets()
+    levelset = (tets.points[:, 0] - 0.37).reshape(-1, 1).astype(np.float64)
+
+    split = tets.mmg.remesh_levelset(
+        levelset,
+        surface_only=True,
+        hmax=0.25,
+        verbose=False,
+    )
+
+    tetrahedra = split.celltypes == pv.CellType.TETRA
+    boundary_triangles = split.celltypes == pv.CellType.TRIANGLE
+    assert set(split.cell_data["refs"][tetrahedra]) == {0}
+    assert boundary_triangles.any()
+    assert {2, 3}.issubset(set(split.cell_data["refs"][boundary_triangles]))
+    assert np.any(np.isclose(split.points[:, 0], 0.37, atol=1e-8))
+
+
 def test_accessor_save_sol_round_trip(tmp_path: Path) -> None:
     """save_sol followed by load_sol produces a matching scalar field."""
     grid = _make_tet_mesh()

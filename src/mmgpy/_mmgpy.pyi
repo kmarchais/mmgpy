@@ -1242,6 +1242,7 @@ class MmgMesh3D:
         hausd: float | None = None,
         hgrad: float | None = None,
         verbose: int | bool | None = None,
+        surface_only: bool = False,
         iso: int | None = None,
         **kwargs: float | None,
     ) -> dict[str, Any]:
@@ -1268,6 +1269,9 @@ class MmgMesh3D:
             Gradation parameter.
         verbose : int | bool | None
             Verbosity level.
+        surface_only : bool
+            Split only boundary faces, corresponding to MMG's ``-lssurf`` /
+            ``MMG3D_IPARAM_isosurf`` mode. Defaults to ``False``.
         iso : int | None
             Enable level-set mode (default 1).
         **kwargs : float | int | None
@@ -2096,6 +2100,7 @@ class MmgMesh2D:
         hausd: float | None = None,
         hgrad: float | None = None,
         verbose: int | bool | None = None,
+        surface_only: bool = False,
         iso: int | None = None,
         **kwargs: float | None,
     ) -> dict[str, Any]:
@@ -2119,6 +2124,9 @@ class MmgMesh2D:
             Gradation parameter.
         verbose : int | bool | None
             Verbosity level.
+        surface_only : bool
+            Split only boundary edges, corresponding to MMG's ``-lssurf`` /
+            ``MMG2D_IPARAM_isosurf`` mode. Defaults to ``False``.
         iso : int | None
             Enable level-set mode (default 1).
         **kwargs : float | int | None
@@ -2877,6 +2885,7 @@ class MmgMeshS:
         hausd: float | None = None,
         hgrad: float | None = None,
         verbose: int | bool | None = None,
+        surface_only: bool = False,
         iso: int | None = None,
         **kwargs: float | None,
     ) -> dict[str, Any]:
@@ -2900,6 +2909,9 @@ class MmgMeshS:
             Gradation parameter.
         verbose : int | bool | None
             Verbosity level.
+        surface_only : bool
+            Split only referenced boundary edges, corresponding to MMG's
+            ``-lssurf`` / ``MMGS_IPARAM_isosurf`` mode. Defaults to ``False``.
         iso : int | None
             Enable level-set mode (default 1).
         **kwargs : float | int | None

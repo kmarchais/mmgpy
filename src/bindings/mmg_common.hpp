@@ -119,9 +119,8 @@ void set_mesh_options_surface(MMG5_pMesh mesh, MMG5_pSol met,
 
 std::string path_to_string(const py::object &path);
 
-// Helper to merge options with a default value
-py::dict merge_options_with_default(const py::dict &options, const char *key,
-                                    py::object default_value);
+// Select the requested level-set mode and explicitly clear the inactive mode.
+py::dict prepare_levelset_options(const py::dict &options);
 
 // Build the remesh result dictionary from before/after stats
 py::dict build_remesh_result(const RemeshStats &before,

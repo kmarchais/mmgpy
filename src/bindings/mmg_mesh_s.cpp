@@ -1119,7 +1119,7 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
   RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
   set_field("levelset", levelset);
-  py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
+  py::dict ls_options = prepare_levelset_options(options);
   set_mesh_options_surface(mesh, met, ls_options);
 
   // Capture stderr to collect MMG warnings

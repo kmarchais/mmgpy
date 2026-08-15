@@ -916,6 +916,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.UnstructuredGrid: ...
 
 
@@ -925,6 +926,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.PolyData: ...
 
 
@@ -934,6 +936,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.PolyData: ...
 
 
@@ -942,6 +945,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Convert an mmgpy mesh to a PyVista mesh.
 
@@ -957,6 +961,11 @@ def to_pyvista(
         contains only the primary cell type, matching common downstream
         expectations (e.g. matplotlib ``tripcolor``). Set ``True`` for
         round-trip / file-save workflows that must preserve edge markers.
+    include_boundary : bool
+        If ``True`` for an ``MmgMesh3D``, include MMG boundary faces as
+        TRIANGLE cells. Their references share the ``cell_data["refs"]``
+        array with the tetrahedra. Ignored for MMG2D and MMGS, whose
+        triangles are already the primary cells.
 
     Returns
     -------
@@ -985,6 +994,7 @@ def to_pyvista(
             mesh,
             include_refs=include_refs,
             include_edges=include_edges,
+            include_boundary=include_boundary,
         )
     if isinstance(mesh, MmgMesh2D):
         return _mmg2d_to_pyvista(
@@ -1017,18 +1027,62 @@ def _build_lines_array(edges: NDArray[np.int32]) -> NDArray[np.int32]:
     ).ravel()
 
 
+def _get_mmg3d_edges(
+    mesh: MmgMesh3D,
+    *,
+    include_refs: bool,
+    include_edges: bool,
+) -> tuple[NDArray[np.int32], NDArray[np.int64] | None]:
+    """Return optional MMG3D edges and references.
+
+    Returns
+    -------
+    tuple
+        Edge connectivity and, when requested, edge references.
+
+    """
+    if not include_edges:
+        return np.empty((0, 2), dtype=np.int32), None
+    if include_refs:
+        return mesh.get_edges_with_refs()
+    return mesh.get_edges(), None
+
+
+def _get_mmg3d_boundary(
+    mesh: MmgMesh3D,
+    *,
+    include_refs: bool,
+    include_boundary: bool,
+) -> tuple[NDArray[np.int32], NDArray[np.int64] | None]:
+    """Return optional MMG3D boundary triangles and references.
+
+    Returns
+    -------
+    tuple
+        Triangle connectivity and, when requested, triangle references.
+
+    """
+    if not include_boundary:
+        return np.empty((0, 3), dtype=np.int32), None
+    if include_refs:
+        return mesh.get_triangles_with_refs()
+    return mesh.get_triangles(), None
+
+
 def _mmg3d_to_pyvista(
     mesh: MmgMesh3D,
     *,
     include_refs: bool,
     include_edges: bool,
+    include_boundary: bool,
 ) -> pv.UnstructuredGrid:
     """Convert MmgMesh3D to PyVista UnstructuredGrid.
 
     Returns
     -------
     pv.UnstructuredGrid
-        Tetrahedral cells, with refs (and edges) attached when requested.
+        Tetrahedral cells, with refs, boundary triangles, and edges attached
+        when requested.
 
     """
     vertices = mesh.get_vertices()
@@ -1039,23 +1093,31 @@ def _mmg3d_to_pyvista(
         elements = mesh.get_elements()
         refs = None
 
-    edges, edge_refs = (np.empty((0, 2), dtype=np.int32), None)
-    if include_edges:
-        if include_refs:
-            edges, edge_refs = mesh.get_edges_with_refs()
-        else:
-            edges = mesh.get_edges()
+    edges, edge_refs = _get_mmg3d_edges(
+        mesh,
+        include_refs=include_refs,
+        include_edges=include_edges,
+    )
+    triangles, triangle_refs = _get_mmg3d_boundary(
+        mesh,
+        include_refs=include_refs,
+        include_boundary=include_boundary,
+    )
 
     cells_dict: dict[int, NDArray[np.int32]] = {pv.CellType.TETRA: elements}
+    if len(triangles) > 0:
+        cells_dict[pv.CellType.TRIANGLE] = triangles
     if len(edges) > 0:
         cells_dict[pv.CellType.LINE] = edges
     grid = pv.UnstructuredGrid(cells_dict, vertices)
 
     if refs is not None:
+        refs_by_type: list[NDArray[np.int64]] = [refs]
+        if len(triangles) > 0 and triangle_refs is not None:
+            refs_by_type.append(triangle_refs)
         if len(edges) > 0 and edge_refs is not None:
-            grid.cell_data["refs"] = np.concatenate([refs, edge_refs])
-        else:
-            grid.cell_data["refs"] = refs
+            refs_by_type.append(edge_refs)
+        grid.cell_data["refs"] = np.concatenate(refs_by_type)
 
     return grid
 

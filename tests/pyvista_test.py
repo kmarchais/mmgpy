@@ -289,6 +289,37 @@ class TestToPyvista:
 
         np.testing.assert_array_equal(converted_cells, original_elements)
 
+    def test_mmg3d_boundary_triangles_can_be_included(self) -> None:
+        """Boundary triangles and their refs are exposed as mixed VTK cells."""
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=np.float64,
+        )
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        triangles = np.array(
+            [[0, 2, 1], [0, 1, 3], [1, 2, 3], [2, 0, 3]],
+            dtype=np.int32,
+        )
+        mesh = MmgMesh3D()
+        mesh.set_mesh_size(vertices=4, tetrahedra=1, triangles=4)
+        mesh.set_vertices(vertices)
+        mesh.set_tetrahedra(tetrahedra, refs=np.array([7], dtype=np.int64))
+        mesh.set_triangles(triangles, refs=np.array([2, 2, 3, 3], dtype=np.int64))
+
+        grid = to_pyvista(mesh, include_boundary=True)
+        tetra_mask = grid.celltypes == pv.CellType.TETRA
+        triangle_mask = grid.celltypes == pv.CellType.TRIANGLE
+
+        assert tetra_mask.sum() == 1
+        assert triangle_mask.sum() == 4
+        assert grid.cell_data["refs"][tetra_mask].tolist() == [7]
+        assert grid.cell_data["refs"][triangle_mask].tolist() == [2, 2, 3, 3]
+
 
 # Round-trip tests
 
