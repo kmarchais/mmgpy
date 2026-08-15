@@ -1454,6 +1454,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Coverage Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#non-callable-c-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-callable C API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2058,10 +2075,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#potential-future-additions" class="md-nav__link">
+  <a href="#direct-api-candidates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Potential Future Additions
+        Direct API Candidates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-level-differences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability-Level Differences
       
     </span>
   </a>
@@ -2205,6 +2233,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Coverage Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#non-callable-c-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-callable C API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2809,10 +2854,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#potential-future-additions" class="md-nav__link">
+  <a href="#direct-api-candidates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Potential Future Additions
+        Direct API Candidates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-level-differences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability-Level Differences
       
     </span>
   </a>
@@ -2899,41 +2955,124 @@ corresponding Python binding in mmgpy. Functions are sourced from the official M
 <th style="text-align: right;">Total</th>
 <th style="text-align: right;">Bound</th>
 <th style="text-align: right;">Indirect</th>
-<th style="text-align: right;">Not Bound</th>
+<th style="text-align: right;">Candidate</th>
+<th style="text-align: right;">Excluded</th>
+<th style="text-align: right;">Skipped</th>
 <th style="text-align: right;">Functional Coverage</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>MMG3D</td>
-<td style="text-align: right;">142</td>
-<td style="text-align: right;">60</td>
-<td style="text-align: right;">26</td>
-<td style="text-align: right;">56</td>
-<td style="text-align: right;">61%</td>
+<td style="text-align: right;">140</td>
+<td style="text-align: right;">73</td>
+<td style="text-align: right;">48</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">86%</td>
 </tr>
 <tr>
 <td>MMG2D</td>
 <td style="text-align: right;">119</td>
-<td style="text-align: right;">51</td>
+<td style="text-align: right;">62</td>
+<td style="text-align: right;">41</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">15</td>
-<td style="text-align: right;">53</td>
-<td style="text-align: right;">55%</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">87%</td>
 </tr>
 <tr>
 <td>MMGS</td>
-<td style="text-align: right;">110</td>
-<td style="text-align: right;">49</td>
-<td style="text-align: right;">12</td>
-<td style="text-align: right;">49</td>
-<td style="text-align: right;">55%</td>
+<td style="text-align: right;">109</td>
+<td style="text-align: right;">61</td>
+<td style="text-align: right;">37</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">90%</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Functional coverage</strong> = (Bound + Indirect) / Total. "Indirect" means the functionality
 is available in the Python API through an alternative implementation (e.g. direct struct
 access or reimplementation).</p>
-<p>Many "not bound" functions fall into categories that are intentionally excluded:</p>
+<p>The table is checked against the callable declarations in the public headers of the MMG
+version pinned by <code>pyproject.toml</code>; a mismatched source tree is rejected. Direct C/C++
+symbol use is detected automatically; indirect and intentionally omitted functionality
+stays explicitly classified here. Run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>scripts/check_mmg_api_coverage.py
+</span></code></pre></div>
+<p>The command fails if MMG adds or removes a public callable, a bound symbol has a stale
+status, or the summary drifts. Here, <strong>Bound</strong> means that the binding implementation calls
+the C symbol; it does not promise a one-to-one public Python method. Memory-management
+symbols such as <code>Free_allSols</code> remain internal implementation details. After changing
+bindings, <code>--write</code> updates direct-binding statuses and counts. Newly introduced MMG
+callables always require a human-written row and rationale rather than receiving a guessed
+classification.</p>
+<p>Public parameter enums are audited too. All 101 parameters in MMG 5.8.0 are accounted
+for: 97 are mapped directly, while native Lagrangian motion (<code>MMG3D_IPARAM_lag</code> and
+<code>MMG2D_IPARAM_lag</code>) and Scotch renumbering (<code>MMG3D_IPARAM_renum</code> and
+<code>MMGS_IPARAM_renum</code>) have portable mmgpy alternatives. The checker fails if a new MMG
+parameter is not mapped or explicitly classified.</p>
+<h3 id="non-callable-c-api">Non-callable C API<a class="headerlink" href="#non-callable-c-api" title="Permanent link">&para;</a></h3>
+<p>The public common header also exposes C representation details. These are accounted for at
+the capability level, but are not included in the callable totals above:</p>
+<table>
+<thead>
+<tr>
+<th>C API group</th>
+<th>Disposition</th>
+<th>Python treatment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MMG5_type</code> solution enum</td>
+<td>Indirect</td>
+<td>Inferred from NumPy field shape and exposed through field arrays</td>
+</tr>
+<tr>
+<td><code>MMG5_entities</code> enum</td>
+<td>Indirect</td>
+<td>Represented by mesh kind and typed element methods</td>
+</tr>
+<tr>
+<td><code>MMG5_Format</code> enum</td>
+<td>Indirect</td>
+<td>Selected from path extensions by native MMG or PyVista-backed I/O</td>
+</tr>
+<tr>
+<td><code>MMG5_SUCCESS</code>, <code>MMG5_LOWFAILURE</code>, <code>MMG5_STRONGFAILURE</code></td>
+<td>Indirect</td>
+<td>Converted to results, warnings, and Python exceptions</td>
+</tr>
+<tr>
+<td><code>MMG5_MMAT_*</code> constants</td>
+<td>Indirect</td>
+<td>Multi-material split behavior is exposed through typed methods</td>
+</tr>
+<tr>
+<td><code>MMG5_ARG_*</code> variadic tags</td>
+<td>Excluded</td>
+<td>C allocation protocol hidden by constructors and RAII</td>
+</tr>
+<tr>
+<td><code>MMG5_*</code> structs and pointer typedefs</td>
+<td>Excluded</td>
+<td>Private ABI representation; exposing it would bypass validation and ownership safety</td>
+</tr>
+<tr>
+<td>Compile-time limits and buffer-size macros</td>
+<td>Excluded</td>
+<td>Implementation limits, not stable Python API</td>
+</tr>
+</tbody>
+</table>
+<p>The deterministic checker covers callable declarations and parameter enums. The grouped
+ABI dispositions above are a reviewed policy boundary rather than a promise to mirror C
+types and macros one-to-one.</p>
+<p>Excluded functions fall into categories that should not become one-to-one Python methods:</p>
 <ul>
 <li><strong>Bulk variants</strong>: Individual element setters/getters are used in loops instead of bulk
   C functions, or bulk getters access internal structures directly. The Python API still
@@ -2963,8 +3102,16 @@ access or reimplementation).</p>
 <td>Functionality is available via alternative implementation (direct struct access, reimplementation, or loop over individual calls)</td>
 </tr>
 <tr>
-<td>Not bound</td>
-<td>Functionality is not exposed to Python</td>
+<td>Candidate</td>
+<td>User-facing MMG capability is missing and is reasonable to expose</td>
+</tr>
+<tr>
+<td>Excluded</td>
+<td>Deliberately not ported: internal plumbing, redundant C API shape, legacy helper, or unsafe low-level operation</td>
+</tr>
+<tr>
+<td>Skipped</td>
+<td>Upstream capability cannot be shipped consistently in supported mmgpy builds</td>
 </tr>
 </tbody>
 </table>
@@ -2987,12 +3134,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Init_fileNames</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Called internally by <code>Init_mesh</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_Init_parameters</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Called internally by <code>Init_mesh</code></td>
 </tr>
 <tr>
@@ -3002,22 +3149,22 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Free_structures</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMG3D_Free_names</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMG3D_Free_allSols</code></td>
-<td>Not bound</td>
-<td><code>Free_all</code> used instead</td>
+<td>Bound</td>
+<td>Internal cleanup for multi-solution I/O; no Python method</td>
 </tr>
 <tr>
 <td><code>MMG3D_Free_solutions</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 </tbody>
@@ -3044,12 +3191,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Chk_meshData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Called internally by MMG before remeshing</td>
 </tr>
 <tr>
 <td><code>MMG3D_Set_constantSize</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Could be useful; use <code>hsiz</code> parameter as alternative</td>
 </tr>
 </tbody>
@@ -3091,8 +3238,8 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Add_vertex</code></td>
-<td>Not bound</td>
-<td>Dynamic vertex addition; could be useful for mesh construction</td>
+<td>Indirect</td>
+<td>Python constructs meshes from complete arrays instead</td>
 </tr>
 <tr>
 <td><code>MMG3D_Set_normalAtVertex</code></td>
@@ -3143,8 +3290,8 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Add_tetrahedron</code></td>
-<td>Not bound</td>
-<td>Dynamic element addition; could be useful for mesh construction</td>
+<td>Indirect</td>
+<td>Python constructs meshes from complete arrays instead</td>
 </tr>
 </tbody>
 </table>
@@ -3405,7 +3552,7 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Get_solSize</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Could be useful for querying solution state</td>
 </tr>
 <tr>
@@ -3482,33 +3629,33 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMG3D_Set_solsAtVerticesSize</code></td>
-<td>Not bound</td>
-<td>Needed for multiple solution fields per vertex</td>
+<td>Bound</td>
+<td>Used by <code>save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_Get_solsAtVerticesSize</code></td>
-<td>Not bound</td>
-<td>Query multi-solution dimensions</td>
+<td>Bound</td>
+<td>Used by <code>load_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_Set_ithSol_inSolsAtVertices</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Set individual values in multi-solution</td>
 </tr>
 <tr>
 <td><code>MMG3D_Set_ithSols_inSolsAtVertices</code></td>
-<td>Not bound</td>
-<td>Set bulk values in multi-solution</td>
+<td>Bound</td>
+<td>Used by <code>save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_Get_ithSol_inSolsAtVertices</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Get individual values from multi-solution</td>
 </tr>
 <tr>
 <td><code>MMG3D_Get_ithSols_inSolsAtVertices</code></td>
-<td>Not bound</td>
-<td>Get bulk values from multi-solution</td>
+<td>Bound</td>
+<td>Used by <code>load_all_sols()</code></td>
 </tr>
 </tbody>
 </table>
@@ -3534,8 +3681,8 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Get_iparameter</code></td>
-<td>Not bound</td>
-<td>Reading back parameter values; could be useful</td>
+<td>Bound</td>
+<td><code>MmgMesh3D.get_iparameter()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_Set_localParameter</code></td>
@@ -3554,12 +3701,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Set_handGivenMesh</code></td>
-<td>Not bound</td>
-<td>Tells MMG the mesh was built programmatically; could be useful</td>
+<td>Excluded</td>
+<td>Only needed after direct writes to opaque MMG C structures</td>
 </tr>
 <tr>
 <td><code>MMG3D_switch_metricStorage</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Advanced metric storage control</td>
 </tr>
 </tbody>
@@ -3596,8 +3743,8 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_Set_inputParamName</code></td>
-<td>Not bound</td>
-<td>For MMG <code>.mmg3d</code> parameter files; not commonly needed</td>
+<td>Bound</td>
+<td><code>MmgMesh3D.set_input_parameter_name()</code></td>
 </tr>
 </tbody>
 </table>
@@ -3633,88 +3780,88 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG3D_loadGenericMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Auto-detect format; <code>loadMesh</code> used + PyVista for other formats</td>
 </tr>
 <tr>
 <td><code>MMG3D_saveGenericMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Auto-detect format; <code>saveMesh</code> used + PyVista for other formats</td>
 </tr>
 <tr>
 <td><code>MMG3D_loadMshMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMG3D_loadMshMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format with all data</td>
 </tr>
 <tr>
 <td><code>MMG3D_saveMshMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format output</td>
 </tr>
 <tr>
 <td><code>MMG3D_saveMshMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format with all data</td>
 </tr>
 <tr>
 <td><code>MMG3D_loadVtkMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMG3D_loadVtkMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format with all data</td>
 </tr>
 <tr>
 <td><code>MMG3D_saveVtkMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format output</td>
 </tr>
 <tr>
 <td><code>MMG3D_saveVtkMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format with all data</td>
 </tr>
 <tr>
 <td><code>MMG3D_loadVtuMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMG3D_loadVtuMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format with all data</td>
 </tr>
 <tr>
 <td><code>MMG3D_saveVtuMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format output</td>
 </tr>
 <tr>
 <td><code>MMG3D_saveVtuMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format with all data</td>
 </tr>
 <tr>
 <td><code>MMG3D_loadAllSols</code></td>
-<td>Not bound</td>
-<td>Multi-solution file loading</td>
+<td>Bound</td>
+<td><code>MmgMesh3D.load_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_saveAllSols</code></td>
-<td>Not bound</td>
-<td>Multi-solution file saving</td>
+<td>Bound</td>
+<td><code>MmgMesh3D.save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_saveTetgenMesh</code></td>
-<td>Not bound</td>
-<td>TetGen format output</td>
+<td>Bound</td>
+<td><code>MmgMesh3D.save_tetgen()</code></td>
 </tr>
 </tbody>
 </table>
@@ -3794,72 +3941,72 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMG3D_defaultValues</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Prints default values to stdout; CLI utility</td>
 </tr>
 <tr>
 <td><code>MMG3D_parsar</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Command-line argument parser; not relevant for Python</td>
 </tr>
 <tr>
 <td><code>MMG3D_parsop</code></td>
-<td>Not bound</td>
-<td>Parameter file parser; not relevant for Python</td>
+<td>Bound</td>
+<td>Invoked internally before in-memory remeshing</td>
 </tr>
 <tr>
 <td><code>MMG3D_usage</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Prints usage text; CLI utility</td>
 </tr>
 <tr>
 <td><code>MMG3D_Set_commonFunc</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal MMG function pointer setup</td>
 </tr>
 <tr>
 <td><code>MMG3D_setfunc</code></td>
-<td>Not bound</td>
-<td>Internal function pointer initialization</td>
+<td>Bound</td>
+<td>Initializes <code>MMG3D_doSol</code> for <code>build_size_map()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_stockOptions</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal: saves options to mesh structure</td>
 </tr>
 <tr>
 <td><code>MMG3D_destockOptions</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal: restores options from mesh structure</td>
 </tr>
 <tr>
 <td><code>MMG3D_Compute_eigenv</code></td>
-<td>Not bound</td>
-<td>Eigenvalue utility; rarely needed from Python</td>
+<td>Indirect</td>
+<td><code>metrics.compute_metric_eigenpairs()</code> / NumPy</td>
 </tr>
 <tr>
 <td><code>MMG3D_Clean_isoSurf</code></td>
-<td>Not bound</td>
-<td>Internal cleanup after level-set discretization</td>
+<td>Bound</td>
+<td><code>MmgMesh3D.clean_iso_surface()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_hashTetra</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal hash table construction</td>
 </tr>
 <tr>
 <td><code>MMG3D_searchqua</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal: search for worst quality elements</td>
 </tr>
 <tr>
 <td><code>MMG3D_searchlen</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal: search for worst edge lengths</td>
 </tr>
 <tr>
 <td><code>MMG3D_mmg3dcheck</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal mesh consistency check</td>
 </tr>
 </tbody>
@@ -3876,12 +4023,12 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMG3D_doSol</code></td>
-<td>Not bound</td>
-<td>External function pointer for custom solution computation; advanced C-level callback</td>
+<td>Bound</td>
+<td>Used by <code>MmgMesh3D.build_size_map()</code></td>
 </tr>
 <tr>
 <td><code>MMG3D_lenedgCoor</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>External function pointer for custom edge length computation; advanced C-level callback</td>
 </tr>
 </tbody>
@@ -3905,12 +4052,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_Init_fileNames</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Called internally by <code>Init_mesh</code></td>
 </tr>
 <tr>
 <td><code>MMG2D_Init_parameters</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Called internally by <code>Init_mesh</code></td>
 </tr>
 <tr>
@@ -3920,32 +4067,32 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_Free_structures</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_Free_names</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_Free_allSols</code></td>
-<td>Not bound</td>
-<td><code>Free_all</code> used instead</td>
+<td>Bound</td>
+<td>Internal cleanup for multi-solution I/O; no Python method</td>
 </tr>
 <tr>
 <td><code>MMG2D_Free_solutions</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_Free_triangles</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_Free_edges</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 </tbody>
@@ -3972,12 +4119,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_Chk_meshData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Called internally by MMG before remeshing</td>
 </tr>
 <tr>
 <td><code>MMG2D_Set_constantSize</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Could be useful; use <code>hsiz</code> parameter as alternative</td>
 </tr>
 </tbody>
@@ -4019,7 +4166,7 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_Reset_verticestags</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Resets all vertex tags; niche use case</td>
 </tr>
 </tbody>
@@ -4199,7 +4346,7 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_Get_solSize</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Could be useful for querying solution state</td>
 </tr>
 <tr>
@@ -4276,33 +4423,33 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMG2D_Set_solsAtVerticesSize</code></td>
-<td>Not bound</td>
-<td>Needed for multiple solution fields per vertex</td>
+<td>Bound</td>
+<td>Used by <code>save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG2D_Get_solsAtVerticesSize</code></td>
-<td>Not bound</td>
-<td>Query multi-solution dimensions</td>
+<td>Bound</td>
+<td>Used by <code>load_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG2D_Set_ithSol_inSolsAtVertices</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Set individual values in multi-solution</td>
 </tr>
 <tr>
 <td><code>MMG2D_Set_ithSols_inSolsAtVertices</code></td>
-<td>Not bound</td>
-<td>Set bulk values in multi-solution</td>
+<td>Bound</td>
+<td>Used by <code>save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG2D_Get_ithSol_inSolsAtVertices</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Get individual values from multi-solution</td>
 </tr>
 <tr>
 <td><code>MMG2D_Get_ithSols_inSolsAtVertices</code></td>
-<td>Not bound</td>
-<td>Get bulk values from multi-solution</td>
+<td>Bound</td>
+<td>Used by <code>load_all_sols()</code></td>
 </tr>
 </tbody>
 </table>
@@ -4375,8 +4522,8 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_Set_inputParamName</code></td>
-<td>Not bound</td>
-<td>For MMG <code>.mmg2d</code> parameter files; not commonly needed</td>
+<td>Bound</td>
+<td><code>MmgMesh2D.set_input_parameter_name()</code></td>
 </tr>
 </tbody>
 </table>
@@ -4412,118 +4559,118 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_loadGenericMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Auto-detect format; <code>loadMesh</code> used + PyVista for other formats</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveGenericMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Auto-detect format; <code>saveMesh</code> used + PyVista for other formats</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadMshMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadMshMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveMshMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format output</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveMshMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadVtkMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadVtkMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveVtkMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format output</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveVtkMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadVtpMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadVtpMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveVtpMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format output</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveVtpMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadVtuMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadVtuMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveVtuMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format output</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveVtuMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format with all data</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadVect</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Vector field loading (legacy)</td>
 </tr>
 <tr>
 <td><code>MMG2D_saveVect</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Vector field saving (legacy)</td>
 </tr>
 <tr>
 <td><code>MMG2D_loadAllSols</code></td>
-<td>Not bound</td>
-<td>Multi-solution file loading</td>
+<td>Bound</td>
+<td><code>MmgMesh2D.load_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG2D_saveAllSols</code></td>
-<td>Not bound</td>
-<td>Multi-solution file saving</td>
+<td>Bound</td>
+<td><code>MmgMesh2D.save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMG2D_saveTetgenMesh</code></td>
-<td>Not bound</td>
-<td>TetGen format output</td>
+<td>Bound</td>
+<td><code>MmgMesh2D.save_tetgen()</code></td>
 </tr>
 </tbody>
 </table>
@@ -4544,12 +4691,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMG2D_Get_adjaVertices</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Requires adjacency tables that may not be available after remeshing</td>
 </tr>
 <tr>
 <td><code>MMG2D_Get_adjaVerticesFast</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Same limitation as <code>Get_adjaVertices</code></td>
 </tr>
 <tr>
@@ -4618,42 +4765,42 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMG2D_defaultValues</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Prints default values to stdout; CLI utility</td>
 </tr>
 <tr>
 <td><code>MMG2D_parsar</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Command-line argument parser; not relevant for Python</td>
 </tr>
 <tr>
 <td><code>MMG2D_parsop</code></td>
-<td>Not bound</td>
-<td>Parameter file parser; not relevant for Python</td>
+<td>Bound</td>
+<td>Invoked internally before in-memory remeshing</td>
 </tr>
 <tr>
 <td><code>MMG2D_usage</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Prints usage text; CLI utility</td>
 </tr>
 <tr>
 <td><code>MMG2D_Set_commonFunc</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal MMG function pointer setup</td>
 </tr>
 <tr>
 <td><code>MMG2D_setfunc</code></td>
-<td>Not bound</td>
-<td>Internal function pointer initialization</td>
+<td>Bound</td>
+<td>Initializes <code>MMG2D_doSol</code> for <code>build_size_map()</code></td>
 </tr>
 <tr>
 <td><code>MMG2D_Compute_eigenv</code></td>
-<td>Not bound</td>
-<td>Eigenvalue utility; rarely needed from Python</td>
+<td>Indirect</td>
+<td><code>metrics.compute_metric_eigenpairs()</code> / NumPy</td>
 </tr>
 <tr>
 <td><code>MMG2D_scaleMesh</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal mesh scaling for numerical stability</td>
 </tr>
 </tbody>
@@ -4670,8 +4817,8 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMG2D_doSol</code></td>
-<td>Not bound</td>
-<td>External function pointer for custom solution computation; advanced C-level callback</td>
+<td>Bound</td>
+<td>Used by <code>MmgMesh2D.build_size_map()</code></td>
 </tr>
 </tbody>
 </table>
@@ -4694,12 +4841,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_Init_fileNames</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Called internally by <code>Init_mesh</code></td>
 </tr>
 <tr>
 <td><code>MMGS_Init_parameters</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Called internally by <code>Init_mesh</code></td>
 </tr>
 <tr>
@@ -4709,22 +4856,22 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_Free_structures</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMGS_Free_names</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 <tr>
 <td><code>MMGS_Free_allSols</code></td>
-<td>Not bound</td>
-<td><code>Free_all</code> used instead</td>
+<td>Bound</td>
+<td>Internal cleanup for multi-solution I/O; no Python method</td>
 </tr>
 <tr>
 <td><code>MMGS_Free_solutions</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td><code>Free_all</code> used instead</td>
 </tr>
 </tbody>
@@ -4751,12 +4898,12 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_Chk_meshData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Called internally by MMG before remeshing</td>
 </tr>
 <tr>
 <td><code>MMGS_Set_constantSize</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Could be useful; use <code>hsiz</code> parameter as alternative</td>
 </tr>
 </tbody>
@@ -4956,7 +5103,7 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_Get_solSize</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Could be useful for querying solution state</td>
 </tr>
 <tr>
@@ -5033,33 +5180,33 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMGS_Set_solsAtVerticesSize</code></td>
-<td>Not bound</td>
-<td>Needed for multiple solution fields per vertex</td>
+<td>Bound</td>
+<td>Used by <code>save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMGS_Get_solsAtVerticesSize</code></td>
-<td>Not bound</td>
-<td>Query multi-solution dimensions</td>
+<td>Bound</td>
+<td>Used by <code>load_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMGS_Set_ithSol_inSolsAtVertices</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Set individual values in multi-solution</td>
 </tr>
 <tr>
 <td><code>MMGS_Set_ithSols_inSolsAtVertices</code></td>
-<td>Not bound</td>
-<td>Set bulk values in multi-solution</td>
+<td>Bound</td>
+<td>Used by <code>save_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMGS_Get_ithSol_inSolsAtVertices</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Get individual values from multi-solution</td>
 </tr>
 <tr>
 <td><code>MMGS_Get_ithSols_inSolsAtVertices</code></td>
-<td>Not bound</td>
-<td>Get bulk values from multi-solution</td>
+<td>Bound</td>
+<td>Used by <code>load_all_sols()</code></td>
 </tr>
 </tbody>
 </table>
@@ -5085,8 +5232,8 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_Get_iparameter</code></td>
-<td>Not bound</td>
-<td>Reading back parameter values; could be useful</td>
+<td>Bound</td>
+<td><code>MmgMeshS.get_iparameter()</code></td>
 </tr>
 <tr>
 <td><code>MMGS_Set_localParameter</code></td>
@@ -5137,8 +5284,8 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_Set_inputParamName</code></td>
-<td>Not bound</td>
-<td>For MMG <code>.mmgs</code> parameter files; not commonly needed</td>
+<td>Bound</td>
+<td><code>MmgMeshS.set_input_parameter_name()</code></td>
 </tr>
 </tbody>
 </table>
@@ -5174,103 +5321,103 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_loadGenericMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Auto-detect format; <code>loadMesh</code> used + PyVista for other formats</td>
 </tr>
 <tr>
 <td><code>MMGS_saveGenericMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Auto-detect format; <code>saveMesh</code> used + PyVista for other formats</td>
 </tr>
 <tr>
 <td><code>MMGS_loadMshMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMGS_loadMshMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_saveMshMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format output</td>
 </tr>
 <tr>
 <td><code>MMGS_saveMshMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Gmsh format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_loadVtkMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMGS_loadVtkMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_saveVtkMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format output</td>
 </tr>
 <tr>
 <td><code>MMGS_saveVtkMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTK format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_loadVtpMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMGS_loadVtpMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_saveVtpMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format output</td>
 </tr>
 <tr>
 <td><code>MMGS_saveVtpMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTP format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_loadVtuMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format; handled by PyVista instead</td>
 </tr>
 <tr>
 <td><code>MMGS_loadVtuMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_saveVtuMesh</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format output</td>
 </tr>
 <tr>
 <td><code>MMGS_saveVtuMesh_and_allData</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>VTU format with all data</td>
 </tr>
 <tr>
 <td><code>MMGS_loadAllSols</code></td>
-<td>Not bound</td>
-<td>Multi-solution file loading</td>
+<td>Bound</td>
+<td><code>MmgMeshS.load_all_sols()</code></td>
 </tr>
 <tr>
 <td><code>MMGS_saveAllSols</code></td>
-<td>Not bound</td>
-<td>Multi-solution file saving</td>
+<td>Bound</td>
+<td><code>MmgMeshS.save_all_sols()</code></td>
 </tr>
 </tbody>
 </table>
@@ -5291,7 +5438,7 @@ access or reimplementation).</p>
 </tr>
 <tr>
 <td><code>MMGS_Get_adjaVerticesFast</code></td>
-<td>Not bound</td>
+<td>Indirect</td>
 <td>Requires adjacency tables that may not be available after remeshing</td>
 </tr>
 <tr>
@@ -5340,48 +5487,48 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMGS_defaultValues</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Prints default values to stdout; CLI utility</td>
 </tr>
 <tr>
 <td><code>MMGS_parsar</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Command-line argument parser; not relevant for Python</td>
 </tr>
 <tr>
 <td><code>MMGS_usage</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Prints usage text; CLI utility</td>
 </tr>
 <tr>
 <td><code>MMGS_Set_commonFunc</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal MMG function pointer setup</td>
 </tr>
 <tr>
 <td><code>MMGS_setfunc</code></td>
-<td>Not bound</td>
-<td>Internal function pointer initialization</td>
+<td>Bound</td>
+<td>Initializes <code>MMGS_doSol</code> for <code>build_size_map()</code></td>
 </tr>
 <tr>
 <td><code>MMGS_stockOptions</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal: saves options to mesh structure</td>
 </tr>
 <tr>
 <td><code>MMGS_destockOptions</code></td>
-<td>Not bound</td>
+<td>Excluded</td>
 <td>Internal: restores options from mesh structure</td>
 </tr>
 <tr>
 <td><code>MMGS_Compute_eigenv</code></td>
-<td>Not bound</td>
-<td>Eigenvalue utility; rarely needed from Python</td>
+<td>Indirect</td>
+<td><code>metrics.compute_metric_eigenpairs()</code> / NumPy</td>
 </tr>
 <tr>
 <td><code>MMGS_Clean_isoSurf</code></td>
-<td>Not bound</td>
-<td>Internal cleanup after level-set discretization</td>
+<td>Bound</td>
+<td><code>MmgMeshS.clean_iso_surface()</code></td>
 </tr>
 </tbody>
 </table>
@@ -5397,66 +5544,37 @@ access or reimplementation).</p>
 <tbody>
 <tr>
 <td><code>MMGS_doSol</code></td>
-<td>Not bound</td>
-<td>External function pointer for custom solution computation; advanced C-level callback</td>
+<td>Bound</td>
+<td>Used by <code>MmgMeshS.build_size_map()</code></td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="potential-future-additions">Potential Future Additions<a class="headerlink" href="#potential-future-additions" title="Permanent link">&para;</a></h2>
-<p>Functions that could provide value if bound:</p>
-<table>
-<thead>
-<tr>
-<th>Function Pattern</th>
-<th>Libraries</th>
-<th>Rationale</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>*_Get_iparameter</code></td>
-<td>MMG3D, MMGS</td>
-<td>Read back integer parameter values for debugging/introspection</td>
-</tr>
-<tr>
-<td><code>*_Get_solSize</code></td>
-<td>All</td>
-<td>Query solution field dimensions</td>
-</tr>
-<tr>
-<td><code>*_Set_solsAtVerticesSize</code> / <code>*_*ithSol*</code></td>
-<td>All</td>
-<td>Multi-solution support for advanced workflows (e.g. multiple metric fields)</td>
-</tr>
-<tr>
-<td><code>*_loadAllSols</code> / <code>*_saveAllSols</code></td>
-<td>All</td>
-<td>File I/O for multi-solution data</td>
-</tr>
-<tr>
-<td><code>*_Set_constantSize</code></td>
-<td>All</td>
-<td>Shortcut for uniform mesh sizing</td>
-</tr>
-<tr>
-<td><code>*_Get_adjaVertices*</code></td>
-<td>MMG2D, MMGS</td>
-<td>Vertex adjacency queries (requires adjacency table availability)</td>
-</tr>
-<tr>
-<td><code>MMG3D_Add_vertex</code> / <code>MMG3D_Add_tetrahedron</code></td>
-<td>MMG3D</td>
-<td>Dynamic mesh construction without pre-allocating size</td>
-</tr>
-<tr>
-<td><code>MMG3D_Set_handGivenMesh</code></td>
-<td>MMG3D</td>
-<td>Optimization hint for programmatically built meshes</td>
-</tr>
-</tbody>
-</table>
-<p>| <code>*_loadGenericMesh</code> / <code>*_saveGenericMesh</code> | All | Auto-detect format (currently handled by PyVista) |</p>
+<h2 id="direct-api-candidates">Direct API Candidates<a class="headerlink" href="#direct-api-candidates" title="Permanent link">&para;</a></h2>
+<p>There are no remaining direct-binding candidates. Everything marked <strong>Excluded</strong> in the
+detailed tables has been reviewed and should not be ported one-to-one.</p>
+<h2 id="capability-level-differences">Capability-Level Differences<a class="headerlink" href="#capability-level-differences" title="Permanent link">&para;</a></h2>
+<p>Some differences do not correspond to a missing C callable:</p>
+<ul>
+<li>
+<p>MMGS publicly exposes <code>MMGS_Set_inputParamName</code> but keeps its parameter-file parser
+  private, unlike MMG3D and MMG2D. The filename setter is bound, but in-memory MMGS parsing
+  needs an upstream API change (<a href="https://github.com/kmarchais/mmgpy/issues/373">#373</a>).</p>
+</li>
+<li>
+<p>Boundary-only level-set splitting is already reachable through the mapped <code>isosurf</code>
+  parameter, but lacks a first-class convenience API
+  (<a href="https://github.com/kmarchais/mmgpy/issues/372">#372</a>).</p>
+</li>
+<li>Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
+  PyVista conversion path does not currently round-trip VTK wedge cells.</li>
+<li>Native <code>MMG3D_mmg3dmov</code> and <code>MMG2D_mmg2dmov</code> are skipped because ELAS is not available
+  consistently across supported platforms; mmgpy supplies a portable, non-identical mesh
+  motion workflow (<a href="https://github.com/kmarchais/mmgpy/issues/374">#374</a>).</li>
+<li>Text multi-solution I/O is bound. Binary <code>.solb</code> multi-solution I/O remains disabled
+  pending a reliable upstream MMG round-trip
+  (<a href="https://github.com/kmarchais/mmgpy/issues/375">#375</a>).</li>
+</ul>
 
 
 
