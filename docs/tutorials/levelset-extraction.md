@@ -173,6 +173,21 @@ MMG requires the relevant boundary entities and references to be present where t
 selected engine uses them; for example, an MMGS mesh needs explicit referenced boundary
 edges.
 
+For MMG3D, the returned `UnstructuredGrid` contains both tetrahedra and the
+referenced boundary triangles. Select a boundary patch through its cell type and
+reference:
+
+<!-- mmgpy-test:skip -->
+
+```python
+import pyvista as pv
+
+is_patch = (boundary_split.celltypes == pv.CellType.TRIANGLE) & (
+    boundary_split.cell_data["refs"] == 3
+)
+patch = boundary_split.extract_cells(is_patch)
+```
+
 ## Controlling Output Quality
 
 Combine level-set extraction with size parameters:

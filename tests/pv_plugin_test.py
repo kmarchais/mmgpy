@@ -360,7 +360,10 @@ def test_accessor_remesh_levelset_surface_only_preserves_volume_refs() -> None:
     )
 
     tetrahedra = split.celltypes == pv.CellType.TETRA
+    boundary_triangles = split.celltypes == pv.CellType.TRIANGLE
     assert set(split.cell_data["refs"][tetrahedra]) == {0}
+    assert boundary_triangles.any()
+    assert {2, 3}.issubset(set(split.cell_data["refs"][boundary_triangles]))
     assert np.any(np.isclose(split.points[:, 0], 0.37, atol=1e-8))
 
 

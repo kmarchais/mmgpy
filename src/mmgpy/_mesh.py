@@ -2707,6 +2707,7 @@ class Mesh:
         *,
         include_refs: bool = True,
         include_edges: bool = False,
+        include_boundary: bool = False,
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Convert to PyVista mesh.
 
@@ -2721,6 +2722,9 @@ class Mesh:
             matches typical downstream code (matplotlib tripcolor, area
             computations, etc.). Set True for round-trip / file-save
             workflows that need to preserve edge markers.
+        include_boundary : bool
+            Include MMG3D boundary faces as TRIANGLE cells, with their
+            references in ``cell_data["refs"]``. Ignored for MMG2D and MMGS.
 
         Returns
         -------
@@ -2734,6 +2738,7 @@ class Mesh:
             self._impl,
             include_refs=include_refs,
             include_edges=include_edges,
+            include_boundary=include_boundary,
         )
 
     @property

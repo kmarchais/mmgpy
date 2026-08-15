@@ -55,33 +55,6 @@ def gyroid_levelset(points: np.ndarray) -> np.ndarray:
     return np.sin(x) * np.cos(y) + np.sin(y) * np.cos(z) + np.sin(z) * np.cos(x) - 0.15
 
 
-def boundary_patch_curve(surface: pv.PolyData) -> pv.PolyData:
-    """Extract mesh edges separating the two level-set patches."""
-    faces = surface.regular_faces
-    centers = surface.points[faces].mean(axis=1)
-    negative = gyroid_levelset(centers) < 0.0
-    edge_sides: dict[tuple[int, int], bool] = {}
-    curve_edges: list[tuple[int, int]] = []
-
-    for triangle, side in zip(faces, negative, strict=True):
-        for start, end in (
-            (triangle[0], triangle[1]),
-            (triangle[1], triangle[2]),
-            (triangle[2], triangle[0]),
-        ):
-            edge = tuple(sorted((int(start), int(end))))
-            previous_side = edge_sides.get(edge)
-            if previous_side is not None and previous_side != side:
-                curve_edges.append(edge)
-            else:
-                edge_sides[edge] = bool(side)
-
-    lines = np.column_stack(
-        (np.full(len(curve_edges), 2), np.asarray(curve_edges)),
-    ).ravel()
-    return pv.PolyData(surface.points, lines=lines)
-
-
 def main() -> None:
     """Remesh a curved level set in both modes and compare the results."""
     background = background_mesh(resolution=10)
@@ -111,60 +84,77 @@ def main() -> None:
         msg = "boundary-only level-set remeshing unexpectedly split the volume refs"
         raise RuntimeError(msg)
 
-    full_cell_refs = np.asarray(full.cell_data["refs"])
-    negative_region_surface = full.extract_cells(
-        np.flatnonzero(full_cell_refs == 3),
-    ).extract_surface(algorithm="dataset_surface")
-    interface_centers = negative_region_surface.cell_centers().points
-    on_cube_boundary = np.any(
-        np.isclose(interface_centers, 0.0) | np.isclose(interface_centers, 1.0),
-        axis=1,
-    )
-    internal_interface = negative_region_surface.extract_cells(
-        np.flatnonzero(~on_cube_boundary),
-    )
-    full_surface = full.extract_surface(algorithm="dataset_surface")
+    boundary_triangle_mask = boundary.celltypes == pv.CellType.TRIANGLE
+    boundary_triangle_refs = np.asarray(boundary.cell_data["refs"])[
+        boundary_triangle_mask
+    ]
+    if not {2, 3}.issubset(set(boundary_triangle_refs)):
+        msg = "boundary-only remeshing did not create both surface patch refs"
+        raise RuntimeError(msg)
 
-    surface = boundary.extract_surface(algorithm="dataset_surface")
-    boundary_trace = boundary_patch_curve(surface)
+    full_tetrahedra = full.extract_cells(full.celltypes == pv.CellType.TETRA)
+    tetra_centers = full_tetrahedra.cell_centers().points
+    cutaway = full_tetrahedra.extract_cells(tetra_centers[:, 1] >= 0.5)
+    cutaway_ref2 = cutaway.extract_cells(cutaway["refs"] == 2)
+    cutaway_ref3 = cutaway.extract_cells(cutaway["refs"] == 3)
+
+    boundary_tetrahedra = boundary.extract_cells(
+        boundary.celltypes == pv.CellType.TETRA
+    )
+    boundary_tetra_centers = boundary_tetrahedra.cell_centers().points
+    boundary_cutaway = boundary_tetrahedra.extract_cells(
+        boundary_tetra_centers[:, 1] >= 0.5
+    )
+
+    boundary_patches = boundary.extract_cells(boundary_triangle_mask)
+    patch_centers = boundary_patches.cell_centers().points
+    boundary_patch_cutaway = boundary_patches.extract_cells(patch_centers[:, 1] >= 0.5)
 
     plotter = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
+    plotter.set_background("#eeeeee")
 
     plotter.subplot(0, 0)
     plotter.add_mesh(
-        full_surface,
-        color="lightgray",
-        opacity=0.12,
+        cutaway_ref2,
+        color="steelblue",
+        opacity=0.68,
         show_edges=False,
     )
     plotter.add_mesh(
-        internal_interface,
+        cutaway_ref3,
         color="coral",
-        opacity=0.95,
+        opacity=0.68,
         show_edges=False,
     )
-    plotter.add_title("DEFAULT: INTERNAL LEVEL-SET SHEET", font_size=10)
+    plotter.add_title("DEFAULT: TWO VOLUME REGIONS", font_size=10)
     plotter.add_text(
-        "Volume tetrahedra split into refs 2 and 3",
+        "Front half removed; colored tetrahedra have refs 2 and 3",
         position=(20, 30),
         font_size=10,
     )
 
     plotter.subplot(0, 1)
     plotter.add_mesh(
-        surface,
-        color="lightgray",
-        show_edges=False,
+        boundary_cutaway,
+        color="white",
+        opacity=0.38,
+        show_edges=True,
+        edge_color="gray",
+        line_width=0.3,
     )
     plotter.add_mesh(
-        boundary_trace,
-        color="coral",
-        line_width=10,
-        render_lines_as_tubes=True,
+        boundary_patch_cutaway,
+        scalars="refs",
+        categories=True,
+        clim=(2, 3),
+        cmap=["steelblue", "coral"],
+        opacity=0.76,
+        show_edges=False,
+        show_scalar_bar=False,
     )
-    plotter.add_title("surface_only=True: BOUNDARY CONTOURS ONLY", font_size=10)
+    plotter.add_title("surface_only=True: BOUNDARY PATCHES ONLY", font_size=10)
     plotter.add_text(
-        "Same level set; every tetrahedron remains ref 0",
+        "Same cutaway: colored boundary patches, white volume (ref 0)",
         position=(20, 30),
         font_size=10,
     )
