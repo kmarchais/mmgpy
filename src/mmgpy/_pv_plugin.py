@@ -378,11 +378,50 @@ def _collect_constraints_from_data(
         Mapping from MMG constraint kwarg name to the (zero-indexed)
         per-entity indices marked by the dataset's reserved tag arrays.
 
+    """
+    out = _collect_point_constraints(dataset)
+    out.update(_collect_cell_constraints(dataset))
+    return out
+
+
+def _constraint_mask(
+    data: pv.DataSetAttributes,
+    tag_name: str,
+    expected_count: int,
+    association: str,
+) -> NDArray[np.bool_]:
+    """Return a constraint tag as a validated Boolean mask.
+
+    Returns
+    -------
+    ndarray of bool
+        The normalized constraint mask.
+
     Raises
     ------
     ValueError
-        If any reserved tag array does not match ``dataset.n_points`` or
-        ``dataset.n_cells``.
+        If the tag length does not match the expected entity count.
+
+    """
+    mask = np.asarray(data[tag_name]).astype(bool, copy=False)
+    if mask.shape[0] != expected_count:
+        msg = (
+            f"{association}_data[{tag_name!r}] length {mask.shape[0]} does not "
+            f"match dataset.n_{association}s {expected_count}"
+        )
+        raise ValueError(msg)
+    return mask
+
+
+def _collect_point_constraints(
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+) -> dict[str, NDArray[np.int32]]:
+    """Collect constraint indices from reserved point tags.
+
+    Returns
+    -------
+    dict[str, ndarray of int32]
+        Constraint names mapped to marked point indices.
 
     """
     out: dict[str, NDArray[np.int32]] = {}
@@ -390,15 +429,28 @@ def _collect_constraints_from_data(
     for tag_name, kwarg_name in _POINT_TAG_TO_KWARG.items():
         if tag_name not in dataset.point_data:
             continue
-        mask = np.asarray(dataset.point_data[tag_name]).astype(bool, copy=False)
-        if mask.shape[0] != dataset.n_points:
-            msg = (
-                f"point_data[{tag_name!r}] length {mask.shape[0]} does not "
-                f"match dataset.n_points {dataset.n_points}"
-            )
-            raise ValueError(msg)
+        mask = _constraint_mask(
+            dataset.point_data,
+            tag_name,
+            int(dataset.n_points),
+            "point",
+        )
         out[kwarg_name] = np.where(mask)[0].astype(np.int32, copy=False)
+    return out
 
+
+def _collect_cell_constraints(
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+) -> dict[str, NDArray[np.int32]]:
+    """Collect constraint indices from reserved cell tags.
+
+    Returns
+    -------
+    dict[str, ndarray of int32]
+        Constraint names mapped to marked per-type cell indices.
+
+    """
+    out: dict[str, NDArray[np.int32]] = {}
     cell_tags_present = [
         (tag_name, kwarg_name, cell_type)
         for tag_name, (kwarg_name, cell_type) in _CELL_TAG_TO_KWARG.items()
@@ -406,23 +458,20 @@ def _collect_constraints_from_data(
     ]
     if not cell_tags_present:
         return out
-
-    # For UnstructuredGrid we cache `celltypes` and per-cell-type cumsums
-    # across all cell tags (the loop visits up to 6 tags but at most 3
-    # distinct cell types). PolyData stays on the per-tag fast path in
-    # `_per_type_indices_marked` since its slicing is already O(1) lookups.
-    is_unstructured = isinstance(dataset, pv.UnstructuredGrid)
-    types_arr = np.asarray(dataset.celltypes) if is_unstructured else None
+    types_arr = (
+        np.asarray(dataset.celltypes)
+        if isinstance(dataset, pv.UnstructuredGrid)
+        else None
+    )
     per_type_cache: dict[int, tuple[NDArray[np.bool_], NDArray[np.intp]]] = {}
 
     for tag_name, kwarg_name, cell_type in cell_tags_present:
-        mask = np.asarray(dataset.cell_data[tag_name]).astype(bool, copy=False)
-        if mask.shape[0] != dataset.n_cells:
-            msg = (
-                f"cell_data[{tag_name!r}] length {mask.shape[0]} does not "
-                f"match dataset.n_cells {dataset.n_cells}"
-            )
-            raise ValueError(msg)
+        mask = _constraint_mask(
+            dataset.cell_data,
+            tag_name,
+            int(dataset.n_cells),
+            "cell",
+        )
 
         if types_arr is None:
             out[kwarg_name] = _per_type_indices_marked(dataset, cell_type, mask)
@@ -873,6 +922,16 @@ def _coerce_metric_kwarg(
     return arr
 
 
+def _apply_metric_kwarg(
+    mesh: _Mesh,
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+    metric: NDArray[np.float64] | None,
+) -> None:
+    """Apply an explicit metric to a mesh when one is supplied."""
+    if metric is not None:
+        mesh["metric"] = _coerce_metric_kwarg(metric, int(dataset.n_points))
+
+
 # ---------------------------------------------------------------------------
 # .mmg dataset accessor
 # ---------------------------------------------------------------------------
@@ -999,14 +1058,7 @@ class MmgAccessor:
 
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
-        if metric is not None:
-            # Smart routing in Mesh.__setitem__ dispatches to the scalar or
-            # tensor channel based on shape; overrides any metric loaded
-            # from point_data above without mutating self._dataset.
-            mesh["metric"] = _coerce_metric_kwarg(
-                metric,
-                int(self._dataset.n_points),
-            )
+        _apply_metric_kwarg(mesh, self._dataset, metric)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
         _apply_pending_mmg_config(mesh, self._dataset)

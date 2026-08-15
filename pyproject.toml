@@ -154,6 +154,12 @@ markers = [
 [tool.ruff]
 preview = true
 
+[tool.complexipy]
+# The UI is currently out of scope.
+paths = ["src/mmgpy"]
+exclude = ["ui/**"]
+failed = true
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [

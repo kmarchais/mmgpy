@@ -664,6 +664,30 @@ def _normalize_ls_base_references(references: Sequence[int]) -> list[int]:
     return normalized
 
 
+class _MeshState(NamedTuple):
+    """Internal state used to construct a mesh around an existing implementation."""
+
+    impl: MmgMesh3D | MmgMesh2D | MmgMeshS
+    kind: MeshKind
+    lazy_source: _LazyFieldSource | None
+
+
+def _mesh_from_impl(
+    impl: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    kind: MeshKind,
+    lazy_source: _LazyFieldSource | None = None,
+) -> Mesh:
+    """Create an internal mesh around an existing implementation.
+
+    Returns
+    -------
+    Mesh
+        A mesh containing the supplied implementation and deferred fields.
+
+    """
+    return Mesh(_MeshState(impl, kind, lazy_source))
+
+
 class Mesh:
     """Unified mesh class with auto-detection of mesh type.
 
@@ -724,7 +748,14 @@ class Mesh:
 
     def __init__(
         self,
-        source: NDArray[np.floating] | str | Path | pv.UnstructuredGrid | pv.PolyData,
+        source: (
+            NDArray[np.floating]
+            | str
+            | Path
+            | pv.UnstructuredGrid
+            | pv.PolyData
+            | _MeshState
+        ),
         cells: NDArray[np.integer] | None = None,
         refs: NDArray[np.integer] | None = None,
         edges: NDArray[np.integer] | None = None,
@@ -748,6 +779,12 @@ class Mesh:
         self._user_fields = {}
         self._metric_is_tensor = False
         self._lazy_source = None
+
+        if isinstance(source, _MeshState):
+            self._impl = source.impl
+            self._kind = source.kind
+            self._lazy_source = source.lazy_source
+            return
 
         array_only_kwargs_provided = (
             refs is not None or edges is not None or edge_refs is not None
@@ -808,39 +845,6 @@ class Mesh:
         )
 
     @classmethod
-    def _from_impl(
-        cls,
-        impl: MmgMesh3D | MmgMesh2D | MmgMeshS,
-        kind: MeshKind,
-        lazy_source: _LazyFieldSource | None = None,
-    ) -> Mesh:
-        """Create a Mesh from an existing implementation (internal use).
-
-        Parameters
-        ----------
-        impl : MmgMesh3D | MmgMesh2D | MmgMeshS
-            The underlying mesh implementation.
-        kind : MeshKind
-            The mesh kind.
-        lazy_source : _LazyFieldSource, optional
-            Deferred point data from the original file.
-
-        Returns
-        -------
-        Mesh
-            A new Mesh wrapping the implementation.
-
-        """
-        mesh = object.__new__(cls)
-        mesh._impl = impl  # noqa: SLF001
-        mesh._kind = kind  # noqa: SLF001
-        mesh._lazy_source = lazy_source  # noqa: SLF001
-        mesh._sizing_constraints = []  # noqa: SLF001
-        mesh._user_fields = {}  # noqa: SLF001
-        mesh._metric_is_tensor = False  # noqa: SLF001
-        return mesh
-
-    @classmethod
     def _from_arrays(
         cls,
         vertices: NDArray[np.floating],
@@ -875,7 +879,7 @@ class Mesh:
             refs=cell_refs,
             edges=_build_edge_data(edges_arr, e_refs),
         )
-        return cls._from_impl(impl, kind)
+        return _mesh_from_impl(impl, kind)
 
     @property
     def _impl_unwrap(self) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
@@ -2028,7 +2032,45 @@ class Mesh:
             method=interpolation,
         )
 
-    def remesh(  # noqa: C901, PLR0912, PLR0915
+    def _load_remesh_input_solution(
+        self,
+        input_sol: str | Path | NDArray[np.float64] | None,
+    ) -> None:
+        """Load file-based or array-based solution data before remeshing."""
+        if input_sol is None:
+            return
+        if isinstance(input_sol, str | Path):
+            self.load_sol(input_sol)
+            return
+
+        metric = np.asarray(input_sol, dtype=np.float64)
+        if metric.ndim == 1:
+            metric = metric.reshape(-1, 1)
+        self["metric"] = metric
+
+    def _update_fields_after_remesh(
+        self,
+        fields_to_transfer: dict[str, NDArray[np.float64]],
+        old_vertices: NDArray[np.float64] | None,
+        old_elements: NDArray[np.int32] | None,
+        interpolation: str,
+    ) -> None:
+        """Transfer captured fields or discard fields invalidated by remeshing."""
+        if fields_to_transfer and old_vertices is not None and old_elements is not None:
+            self._execute_field_transfer(
+                fields_to_transfer,
+                old_vertices,
+                old_elements,
+                interpolation,
+            )
+            return
+
+        self._user_fields.clear()
+        if self._lazy_source is not None:
+            self._lazy_source.invalidate()
+            self._lazy_source = None
+
+    def remesh(
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         *,
@@ -2118,15 +2160,7 @@ class Mesh:
         )
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
-        # Load solution data if provided
-        if input_sol is not None:
-            if isinstance(input_sol, str | Path):
-                self.load_sol(input_sol)
-            else:
-                arr = np.asarray(input_sol, dtype=np.float64)
-                if arr.ndim == 1:
-                    arr = arr.reshape(-1, 1)
-                self["metric"] = arr
+        self._load_remesh_input_solution(input_sol)
 
         # Validate interpolation method
         valid_methods = ("linear", "nearest")
@@ -2137,7 +2171,6 @@ class Mesh:
             )
             raise ValueError(msg)
 
-        # Validate and convert options object
         if options is not None:
             if kwargs:
                 msg = (
@@ -2146,7 +2179,6 @@ class Mesh:
                 )
                 raise TypeError(msg)
 
-            # Validate options type matches mesh type
             options_type_map = {
                 MeshKind.TETRAHEDRAL: Mmg3DOptions,
                 MeshKind.TRIANGULAR_2D: Mmg2DOptions,
@@ -2194,24 +2226,12 @@ class Mesh:
             stats = self._impl.remesh(**kwargs)
             final_vertices = len(self._impl.get_vertices())
 
-            # Transfer fields to new mesh if captured, otherwise clear stale fields
-            if (
-                fields_to_transfer
-                and old_vertices is not None
-                and old_elements is not None
-            ):
-                self._execute_field_transfer(
-                    fields_to_transfer,
-                    old_vertices,
-                    old_elements,
-                    interpolation,
-                )
-            else:
-                # Clear user fields as they have incorrect vertex count after remeshing
-                self._user_fields.clear()
-                if self._lazy_source is not None:
-                    self._lazy_source.invalidate()
-                    self._lazy_source = None
+            self._update_fields_after_remesh(
+                fields_to_transfer,
+                old_vertices,
+                old_elements,
+                interpolation,
+            )
 
             if do_rcm:
                 from mmgpy._reorder import _apply_rcm_to_mesh  # noqa: PLC0415
