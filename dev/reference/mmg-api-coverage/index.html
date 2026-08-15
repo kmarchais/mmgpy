@@ -5562,12 +5562,9 @@ detailed tables has been reviewed and should not be ported one-to-one.</p>
   needs an upstream API change (<a href="https://github.com/kmarchais/mmgpy/issues/373">#373</a>).</p>
 </li>
 <li>
-<p>Boundary-only level-set splitting is already reachable through the mapped <code>isosurf</code>
-  parameter, but lacks a first-class convenience API
-  (<a href="https://github.com/kmarchais/mmgpy/issues/372">#372</a>).</p>
+<p>Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
+  PyVista conversion path does not currently round-trip VTK wedge cells.</p>
 </li>
-<li>Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
-  PyVista conversion path does not currently round-trip VTK wedge cells.</li>
 <li>Native <code>MMG3D_mmg3dmov</code> and <code>MMG2D_mmg2dmov</code> are skipped because ELAS is not available
   consistently across supported platforms; mmgpy supplies a portable, non-identical mesh
   motion workflow (<a href="https://github.com/kmarchais/mmgpy/issues/374">#374</a>).</li>
