@@ -125,6 +125,28 @@ remeshed = mesh.mmg.remesh(ar=30)
 
 ## Control Flags
 
+### surface_only
+
+Restrict level-set discretization to the mesh boundary. This keyword is available only
+on `remesh_levelset(...)`.
+
+| Property    | Value                                |
+| ----------- | ------------------------------------ |
+| Type        | `bool`                               |
+| Default     | `False`                              |
+| MMG mapping | `-lssurf`; `MMG*_IPARAM_isosurf = 1` |
+
+<!-- mmgpy-test:skip -->
+
+```python
+boundary_split = mesh.mmg.remesh_levelset(levelset, surface_only=True)
+```
+
+For MMG3D this splits boundary faces without splitting the interior volume into
+level-set regions. MMG2D and MMGS apply the mode to boundary or referenced edges.
+
+---
+
 ### optim
 
 Enable optimization mode (no topology changes).

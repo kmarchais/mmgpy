@@ -186,14 +186,13 @@ std::string path_to_string(const py::object &path) {
   }
 }
 
-py::dict merge_options_with_default(const py::dict &options, const char *key,
-                                    py::object default_value) {
+py::dict prepare_levelset_options(const py::dict &options) {
   py::dict merged;
   for (auto item : options) {
     merged[item.first] = item.second;
   }
-  if (!merged.contains(key)) {
-    merged[key] = default_value;
+  if (!merged.contains("iso") && !merged.contains("isosurf")) {
+    merged["iso"] = py::int_(1);
   }
   return merged;
 }

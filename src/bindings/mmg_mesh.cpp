@@ -1567,7 +1567,7 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
   set_field("levelset", levelset);
-  py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
+  py::dict ls_options = prepare_levelset_options(options);
   if (has_input_parameter_file_) {
     if (!MMG3D_parsop(mesh, met)) {
       throw std::runtime_error("Failed to parse MMG3D parameter file");

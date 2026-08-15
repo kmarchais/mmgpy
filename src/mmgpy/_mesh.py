@@ -2256,6 +2256,7 @@ class Mesh:
         self,
         levelset: NDArray[np.float64],
         *,
+        surface_only: bool = False,
         progress: ProgressParam = True,
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
@@ -2265,6 +2266,10 @@ class Mesh:
         ----------
         levelset : ndarray
             Level-set field for each vertex.
+        surface_only : bool, default=False
+            If ``True``, split only the mesh boundary at the isovalue,
+            corresponding to MMG's ``-lssurf`` / ``*_IPARAM_isosurf`` mode.
+            The default ``False`` preserves full-domain level-set splitting.
         progress : bool | Callable[[ProgressEvent], bool] | None, default=True
             Progress reporting option:
             - True: Show Rich progress bar (default)
@@ -2311,7 +2316,11 @@ class Mesh:
             ):
                 raise CancellationError(phase="remesh")
 
-            stats = self._impl.remesh_levelset(levelset, **kwargs)  # type: ignore[arg-type]
+            stats = self._impl.remesh_levelset(  # type: ignore[arg-type]
+                levelset,
+                surface_only=surface_only,
+                **kwargs,
+            )
             final_vertices = len(self._impl.get_vertices())
 
             if do_rcm:

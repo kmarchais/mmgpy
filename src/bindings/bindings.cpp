@@ -36,6 +36,23 @@ py::dict kwargs_to_options(const py::kwargs &kwargs) {
   }
   return options;
 }
+
+// Translate the Python convenience flag to MMG's mutually exclusive
+// level-set modes. Raw iso/isosurf kwargs remain available for compatibility
+// when surface_only is false.
+py::dict levelset_options(bool surface_only, const py::kwargs &kwargs) {
+  if (surface_only && (kwargs.contains("iso") || kwargs.contains("isosurf"))) {
+    throw py::type_error(
+        "surface_only cannot be combined with raw iso or isosurf options");
+  }
+
+  py::dict options = kwargs_to_options(kwargs);
+  if (surface_only) {
+    options["iso"] = py::int_(0);
+    options["isosurf"] = py::int_(1);
+  }
+  return options;
+}
 } // namespace
 
 PYBIND11_MODULE(_mmgpy, m) {
@@ -244,13 +261,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh_levelset",
           [](MmgMesh &self, const py::array_t<double> &levelset,
-             py::kwargs kwargs) {
-            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+             bool surface_only, py::kwargs kwargs) {
+            return self.remesh_levelset(levelset,
+                                        levelset_options(surface_only, kwargs));
           },
-          py::arg("levelset"),
+          py::arg("levelset"), py::kw_only(), py::arg("surface_only") = false,
           "Remesh the mesh to conform to a level-set isosurface.\n\n"
           "Args:\n"
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    surface_only: Split only boundary faces, like MMG's -lssurf.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
@@ -442,13 +461,15 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh_levelset",
           [](MmgMesh2D &self, const py::array_t<double> &levelset,
-             py::kwargs kwargs) {
-            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+             bool surface_only, py::kwargs kwargs) {
+            return self.remesh_levelset(levelset,
+                                        levelset_options(surface_only, kwargs));
           },
-          py::arg("levelset"),
+          py::arg("levelset"), py::kw_only(), py::arg("surface_only") = false,
           "Remesh the mesh to conform to a level-set isoline.\n\n"
           "Args:\n"
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    surface_only: Split only boundary edges, like MMG's -lssurf.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
@@ -627,13 +648,16 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh_levelset",
           [](MmgMeshS &self, const py::array_t<double> &levelset,
-             py::kwargs kwargs) {
-            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+             bool surface_only, py::kwargs kwargs) {
+            return self.remesh_levelset(levelset,
+                                        levelset_options(surface_only, kwargs));
           },
-          py::arg("levelset"),
+          py::arg("levelset"), py::kw_only(), py::arg("surface_only") = false,
           "Remesh the mesh to conform to a level-set isoline.\n\n"
           "Args:\n"
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    surface_only: Split only referenced boundary edges, like "
+          "MMG's -lssurf.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")

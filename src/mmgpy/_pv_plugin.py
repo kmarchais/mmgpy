@@ -1108,6 +1108,7 @@ class MmgAccessor:
         self,
         levelset: NDArray[np.float64],
         *,
+        surface_only: bool = False,
         local_sizing: list[Mapping[str, Any]] | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_levelset
     ) -> pv.UnstructuredGrid | pv.PolyData:
@@ -1118,6 +1119,10 @@ class MmgAccessor:
         levelset : ndarray
             Per-vertex level-set field; the zero isosurface becomes an
             explicit boundary in the output mesh.
+        surface_only : bool, default=False
+            If ``True``, split only boundary entities at the isovalue using
+            MMG's ``-lssurf`` / ``*_IPARAM_isosurf`` mode. The interior
+            domain is not split into level-set materials.
         local_sizing : list of dict, optional
             Sizing constraints; see :meth:`remesh`.
         **options : object
@@ -1136,7 +1141,7 @@ class MmgAccessor:
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
         _apply_pending_mmg_config(mesh, self._dataset)
-        mesh.remesh_levelset(levelset, **options)
+        mesh.remesh_levelset(levelset, surface_only=surface_only, **options)
         return _to_pyvista_with_user_fields(mesh)
 
     def remesh_optimize(
