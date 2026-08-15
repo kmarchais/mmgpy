@@ -79,6 +79,24 @@ tests/
 
 All rules enabled except INP001. Per-file exceptions exist in pyproject.toml for tests (S101, T201, SLF001) and **init**.py (S603, E402, C901 for subprocess/lazy loading patterns).
 
+## Cognitive Complexity
+
+Complexipy checks non-UI package code; `src/mmgpy/ui/**` is currently excluded. The configured threshold in `pyproject.toml` is temporary and should be lowered incrementally as the highest-scoring functions are refactored. Do not increase the threshold or add inline ignores to make checks pass.
+
+```bash
+prek run complexipy --all-files
+uvx --from complexipy==7.0.1 complexipy src/mmgpy --failed --suggest-refactors
+```
+
+Treat Complexipy suggestions as guidance:
+
+- "Safe to apply" means high confidence, not that review or tests can be skipped.
+- "Needs review" and "Informational" suggestions require human judgment.
+- Prefer behavior-preserving guard clauses and focused helper extraction.
+- Do not optimize solely for the score; preserve API behavior and readability.
+- Remove obsolete Ruff complexity `noqa` suppressions after refactoring.
+- When the highest remaining score decreases, lower `max-complexity-allowed` in the same PR.
+
 ## UI Development
 
 The interface is built with **trame** (PyVista + Vuetify 3). Main file: `src/mmgpy/ui/app.py`
