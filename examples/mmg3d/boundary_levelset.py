@@ -80,49 +80,60 @@ def main() -> None:
 
     plotter.subplot(0, 0)
     full_cell_refs = np.asarray(full.cell_data["refs"])
-    exterior = full.extract_cells(np.flatnonzero(full_cell_refs == 2)).extract_surface(
-        algorithm="dataset_surface",
-    )
-    interior = full.extract_cells(np.flatnonzero(full_cell_refs == 3)).extract_surface(
-        algorithm="dataset_surface",
+    full_surface = full.extract_surface(algorithm="dataset_surface")
+    negative_region_surface = full.extract_cells(
+        np.flatnonzero(full_cell_refs == 3),
+    ).extract_surface(algorithm="dataset_surface")
+    interface_centers = negative_region_surface.cell_centers().points
+    interface = negative_region_surface.extract_cells(
+        np.flatnonzero(np.isclose(interface_centers[:, 0], ISOVALUE_X)),
     )
     plotter.add_mesh(
-        exterior,
-        color="steelblue",
-        opacity=0.25,
+        full_surface,
+        color="lightgray",
+        opacity=0.18,
         show_edges=True,
-        edge_color="black",
-        line_width=0.35,
+        edge_color="gray",
+        line_width=0.3,
     )
     plotter.add_mesh(
-        interior,
+        interface,
         color="coral",
-        opacity=0.8,
+        opacity=1.0,
         show_edges=True,
         edge_color="darkred",
-        line_width=0.5,
+        line_width=1.5,
     )
-    plotter.add_title("Default: interior split\nvolume refs 2 and 3", font_size=10)
+    plotter.add_title("Default\ninterface crosses the volume", font_size=10)
+    plotter.add_text("tetrahedron refs: {2, 3}", position="lower_left", font_size=9)
 
     plotter.subplot(0, 1)
     surface = boundary.extract_surface(algorithm="dataset_surface")
-    surface["level-set side"] = (
-        surface.cell_centers().points[:, 0] >= ISOVALUE_X
-    ).astype(np.int8)
+    surface_edges = surface.extract_all_edges()
+    edge_vertices = surface_edges.lines.reshape(-1, 3)[:, 1:]
+    edge_x = surface_edges.points[edge_vertices, 0]
+    boundary_trace = surface_edges.extract_cells(
+        np.flatnonzero(np.all(np.isclose(edge_x, ISOVALUE_X), axis=1)),
+    )
     plotter.add_mesh(
         surface,
-        scalars="level-set side",
-        categories=True,
-        cmap=["steelblue", "coral"],
+        color="lightgray",
+        opacity=0.45,
         show_edges=True,
-        edge_color="black",
-        line_width=0.5,
-        show_scalar_bar=False,
+        edge_color="gray",
+        line_width=0.3,
+    )
+    plotter.add_mesh(
+        boundary_trace,
+        color="coral",
+        line_width=8,
+        render_lines_as_tubes=True,
     )
     plotter.add_title(
-        "surface_only=True: boundary split\nsingle volume ref 0",
+        "surface_only=True\nintersection stays on boundary",
         font_size=10,
     )
+    plotter.add_text("tetrahedron refs: {0}", position="lower_left", font_size=9)
 
     plotter.link_views()
     plotter.camera_position = [(2.4, 2.0, 1.7), (0.5, 0.5, 0.5), (0, 0, 1)]
