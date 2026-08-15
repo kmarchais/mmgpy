@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from pathlib import Path
 
     from numpy.typing import NDArray
 
@@ -239,6 +239,80 @@ def infer_sol_type(array: NDArray[np.float64], dimension: int) -> int:
     raise ValueError(msg)
 
 
+def _group_sol_fields(
+    fields: Sequence[tuple[str, NDArray[np.float64], Location]],
+    dimension: int,
+) -> dict[Location, list[tuple[str, NDArray[np.float64], int]]]:
+    """Normalize solution arrays and group them by mesh entity location.
+
+    Returns
+    -------
+    dict
+        Normalized fields grouped by entity location.
+
+    Raises
+    ------
+    ValueError
+        If a field uses an unsupported entity location.
+
+    """
+    by_location: dict[Location, list[tuple[str, NDArray[np.float64], int]]] = {}
+    for name, raw, location in fields:
+        if location not in _LOCATION_TO_KEYWORD:
+            msg = (
+                f"Unknown location {location!r} for field {name!r}; expected "
+                f"one of {sorted(_LOCATION_TO_KEYWORD)}"
+            )
+            raise ValueError(msg)
+        array = np.ascontiguousarray(raw, dtype=np.float64)
+        sol_type = infer_sol_type(array, dimension)
+        by_location.setdefault(location, []).append((name, array, sol_type))
+    return by_location
+
+
+def _format_sol_group(
+    location: Location,
+    group: list[tuple[str, NDArray[np.float64], int]],
+) -> list[str]:
+    """Format one location group's header and interleaved data rows.
+
+    Returns
+    -------
+    list[str]
+        Header, data rows, and trailing separator for the location group.
+
+    Raises
+    ------
+    ValueError
+        If fields in the location group have inconsistent row counts.
+
+    """
+    n_entities = group[0][1].shape[0]
+    for name, array, _ in group:
+        if array.shape[0] != n_entities:
+            msg = (
+                f"All sol blocks at {location!r} must share length "
+                f"{n_entities}; field {name!r} has length {array.shape[0]}"
+            )
+            raise ValueError(msg)
+
+    type_header = [str(len(group)), *(str(sol_type) for _, _, sol_type in group)]
+    lines = [_LOCATION_TO_KEYWORD[location], str(n_entities), " ".join(type_header)]
+
+    # Concatenate each row across all blocks. This is the per-vertex
+    # "all values" layout Medit expects.
+    per_row_chunks = [
+        array if array.ndim == _TABLE_NDIM else array.reshape(-1, 1)
+        for _, array, _ in group
+    ]
+    joined = np.concatenate(per_row_chunks, axis=1)
+    # %.17g is the shortest round-trip-safe double format and matches
+    # Medit's expectation of plain decimal / scientific notation.
+    lines.extend(" ".join(f"{value:.17g}" for value in row) for row in joined)
+    lines.append("")
+    return lines
+
+
 def write_sol_file(
     path: str | Path,
     fields: Sequence[tuple[str, NDArray[np.float64], Location]],
@@ -277,48 +351,10 @@ def write_sol_file(
         msg = "write_sol_file: no fields to write"
         raise ValueError(msg)
 
-    by_location: dict[Location, list[tuple[str, NDArray[np.float64], int]]] = {}
-    for name, raw, location in fields:
-        if location not in _LOCATION_TO_KEYWORD:
-            msg = (
-                f"Unknown location {location!r} for field {name!r}; expected "
-                f"one of {sorted(_LOCATION_TO_KEYWORD)}"
-            )
-            raise ValueError(msg)
-        arr = np.ascontiguousarray(raw, dtype=np.float64)
-        sol_type = infer_sol_type(arr, dimension)
-        by_location.setdefault(location, []).append((name, arr, sol_type))
-
+    by_location = _group_sol_fields(fields, dimension)
     lines: list[str] = ["MeshVersionFormatted 2", "", f"Dimension {dimension}", ""]
-
     for location, group in by_location.items():
-        keyword = _LOCATION_TO_KEYWORD[location]
-        n_entities = group[0][1].shape[0]
-        for name, arr, _ in group:
-            if arr.shape[0] != n_entities:
-                msg = (
-                    f"All sol blocks at {location!r} must share length "
-                    f"{n_entities}; field {name!r} has length {arr.shape[0]}"
-                )
-                raise ValueError(msg)
-        lines.extend((keyword, str(n_entities)))
-        type_header = [str(len(group))] + [str(t) for _, _, t in group]
-        lines.append(" ".join(type_header))
-
-        # Concatenate each row across all blocks. This is the per-vertex
-        # "all values" layout Medit expects.
-        per_row_chunks = [
-            arr if arr.ndim == _TABLE_NDIM else arr.reshape(-1, 1)
-            for _, arr, _ in group
-        ]
-        joined = np.concatenate(per_row_chunks, axis=1)
-        # %.17g is the shortest round-trip-safe double format and matches
-        # Medit's expectation of plain decimal / scientific notation.
-        lines.extend(" ".join(f"{v:.17g}" for v in row.tolist()) for row in joined)
-        lines.append("")
+        lines.extend(_format_sol_group(location, group))
 
     lines.extend(("End", ""))
-
-    from pathlib import Path as _Path  # noqa: PLC0415
-
-    _Path(path).write_text("\n".join(lines), encoding="utf-8")
+    Path(path).write_text("\n".join(lines), encoding="utf-8")
