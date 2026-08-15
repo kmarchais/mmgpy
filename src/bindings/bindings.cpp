@@ -153,6 +153,13 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      .def(
+          "set_input_parameter_name",
+          [](MmgMesh &self, const py::object &path) {
+            self.set_input_parameter_name(path_to_variant(path));
+          },
+          py::arg("path"))
+      .def("get_iparameter", &MmgMesh::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh::set_multi_materials,
            py::arg("materials"),
@@ -189,6 +196,12 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMesh &self, const py::object &path) {
              self.save(path_to_variant(path));
            })
+      .def(
+          "save_tetgen",
+          [](const MmgMesh &self, const py::object &path) {
+            self.save_tetgen(path_to_variant(path));
+          },
+          py::arg("path"))
       .def(
           "load_sol",
           [](MmgMesh &self, const py::object &path,
@@ -335,6 +348,12 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      .def(
+          "set_input_parameter_name",
+          [](MmgMesh2D &self, const py::object &path) {
+            self.set_input_parameter_name(path_to_variant(path));
+          },
+          py::arg("path"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh2D::set_multi_materials,
            py::arg("materials"),
@@ -375,6 +394,12 @@ PYBIND11_MODULE(_mmgpy, m) {
            [](const MmgMesh2D &self, const py::object &path) {
              self.save(path_to_variant(path));
            })
+      .def(
+          "save_tetgen",
+          [](const MmgMesh2D &self, const py::object &path) {
+            self.save_tetgen(path_to_variant(path));
+          },
+          py::arg("path"))
       .def(
           "load_sol",
           [](MmgMesh2D &self, const py::object &path,
@@ -520,6 +545,13 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      .def(
+          "set_input_parameter_name",
+          [](MmgMeshS &self, const py::object &path) {
+            self.set_input_parameter_name(path_to_variant(path));
+          },
+          py::arg("path"))
+      .def("get_iparameter", &MmgMeshS::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMeshS::set_multi_materials,
            py::arg("materials"),

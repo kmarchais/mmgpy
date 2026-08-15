@@ -1098,6 +1098,15 @@ class MmgMesh3D:
     def is_corrupted(self) -> bool:
         """Whether the mesh is in a corrupted state due to a failed bulk setter."""
 
+    def set_input_parameter_name(self, path: str | Path) -> None:
+        """Select an MMG parameter file to parse before remeshing."""
+
+    def get_iparameter(self, parameter: int) -> int:
+        """Return an MMG3D integer parameter by its ``MMG3D_Param`` value."""
+
+    def save_tetgen(self, path: str | Path) -> None:
+        """Save the mesh in TetGen format."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -1950,6 +1959,12 @@ class MmgMesh2D:
     def is_corrupted(self) -> bool:
         """Whether the mesh is in a corrupted state due to a failed bulk setter."""
 
+    def set_input_parameter_name(self, path: str | Path) -> None:
+        """Select an MMG parameter file to parse before remeshing."""
+
+    def save_tetgen(self, path: str | Path) -> None:
+        """Save the mesh in Triangle/TetGen format."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -2724,6 +2739,12 @@ class MmgMeshS:
     @property
     def is_corrupted(self) -> bool:
         """Whether the mesh is in a corrupted state due to a failed bulk setter."""
+
+    def set_input_parameter_name(self, path: str | Path) -> None:
+        """Select an MMG parameter file to parse before remeshing."""
+
+    def get_iparameter(self, parameter: int) -> int:
+        """Return an MMGS integer parameter by its ``MMGS_Param`` value."""
 
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.

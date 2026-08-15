@@ -672,6 +672,19 @@ void MmgMesh2D::set_local_parameters(const py::list &parameters) {
   }
 }
 
+void MmgMesh2D::set_input_parameter_name(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("set input parameter name");
+  std::string fname = variant_to_string(filename);
+  if (!std::filesystem::is_regular_file(fname)) {
+    throw std::runtime_error("MMG parameter file not found: " + fname);
+  }
+  if (!MMG2D_Set_inputParamName(mesh, fname.c_str())) {
+    throw std::runtime_error("Failed to set MMG parameter file: " + fname);
+  }
+  has_input_parameter_file_ = true;
+}
+
 // Multi-material and level-set
 
 void MmgMesh2D::set_multi_materials(const py::list &materials) {
@@ -973,6 +986,15 @@ void MmgMesh2D::save(
   }
 }
 
+void MmgMesh2D::save_tetgen(
+    const std::variant<std::string, std::filesystem::path> &filename) const {
+  check_not_corrupted("save Triangle mesh");
+  std::string fname = variant_to_string(filename);
+  if (MMG2D_saveTetgenMesh(mesh, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to save Triangle mesh: " + fname);
+  }
+}
+
 void MmgMesh2D::load_sol(
     const std::variant<std::string, std::filesystem::path> &filename,
     const std::string &channel) {
@@ -996,7 +1018,7 @@ void MmgMesh2D::save_sol(
 }
 
 namespace {
-constexpr MultiSolApi MMG2D_MULTISOL_API = {
+const MultiSolApi MMG2D_MULTISOL_API = {
     &MMG2D_Set_solsAtVerticesSize,
     &MMG2D_Get_solsAtVerticesSize,
     &MMG2D_Set_ithSols_inSolsAtVertices,
@@ -1073,6 +1095,12 @@ py::dict MmgMesh2D::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
+  if (has_input_parameter_file_) {
+    if (!MMG2D_parsop(mesh, met)) {
+      throw std::runtime_error("Failed to parse MMG2D parameter file");
+    }
+    has_input_parameter_file_ = false;
+  }
   set_mesh_options_2D(mesh, met, options);
 
   // Capture stderr to collect MMG warnings
@@ -1119,6 +1147,12 @@ py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
 
   set_field("levelset", levelset);
   py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
+  if (has_input_parameter_file_) {
+    if (!MMG2D_parsop(mesh, met)) {
+      throw std::runtime_error("Failed to parse MMG2D parameter file");
+    }
+    has_input_parameter_file_ = false;
+  }
   set_mesh_options_2D(mesh, met, ls_options);
 
   // Capture stderr to collect MMG warnings
