@@ -77,21 +77,14 @@ def main() -> None:
         raise RuntimeError(msg)
 
     full_cell_refs = np.asarray(full.cell_data["refs"])
-    negative_region_surface = full.extract_cells(
+    negative_region = full.extract_cells(
         np.flatnonzero(full_cell_refs == 3),
     ).extract_surface(algorithm="dataset_surface")
-    interface_centers = negative_region_surface.cell_centers().points
-    interface = negative_region_surface.extract_cells(
-        np.flatnonzero(np.isclose(interface_centers[:, 0], ISOVALUE_X)),
-    )
-    full_slice = full.slice(normal=(0, 1, 0), origin=(0.5, 0.5, 0.5))
-    full_cross_section = full_slice.extract_cells(
-        np.arange(full_slice.n_verts + full_slice.n_lines, full_slice.n_cells),
-    )
-    interface_line = interface.slice(
-        normal=(0, 1, 0),
-        origin=(0.5, 0.5, 0.5),
-    )
+    positive_region = full.extract_cells(
+        np.flatnonzero(full_cell_refs == 2),
+    ).extract_surface(algorithm="dataset_surface")
+    negative_region.translate((-0.1, 0.0, 0.0), inplace=True)
+    positive_region.translate((0.1, 0.0, 0.0), inplace=True)
 
     surface = boundary.extract_surface(algorithm="dataset_surface")
     surface_edges = surface.extract_all_edges()
@@ -100,85 +93,64 @@ def main() -> None:
     boundary_trace = surface_edges.extract_cells(
         np.flatnonzero(np.all(np.isclose(edge_x, ISOVALUE_X), axis=1)),
     )
-    boundary_slice = boundary.slice(normal=(0, 1, 0), origin=(0.5, 0.5, 0.5))
-    boundary_cross_section = boundary_slice.extract_cells(
-        np.arange(
-            boundary_slice.n_verts + boundary_slice.n_lines,
-            boundary_slice.n_cells,
-        ),
-    )
-    boundary_hits = boundary_trace.slice(
-        normal=(0, 1, 0),
-        origin=(0.5, 0.5, 0.5),
-    )
 
     plotter = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
 
     plotter.subplot(0, 0)
     plotter.add_mesh(
-        full_cross_section,
-        scalars="refs",
-        categories=True,
-        clim=(2, 3),
-        cmap=["steelblue", "coral"],
-        show_edges=True,
-        edge_color="white",
-        line_width=0.3,
-        show_scalar_bar=False,
+        negative_region,
+        color="coral",
+        show_edges=False,
     )
     plotter.add_mesh(
-        interface_line,
-        color="black",
-        line_width=7,
-        render_lines_as_tubes=True,
+        positive_region,
+        color="steelblue",
+        show_edges=False,
     )
     plotter.add_point_labels(
-        np.array([[0.18, 0.5, 0.5], [0.72, 0.5, 0.5]]),
-        ["volume ref 3", "volume ref 2"],
-        font_size=18,
-        point_size=0,
+        np.array([[0.08, -0.01, 0.5], [0.78, -0.01, 0.5]]),
+        ["ref 3", "ref 2"],
+        font_size=20,
         shape=None,
         show_points=False,
     )
-    plotter.add_title("DEFAULT: VOLUME SPLIT", font_size=12)
+    plotter.add_title("DEFAULT: SPLITS THE VOLUME", font_size=10)
     plotter.add_text(
-        "black line = interface inside the volume",
-        position="lower_left",
+        "Tetrahedra become TWO material regions",
+        position=(20, 30),
         font_size=10,
     )
 
     plotter.subplot(0, 1)
     plotter.add_mesh(
-        boundary_cross_section,
+        surface,
         color="lightgray",
-        show_edges=True,
-        edge_color="white",
-        line_width=0.3,
+        show_edges=False,
     )
     plotter.add_mesh(
-        boundary_hits,
+        boundary_trace,
         color="coral",
-        point_size=24,
-        render_points_as_spheres=True,
+        line_width=10,
+        render_lines_as_tubes=True,
     )
     plotter.add_point_labels(
-        np.array([[0.5, 0.5, 0.5]]),
-        ["one volume: ref 0\nNO interior interface"],
-        font_size=18,
-        point_size=0,
+        np.array([[0.65, -0.01, 0.5]]),
+        ["ref 0\n(one volume)"],
+        font_size=20,
         shape=None,
         show_points=False,
     )
-    plotter.add_title("surface_only=True: BOUNDARY ONLY", font_size=12)
+    plotter.add_title("surface_only=True: SPLITS ONLY THE SURFACE", font_size=10)
     plotter.add_text(
-        "orange points = boundary intersections",
-        position="lower_left",
+        "All tetrahedra stay ONE material; orange curve is on the skin",
+        position=(20, 30),
         font_size=10,
     )
 
     plotter.link_views()
-    plotter.camera_position = [(0.5, -3.0, 0.5), (0.5, 0.5, 0.5), (0, 0, 1)]
+    plotter.camera_position = [(1.3, -3.0, 1.8), (0.5, 0.5, 0.5), (0, 0, 1)]
     plotter.enable_parallel_projection()
+    plotter.camera.parallel_scale = 0.85
     plotter.show()
 
 
