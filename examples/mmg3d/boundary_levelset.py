@@ -76,11 +76,7 @@ def main() -> None:
         msg = "boundary-only level-set remeshing unexpectedly split the volume refs"
         raise RuntimeError(msg)
 
-    plotter = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
-
-    plotter.subplot(0, 0)
     full_cell_refs = np.asarray(full.cell_data["refs"])
-    full_surface = full.extract_surface(algorithm="dataset_surface")
     negative_region_surface = full.extract_cells(
         np.flatnonzero(full_cell_refs == 3),
     ).extract_surface(algorithm="dataset_surface")
@@ -88,26 +84,15 @@ def main() -> None:
     interface = negative_region_surface.extract_cells(
         np.flatnonzero(np.isclose(interface_centers[:, 0], ISOVALUE_X)),
     )
-    plotter.add_mesh(
-        full_surface,
-        color="lightgray",
-        opacity=0.18,
-        show_edges=True,
-        edge_color="gray",
-        line_width=0.3,
+    full_slice = full.slice(normal=(0, 1, 0), origin=(0.5, 0.5, 0.5))
+    full_cross_section = full_slice.extract_cells(
+        np.arange(full_slice.n_verts + full_slice.n_lines, full_slice.n_cells),
     )
-    plotter.add_mesh(
-        interface,
-        color="coral",
-        opacity=1.0,
-        show_edges=True,
-        edge_color="darkred",
-        line_width=1.5,
+    interface_line = interface.slice(
+        normal=(0, 1, 0),
+        origin=(0.5, 0.5, 0.5),
     )
-    plotter.add_title("Default\ninterface crosses the volume", font_size=10)
-    plotter.add_text("tetrahedron refs: {2, 3}", position="lower_left", font_size=9)
 
-    plotter.subplot(0, 1)
     surface = boundary.extract_surface(algorithm="dataset_surface")
     surface_edges = surface.extract_all_edges()
     edge_vertices = surface_edges.lines.reshape(-1, 3)[:, 1:]
@@ -115,28 +100,85 @@ def main() -> None:
     boundary_trace = surface_edges.extract_cells(
         np.flatnonzero(np.all(np.isclose(edge_x, ISOVALUE_X), axis=1)),
     )
+    boundary_slice = boundary.slice(normal=(0, 1, 0), origin=(0.5, 0.5, 0.5))
+    boundary_cross_section = boundary_slice.extract_cells(
+        np.arange(
+            boundary_slice.n_verts + boundary_slice.n_lines,
+            boundary_slice.n_cells,
+        ),
+    )
+    boundary_hits = boundary_trace.slice(
+        normal=(0, 1, 0),
+        origin=(0.5, 0.5, 0.5),
+    )
+
+    plotter = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
+
+    plotter.subplot(0, 0)
     plotter.add_mesh(
-        surface,
-        color="lightgray",
-        opacity=0.45,
+        full_cross_section,
+        scalars="refs",
+        categories=True,
+        clim=(2, 3),
+        cmap=["steelblue", "coral"],
         show_edges=True,
-        edge_color="gray",
+        edge_color="white",
+        line_width=0.3,
+        show_scalar_bar=False,
+    )
+    plotter.add_mesh(
+        interface_line,
+        color="black",
+        line_width=7,
+        render_lines_as_tubes=True,
+    )
+    plotter.add_point_labels(
+        np.array([[0.18, 0.5, 0.5], [0.72, 0.5, 0.5]]),
+        ["volume ref 3", "volume ref 2"],
+        font_size=18,
+        point_size=0,
+        shape=None,
+        show_points=False,
+    )
+    plotter.add_title("DEFAULT: VOLUME SPLIT", font_size=12)
+    plotter.add_text(
+        "black line = interface inside the volume",
+        position="lower_left",
+        font_size=10,
+    )
+
+    plotter.subplot(0, 1)
+    plotter.add_mesh(
+        boundary_cross_section,
+        color="lightgray",
+        show_edges=True,
+        edge_color="white",
         line_width=0.3,
     )
     plotter.add_mesh(
-        boundary_trace,
+        boundary_hits,
         color="coral",
-        line_width=8,
-        render_lines_as_tubes=True,
+        point_size=24,
+        render_points_as_spheres=True,
     )
-    plotter.add_title(
-        "surface_only=True\nintersection stays on boundary",
+    plotter.add_point_labels(
+        np.array([[0.5, 0.5, 0.5]]),
+        ["one volume: ref 0\nNO interior interface"],
+        font_size=18,
+        point_size=0,
+        shape=None,
+        show_points=False,
+    )
+    plotter.add_title("surface_only=True: BOUNDARY ONLY", font_size=12)
+    plotter.add_text(
+        "orange points = boundary intersections",
+        position="lower_left",
         font_size=10,
     )
-    plotter.add_text("tetrahedron refs: {0}", position="lower_left", font_size=9)
 
     plotter.link_views()
-    plotter.camera_position = [(2.4, 2.0, 1.7), (0.5, 0.5, 0.5), (0, 0, 1)]
+    plotter.camera_position = [(0.5, -3.0, 0.5), (0.5, 0.5, 0.5), (0, 0, 1)]
+    plotter.enable_parallel_projection()
     plotter.show()
 
 
