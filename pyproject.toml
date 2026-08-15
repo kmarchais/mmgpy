@@ -155,10 +155,8 @@ markers = [
 preview = true
 
 [tool.complexipy]
-# Lower this incrementally as the highest-complexity functions are refactored.
 # The UI is currently out of scope.
 paths = ["src/mmgpy"]
-max-complexity-allowed = 17
 exclude = ["ui/**"]
 failed = true
 
