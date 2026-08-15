@@ -93,27 +93,40 @@ def _fields_from_block(
     fields: dict[str, dict] = {}
     col_idx = 0
     for sol_idx, sol_type in enumerate(sol_types):
+        layout = _sol_field_layout(sol_type, sol_idx, n_solutions, dimension)
+        if layout is None:
+            continue
+        base, width = layout
+        payload = data[:, col_idx : col_idx + width]
         if sol_type == _TYPE_SCALAR:
-            base = f"solution_{sol_idx}" if n_solutions > 1 else "solution"
-            payload = data if data.ndim == 1 else data[:, col_idx]
-            fields[f"{base}@{location}"] = {"data": payload, "location": location}
-            col_idx += 1
-        elif sol_type == _TYPE_VECTOR:
-            base = f"vector_{sol_idx}" if n_solutions > 1 else "vector"
-            fields[f"{base}@{location}"] = {
-                "data": data[:, col_idx : col_idx + dimension],
-                "location": location,
-            }
-            col_idx += dimension
-        elif sol_type == _TYPE_TENSOR:
-            tensor_size = dimension * (dimension + 1) // 2
-            base = f"tensor_{sol_idx}" if n_solutions > 1 else "tensor"
-            fields[f"{base}@{location}"] = {
-                "data": data[:, col_idx : col_idx + tensor_size],
-                "location": location,
-            }
-            col_idx += tensor_size
+            payload = data if data.ndim == 1 else payload[:, 0]
+        fields[f"{base}@{location}"] = {"data": payload, "location": location}
+        col_idx += width
     return fields
+
+
+def _sol_field_layout(
+    sol_type: int,
+    sol_idx: int,
+    n_solutions: int,
+    dimension: int,
+) -> tuple[str, int] | None:
+    """Return the field name and column width for a solution type.
+
+    Returns
+    -------
+    tuple[str, int] or None
+        The field name and width, or ``None`` for an unsupported type.
+
+    """
+    suffix = f"_{sol_idx}" if n_solutions > 1 else ""
+    if sol_type == _TYPE_SCALAR:
+        return f"solution{suffix}", 1
+    if sol_type == _TYPE_VECTOR:
+        return f"vector{suffix}", dimension
+    if sol_type == _TYPE_TENSOR:
+        return f"tensor{suffix}", dimension * (dimension + 1) // 2
+    return None
 
 
 def parse_sol_file(content: str) -> dict[str, dict]:
