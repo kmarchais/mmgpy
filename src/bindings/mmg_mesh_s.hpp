@@ -77,6 +77,9 @@ public:
 
   // Local parameters
   void set_local_parameters(const py::list &parameters);
+  void set_input_parameter_name(
+      const std::variant<std::string, std::filesystem::path> &filename);
+  int get_iparameter(MMG5_int parameter) const;
 
   // Multi-material and level-set
   void set_multi_materials(const py::list &materials);
