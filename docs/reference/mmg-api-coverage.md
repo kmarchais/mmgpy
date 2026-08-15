@@ -30,9 +30,12 @@ python scripts/check_mmg_api_coverage.py
 ```
 
 The command fails if MMG adds or removes a public callable, a bound symbol has a stale
-status, or the summary drifts. After changing bindings, `--write` updates direct-binding
-statuses and counts. Newly introduced MMG callables always require a human-written row and
-rationale rather than receiving a guessed classification.
+status, or the summary drifts. Here, **Bound** means that the binding implementation calls
+the C symbol; it does not promise a one-to-one public Python method. Memory-management
+symbols such as `Free_allSols` remain internal implementation details. After changing
+bindings, `--write` updates direct-binding statuses and counts. Newly introduced MMG
+callables always require a human-written row and rationale rather than receiving a guessed
+classification.
 
 Public parameter enums are audited too. All 101 parameters in MMG 5.8.0 are accounted
 for: 97 are mapped directly, while native Lagrangian motion (`MMG3D_IPARAM_lag` and
@@ -45,16 +48,16 @@ parameter is not mapped or explicitly classified.
 The public common header also exposes C representation details. These are accounted for at
 the capability level, but are not included in the callable totals above:
 
-| C API group | Disposition | Python treatment |
-| ----------- | ----------- | ---------------- |
-| `MMG5_type` solution enum | Indirect | Inferred from NumPy field shape and exposed through field arrays |
-| `MMG5_entities` enum | Indirect | Represented by mesh kind and typed element methods |
-| `MMG5_Format` enum | Indirect | Selected from path extensions by native MMG or PyVista-backed I/O |
-| `MMG5_SUCCESS`, `MMG5_LOWFAILURE`, `MMG5_STRONGFAILURE` | Indirect | Converted to results, warnings, and Python exceptions |
-| `MMG5_MMAT_*` constants | Indirect | Multi-material split behavior is exposed through typed methods |
-| `MMG5_ARG_*` variadic tags | Excluded | C allocation protocol hidden by constructors and RAII |
-| `MMG5_*` structs and pointer typedefs | Excluded | Private ABI representation; exposing it would bypass validation and ownership safety |
-| Compile-time limits and buffer-size macros | Excluded | Implementation limits, not stable Python API |
+| C API group                                             | Disposition | Python treatment                                                                     |
+| ------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------ |
+| `MMG5_type` solution enum                               | Indirect    | Inferred from NumPy field shape and exposed through field arrays                     |
+| `MMG5_entities` enum                                    | Indirect    | Represented by mesh kind and typed element methods                                   |
+| `MMG5_Format` enum                                      | Indirect    | Selected from path extensions by native MMG or PyVista-backed I/O                    |
+| `MMG5_SUCCESS`, `MMG5_LOWFAILURE`, `MMG5_STRONGFAILURE` | Indirect    | Converted to results, warnings, and Python exceptions                                |
+| `MMG5_MMAT_*` constants                                 | Indirect    | Multi-material split behavior is exposed through typed methods                       |
+| `MMG5_ARG_*` variadic tags                              | Excluded    | C allocation protocol hidden by constructors and RAII                                |
+| `MMG5_*` structs and pointer typedefs                   | Excluded    | Private ABI representation; exposing it would bypass validation and ownership safety |
+| Compile-time limits and buffer-size macros              | Excluded    | Implementation limits, not stable Python API                                         |
 
 The deterministic checker covers callable declarations and parameter enums. The grouped
 ABI dispositions above are a reviewed policy boundary rather than a promise to mirror C
@@ -79,8 +82,8 @@ Excluded functions fall into categories that should not become one-to-one Python
 | Bound     | C function is directly called in the pybind11 bindings                                                                            |
 | Indirect  | Functionality is available via alternative implementation (direct struct access, reimplementation, or loop over individual calls) |
 | Candidate | User-facing MMG capability is missing and is reasonable to expose                                                                 |
-| Excluded  | Deliberately not ported: internal plumbing, redundant C API shape, legacy helper, or unsafe low-level operation                       |
-| Skipped   | Upstream capability cannot be shipped consistently in supported mmgpy builds                                                       |
+| Excluded  | Deliberately not ported: internal plumbing, redundant C API shape, legacy helper, or unsafe low-level operation                   |
+| Skipped   | Upstream capability cannot be shipped consistently in supported mmgpy builds                                                      |
 
 ---
 
@@ -88,49 +91,49 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### Initialization & Memory Management
 
-| Function                | Status    | Notes                                                 |
-| ----------------------- | --------- | ----------------------------------------------------- |
-| `MMG3D_Init_mesh`       | Bound     | `MmgMesh3D()` constructor; `mmg3d.remesh()`           |
-| `MMG3D_Init_fileNames`  | Excluded  | Called internally by `Init_mesh`                      |
-| `MMG3D_Init_parameters` | Excluded  | Called internally by `Init_mesh`                      |
-| `MMG3D_Free_all`        | Bound     | Called in `MmgMesh3D` destructor and `mmg3d.remesh()` |
-| `MMG3D_Free_structures` | Excluded  | `Free_all` used instead                               |
-| `MMG3D_Free_names`      | Excluded  | `Free_all` used instead                               |
-| `MMG3D_Free_allSols`    | Bound     | Releases arrays used by multi-solution I/O wrappers   |
-| `MMG3D_Free_solutions`  | Excluded  | `Free_all` used instead                               |
+| Function                | Status   | Notes                                                     |
+| ----------------------- | -------- | --------------------------------------------------------- |
+| `MMG3D_Init_mesh`       | Bound    | `MmgMesh3D()` constructor; `mmg3d.remesh()`               |
+| `MMG3D_Init_fileNames`  | Excluded | Called internally by `Init_mesh`                          |
+| `MMG3D_Init_parameters` | Excluded | Called internally by `Init_mesh`                          |
+| `MMG3D_Free_all`        | Bound    | Called in `MmgMesh3D` destructor and `mmg3d.remesh()`     |
+| `MMG3D_Free_structures` | Excluded | `Free_all` used instead                                   |
+| `MMG3D_Free_names`      | Excluded | `Free_all` used instead                                   |
+| `MMG3D_Free_allSols`    | Bound    | Internal cleanup for multi-solution I/O; no Python method |
+| `MMG3D_Free_solutions`  | Excluded | `Free_all` used instead                                   |
 
 ### Mesh Size & Validation
 
-| Function                 | Status    | Notes                                                |
-| ------------------------ | --------- | ---------------------------------------------------- |
-| `MMG3D_Set_meshSize`     | Bound     | `MmgMesh3D.set_mesh_size()`                          |
-| `MMG3D_Get_meshSize`     | Bound     | `MmgMesh3D.get_mesh_size()`                          |
-| `MMG3D_Chk_meshData`     | Indirect  | Called internally by MMG before remeshing            |
-| `MMG3D_Set_constantSize` | Indirect  | Could be useful; use `hsiz` parameter as alternative |
+| Function                 | Status   | Notes                                                |
+| ------------------------ | -------- | ---------------------------------------------------- |
+| `MMG3D_Set_meshSize`     | Bound    | `MmgMesh3D.set_mesh_size()`                          |
+| `MMG3D_Get_meshSize`     | Bound    | `MmgMesh3D.get_mesh_size()`                          |
+| `MMG3D_Chk_meshData`     | Indirect | Called internally by MMG before remeshing            |
+| `MMG3D_Set_constantSize` | Indirect | Could be useful; use `hsiz` parameter as alternative |
 
 ### Vertex Operations
 
-| Function                   | Status    | Notes                                                          |
-| -------------------------- | --------- | -------------------------------------------------------------- |
-| `MMG3D_Set_vertex`         | Bound     | `MmgMesh3D.set_vertex()` and loops in `set_vertices()`         |
-| `MMG3D_Set_vertices`       | Indirect  | `set_vertices()` loops over `Set_vertex` instead               |
-| `MMG3D_Get_vertex`         | Bound     | `MmgMesh3D.get_vertex()` (by iteration index)                  |
-| `MMG3D_GetByIdx_vertex`    | Bound     | Used in `get_vertex()` (by absolute index)                     |
-| `MMG3D_Get_vertices`       | Indirect  | `get_vertices()` accesses struct directly                      |
-| `MMG3D_Add_vertex`         | Indirect  | Python constructs meshes from complete arrays instead          |
-| `MMG3D_Set_normalAtVertex` | Bound     | `MmgMesh3D.set_normal_at_vertices()`                           |
-| `MMG3D_Get_normalAtVertex` | Bound     | `MmgMesh3D.get_normal_at_vertices()`                           |
+| Function                   | Status   | Notes                                                  |
+| -------------------------- | -------- | ------------------------------------------------------ |
+| `MMG3D_Set_vertex`         | Bound    | `MmgMesh3D.set_vertex()` and loops in `set_vertices()` |
+| `MMG3D_Set_vertices`       | Indirect | `set_vertices()` loops over `Set_vertex` instead       |
+| `MMG3D_Get_vertex`         | Bound    | `MmgMesh3D.get_vertex()` (by iteration index)          |
+| `MMG3D_GetByIdx_vertex`    | Bound    | Used in `get_vertex()` (by absolute index)             |
+| `MMG3D_Get_vertices`       | Indirect | `get_vertices()` accesses struct directly              |
+| `MMG3D_Add_vertex`         | Indirect | Python constructs meshes from complete arrays instead  |
+| `MMG3D_Set_normalAtVertex` | Bound    | `MmgMesh3D.set_normal_at_vertices()`                   |
+| `MMG3D_Get_normalAtVertex` | Bound    | `MmgMesh3D.get_normal_at_vertices()`                   |
 
 ### Tetrahedron Operations
 
-| Function                       | Status    | Notes                                                           |
-| ------------------------------ | --------- | --------------------------------------------------------------- |
-| `MMG3D_Set_tetrahedron`        | Bound     | `MmgMesh3D.set_tetrahedron()` and loops in `set_tetrahedra()`   |
-| `MMG3D_Set_tetrahedra`         | Indirect  | `set_tetrahedra()` loops over `Set_tetrahedron` instead         |
-| `MMG3D_Get_tetrahedron`        | Bound     | `MmgMesh3D.get_tetrahedron()`                                   |
-| `MMG3D_Get_tetrahedra`         | Indirect  | `get_tetrahedra()` accesses struct directly                     |
-| `MMG3D_Get_tetrahedronQuality` | Bound     | `MmgMesh3D.get_element_quality()` / `get_element_qualities()`   |
-| `MMG3D_Add_tetrahedron`        | Indirect  | Python constructs meshes from complete arrays instead           |
+| Function                       | Status   | Notes                                                         |
+| ------------------------------ | -------- | ------------------------------------------------------------- |
+| `MMG3D_Set_tetrahedron`        | Bound    | `MmgMesh3D.set_tetrahedron()` and loops in `set_tetrahedra()` |
+| `MMG3D_Set_tetrahedra`         | Indirect | `set_tetrahedra()` loops over `Set_tetrahedron` instead       |
+| `MMG3D_Get_tetrahedron`        | Bound    | `MmgMesh3D.get_tetrahedron()`                                 |
+| `MMG3D_Get_tetrahedra`         | Indirect | `get_tetrahedra()` accesses struct directly                   |
+| `MMG3D_Get_tetrahedronQuality` | Bound    | `MmgMesh3D.get_element_quality()` / `get_element_qualities()` |
+| `MMG3D_Add_tetrahedron`        | Indirect | Python constructs meshes from complete arrays instead         |
 
 ### Triangle Operations
 
@@ -195,82 +198,82 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### Solution / Metric Fields
 
-| Function               | Status    | Notes                                                   |
-| ---------------------- | --------- | ------------------------------------------------------- |
-| `MMG3D_Set_solSize`    | Bound     | Called internally when setting fields via `set_field()` |
-| `MMG3D_Get_solSize`    | Indirect  | Could be useful for querying solution state             |
-| `MMG3D_Set_scalarSol`  | Indirect  | `Set_scalarSols` (bulk) used instead                    |
-| `MMG3D_Set_scalarSols` | Bound     | Used in `set_field("metric")` / `set_field("levelset")` |
-| `MMG3D_Get_scalarSol`  | Indirect  | `Get_scalarSols` (bulk) used instead                    |
-| `MMG3D_Get_scalarSols` | Bound     | Used in `get_field("metric")` / `get_field("levelset")` |
-| `MMG3D_Set_vectorSol`  | Indirect  | `Set_vectorSols` (bulk) used instead                    |
-| `MMG3D_Set_vectorSols` | Bound     | Used in `set_field("displacement")`                     |
-| `MMG3D_Get_vectorSol`  | Indirect  | `Get_vectorSols` (bulk) used instead                    |
-| `MMG3D_Get_vectorSols` | Bound     | Used in `get_field("displacement")`                     |
-| `MMG3D_Set_tensorSol`  | Indirect  | `Set_tensorSols` (bulk) used instead                    |
-| `MMG3D_Set_tensorSols` | Bound     | Used in `set_field("tensor")`                           |
-| `MMG3D_Get_tensorSol`  | Indirect  | `Get_tensorSols` (bulk) used instead                    |
-| `MMG3D_Get_tensorSols` | Bound     | Used in `get_field("tensor")`                           |
+| Function               | Status   | Notes                                                   |
+| ---------------------- | -------- | ------------------------------------------------------- |
+| `MMG3D_Set_solSize`    | Bound    | Called internally when setting fields via `set_field()` |
+| `MMG3D_Get_solSize`    | Indirect | Could be useful for querying solution state             |
+| `MMG3D_Set_scalarSol`  | Indirect | `Set_scalarSols` (bulk) used instead                    |
+| `MMG3D_Set_scalarSols` | Bound    | Used in `set_field("metric")` / `set_field("levelset")` |
+| `MMG3D_Get_scalarSol`  | Indirect | `Get_scalarSols` (bulk) used instead                    |
+| `MMG3D_Get_scalarSols` | Bound    | Used in `get_field("metric")` / `get_field("levelset")` |
+| `MMG3D_Set_vectorSol`  | Indirect | `Set_vectorSols` (bulk) used instead                    |
+| `MMG3D_Set_vectorSols` | Bound    | Used in `set_field("displacement")`                     |
+| `MMG3D_Get_vectorSol`  | Indirect | `Get_vectorSols` (bulk) used instead                    |
+| `MMG3D_Get_vectorSols` | Bound    | Used in `get_field("displacement")`                     |
+| `MMG3D_Set_tensorSol`  | Indirect | `Set_tensorSols` (bulk) used instead                    |
+| `MMG3D_Set_tensorSols` | Bound    | Used in `set_field("tensor")`                           |
+| `MMG3D_Get_tensorSol`  | Indirect | `Get_tensorSols` (bulk) used instead                    |
+| `MMG3D_Get_tensorSols` | Bound    | Used in `get_field("tensor")`                           |
 
 ### Multi-Solution Support
 
-| Function                             | Status    | Notes                                          |
-| ------------------------------------ | --------- | ---------------------------------------------- |
-| `MMG3D_Set_solsAtVerticesSize`       | Bound     | Used by `save_all_sols()`                      |
-| `MMG3D_Get_solsAtVerticesSize`       | Bound     | Used by `load_all_sols()`                      |
-| `MMG3D_Set_ithSol_inSolsAtVertices`  | Indirect  | Set individual values in multi-solution        |
-| `MMG3D_Set_ithSols_inSolsAtVertices` | Bound     | Used by `save_all_sols()`                      |
-| `MMG3D_Get_ithSol_inSolsAtVertices`  | Indirect  | Get individual values from multi-solution      |
-| `MMG3D_Get_ithSols_inSolsAtVertices` | Bound     | Used by `load_all_sols()`                      |
+| Function                             | Status   | Notes                                     |
+| ------------------------------------ | -------- | ----------------------------------------- |
+| `MMG3D_Set_solsAtVerticesSize`       | Bound    | Used by `save_all_sols()`                 |
+| `MMG3D_Get_solsAtVerticesSize`       | Bound    | Used by `load_all_sols()`                 |
+| `MMG3D_Set_ithSol_inSolsAtVertices`  | Indirect | Set individual values in multi-solution   |
+| `MMG3D_Set_ithSols_inSolsAtVertices` | Bound    | Used by `save_all_sols()`                 |
+| `MMG3D_Get_ithSol_inSolsAtVertices`  | Indirect | Get individual values from multi-solution |
+| `MMG3D_Get_ithSols_inSolsAtVertices` | Bound    | Used by `load_all_sols()`                 |
 
 ### Parameters
 
-| Function                     | Status    | Notes                                                          |
-| ---------------------------- | --------- | -------------------------------------------------------------- |
-| `MMG3D_Set_iparameter`       | Bound     | Used in `remesh()` for integer options                         |
-| `MMG3D_Set_dparameter`       | Bound     | Used in `remesh()` for float options (hmin, hmax, etc.)        |
-| `MMG3D_Get_iparameter`       | Bound     | `MmgMesh3D.get_iparameter()`                                   |
-| `MMG3D_Set_localParameter`   | Bound     | `MmgMesh3D.set_local_parameters()`                             |
-| `MMG3D_Set_multiMat`         | Bound     | `MmgMesh3D.set_multi_materials()`                              |
-| `MMG3D_Set_lsBaseReference`  | Bound     | `MmgMesh3D.set_ls_base_references()`                           |
-| `MMG3D_Set_handGivenMesh`    | Excluded  | Only needed after direct writes to opaque MMG C structures    |
-| `MMG3D_switch_metricStorage` | Excluded  | Advanced metric storage control                                |
+| Function                     | Status   | Notes                                                      |
+| ---------------------------- | -------- | ---------------------------------------------------------- |
+| `MMG3D_Set_iparameter`       | Bound    | Used in `remesh()` for integer options                     |
+| `MMG3D_Set_dparameter`       | Bound    | Used in `remesh()` for float options (hmin, hmax, etc.)    |
+| `MMG3D_Get_iparameter`       | Bound    | `MmgMesh3D.get_iparameter()`                               |
+| `MMG3D_Set_localParameter`   | Bound    | `MmgMesh3D.set_local_parameters()`                         |
+| `MMG3D_Set_multiMat`         | Bound    | `MmgMesh3D.set_multi_materials()`                          |
+| `MMG3D_Set_lsBaseReference`  | Bound    | `MmgMesh3D.set_ls_base_references()`                       |
+| `MMG3D_Set_handGivenMesh`    | Excluded | Only needed after direct writes to opaque MMG C structures |
+| `MMG3D_switch_metricStorage` | Excluded | Advanced metric storage control                            |
 
 ### I/O Configuration
 
-| Function                   | Status    | Notes                                                 |
-| -------------------------- | --------- | ----------------------------------------------------- |
-| `MMG3D_Set_inputMeshName`  | Bound     | Used in `mmg3d.remesh()` file-based API               |
-| `MMG3D_Set_outputMeshName` | Bound     | Used in `mmg3d.remesh()` file-based API               |
-| `MMG3D_Set_inputSolName`   | Bound     | Used in `mmg3d.remesh()` file-based API               |
-| `MMG3D_Set_outputSolName`  | Bound     | Used in `mmg3d.remesh()` file-based API               |
-| `MMG3D_Set_inputParamName` | Bound     | `MmgMesh3D.set_input_parameter_name()`                 |
+| Function                   | Status | Notes                                   |
+| -------------------------- | ------ | --------------------------------------- |
+| `MMG3D_Set_inputMeshName`  | Bound  | Used in `mmg3d.remesh()` file-based API |
+| `MMG3D_Set_outputMeshName` | Bound  | Used in `mmg3d.remesh()` file-based API |
+| `MMG3D_Set_inputSolName`   | Bound  | Used in `mmg3d.remesh()` file-based API |
+| `MMG3D_Set_outputSolName`  | Bound  | Used in `mmg3d.remesh()` file-based API |
+| `MMG3D_Set_inputParamName` | Bound  | `MmgMesh3D.set_input_parameter_name()`  |
 
 ### File I/O
 
-| Function                        | Status    | Notes                                                           |
-| ------------------------------- | --------- | --------------------------------------------------------------- |
-| `MMG3D_loadMesh`                | Bound     | Used in `mmg3d.remesh()` and `MmgMesh3D(filename)`              |
-| `MMG3D_saveMesh`                | Bound     | Used in `mmg3d.remesh()` and `MmgMesh3D.save()`                 |
-| `MMG3D_loadSol`                 | Bound     | Used in `mmg3d.remesh()` and `MmgMesh3D.load_sol()`             |
-| `MMG3D_saveSol`                 | Bound     | Used in `mmg3d.remesh()` and `MmgMesh3D.save_sol()`             |
-| `MMG3D_loadGenericMesh`         | Indirect  | Auto-detect format; `loadMesh` used + PyVista for other formats |
-| `MMG3D_saveGenericMesh`         | Indirect  | Auto-detect format; `saveMesh` used + PyVista for other formats |
-| `MMG3D_loadMshMesh`             | Indirect  | Gmsh format; handled by PyVista instead                         |
-| `MMG3D_loadMshMesh_and_allData` | Indirect  | Gmsh format with all data                                       |
-| `MMG3D_saveMshMesh`             | Indirect  | Gmsh format output                                              |
-| `MMG3D_saveMshMesh_and_allData` | Indirect  | Gmsh format with all data                                       |
-| `MMG3D_loadVtkMesh`             | Indirect  | VTK format; handled by PyVista instead                          |
-| `MMG3D_loadVtkMesh_and_allData` | Indirect  | VTK format with all data                                        |
-| `MMG3D_saveVtkMesh`             | Indirect  | VTK format output                                               |
-| `MMG3D_saveVtkMesh_and_allData` | Indirect  | VTK format with all data                                        |
-| `MMG3D_loadVtuMesh`             | Indirect  | VTU format; handled by PyVista instead                          |
-| `MMG3D_loadVtuMesh_and_allData` | Indirect  | VTU format with all data                                        |
-| `MMG3D_saveVtuMesh`             | Indirect  | VTU format output                                               |
-| `MMG3D_saveVtuMesh_and_allData` | Indirect  | VTU format with all data                                        |
-| `MMG3D_loadAllSols`             | Bound     | `MmgMesh3D.load_all_sols()`                                     |
-| `MMG3D_saveAllSols`             | Bound     | `MmgMesh3D.save_all_sols()`                                     |
-| `MMG3D_saveTetgenMesh`          | Bound     | `MmgMesh3D.save_tetgen()`                                       |
+| Function                        | Status   | Notes                                                           |
+| ------------------------------- | -------- | --------------------------------------------------------------- |
+| `MMG3D_loadMesh`                | Bound    | Used in `mmg3d.remesh()` and `MmgMesh3D(filename)`              |
+| `MMG3D_saveMesh`                | Bound    | Used in `mmg3d.remesh()` and `MmgMesh3D.save()`                 |
+| `MMG3D_loadSol`                 | Bound    | Used in `mmg3d.remesh()` and `MmgMesh3D.load_sol()`             |
+| `MMG3D_saveSol`                 | Bound    | Used in `mmg3d.remesh()` and `MmgMesh3D.save_sol()`             |
+| `MMG3D_loadGenericMesh`         | Indirect | Auto-detect format; `loadMesh` used + PyVista for other formats |
+| `MMG3D_saveGenericMesh`         | Indirect | Auto-detect format; `saveMesh` used + PyVista for other formats |
+| `MMG3D_loadMshMesh`             | Indirect | Gmsh format; handled by PyVista instead                         |
+| `MMG3D_loadMshMesh_and_allData` | Indirect | Gmsh format with all data                                       |
+| `MMG3D_saveMshMesh`             | Indirect | Gmsh format output                                              |
+| `MMG3D_saveMshMesh_and_allData` | Indirect | Gmsh format with all data                                       |
+| `MMG3D_loadVtkMesh`             | Indirect | VTK format; handled by PyVista instead                          |
+| `MMG3D_loadVtkMesh_and_allData` | Indirect | VTK format with all data                                        |
+| `MMG3D_saveVtkMesh`             | Indirect | VTK format output                                               |
+| `MMG3D_saveVtkMesh_and_allData` | Indirect | VTK format with all data                                        |
+| `MMG3D_loadVtuMesh`             | Indirect | VTU format; handled by PyVista instead                          |
+| `MMG3D_loadVtuMesh_and_allData` | Indirect | VTU format with all data                                        |
+| `MMG3D_saveVtuMesh`             | Indirect | VTU format output                                               |
+| `MMG3D_saveVtuMesh_and_allData` | Indirect | VTU format with all data                                        |
+| `MMG3D_loadAllSols`             | Bound    | `MmgMesh3D.load_all_sols()`                                     |
+| `MMG3D_saveAllSols`             | Bound    | `MmgMesh3D.save_all_sols()`                                     |
+| `MMG3D_saveTetgenMesh`          | Bound    | `MmgMesh3D.save_tetgen()`                                       |
 
 ### Topology Queries
 
@@ -292,29 +295,29 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### CLI & Internal Utilities
 
-| Function               | Status    | Notes                                                 |
-| ---------------------- | --------- | ----------------------------------------------------- |
-| `MMG3D_defaultValues`  | Excluded  | Prints default values to stdout; CLI utility          |
-| `MMG3D_parsar`         | Excluded  | Command-line argument parser; not relevant for Python |
-| `MMG3D_parsop`         | Bound     | Invoked internally before in-memory remeshing         |
-| `MMG3D_usage`          | Excluded  | Prints usage text; CLI utility                        |
-| `MMG3D_Set_commonFunc` | Excluded  | Internal MMG function pointer setup                   |
-| `MMG3D_setfunc`        | Bound     | Initializes `MMG3D_doSol` for `build_size_map()`      |
-| `MMG3D_stockOptions`   | Excluded  | Internal: saves options to mesh structure             |
-| `MMG3D_destockOptions` | Excluded  | Internal: restores options from mesh structure        |
-| `MMG3D_Compute_eigenv` | Indirect  | `metrics.compute_metric_eigenpairs()` / NumPy          |
-| `MMG3D_Clean_isoSurf`  | Bound     | `MmgMesh3D.clean_iso_surface()`                       |
-| `MMG3D_hashTetra`      | Excluded  | Internal hash table construction                      |
-| `MMG3D_searchqua`      | Excluded  | Internal: search for worst quality elements           |
-| `MMG3D_searchlen`      | Excluded  | Internal: search for worst edge lengths               |
-| `MMG3D_mmg3dcheck`     | Excluded  | Internal mesh consistency check                       |
+| Function               | Status   | Notes                                                 |
+| ---------------------- | -------- | ----------------------------------------------------- |
+| `MMG3D_defaultValues`  | Excluded | Prints default values to stdout; CLI utility          |
+| `MMG3D_parsar`         | Excluded | Command-line argument parser; not relevant for Python |
+| `MMG3D_parsop`         | Bound    | Invoked internally before in-memory remeshing         |
+| `MMG3D_usage`          | Excluded | Prints usage text; CLI utility                        |
+| `MMG3D_Set_commonFunc` | Excluded | Internal MMG function pointer setup                   |
+| `MMG3D_setfunc`        | Bound    | Initializes `MMG3D_doSol` for `build_size_map()`      |
+| `MMG3D_stockOptions`   | Excluded | Internal: saves options to mesh structure             |
+| `MMG3D_destockOptions` | Excluded | Internal: restores options from mesh structure        |
+| `MMG3D_Compute_eigenv` | Indirect | `metrics.compute_metric_eigenpairs()` / NumPy         |
+| `MMG3D_Clean_isoSurf`  | Bound    | `MmgMesh3D.clean_iso_surface()`                       |
+| `MMG3D_hashTetra`      | Excluded | Internal hash table construction                      |
+| `MMG3D_searchqua`      | Excluded | Internal: search for worst quality elements           |
+| `MMG3D_searchlen`      | Excluded | Internal: search for worst edge lengths               |
+| `MMG3D_mmg3dcheck`     | Excluded | Internal mesh consistency check                       |
 
 ### Function Pointers
 
-| Function           | Status    | Notes                                                                                   |
-| ------------------ | --------- | --------------------------------------------------------------------------------------- |
-| `MMG3D_doSol`      | Bound     | Used by `MmgMesh3D.build_size_map()`                                               |
-| `MMG3D_lenedgCoor` | Excluded  | External function pointer for custom edge length computation; advanced C-level callback |
+| Function           | Status   | Notes                                                                                   |
+| ------------------ | -------- | --------------------------------------------------------------------------------------- |
+| `MMG3D_doSol`      | Bound    | Used by `MmgMesh3D.build_size_map()`                                                    |
+| `MMG3D_lenedgCoor` | Excluded | External function pointer for custom edge length computation; advanced C-level callback |
 
 ---
 
@@ -322,38 +325,38 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### Initialization & Memory Management
 
-| Function                | Status    | Notes                                                 |
-| ----------------------- | --------- | ----------------------------------------------------- |
-| `MMG2D_Init_mesh`       | Bound     | `MmgMesh2D()` constructor; `mmg2d.remesh()`           |
-| `MMG2D_Init_fileNames`  | Excluded  | Called internally by `Init_mesh`                      |
-| `MMG2D_Init_parameters` | Excluded  | Called internally by `Init_mesh`                      |
-| `MMG2D_Free_all`        | Bound     | Called in `MmgMesh2D` destructor and `mmg2d.remesh()` |
-| `MMG2D_Free_structures` | Excluded  | `Free_all` used instead                               |
-| `MMG2D_Free_names`      | Excluded  | `Free_all` used instead                               |
-| `MMG2D_Free_allSols`    | Bound     | Releases arrays used by multi-solution I/O wrappers   |
-| `MMG2D_Free_solutions`  | Excluded  | `Free_all` used instead                               |
-| `MMG2D_Free_triangles`  | Excluded  | `Free_all` used instead                               |
-| `MMG2D_Free_edges`      | Excluded  | `Free_all` used instead                               |
+| Function                | Status   | Notes                                                     |
+| ----------------------- | -------- | --------------------------------------------------------- |
+| `MMG2D_Init_mesh`       | Bound    | `MmgMesh2D()` constructor; `mmg2d.remesh()`               |
+| `MMG2D_Init_fileNames`  | Excluded | Called internally by `Init_mesh`                          |
+| `MMG2D_Init_parameters` | Excluded | Called internally by `Init_mesh`                          |
+| `MMG2D_Free_all`        | Bound    | Called in `MmgMesh2D` destructor and `mmg2d.remesh()`     |
+| `MMG2D_Free_structures` | Excluded | `Free_all` used instead                                   |
+| `MMG2D_Free_names`      | Excluded | `Free_all` used instead                                   |
+| `MMG2D_Free_allSols`    | Bound    | Internal cleanup for multi-solution I/O; no Python method |
+| `MMG2D_Free_solutions`  | Excluded | `Free_all` used instead                                   |
+| `MMG2D_Free_triangles`  | Excluded | `Free_all` used instead                                   |
+| `MMG2D_Free_edges`      | Excluded | `Free_all` used instead                                   |
 
 ### Mesh Size & Validation
 
-| Function                 | Status    | Notes                                                |
-| ------------------------ | --------- | ---------------------------------------------------- |
-| `MMG2D_Set_meshSize`     | Bound     | `MmgMesh2D.set_mesh_size()`                          |
-| `MMG2D_Get_meshSize`     | Bound     | `MmgMesh2D.get_mesh_size()`                          |
-| `MMG2D_Chk_meshData`     | Indirect  | Called internally by MMG before remeshing            |
-| `MMG2D_Set_constantSize` | Indirect  | Could be useful; use `hsiz` parameter as alternative |
+| Function                 | Status   | Notes                                                |
+| ------------------------ | -------- | ---------------------------------------------------- |
+| `MMG2D_Set_meshSize`     | Bound    | `MmgMesh2D.set_mesh_size()`                          |
+| `MMG2D_Get_meshSize`     | Bound    | `MmgMesh2D.get_mesh_size()`                          |
+| `MMG2D_Chk_meshData`     | Indirect | Called internally by MMG before remeshing            |
+| `MMG2D_Set_constantSize` | Indirect | Could be useful; use `hsiz` parameter as alternative |
 
 ### Vertex Operations
 
-| Function                   | Status    | Notes                                                  |
-| -------------------------- | --------- | ------------------------------------------------------ |
-| `MMG2D_Set_vertex`         | Bound     | `MmgMesh2D.set_vertex()` and loops in `set_vertices()` |
-| `MMG2D_Set_vertices`       | Indirect  | `set_vertices()` loops over `Set_vertex` instead       |
-| `MMG2D_Get_vertex`         | Bound     | `MmgMesh2D.get_vertex()` (by iteration index)          |
-| `MMG2D_GetByIdx_vertex`    | Bound     | Used in `get_vertex()` (by absolute index)             |
-| `MMG2D_Get_vertices`       | Indirect  | `get_vertices()` accesses struct directly              |
-| `MMG2D_Reset_verticestags` | Excluded  | Resets all vertex tags; niche use case                 |
+| Function                   | Status   | Notes                                                  |
+| -------------------------- | -------- | ------------------------------------------------------ |
+| `MMG2D_Set_vertex`         | Bound    | `MmgMesh2D.set_vertex()` and loops in `set_vertices()` |
+| `MMG2D_Set_vertices`       | Indirect | `set_vertices()` loops over `Set_vertex` instead       |
+| `MMG2D_Get_vertex`         | Bound    | `MmgMesh2D.get_vertex()` (by iteration index)          |
+| `MMG2D_GetByIdx_vertex`    | Bound    | Used in `get_vertex()` (by absolute index)             |
+| `MMG2D_Get_vertices`       | Indirect | `get_vertices()` accesses struct directly              |
+| `MMG2D_Reset_verticestags` | Excluded | Resets all vertex tags; niche use case                 |
 
 ### Triangle Operations
 
@@ -399,33 +402,33 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### Solution / Metric Fields
 
-| Function               | Status    | Notes                                                   |
-| ---------------------- | --------- | ------------------------------------------------------- |
-| `MMG2D_Set_solSize`    | Bound     | Called internally when setting fields via `set_field()` |
-| `MMG2D_Get_solSize`    | Indirect  | Could be useful for querying solution state             |
-| `MMG2D_Set_scalarSol`  | Indirect  | `Set_scalarSols` (bulk) used instead                    |
-| `MMG2D_Set_scalarSols` | Bound     | Used in `set_field("metric")` / `set_field("levelset")` |
-| `MMG2D_Get_scalarSol`  | Indirect  | `Get_scalarSols` (bulk) used instead                    |
-| `MMG2D_Get_scalarSols` | Bound     | Used in `get_field("metric")` / `get_field("levelset")` |
-| `MMG2D_Set_vectorSol`  | Indirect  | `Set_vectorSols` (bulk) used instead                    |
-| `MMG2D_Set_vectorSols` | Bound     | Used in `set_field("displacement")`                     |
-| `MMG2D_Get_vectorSol`  | Indirect  | `Get_vectorSols` (bulk) used instead                    |
-| `MMG2D_Get_vectorSols` | Bound     | Used in `get_field("displacement")`                     |
-| `MMG2D_Set_tensorSol`  | Indirect  | `Set_tensorSols` (bulk) used instead                    |
-| `MMG2D_Set_tensorSols` | Bound     | Used in `set_field("tensor")`                           |
-| `MMG2D_Get_tensorSol`  | Indirect  | `Get_tensorSols` (bulk) used instead                    |
-| `MMG2D_Get_tensorSols` | Bound     | Used in `get_field("tensor")`                           |
+| Function               | Status   | Notes                                                   |
+| ---------------------- | -------- | ------------------------------------------------------- |
+| `MMG2D_Set_solSize`    | Bound    | Called internally when setting fields via `set_field()` |
+| `MMG2D_Get_solSize`    | Indirect | Could be useful for querying solution state             |
+| `MMG2D_Set_scalarSol`  | Indirect | `Set_scalarSols` (bulk) used instead                    |
+| `MMG2D_Set_scalarSols` | Bound    | Used in `set_field("metric")` / `set_field("levelset")` |
+| `MMG2D_Get_scalarSol`  | Indirect | `Get_scalarSols` (bulk) used instead                    |
+| `MMG2D_Get_scalarSols` | Bound    | Used in `get_field("metric")` / `get_field("levelset")` |
+| `MMG2D_Set_vectorSol`  | Indirect | `Set_vectorSols` (bulk) used instead                    |
+| `MMG2D_Set_vectorSols` | Bound    | Used in `set_field("displacement")`                     |
+| `MMG2D_Get_vectorSol`  | Indirect | `Get_vectorSols` (bulk) used instead                    |
+| `MMG2D_Get_vectorSols` | Bound    | Used in `get_field("displacement")`                     |
+| `MMG2D_Set_tensorSol`  | Indirect | `Set_tensorSols` (bulk) used instead                    |
+| `MMG2D_Set_tensorSols` | Bound    | Used in `set_field("tensor")`                           |
+| `MMG2D_Get_tensorSol`  | Indirect | `Get_tensorSols` (bulk) used instead                    |
+| `MMG2D_Get_tensorSols` | Bound    | Used in `get_field("tensor")`                           |
 
 ### Multi-Solution Support
 
-| Function                             | Status    | Notes                                          |
-| ------------------------------------ | --------- | ---------------------------------------------- |
-| `MMG2D_Set_solsAtVerticesSize`       | Bound     | Used by `save_all_sols()`                      |
-| `MMG2D_Get_solsAtVerticesSize`       | Bound     | Used by `load_all_sols()`                      |
-| `MMG2D_Set_ithSol_inSolsAtVertices`  | Indirect  | Set individual values in multi-solution        |
-| `MMG2D_Set_ithSols_inSolsAtVertices` | Bound     | Used by `save_all_sols()`                      |
-| `MMG2D_Get_ithSol_inSolsAtVertices`  | Indirect  | Get individual values from multi-solution      |
-| `MMG2D_Get_ithSols_inSolsAtVertices` | Bound     | Used by `load_all_sols()`                      |
+| Function                             | Status   | Notes                                     |
+| ------------------------------------ | -------- | ----------------------------------------- |
+| `MMG2D_Set_solsAtVerticesSize`       | Bound    | Used by `save_all_sols()`                 |
+| `MMG2D_Get_solsAtVerticesSize`       | Bound    | Used by `load_all_sols()`                 |
+| `MMG2D_Set_ithSol_inSolsAtVertices`  | Indirect | Set individual values in multi-solution   |
+| `MMG2D_Set_ithSols_inSolsAtVertices` | Bound    | Used by `save_all_sols()`                 |
+| `MMG2D_Get_ithSol_inSolsAtVertices`  | Indirect | Get individual values from multi-solution |
+| `MMG2D_Get_ithSols_inSolsAtVertices` | Bound    | Used by `load_all_sols()`                 |
 
 ### Parameters
 
@@ -439,57 +442,57 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### I/O Configuration
 
-| Function                   | Status    | Notes                                                 |
-| -------------------------- | --------- | ----------------------------------------------------- |
-| `MMG2D_Set_inputMeshName`  | Bound     | Used in `mmg2d.remesh()` file-based API               |
-| `MMG2D_Set_outputMeshName` | Bound     | Used in `mmg2d.remesh()` file-based API               |
-| `MMG2D_Set_inputSolName`   | Bound     | Used in `mmg2d.remesh()` file-based API               |
-| `MMG2D_Set_outputSolName`  | Bound     | Used in `mmg2d.remesh()` file-based API               |
-| `MMG2D_Set_inputParamName` | Bound     | `MmgMesh2D.set_input_parameter_name()`                 |
+| Function                   | Status | Notes                                   |
+| -------------------------- | ------ | --------------------------------------- |
+| `MMG2D_Set_inputMeshName`  | Bound  | Used in `mmg2d.remesh()` file-based API |
+| `MMG2D_Set_outputMeshName` | Bound  | Used in `mmg2d.remesh()` file-based API |
+| `MMG2D_Set_inputSolName`   | Bound  | Used in `mmg2d.remesh()` file-based API |
+| `MMG2D_Set_outputSolName`  | Bound  | Used in `mmg2d.remesh()` file-based API |
+| `MMG2D_Set_inputParamName` | Bound  | `MmgMesh2D.set_input_parameter_name()`  |
 
 ### File I/O
 
-| Function                        | Status    | Notes                                                           |
-| ------------------------------- | --------- | --------------------------------------------------------------- |
-| `MMG2D_loadMesh`                | Bound     | Used in `mmg2d.remesh()` and `MmgMesh2D(filename)`              |
-| `MMG2D_saveMesh`                | Bound     | Used in `mmg2d.remesh()` and `MmgMesh2D.save()`                 |
-| `MMG2D_loadSol`                 | Bound     | Used in `mmg2d.remesh()` and `MmgMesh2D.load_sol()`             |
-| `MMG2D_saveSol`                 | Bound     | Used in `mmg2d.remesh()` and `MmgMesh2D.save_sol()`             |
-| `MMG2D_loadGenericMesh`         | Indirect  | Auto-detect format; `loadMesh` used + PyVista for other formats |
-| `MMG2D_saveGenericMesh`         | Indirect  | Auto-detect format; `saveMesh` used + PyVista for other formats |
-| `MMG2D_loadMshMesh`             | Indirect  | Gmsh format; handled by PyVista instead                         |
-| `MMG2D_loadMshMesh_and_allData` | Indirect  | Gmsh format with all data                                       |
-| `MMG2D_saveMshMesh`             | Indirect  | Gmsh format output                                              |
-| `MMG2D_saveMshMesh_and_allData` | Indirect  | Gmsh format with all data                                       |
-| `MMG2D_loadVtkMesh`             | Indirect  | VTK format; handled by PyVista instead                          |
-| `MMG2D_loadVtkMesh_and_allData` | Indirect  | VTK format with all data                                        |
-| `MMG2D_saveVtkMesh`             | Indirect  | VTK format output                                               |
-| `MMG2D_saveVtkMesh_and_allData` | Indirect  | VTK format with all data                                        |
-| `MMG2D_loadVtpMesh`             | Indirect  | VTP format; handled by PyVista instead                          |
-| `MMG2D_loadVtpMesh_and_allData` | Indirect  | VTP format with all data                                        |
-| `MMG2D_saveVtpMesh`             | Indirect  | VTP format output                                               |
-| `MMG2D_saveVtpMesh_and_allData` | Indirect  | VTP format with all data                                        |
-| `MMG2D_loadVtuMesh`             | Indirect  | VTU format; handled by PyVista instead                          |
-| `MMG2D_loadVtuMesh_and_allData` | Indirect  | VTU format with all data                                        |
-| `MMG2D_saveVtuMesh`             | Indirect  | VTU format output                                               |
-| `MMG2D_saveVtuMesh_and_allData` | Indirect  | VTU format with all data                                        |
-| `MMG2D_loadVect`                | Excluded  | Vector field loading (legacy)                                   |
-| `MMG2D_saveVect`                | Excluded  | Vector field saving (legacy)                                    |
-| `MMG2D_loadAllSols`             | Bound     | `MmgMesh2D.load_all_sols()`                                     |
-| `MMG2D_saveAllSols`             | Bound     | `MmgMesh2D.save_all_sols()`                                     |
-| `MMG2D_saveTetgenMesh`          | Bound     | `MmgMesh2D.save_tetgen()`                                       |
+| Function                        | Status   | Notes                                                           |
+| ------------------------------- | -------- | --------------------------------------------------------------- |
+| `MMG2D_loadMesh`                | Bound    | Used in `mmg2d.remesh()` and `MmgMesh2D(filename)`              |
+| `MMG2D_saveMesh`                | Bound    | Used in `mmg2d.remesh()` and `MmgMesh2D.save()`                 |
+| `MMG2D_loadSol`                 | Bound    | Used in `mmg2d.remesh()` and `MmgMesh2D.load_sol()`             |
+| `MMG2D_saveSol`                 | Bound    | Used in `mmg2d.remesh()` and `MmgMesh2D.save_sol()`             |
+| `MMG2D_loadGenericMesh`         | Indirect | Auto-detect format; `loadMesh` used + PyVista for other formats |
+| `MMG2D_saveGenericMesh`         | Indirect | Auto-detect format; `saveMesh` used + PyVista for other formats |
+| `MMG2D_loadMshMesh`             | Indirect | Gmsh format; handled by PyVista instead                         |
+| `MMG2D_loadMshMesh_and_allData` | Indirect | Gmsh format with all data                                       |
+| `MMG2D_saveMshMesh`             | Indirect | Gmsh format output                                              |
+| `MMG2D_saveMshMesh_and_allData` | Indirect | Gmsh format with all data                                       |
+| `MMG2D_loadVtkMesh`             | Indirect | VTK format; handled by PyVista instead                          |
+| `MMG2D_loadVtkMesh_and_allData` | Indirect | VTK format with all data                                        |
+| `MMG2D_saveVtkMesh`             | Indirect | VTK format output                                               |
+| `MMG2D_saveVtkMesh_and_allData` | Indirect | VTK format with all data                                        |
+| `MMG2D_loadVtpMesh`             | Indirect | VTP format; handled by PyVista instead                          |
+| `MMG2D_loadVtpMesh_and_allData` | Indirect | VTP format with all data                                        |
+| `MMG2D_saveVtpMesh`             | Indirect | VTP format output                                               |
+| `MMG2D_saveVtpMesh_and_allData` | Indirect | VTP format with all data                                        |
+| `MMG2D_loadVtuMesh`             | Indirect | VTU format; handled by PyVista instead                          |
+| `MMG2D_loadVtuMesh_and_allData` | Indirect | VTU format with all data                                        |
+| `MMG2D_saveVtuMesh`             | Indirect | VTU format output                                               |
+| `MMG2D_saveVtuMesh_and_allData` | Indirect | VTU format with all data                                        |
+| `MMG2D_loadVect`                | Excluded | Vector field loading (legacy)                                   |
+| `MMG2D_saveVect`                | Excluded | Vector field saving (legacy)                                    |
+| `MMG2D_loadAllSols`             | Bound    | `MmgMesh2D.load_all_sols()`                                     |
+| `MMG2D_saveAllSols`             | Bound    | `MmgMesh2D.save_all_sols()`                                     |
+| `MMG2D_saveTetgenMesh`          | Bound    | `MmgMesh2D.save_tetgen()`                                       |
 
 ### Topology Queries
 
-| Function                        | Status    | Notes                                                               |
-| ------------------------------- | --------- | ------------------------------------------------------------------- |
-| `MMG2D_Get_adjaTri`             | Bound     | `MmgMesh2D.get_adjacent_elements()`                                 |
-| `MMG2D_Get_adjaVertices`        | Indirect  | Requires adjacency tables that may not be available after remeshing |
-| `MMG2D_Get_adjaVerticesFast`    | Indirect  | Same limitation as `Get_adjaVertices`                               |
-| `MMG2D_Get_triFromEdge`         | Bound     | `MmgMesh2D.get_tri_from_edge()`                                     |
-| `MMG2D_Get_trisFromEdge`        | Bound     | `MmgMesh2D.get_tris_from_edge()`                                    |
-| `MMG2D_Get_numberOfNonBdyEdges` | Bound     | Used in `get_non_boundary_edges()`                                  |
-| `MMG2D_Get_nonBdyEdge`          | Bound     | Used in `get_non_boundary_edges()`                                  |
+| Function                        | Status   | Notes                                                               |
+| ------------------------------- | -------- | ------------------------------------------------------------------- |
+| `MMG2D_Get_adjaTri`             | Bound    | `MmgMesh2D.get_adjacent_elements()`                                 |
+| `MMG2D_Get_adjaVertices`        | Indirect | Requires adjacency tables that may not be available after remeshing |
+| `MMG2D_Get_adjaVerticesFast`    | Indirect | Same limitation as `Get_adjaVertices`                               |
+| `MMG2D_Get_triFromEdge`         | Bound    | `MmgMesh2D.get_tri_from_edge()`                                     |
+| `MMG2D_Get_trisFromEdge`        | Bound    | `MmgMesh2D.get_tris_from_edge()`                                    |
+| `MMG2D_Get_numberOfNonBdyEdges` | Bound    | Used in `get_non_boundary_edges()`                                  |
+| `MMG2D_Get_nonBdyEdge`          | Bound    | Used in `get_non_boundary_edges()`                                  |
 
 ### Remeshing Functions
 
@@ -502,22 +505,22 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### CLI & Internal Utilities
 
-| Function               | Status    | Notes                                                 |
-| ---------------------- | --------- | ----------------------------------------------------- |
-| `MMG2D_defaultValues`  | Excluded  | Prints default values to stdout; CLI utility          |
-| `MMG2D_parsar`         | Excluded  | Command-line argument parser; not relevant for Python |
-| `MMG2D_parsop`         | Bound     | Invoked internally before in-memory remeshing         |
-| `MMG2D_usage`          | Excluded  | Prints usage text; CLI utility                        |
-| `MMG2D_Set_commonFunc` | Excluded  | Internal MMG function pointer setup                   |
-| `MMG2D_setfunc`        | Bound     | Initializes `MMG2D_doSol` for `build_size_map()`      |
-| `MMG2D_Compute_eigenv` | Indirect  | `metrics.compute_metric_eigenpairs()` / NumPy          |
-| `MMG2D_scaleMesh`      | Excluded  | Internal mesh scaling for numerical stability         |
+| Function               | Status   | Notes                                                 |
+| ---------------------- | -------- | ----------------------------------------------------- |
+| `MMG2D_defaultValues`  | Excluded | Prints default values to stdout; CLI utility          |
+| `MMG2D_parsar`         | Excluded | Command-line argument parser; not relevant for Python |
+| `MMG2D_parsop`         | Bound    | Invoked internally before in-memory remeshing         |
+| `MMG2D_usage`          | Excluded | Prints usage text; CLI utility                        |
+| `MMG2D_Set_commonFunc` | Excluded | Internal MMG function pointer setup                   |
+| `MMG2D_setfunc`        | Bound    | Initializes `MMG2D_doSol` for `build_size_map()`      |
+| `MMG2D_Compute_eigenv` | Indirect | `metrics.compute_metric_eigenpairs()` / NumPy         |
+| `MMG2D_scaleMesh`      | Excluded | Internal mesh scaling for numerical stability         |
 
 ### Function Pointers
 
-| Function      | Status    | Notes                                                                                |
-| ------------- | --------- | ------------------------------------------------------------------------------------ |
-| `MMG2D_doSol` | Bound     | Used by `MmgMesh2D.build_size_map()`                                              |
+| Function      | Status | Notes                                |
+| ------------- | ------ | ------------------------------------ |
+| `MMG2D_doSol` | Bound  | Used by `MmgMesh2D.build_size_map()` |
 
 ---
 
@@ -525,25 +528,25 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### Initialization & Memory Management
 
-| Function               | Status    | Notes                                               |
-| ---------------------- | --------- | --------------------------------------------------- |
-| `MMGS_Init_mesh`       | Bound     | `MmgMeshS()` constructor; `mmgs.remesh()`           |
-| `MMGS_Init_fileNames`  | Excluded  | Called internally by `Init_mesh`                    |
-| `MMGS_Init_parameters` | Excluded  | Called internally by `Init_mesh`                    |
-| `MMGS_Free_all`        | Bound     | Called in `MmgMeshS` destructor and `mmgs.remesh()` |
-| `MMGS_Free_structures` | Excluded  | `Free_all` used instead                             |
-| `MMGS_Free_names`      | Excluded  | `Free_all` used instead                             |
-| `MMGS_Free_allSols`    | Bound     | Releases arrays used by multi-solution I/O wrappers |
-| `MMGS_Free_solutions`  | Excluded  | `Free_all` used instead                             |
+| Function               | Status   | Notes                                                     |
+| ---------------------- | -------- | --------------------------------------------------------- |
+| `MMGS_Init_mesh`       | Bound    | `MmgMeshS()` constructor; `mmgs.remesh()`                 |
+| `MMGS_Init_fileNames`  | Excluded | Called internally by `Init_mesh`                          |
+| `MMGS_Init_parameters` | Excluded | Called internally by `Init_mesh`                          |
+| `MMGS_Free_all`        | Bound    | Called in `MmgMeshS` destructor and `mmgs.remesh()`       |
+| `MMGS_Free_structures` | Excluded | `Free_all` used instead                                   |
+| `MMGS_Free_names`      | Excluded | `Free_all` used instead                                   |
+| `MMGS_Free_allSols`    | Bound    | Internal cleanup for multi-solution I/O; no Python method |
+| `MMGS_Free_solutions`  | Excluded | `Free_all` used instead                                   |
 
 ### Mesh Size & Validation
 
-| Function                | Status    | Notes                                                |
-| ----------------------- | --------- | ---------------------------------------------------- |
-| `MMGS_Set_meshSize`     | Bound     | `MmgMeshS.set_mesh_size()`                           |
-| `MMGS_Get_meshSize`     | Bound     | `MmgMeshS.get_mesh_size()`                           |
-| `MMGS_Chk_meshData`     | Indirect  | Called internally by MMG before remeshing            |
-| `MMGS_Set_constantSize` | Indirect  | Could be useful; use `hsiz` parameter as alternative |
+| Function                | Status   | Notes                                                |
+| ----------------------- | -------- | ---------------------------------------------------- |
+| `MMGS_Set_meshSize`     | Bound    | `MmgMeshS.set_mesh_size()`                           |
+| `MMGS_Get_meshSize`     | Bound    | `MmgMeshS.get_mesh_size()`                           |
+| `MMGS_Chk_meshData`     | Indirect | Called internally by MMG before remeshing            |
+| `MMGS_Set_constantSize` | Indirect | Could be useful; use `hsiz` parameter as alternative |
 
 ### Vertex Operations
 
@@ -593,92 +596,92 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### Solution / Metric Fields
 
-| Function              | Status    | Notes                                                   |
-| --------------------- | --------- | ------------------------------------------------------- |
-| `MMGS_Set_solSize`    | Bound     | Called internally when setting fields via `set_field()` |
-| `MMGS_Get_solSize`    | Indirect  | Could be useful for querying solution state             |
-| `MMGS_Set_scalarSol`  | Indirect  | `Set_scalarSols` (bulk) used instead                    |
-| `MMGS_Set_scalarSols` | Bound     | Used in `set_field("metric")` / `set_field("levelset")` |
-| `MMGS_Get_scalarSol`  | Indirect  | `Get_scalarSols` (bulk) used instead                    |
-| `MMGS_Get_scalarSols` | Bound     | Used in `get_field("metric")` / `get_field("levelset")` |
-| `MMGS_Set_vectorSol`  | Indirect  | `Set_vectorSols` (bulk) used instead                    |
-| `MMGS_Set_vectorSols` | Bound     | Used in `set_field("displacement")`                     |
-| `MMGS_Get_vectorSol`  | Indirect  | `Get_vectorSols` (bulk) used instead                    |
-| `MMGS_Get_vectorSols` | Bound     | Used in `get_field("displacement")`                     |
-| `MMGS_Set_tensorSol`  | Indirect  | `Set_tensorSols` (bulk) used instead                    |
-| `MMGS_Set_tensorSols` | Bound     | Used in `set_field("tensor")`                           |
-| `MMGS_Get_tensorSol`  | Indirect  | `Get_tensorSols` (bulk) used instead                    |
-| `MMGS_Get_tensorSols` | Bound     | Used in `get_field("tensor")`                           |
+| Function              | Status   | Notes                                                   |
+| --------------------- | -------- | ------------------------------------------------------- |
+| `MMGS_Set_solSize`    | Bound    | Called internally when setting fields via `set_field()` |
+| `MMGS_Get_solSize`    | Indirect | Could be useful for querying solution state             |
+| `MMGS_Set_scalarSol`  | Indirect | `Set_scalarSols` (bulk) used instead                    |
+| `MMGS_Set_scalarSols` | Bound    | Used in `set_field("metric")` / `set_field("levelset")` |
+| `MMGS_Get_scalarSol`  | Indirect | `Get_scalarSols` (bulk) used instead                    |
+| `MMGS_Get_scalarSols` | Bound    | Used in `get_field("metric")` / `get_field("levelset")` |
+| `MMGS_Set_vectorSol`  | Indirect | `Set_vectorSols` (bulk) used instead                    |
+| `MMGS_Set_vectorSols` | Bound    | Used in `set_field("displacement")`                     |
+| `MMGS_Get_vectorSol`  | Indirect | `Get_vectorSols` (bulk) used instead                    |
+| `MMGS_Get_vectorSols` | Bound    | Used in `get_field("displacement")`                     |
+| `MMGS_Set_tensorSol`  | Indirect | `Set_tensorSols` (bulk) used instead                    |
+| `MMGS_Set_tensorSols` | Bound    | Used in `set_field("tensor")`                           |
+| `MMGS_Get_tensorSol`  | Indirect | `Get_tensorSols` (bulk) used instead                    |
+| `MMGS_Get_tensorSols` | Bound    | Used in `get_field("tensor")`                           |
 
 ### Multi-Solution Support
 
-| Function                            | Status    | Notes                                          |
-| ----------------------------------- | --------- | ---------------------------------------------- |
-| `MMGS_Set_solsAtVerticesSize`       | Bound     | Used by `save_all_sols()`                      |
-| `MMGS_Get_solsAtVerticesSize`       | Bound     | Used by `load_all_sols()`                      |
-| `MMGS_Set_ithSol_inSolsAtVertices`  | Indirect  | Set individual values in multi-solution        |
-| `MMGS_Set_ithSols_inSolsAtVertices` | Bound     | Used by `save_all_sols()`                      |
-| `MMGS_Get_ithSol_inSolsAtVertices`  | Indirect  | Get individual values from multi-solution      |
-| `MMGS_Get_ithSols_inSolsAtVertices` | Bound     | Used by `load_all_sols()`                      |
+| Function                            | Status   | Notes                                     |
+| ----------------------------------- | -------- | ----------------------------------------- |
+| `MMGS_Set_solsAtVerticesSize`       | Bound    | Used by `save_all_sols()`                 |
+| `MMGS_Get_solsAtVerticesSize`       | Bound    | Used by `load_all_sols()`                 |
+| `MMGS_Set_ithSol_inSolsAtVertices`  | Indirect | Set individual values in multi-solution   |
+| `MMGS_Set_ithSols_inSolsAtVertices` | Bound    | Used by `save_all_sols()`                 |
+| `MMGS_Get_ithSol_inSolsAtVertices`  | Indirect | Get individual values from multi-solution |
+| `MMGS_Get_ithSols_inSolsAtVertices` | Bound    | Used by `load_all_sols()`                 |
 
 ### Parameters
 
-| Function                   | Status    | Notes                                                   |
-| -------------------------- | --------- | ------------------------------------------------------- |
-| `MMGS_Set_iparameter`      | Bound     | Used in `remesh()` for integer options                  |
-| `MMGS_Set_dparameter`      | Bound     | Used in `remesh()` for float options (hmin, hmax, etc.) |
-| `MMGS_Get_iparameter`      | Bound     | `MmgMeshS.get_iparameter()`                            |
-| `MMGS_Set_localParameter`  | Bound     | `MmgMeshS.set_local_parameters()`                       |
-| `MMGS_Set_multiMat`        | Bound     | `MmgMeshS.set_multi_materials()`                        |
-| `MMGS_Set_lsBaseReference` | Bound     | `MmgMeshS.set_ls_base_references()`                     |
+| Function                   | Status | Notes                                                   |
+| -------------------------- | ------ | ------------------------------------------------------- |
+| `MMGS_Set_iparameter`      | Bound  | Used in `remesh()` for integer options                  |
+| `MMGS_Set_dparameter`      | Bound  | Used in `remesh()` for float options (hmin, hmax, etc.) |
+| `MMGS_Get_iparameter`      | Bound  | `MmgMeshS.get_iparameter()`                             |
+| `MMGS_Set_localParameter`  | Bound  | `MmgMeshS.set_local_parameters()`                       |
+| `MMGS_Set_multiMat`        | Bound  | `MmgMeshS.set_multi_materials()`                        |
+| `MMGS_Set_lsBaseReference` | Bound  | `MmgMeshS.set_ls_base_references()`                     |
 
 ### I/O Configuration
 
-| Function                  | Status    | Notes                                                |
-| ------------------------- | --------- | ---------------------------------------------------- |
-| `MMGS_Set_inputMeshName`  | Bound     | Used in `mmgs.remesh()` file-based API               |
-| `MMGS_Set_outputMeshName` | Bound     | Used in `mmgs.remesh()` file-based API               |
-| `MMGS_Set_inputSolName`   | Bound     | Used in `mmgs.remesh()` file-based API               |
-| `MMGS_Set_outputSolName`  | Bound     | Used in `mmgs.remesh()` file-based API               |
-| `MMGS_Set_inputParamName` | Bound     | `MmgMeshS.set_input_parameter_name()`                |
+| Function                  | Status | Notes                                  |
+| ------------------------- | ------ | -------------------------------------- |
+| `MMGS_Set_inputMeshName`  | Bound  | Used in `mmgs.remesh()` file-based API |
+| `MMGS_Set_outputMeshName` | Bound  | Used in `mmgs.remesh()` file-based API |
+| `MMGS_Set_inputSolName`   | Bound  | Used in `mmgs.remesh()` file-based API |
+| `MMGS_Set_outputSolName`  | Bound  | Used in `mmgs.remesh()` file-based API |
+| `MMGS_Set_inputParamName` | Bound  | `MmgMeshS.set_input_parameter_name()`  |
 
 ### File I/O
 
-| Function                       | Status    | Notes                                                           |
-| ------------------------------ | --------- | --------------------------------------------------------------- |
-| `MMGS_loadMesh`                | Bound     | Used in `mmgs.remesh()` and `MmgMeshS(filename)`                |
-| `MMGS_saveMesh`                | Bound     | Used in `mmgs.remesh()` and `MmgMeshS.save()`                   |
-| `MMGS_loadSol`                 | Bound     | Used in `mmgs.remesh()` and `MmgMeshS.load_sol()`               |
-| `MMGS_saveSol`                 | Bound     | Used in `mmgs.remesh()` and `MmgMeshS.save_sol()`               |
-| `MMGS_loadGenericMesh`         | Indirect  | Auto-detect format; `loadMesh` used + PyVista for other formats |
-| `MMGS_saveGenericMesh`         | Indirect  | Auto-detect format; `saveMesh` used + PyVista for other formats |
-| `MMGS_loadMshMesh`             | Indirect  | Gmsh format; handled by PyVista instead                         |
-| `MMGS_loadMshMesh_and_allData` | Indirect  | Gmsh format with all data                                       |
-| `MMGS_saveMshMesh`             | Indirect  | Gmsh format output                                              |
-| `MMGS_saveMshMesh_and_allData` | Indirect  | Gmsh format with all data                                       |
-| `MMGS_loadVtkMesh`             | Indirect  | VTK format; handled by PyVista instead                          |
-| `MMGS_loadVtkMesh_and_allData` | Indirect  | VTK format with all data                                        |
-| `MMGS_saveVtkMesh`             | Indirect  | VTK format output                                               |
-| `MMGS_saveVtkMesh_and_allData` | Indirect  | VTK format with all data                                        |
-| `MMGS_loadVtpMesh`             | Indirect  | VTP format; handled by PyVista instead                          |
-| `MMGS_loadVtpMesh_and_allData` | Indirect  | VTP format with all data                                        |
-| `MMGS_saveVtpMesh`             | Indirect  | VTP format output                                               |
-| `MMGS_saveVtpMesh_and_allData` | Indirect  | VTP format with all data                                        |
-| `MMGS_loadVtuMesh`             | Indirect  | VTU format; handled by PyVista instead                          |
-| `MMGS_loadVtuMesh_and_allData` | Indirect  | VTU format with all data                                        |
-| `MMGS_saveVtuMesh`             | Indirect  | VTU format output                                               |
-| `MMGS_saveVtuMesh_and_allData` | Indirect  | VTU format with all data                                        |
-| `MMGS_loadAllSols`             | Bound     | `MmgMeshS.load_all_sols()`                                      |
-| `MMGS_saveAllSols`             | Bound     | `MmgMeshS.save_all_sols()`                                      |
+| Function                       | Status   | Notes                                                           |
+| ------------------------------ | -------- | --------------------------------------------------------------- |
+| `MMGS_loadMesh`                | Bound    | Used in `mmgs.remesh()` and `MmgMeshS(filename)`                |
+| `MMGS_saveMesh`                | Bound    | Used in `mmgs.remesh()` and `MmgMeshS.save()`                   |
+| `MMGS_loadSol`                 | Bound    | Used in `mmgs.remesh()` and `MmgMeshS.load_sol()`               |
+| `MMGS_saveSol`                 | Bound    | Used in `mmgs.remesh()` and `MmgMeshS.save_sol()`               |
+| `MMGS_loadGenericMesh`         | Indirect | Auto-detect format; `loadMesh` used + PyVista for other formats |
+| `MMGS_saveGenericMesh`         | Indirect | Auto-detect format; `saveMesh` used + PyVista for other formats |
+| `MMGS_loadMshMesh`             | Indirect | Gmsh format; handled by PyVista instead                         |
+| `MMGS_loadMshMesh_and_allData` | Indirect | Gmsh format with all data                                       |
+| `MMGS_saveMshMesh`             | Indirect | Gmsh format output                                              |
+| `MMGS_saveMshMesh_and_allData` | Indirect | Gmsh format with all data                                       |
+| `MMGS_loadVtkMesh`             | Indirect | VTK format; handled by PyVista instead                          |
+| `MMGS_loadVtkMesh_and_allData` | Indirect | VTK format with all data                                        |
+| `MMGS_saveVtkMesh`             | Indirect | VTK format output                                               |
+| `MMGS_saveVtkMesh_and_allData` | Indirect | VTK format with all data                                        |
+| `MMGS_loadVtpMesh`             | Indirect | VTP format; handled by PyVista instead                          |
+| `MMGS_loadVtpMesh_and_allData` | Indirect | VTP format with all data                                        |
+| `MMGS_saveVtpMesh`             | Indirect | VTP format output                                               |
+| `MMGS_saveVtpMesh_and_allData` | Indirect | VTP format with all data                                        |
+| `MMGS_loadVtuMesh`             | Indirect | VTU format; handled by PyVista instead                          |
+| `MMGS_loadVtuMesh_and_allData` | Indirect | VTU format with all data                                        |
+| `MMGS_saveVtuMesh`             | Indirect | VTU format output                                               |
+| `MMGS_saveVtuMesh_and_allData` | Indirect | VTU format with all data                                        |
+| `MMGS_loadAllSols`             | Bound    | `MmgMeshS.load_all_sols()`                                      |
+| `MMGS_saveAllSols`             | Bound    | `MmgMeshS.save_all_sols()`                                      |
 
 ### Topology Queries
 
-| Function                       | Status    | Notes                                                               |
-| ------------------------------ | --------- | ------------------------------------------------------------------- |
-| `MMGS_Get_adjaTri`             | Bound     | `MmgMeshS.get_adjacent_elements()`                                  |
-| `MMGS_Get_adjaVerticesFast`    | Indirect  | Requires adjacency tables that may not be available after remeshing |
-| `MMGS_Get_numberOfNonBdyEdges` | Bound     | Used in `get_non_boundary_edges()`                                  |
-| `MMGS_Get_nonBdyEdge`          | Bound     | Used in `get_non_boundary_edges()`                                  |
+| Function                       | Status   | Notes                                                               |
+| ------------------------------ | -------- | ------------------------------------------------------------------- |
+| `MMGS_Get_adjaTri`             | Bound    | `MmgMeshS.get_adjacent_elements()`                                  |
+| `MMGS_Get_adjaVerticesFast`    | Indirect | Requires adjacency tables that may not be available after remeshing |
+| `MMGS_Get_numberOfNonBdyEdges` | Bound    | Used in `get_non_boundary_edges()`                                  |
+| `MMGS_Get_nonBdyEdge`          | Bound    | Used in `get_non_boundary_edges()`                                  |
 
 ### Remeshing Functions
 
@@ -689,23 +692,23 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### CLI & Internal Utilities
 
-| Function              | Status    | Notes                                                 |
-| --------------------- | --------- | ----------------------------------------------------- |
-| `MMGS_defaultValues`  | Excluded  | Prints default values to stdout; CLI utility          |
-| `MMGS_parsar`         | Excluded  | Command-line argument parser; not relevant for Python |
-| `MMGS_usage`          | Excluded  | Prints usage text; CLI utility                        |
-| `MMGS_Set_commonFunc` | Excluded  | Internal MMG function pointer setup                   |
-| `MMGS_setfunc`        | Bound     | Initializes `MMGS_doSol` for `build_size_map()`       |
-| `MMGS_stockOptions`   | Excluded  | Internal: saves options to mesh structure             |
-| `MMGS_destockOptions` | Excluded  | Internal: restores options from mesh structure        |
-| `MMGS_Compute_eigenv` | Indirect  | `metrics.compute_metric_eigenpairs()` / NumPy          |
-| `MMGS_Clean_isoSurf`  | Bound     | `MmgMeshS.clean_iso_surface()`                        |
+| Function              | Status   | Notes                                                 |
+| --------------------- | -------- | ----------------------------------------------------- |
+| `MMGS_defaultValues`  | Excluded | Prints default values to stdout; CLI utility          |
+| `MMGS_parsar`         | Excluded | Command-line argument parser; not relevant for Python |
+| `MMGS_usage`          | Excluded | Prints usage text; CLI utility                        |
+| `MMGS_Set_commonFunc` | Excluded | Internal MMG function pointer setup                   |
+| `MMGS_setfunc`        | Bound    | Initializes `MMGS_doSol` for `build_size_map()`       |
+| `MMGS_stockOptions`   | Excluded | Internal: saves options to mesh structure             |
+| `MMGS_destockOptions` | Excluded | Internal: restores options from mesh structure        |
+| `MMGS_Compute_eigenv` | Indirect | `metrics.compute_metric_eigenpairs()` / NumPy         |
+| `MMGS_Clean_isoSurf`  | Bound    | `MmgMeshS.clean_iso_surface()`                        |
 
 ### Function Pointers
 
-| Function     | Status    | Notes                                                                                |
-| ------------ | --------- | ------------------------------------------------------------------------------------ |
-| `MMGS_doSol` | Bound     | Used by `MmgMeshS.build_size_map()`                                               |
+| Function     | Status | Notes                               |
+| ------------ | ------ | ----------------------------------- |
+| `MMGS_doSol` | Bound  | Used by `MmgMeshS.build_size_map()` |
 
 ---
 

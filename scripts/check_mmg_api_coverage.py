@@ -23,7 +23,10 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib
 
 _LIBRARIES = ("MMG3D", "MMG2D", "MMGS")
 _HEADER_PATHS = {
