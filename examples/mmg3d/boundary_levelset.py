@@ -110,34 +110,46 @@ def main() -> None:
     patch_centers = boundary_patches.cell_centers().points
     boundary_patch_cutaway = boundary_patches.extract_cells(patch_centers[:, 1] >= 0.5)
 
-    plotter = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
+    plotter = pv.Plotter(shape=(1, 3), window_size=(1800, 650))
     plotter.set_background("#eeeeee")
 
     plotter.subplot(0, 0)
     plotter.add_mesh(
         cutaway_ref2,
         color="steelblue",
-        opacity=0.68,
-        show_edges=False,
+        opacity=0.92,
+        show_edges=True,
+        edge_color="#244963",
+        line_width=0.2,
     )
-    plotter.add_mesh(
-        cutaway_ref3,
-        color="coral",
-        opacity=0.68,
-        show_edges=False,
-    )
-    plotter.add_title("DEFAULT: TWO VOLUME REGIONS", font_size=10)
+    plotter.add_title("DEFAULT: VOLUME 1 OF 2 (REF 2)", font_size=9)
     plotter.add_text(
-        "Front half removed; colored tetrahedra have refs 2 and 3",
+        "Tetrahedra with volume ref 2",
         position=(20, 30),
-        font_size=10,
+        font_size=9,
     )
 
     plotter.subplot(0, 1)
     plotter.add_mesh(
+        cutaway_ref3,
+        color="coral",
+        opacity=0.92,
+        show_edges=True,
+        edge_color="#843d26",
+        line_width=0.2,
+    )
+    plotter.add_title("DEFAULT: VOLUME 2 OF 2 (REF 3)", font_size=9)
+    plotter.add_text(
+        "Tetrahedra with volume ref 3",
+        position=(20, 30),
+        font_size=9,
+    )
+
+    plotter.subplot(0, 2)
+    plotter.add_mesh(
         boundary_cutaway,
         color="white",
-        opacity=0.38,
+        opacity=0.58,
         show_edges=True,
         edge_color="gray",
         line_width=0.3,
@@ -148,15 +160,15 @@ def main() -> None:
         categories=True,
         clim=(2, 3),
         cmap=["steelblue", "coral"],
-        opacity=0.76,
+        opacity=0.88,
         show_edges=False,
         show_scalar_bar=False,
     )
-    plotter.add_title("surface_only=True: BOUNDARY PATCHES ONLY", font_size=10)
+    plotter.add_title("surface_only=True: SINGLE VOLUME (REF 0)", font_size=9)
     plotter.add_text(
-        "Same cutaway: colored boundary patches, white volume (ref 0)",
+        "Colors are boundary triangles, not volumes",
         position=(20, 30),
-        font_size=10,
+        font_size=9,
     )
 
     plotter.link_views()
