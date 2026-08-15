@@ -28,13 +28,21 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import numpy as np
 import pyvista as pv
 
-from mmgpy._mesh import _DIMS_2D, _DIMS_3D, MeshKind
+from mmgpy._mesh import (
+    _DIMS_2D,
+    _DIMS_3D,
+    Mesh,
+    MeshKind,
+    _LazyFieldSource,
+    _mesh_from_impl,
+)
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy._pyvista import from_pyvista
 
 logger = logging.getLogger("mmgpy")
 
@@ -44,6 +52,7 @@ _MEDIT_DIMENSION_INLINE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _MEDIT_DIMENSION_VALUE_PATTERN = re.compile(r"^\s*(\d+)\s*$")
+_MMG_FIELDS = frozenset({"metric", "displacement", "levelset", "tensor"})
 
 
 def _parse_medit_header(path: Path) -> tuple[int | None, bool, bool]:
@@ -236,8 +245,44 @@ def _load_medit_native(
     raise ValueError(msg)
 
 
-if TYPE_CHECKING:
-    from mmgpy._mesh import Mesh
+def _wrap_impl(
+    impl: MmgMesh3D | MmgMesh2D | MmgMeshS,
+    point_data: pv.DataSetAttributes | None = None,
+) -> Mesh:
+    """Wrap a native mesh and preserve non-MMG point data lazily.
+
+    Returns
+    -------
+    Mesh
+        The internal mesh wrapper.
+
+    """
+    lazy = None
+    if point_data is not None:
+        fields = {
+            key: np.asarray(point_data[key])
+            for key in point_data
+            if key not in _MMG_FIELDS
+        }
+        lazy = _LazyFieldSource(fields) if fields else None
+    return _mesh_from_impl(impl, _impl_to_kind(impl), lazy_source=lazy)
+
+
+def _read_pyvista_mesh(
+    source: pv.UnstructuredGrid | pv.PolyData,
+    mesh_kind: MeshKind | None,
+) -> Mesh:
+    """Convert a PyVista dataset and retain its user-defined point data.
+
+    Returns
+    -------
+    Mesh
+        The converted internal mesh wrapper.
+
+    """
+    mesh_class = _mesh_kind_to_class(mesh_kind) if mesh_kind is not None else None
+    impl = from_pyvista(source, mesh_class)
+    return _wrap_impl(impl, source.point_data)
 
 
 def _read_mesh_internal(
@@ -264,59 +309,23 @@ def _read_mesh_internal(
         If ``source`` is none of the supported input types.
 
     """
-    # Import here to avoid circular imports
-    from mmgpy._mesh import Mesh, _LazyFieldSource  # noqa: PLC0415
-    from mmgpy._pyvista import from_pyvista  # noqa: PLC0415
-
-    # MMG field names are routed to C++ — exclude from lazy source
-    mmg_fields = frozenset({"metric", "displacement", "levelset", "tensor"})
-
-    # Handle PyVista objects
     if isinstance(source, pv.UnstructuredGrid | pv.PolyData):
-        mesh_class = _mesh_kind_to_class(mesh_kind) if mesh_kind else None
-        impl = from_pyvista(source, mesh_class)
-        kind = _impl_to_kind(impl)
-        point_data = {
-            k: np.asarray(source.point_data[k])
-            for k in source.point_data
-            if k not in mmg_fields
-        }
-        lazy = _LazyFieldSource(point_data) if point_data else None
-        return Mesh._from_impl(impl, kind, lazy_source=lazy)  # noqa: SLF001
+        return _read_pyvista_mesh(source, mesh_kind)
 
-    # Handle file paths
-    if isinstance(source, str | Path):
-        path = Path(source)
-        if not path.exists():
-            msg = f"File not found: {path}"
-            raise FileNotFoundError(msg)
+    if not isinstance(source, str | Path):
+        msg = f"Unsupported source type: {type(source)}"
+        raise TypeError(msg)
 
-        # Use native MMG loading for Medit format to preserve MMG-specific
-        # keywords (Ridges, RequiredVertices, Tangents, reference markers)
-        suffix = path.suffix.lower()
-        if suffix in {".mesh", ".meshb"}:
-            impl = _load_medit_native(path, mesh_kind)
-            kind = _impl_to_kind(impl)
-            return Mesh._from_impl(impl, kind)  # noqa: SLF001
+    path = Path(source)
+    if not path.exists():
+        msg = f"File not found: {path}"
+        raise FileNotFoundError(msg)
 
-        # Use PyVista for other formats. ``pv.read`` returns a wider union
-        # (DataSet | MultiBlock | ...) but on the file extensions we support
-        # only the two PyVista mesh classes come back; ``cast`` keeps mypy
-        # and ty happy without a per-tool type-ignore.
-        pv_mesh = cast("pv.UnstructuredGrid | pv.PolyData", pv.read(path))
-        mesh_class = _mesh_kind_to_class(mesh_kind) if mesh_kind else None
-        impl = from_pyvista(pv_mesh, mesh_class)
-        kind = _impl_to_kind(impl)
-        point_data = {
-            k: np.asarray(pv_mesh.point_data[k])
-            for k in pv_mesh.point_data
-            if k not in mmg_fields
-        }
-        lazy = _LazyFieldSource(point_data) if point_data else None
-        return Mesh._from_impl(impl, kind, lazy_source=lazy)  # noqa: SLF001
+    if path.suffix.lower() in {".mesh", ".meshb"}:
+        return _wrap_impl(_load_medit_native(path, mesh_kind))
 
-    msg = f"Unsupported source type: {type(source)}"
-    raise TypeError(msg)
+    pv_mesh = cast("pv.UnstructuredGrid | pv.PolyData", pv.read(path))
+    return _read_pyvista_mesh(pv_mesh, mesh_kind)
 
 
 def read(

@@ -119,15 +119,15 @@ class SizingEditor:
         """
         # Wrap raw MmgMesh* objects in a Mesh wrapper
         from mmgpy import MeshKind
-        from mmgpy._mesh import Mesh as MeshClass
+        from mmgpy._mesh import _mesh_from_impl
         from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
         if isinstance(mesh, MmgMesh3D):
-            self._mesh: Mesh = MeshClass._from_impl(mesh, MeshKind.TETRAHEDRAL)  # noqa: SLF001
+            self._mesh: Mesh = _mesh_from_impl(mesh, MeshKind.TETRAHEDRAL)
         elif isinstance(mesh, MmgMesh2D):
-            self._mesh = MeshClass._from_impl(mesh, MeshKind.TRIANGULAR_2D)  # noqa: SLF001
+            self._mesh = _mesh_from_impl(mesh, MeshKind.TRIANGULAR_2D)
         elif isinstance(mesh, MmgMeshS):
-            self._mesh = MeshClass._from_impl(mesh, MeshKind.TRIANGULAR_SURFACE)  # noqa: SLF001
+            self._mesh = _mesh_from_impl(mesh, MeshKind.TRIANGULAR_SURFACE)
         else:
             self._mesh = mesh
         self._pv_mesh: pv.PolyData | pv.UnstructuredGrid | None = None

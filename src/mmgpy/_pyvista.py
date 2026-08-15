@@ -66,7 +66,7 @@ _SOLUTION_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 def _apply_solution_aliases(
     mmg_mesh: MmgMesh3D | MmgMesh2D | MmgMeshS,
-    point_data: Any,  # noqa: ANN401 - pyvista.DataSetAttributes is not a Mapping
+    point_data: pv.DataSetAttributes,
 ) -> None:
     """Auto-populate ``metric`` / ``levelset`` from VTK-style array names.
 
@@ -76,18 +76,8 @@ def _apply_solution_aliases(
     """
     if not point_data:
         return
-    matches: dict[str, tuple[str, NDArray[np.float64]]] = {}
-    for key in point_data:
-        for slot, hints in _SOLUTION_HINTS:
-            if slot in matches:
-                continue
-            if any(hint in key for hint in hints):
-                matches[slot] = (key, np.asarray(point_data[key], dtype=np.float64))
-                break
-        if len(matches) == len(_SOLUTION_HINTS):
-            break
-    for slot, (key, arr) in matches.items():
-        shaped = arr.reshape(-1, 1) if arr.ndim == 1 else arr
+    for slot, (key, values) in _find_solution_aliases(point_data).items():
+        shaped = values.reshape(-1, 1) if values.ndim == 1 else values
         try:
             mmg_mesh[slot] = shaped
         except (RuntimeError, ValueError) as exc:
@@ -97,6 +87,46 @@ def _apply_solution_aliases(
                 slot,
                 exc,
             )
+
+
+def _find_solution_aliases(
+    point_data: pv.DataSetAttributes,
+) -> dict[str, tuple[str, NDArray[np.float64]]]:
+    """Return the first point-data array matching each solution slot.
+
+    Returns
+    -------
+    dict
+        Solution slots mapped to their source key and converted values.
+
+    """
+    matches: dict[str, tuple[str, NDArray[np.float64]]] = {}
+    for key in point_data:
+        slot = _match_solution_slot(key, matches)
+        if slot is None:
+            continue
+        matches[slot] = (key, np.asarray(point_data[key], dtype=np.float64))
+        if len(matches) == len(_SOLUTION_HINTS):
+            break
+    return matches
+
+
+def _match_solution_slot(
+    key: str,
+    matches: dict[str, tuple[str, NDArray[np.float64]]],
+) -> str | None:
+    """Find an unmatched solution slot whose hint occurs in ``key``.
+
+    Returns
+    -------
+    str | None
+        The matching slot, or ``None`` when no unused hint matches.
+
+    """
+    for slot, hints in _SOLUTION_HINTS:
+        if slot not in matches and any(hint in key for hint in hints):
+            return slot
+    return None
 
 
 def _all_faces_are_triangles(mesh: pv.PolyData) -> bool:

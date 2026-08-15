@@ -158,7 +158,7 @@ preview = true
 # Lower this incrementally as the highest-complexity functions are refactored.
 # The UI is currently out of scope.
 paths = ["src/mmgpy"]
-max-complexity-allowed = 20
+max-complexity-allowed = 19
 exclude = ["ui/**"]
 failed = true
 

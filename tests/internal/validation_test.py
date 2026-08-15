@@ -11,7 +11,7 @@ from mmgpy import (
     ValidationIssue,
     ValidationReport,
 )
-from mmgpy._mesh import Mesh
+from mmgpy._mesh import Mesh, _mesh_from_impl
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 
 
@@ -173,7 +173,7 @@ class TestMmgMesh3DValidation:
         raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tet))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_tetrahedra(tet)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         # Mesh should be valid after MMG's internal reordering
         report = mesh.validate(detailed=True)
@@ -293,7 +293,7 @@ class TestMmgMesh2DValidation:
         raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(tri))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_triangles(tri)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
 
         # Mesh should be valid (MMG may fix orientation or store as-is)
         report = mesh.validate(detailed=True)
@@ -528,7 +528,7 @@ class TestValidationEdgeCases:
         raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tet))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_tetrahedra(tet)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         degenerate_warnings = [
@@ -575,7 +575,7 @@ class TestValidationEdgeCases:
         raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_tetrahedra(tetrahedra)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         orphan_warnings = [w for w in report.warnings if "orphan" in w.check_name]
@@ -612,7 +612,7 @@ class TestValidationEdgeCases:
         raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_triangles(triangles)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
 
         # This mesh should validate without non-manifold issues
         # (each edge has max 2 faces)
@@ -766,7 +766,7 @@ class TestDuplicateVertexDetection:
         raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_tetrahedra(tetrahedra)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -786,7 +786,7 @@ class TestDuplicateVertexDetection:
         raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_tetrahedra(tetrahedra)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -804,7 +804,7 @@ class TestDuplicateVertexDetection:
         raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_tetrahedra(tetrahedra)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -861,7 +861,7 @@ class TestDuplicateVertexDetection:
         raw_mesh.set_mesh_size(vertices=len(vertices), tetrahedra=len(tetrahedra))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_tetrahedra(tetrahedra)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TETRAHEDRAL)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -885,7 +885,7 @@ class TestDuplicateVertexDetection:
         raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_triangles(triangles)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TRIANGULAR_2D)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
@@ -917,7 +917,7 @@ class TestDuplicateVertexDetection:
         raw_mesh.set_mesh_size(vertices=len(vertices), triangles=len(triangles))
         raw_mesh.set_vertices(vertices)
         raw_mesh.set_triangles(triangles)
-        mesh = Mesh._from_impl(raw_mesh, MeshKind.TRIANGULAR_SURFACE)
+        mesh = _mesh_from_impl(raw_mesh, MeshKind.TRIANGULAR_SURFACE)
 
         report = mesh.validate(detailed=True)
         duplicate_warnings = [w for w in report.warnings if "duplicate" in w.check_name]
