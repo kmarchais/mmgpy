@@ -2028,7 +2028,88 @@ class Mesh:
             method=interpolation,
         )
 
-    def remesh(  # noqa: C901, PLR0912, PLR0915
+    def _load_remesh_input_solution(
+        self,
+        input_sol: str | Path | NDArray[np.float64] | None,
+    ) -> None:
+        """Load file-based or array-based solution data before remeshing."""
+        if input_sol is None:
+            return
+        if isinstance(input_sol, str | Path):
+            self.load_sol(input_sol)
+            return
+
+        metric = np.asarray(input_sol, dtype=np.float64)
+        if metric.ndim == 1:
+            metric = metric.reshape(-1, 1)
+        self["metric"] = metric
+
+    def _apply_remesh_options(
+        self,
+        options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None,
+        kwargs: dict[str, Any],
+    ) -> None:
+        """Validate an options object and merge it into remeshing arguments.
+
+        Raises
+        ------
+        TypeError
+            If options are combined with keyword arguments or do not match the
+            mesh kind.
+
+        """
+        if options is None:
+            return
+        if kwargs:
+            msg = (
+                "Cannot pass both options object and keyword arguments. "
+                "Use one or the other."
+            )
+            raise TypeError(msg)
+
+        from mmgpy._options import (  # noqa: PLC0415
+            Mmg2DOptions,
+            Mmg3DOptions,
+            MmgSOptions,
+        )
+
+        options_type_map = {
+            MeshKind.TETRAHEDRAL: Mmg3DOptions,
+            MeshKind.TRIANGULAR_2D: Mmg2DOptions,
+            MeshKind.TRIANGULAR_SURFACE: MmgSOptions,
+        }
+        expected_type = options_type_map[self._kind]
+        if not isinstance(options, expected_type):
+            msg = (
+                f"Expected {expected_type.__name__} for {self._kind.value} mesh, "
+                f"got {type(options).__name__}"
+            )
+            raise TypeError(msg)
+        kwargs.update(options.to_dict())
+
+    def _update_fields_after_remesh(
+        self,
+        fields_to_transfer: dict[str, NDArray[np.float64]],
+        old_vertices: NDArray[np.float64] | None,
+        old_elements: NDArray[np.int32] | None,
+        interpolation: str,
+    ) -> None:
+        """Transfer captured fields or discard fields invalidated by remeshing."""
+        if fields_to_transfer and old_vertices is not None and old_elements is not None:
+            self._execute_field_transfer(
+                fields_to_transfer,
+                old_vertices,
+                old_elements,
+                interpolation,
+            )
+            return
+
+        self._user_fields.clear()
+        if self._lazy_source is not None:
+            self._lazy_source.invalidate()
+            self._lazy_source = None
+
+    def remesh(
         self,
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         *,
@@ -2110,23 +2191,10 @@ class Mesh:
         ...     return True  # Continue
         >>> mesh.remesh(hmax=0.1, progress=my_callback)
 
-        """
-        from mmgpy._options import (  # noqa: PLC0415
-            Mmg2DOptions,
-            Mmg3DOptions,
-            MmgSOptions,
-        )
+        """  # noqa: DOC502
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
-        # Load solution data if provided
-        if input_sol is not None:
-            if isinstance(input_sol, str | Path):
-                self.load_sol(input_sol)
-            else:
-                arr = np.asarray(input_sol, dtype=np.float64)
-                if arr.ndim == 1:
-                    arr = arr.reshape(-1, 1)
-                self["metric"] = arr
+        self._load_remesh_input_solution(input_sol)
 
         # Validate interpolation method
         valid_methods = ("linear", "nearest")
@@ -2137,29 +2205,7 @@ class Mesh:
             )
             raise ValueError(msg)
 
-        # Validate and convert options object
-        if options is not None:
-            if kwargs:
-                msg = (
-                    "Cannot pass both options object and keyword arguments. "
-                    "Use one or the other."
-                )
-                raise TypeError(msg)
-
-            # Validate options type matches mesh type
-            options_type_map = {
-                MeshKind.TETRAHEDRAL: Mmg3DOptions,
-                MeshKind.TRIANGULAR_2D: Mmg2DOptions,
-                MeshKind.TRIANGULAR_SURFACE: MmgSOptions,
-            }
-            expected_type = options_type_map[self._kind]
-            if not isinstance(options, expected_type):
-                msg = (
-                    f"Expected {expected_type.__name__} for {self._kind.value} mesh, "
-                    f"got {type(options).__name__}"
-                )
-                raise TypeError(msg)
-            kwargs.update(options.to_dict())
+        self._apply_remesh_options(options, kwargs)
 
         do_rcm = _pop_renum_redirect(kwargs)
 
@@ -2194,24 +2240,12 @@ class Mesh:
             stats = self._impl.remesh(**kwargs)
             final_vertices = len(self._impl.get_vertices())
 
-            # Transfer fields to new mesh if captured, otherwise clear stale fields
-            if (
-                fields_to_transfer
-                and old_vertices is not None
-                and old_elements is not None
-            ):
-                self._execute_field_transfer(
-                    fields_to_transfer,
-                    old_vertices,
-                    old_elements,
-                    interpolation,
-                )
-            else:
-                # Clear user fields as they have incorrect vertex count after remeshing
-                self._user_fields.clear()
-                if self._lazy_source is not None:
-                    self._lazy_source.invalidate()
-                    self._lazy_source = None
+            self._update_fields_after_remesh(
+                fields_to_transfer,
+                old_vertices,
+                old_elements,
+                interpolation,
+            )
 
             if do_rcm:
                 from mmgpy._reorder import _apply_rcm_to_mesh  # noqa: PLC0415
