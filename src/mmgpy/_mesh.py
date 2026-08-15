@@ -2044,49 +2044,6 @@ class Mesh:
             metric = metric.reshape(-1, 1)
         self["metric"] = metric
 
-    def _apply_remesh_options(
-        self,
-        options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None,
-        kwargs: dict[str, Any],
-    ) -> None:
-        """Validate an options object and merge it into remeshing arguments.
-
-        Raises
-        ------
-        TypeError
-            If options are combined with keyword arguments or do not match the
-            mesh kind.
-
-        """
-        if options is None:
-            return
-        if kwargs:
-            msg = (
-                "Cannot pass both options object and keyword arguments. "
-                "Use one or the other."
-            )
-            raise TypeError(msg)
-
-        from mmgpy._options import (  # noqa: PLC0415
-            Mmg2DOptions,
-            Mmg3DOptions,
-            MmgSOptions,
-        )
-
-        options_type_map = {
-            MeshKind.TETRAHEDRAL: Mmg3DOptions,
-            MeshKind.TRIANGULAR_2D: Mmg2DOptions,
-            MeshKind.TRIANGULAR_SURFACE: MmgSOptions,
-        }
-        expected_type = options_type_map[self._kind]
-        if not isinstance(options, expected_type):
-            msg = (
-                f"Expected {expected_type.__name__} for {self._kind.value} mesh, "
-                f"got {type(options).__name__}"
-            )
-            raise TypeError(msg)
-        kwargs.update(options.to_dict())
-
     def _update_fields_after_remesh(
         self,
         fields_to_transfer: dict[str, NDArray[np.float64]],
@@ -2191,7 +2148,12 @@ class Mesh:
         ...     return True  # Continue
         >>> mesh.remesh(hmax=0.1, progress=my_callback)
 
-        """  # noqa: DOC502
+        """
+        from mmgpy._options import (  # noqa: PLC0415
+            Mmg2DOptions,
+            Mmg3DOptions,
+            MmgSOptions,
+        )
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
         self._load_remesh_input_solution(input_sol)
@@ -2205,7 +2167,27 @@ class Mesh:
             )
             raise ValueError(msg)
 
-        self._apply_remesh_options(options, kwargs)
+        if options is not None:
+            if kwargs:
+                msg = (
+                    "Cannot pass both options object and keyword arguments. "
+                    "Use one or the other."
+                )
+                raise TypeError(msg)
+
+            options_type_map = {
+                MeshKind.TETRAHEDRAL: Mmg3DOptions,
+                MeshKind.TRIANGULAR_2D: Mmg2DOptions,
+                MeshKind.TRIANGULAR_SURFACE: MmgSOptions,
+            }
+            expected_type = options_type_map[self._kind]
+            if not isinstance(options, expected_type):
+                msg = (
+                    f"Expected {expected_type.__name__} for {self._kind.value} mesh, "
+                    f"got {type(options).__name__}"
+                )
+                raise TypeError(msg)
+            kwargs.update(options.to_dict())
 
         do_rcm = _pop_renum_redirect(kwargs)
 
