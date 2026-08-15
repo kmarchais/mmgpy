@@ -16,6 +16,10 @@ different references to tetrahedra on either side. Passing
 ``surface_only=True`` selects MMG's ``-lssurf`` mode instead: boundary faces
 conform to the isovalue, but the interior volume is not split into materials.
 
+The gyroid-like level set used here makes the distinction visible: standard
+level-set remeshing creates a winding interface throughout the cube, whereas
+boundary-only mode keeps only its contour network on the cube's outer faces.
+
 Run with::
 
     uv run python examples/mmg3d/boundary_levelset.py
@@ -27,9 +31,6 @@ import numpy as np
 import pyvista as pv
 
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
-
-LEVELSET_CENTER = np.array([0.5, -0.15, 0.5])
-LEVELSET_RADIUS = 0.45
 
 
 def background_mesh(resolution: int = 6) -> pv.UnstructuredGrid:
@@ -48,16 +49,17 @@ def volume_refs(mesh: pv.UnstructuredGrid) -> np.ndarray:
     return np.asarray(mesh.cell_data["refs"])[tetrahedra]
 
 
-def sphere_levelset(points: np.ndarray) -> np.ndarray:
-    """Signed distance from a sphere that intersects the cube's front face."""
-    return np.linalg.norm(points - LEVELSET_CENTER, axis=1) - LEVELSET_RADIUS
+def gyroid_levelset(points: np.ndarray) -> np.ndarray:
+    """Evaluate a winding gyroid-like level set over the unit cube."""
+    x, y, z = (2.0 * np.pi * points).T
+    return np.sin(x) * np.cos(y) + np.sin(y) * np.cos(z) + np.sin(z) * np.cos(x) - 0.15
 
 
 def boundary_patch_curve(surface: pv.PolyData) -> pv.PolyData:
     """Extract mesh edges separating the two level-set patches."""
     faces = surface.regular_faces
     centers = surface.points[faces].mean(axis=1)
-    negative = sphere_levelset(centers) < 0.0
+    negative = gyroid_levelset(centers) < 0.0
     edge_sides: dict[tuple[int, int], bool] = {}
     curve_edges: list[tuple[int, int]] = []
 
@@ -82,18 +84,18 @@ def boundary_patch_curve(surface: pv.PolyData) -> pv.PolyData:
 
 def main() -> None:
     """Remesh a curved level set in both modes and compare the results."""
-    background = background_mesh(resolution=7)
-    levelset = sphere_levelset(background.points).reshape(-1, 1)
+    background = background_mesh(resolution=10)
+    levelset = gyroid_levelset(background.points).reshape(-1, 1)
 
     full = background.mmg.remesh_levelset(
         levelset,
-        hmax=0.15,
+        hmax=0.1,
         verbose=False,
     )
     boundary = background.mmg.remesh_levelset(
         levelset,
         surface_only=True,
-        hmax=0.15,
+        hmax=0.1,
         verbose=False,
     )
 
@@ -110,14 +112,18 @@ def main() -> None:
         raise RuntimeError(msg)
 
     full_cell_refs = np.asarray(full.cell_data["refs"])
-    negative_region = full.extract_cells(
+    negative_region_surface = full.extract_cells(
         np.flatnonzero(full_cell_refs == 3),
     ).extract_surface(algorithm="dataset_surface")
-    positive_region = full.extract_cells(
-        np.flatnonzero(full_cell_refs == 2),
-    ).extract_surface(algorithm="dataset_surface")
-    negative_region.translate((-0.18, -0.2, 0.0), inplace=True)
-    positive_region.translate((0.08, 0.08, 0.0), inplace=True)
+    interface_centers = negative_region_surface.cell_centers().points
+    on_cube_boundary = np.any(
+        np.isclose(interface_centers, 0.0) | np.isclose(interface_centers, 1.0),
+        axis=1,
+    )
+    internal_interface = negative_region_surface.extract_cells(
+        np.flatnonzero(~on_cube_boundary),
+    )
+    full_surface = full.extract_surface(algorithm="dataset_surface")
 
     surface = boundary.extract_surface(algorithm="dataset_surface")
     boundary_trace = boundary_patch_curve(surface)
@@ -126,26 +132,20 @@ def main() -> None:
 
     plotter.subplot(0, 0)
     plotter.add_mesh(
-        negative_region,
-        color="coral",
+        full_surface,
+        color="lightgray",
+        opacity=0.12,
         show_edges=False,
     )
     plotter.add_mesh(
-        positive_region,
-        color="steelblue",
+        internal_interface,
+        color="coral",
+        opacity=0.95,
         show_edges=False,
     )
-    plotter.add_point_labels(
-        np.array([[0.32, -0.21, 0.5], [0.8, 0.07, 0.75]]),
-        ["ref 3\n(curved cap)", "ref 2\n(main volume)"],
-        font_size=17,
-        shape=None,
-        show_points=False,
-        always_visible=True,
-    )
-    plotter.add_title("DEFAULT: SPLITS THE VOLUME", font_size=10)
+    plotter.add_title("DEFAULT: INTERNAL LEVEL-SET SHEET", font_size=10)
     plotter.add_text(
-        "Tetrahedra become TWO material regions",
+        "Volume tetrahedra split into refs 2 and 3",
         position=(20, 30),
         font_size=10,
     )
@@ -162,25 +162,15 @@ def main() -> None:
         line_width=10,
         render_lines_as_tubes=True,
     )
-    plotter.add_point_labels(
-        np.array([[0.65, -0.01, 0.5]]),
-        ["ref 0\n(one volume)"],
-        font_size=20,
-        shape=None,
-        show_points=False,
-        always_visible=True,
-    )
-    plotter.add_title("surface_only=True: SPLITS ONLY THE SURFACE", font_size=10)
+    plotter.add_title("surface_only=True: BOUNDARY CONTOURS ONLY", font_size=10)
     plotter.add_text(
-        "All tetrahedra stay ONE material; orange curve is on the skin",
+        "Same level set; every tetrahedron remains ref 0",
         position=(20, 30),
         font_size=10,
     )
 
     plotter.link_views()
-    plotter.camera_position = [(1.3, -3.0, 1.8), (0.5, 0.5, 0.5), (0, 0, 1)]
-    plotter.enable_parallel_projection()
-    plotter.camera.parallel_scale = 0.85
+    plotter.camera_position = [(2.4, -3.0, 2.0), (0.5, 0.5, 0.5), (0, 0, 1)]
     plotter.show()
 
 
