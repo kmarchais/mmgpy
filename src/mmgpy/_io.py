@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pyvista as pv
@@ -44,6 +44,9 @@ from mmgpy._mesh import (
 from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
 from mmgpy._pyvista import from_pyvista
 
+if TYPE_CHECKING:
+    from typing import TextIO
+
 logger = logging.getLogger("mmgpy")
 
 _MEDIT_KEYWORD_ONLY_PATTERN = re.compile(r"^\s*(\w+)\s*$", re.IGNORECASE)
@@ -53,6 +56,36 @@ _MEDIT_DIMENSION_INLINE_PATTERN = re.compile(
 )
 _MEDIT_DIMENSION_VALUE_PATTERN = re.compile(r"^\s*(\d+)\s*$")
 _MMG_FIELDS = frozenset({"metric", "displacement", "levelset", "tensor"})
+
+
+def _parse_medit_header_line(
+    line: str,
+    lines: TextIO,
+) -> tuple[int | None, str | None]:
+    """Parse a dimension or element keyword from a Medit header line.
+
+    Returns
+    -------
+    tuple[int | None, str | None]
+        The parsed dimension and keyword, when present.
+
+    """
+    dimension_match = _MEDIT_DIMENSION_INLINE_PATTERN.match(line)
+    if dimension_match:
+        return int(dimension_match.group(1)), None
+
+    keyword_match = _MEDIT_KEYWORD_ONLY_PATTERN.match(line)
+    if not keyword_match:
+        return None, None
+
+    keyword = keyword_match.group(1).lower()
+    if keyword != "dimension":
+        return None, keyword
+
+    value_match = _MEDIT_DIMENSION_VALUE_PATTERN.match(next(lines, "").strip())
+    if value_match:
+        return int(value_match.group(1)), keyword
+    return None, keyword
 
 
 def _parse_medit_header(path: Path) -> tuple[int | None, bool, bool]:
@@ -76,30 +109,16 @@ def _parse_medit_header(path: Path) -> tuple[int | None, bool, bool]:
             if not stripped or stripped.startswith("#"):
                 continue
 
-            # Check for inline "Dimension N" format first
-            dim_inline = _MEDIT_DIMENSION_INLINE_PATTERN.match(stripped)
-            if dim_inline:
-                dimension = int(dim_inline.group(1))
-                continue
-
-            # Check for keyword-only format
-            keyword_match = _MEDIT_KEYWORD_ONLY_PATTERN.match(stripped)
-            if not keyword_match:
-                continue
-
-            keyword = keyword_match.group(1).lower()
-            if keyword == "dimension":
-                next_line = next(f, "").strip()
-                val_match = _MEDIT_DIMENSION_VALUE_PATTERN.match(next_line)
-                if val_match:
-                    dimension = int(val_match.group(1))
-            elif keyword == "tetrahedra":
+            parsed_dimension, keyword = _parse_medit_header_line(stripped, f)
+            if parsed_dimension is not None:
+                dimension = parsed_dimension
+                if keyword is None:
+                    continue
+            if keyword == "tetrahedra":
                 has_tetrahedra = True
             elif keyword == "triangles":
                 has_triangles = True
 
-            # Stop early only if we found tetrahedra (volumetric mesh)
-            # Continue scanning if only triangles found (might have tetrahedra later)
             if dimension is not None and has_tetrahedra:
                 break
 
