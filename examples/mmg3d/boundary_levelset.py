@@ -93,66 +93,59 @@ def main() -> None:
         raise RuntimeError(msg)
 
     full_tetrahedra = full.extract_cells(full.celltypes == pv.CellType.TETRA)
-    tetra_centers = full_tetrahedra.cell_centers().points
-    cutaway = full_tetrahedra.extract_cells(tetra_centers[:, 1] >= 0.5)
-    cutaway_ref2 = cutaway.extract_cells(cutaway["refs"] == 2)
-    cutaway_ref3 = cutaway.extract_cells(cutaway["refs"] == 3)
+    cutaway = full_tetrahedra.clip(
+        normal=(0.0, 1.0, 0.0),
+        origin=(0.5, 0.5, 0.5),
+        invert=False,
+    )
 
     boundary_tetrahedra = boundary.extract_cells(
         boundary.celltypes == pv.CellType.TETRA
     )
-    boundary_tetra_centers = boundary_tetrahedra.cell_centers().points
-    boundary_cutaway = boundary_tetrahedra.extract_cells(
-        boundary_tetra_centers[:, 1] >= 0.5
+    boundary_cutaway = boundary_tetrahedra.clip(
+        normal=(0.0, 1.0, 0.0),
+        origin=(0.5, 0.5, 0.5),
+        invert=False,
     )
 
     boundary_patches = boundary.extract_cells(boundary_triangle_mask)
-    patch_centers = boundary_patches.cell_centers().points
-    boundary_patch_cutaway = boundary_patches.extract_cells(patch_centers[:, 1] >= 0.5)
+    boundary_patch_cutaway = boundary_patches.clip(
+        normal=(0.0, 1.0, 0.0),
+        origin=(0.5, 0.5, 0.5),
+        invert=False,
+    )
 
-    plotter = pv.Plotter(shape=(1, 3), window_size=(1800, 650))
+    plotter = pv.Plotter(shape=(1, 2), window_size=(1500, 700))
     plotter.set_background("#eeeeee")
 
     plotter.subplot(0, 0)
     plotter.add_mesh(
-        cutaway_ref2,
-        color="steelblue",
-        opacity=0.92,
+        cutaway,
+        scalars="refs",
+        categories=True,
+        clim=(2, 3),
+        cmap=["steelblue", "coral"],
+        opacity=1.0,
         show_edges=True,
-        edge_color="#244963",
+        edge_color="#dddddd",
         line_width=0.2,
+        show_scalar_bar=False,
     )
-    plotter.add_title("DEFAULT: VOLUME 1 OF 2 (REF 2)", font_size=9)
+    plotter.add_title("DEFAULT: INTERIOR CUT HAS TWO REFS", font_size=10)
     plotter.add_text(
-        "Tetrahedra with volume ref 2",
+        "Cut face: blue volume ref 2 + orange volume ref 3",
         position=(20, 30),
-        font_size=9,
+        font_size=10,
     )
 
     plotter.subplot(0, 1)
     plotter.add_mesh(
-        cutaway_ref3,
-        color="coral",
-        opacity=0.92,
-        show_edges=True,
-        edge_color="#843d26",
-        line_width=0.2,
-    )
-    plotter.add_title("DEFAULT: VOLUME 2 OF 2 (REF 3)", font_size=9)
-    plotter.add_text(
-        "Tetrahedra with volume ref 3",
-        position=(20, 30),
-        font_size=9,
-    )
-
-    plotter.subplot(0, 2)
-    plotter.add_mesh(
         boundary_cutaway,
         color="white",
-        opacity=0.58,
+        opacity=1.0,
         show_edges=True,
         edge_color="gray",
-        line_width=0.3,
+        line_width=0.2,
     )
     plotter.add_mesh(
         boundary_patch_cutaway,
@@ -160,15 +153,15 @@ def main() -> None:
         categories=True,
         clim=(2, 3),
         cmap=["steelblue", "coral"],
-        opacity=0.88,
+        opacity=1.0,
         show_edges=False,
         show_scalar_bar=False,
     )
-    plotter.add_title("surface_only=True: SINGLE VOLUME (REF 0)", font_size=9)
+    plotter.add_title("surface_only=True: INTERIOR CUT STAYS REF 0", font_size=10)
     plotter.add_text(
-        "Colors are boundary triangles, not volumes",
+        "Neutral cut face = one volume; colors exist only on outer walls",
         position=(20, 30),
-        font_size=9,
+        font_size=10,
     )
 
     plotter.link_views()
