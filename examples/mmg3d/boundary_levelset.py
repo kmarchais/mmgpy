@@ -55,6 +55,35 @@ def gyroid_levelset(points: np.ndarray) -> np.ndarray:
     return np.sin(x) * np.cos(y) + np.sin(y) * np.cos(z) + np.sin(z) * np.cos(x) - 0.15
 
 
+def explode_boundary_faces(
+    patches: pv.UnstructuredGrid,
+    distance: float = 0.12,
+) -> list[pv.UnstructuredGrid]:
+    """Move each cube-boundary face outward to expose it as a surface layer."""
+    centers = patches.cell_centers().points
+    face_specs = (
+        (0, 0.0, (-distance, 0.0, 0.0)),
+        (0, 1.0, (distance, 0.0, 0.0)),
+        (1, 0.0, (0.0, -distance, 0.0)),
+        (1, 1.0, (0.0, distance, 0.0)),
+        (2, 0.0, (0.0, 0.0, -distance)),
+        (2, 1.0, (0.0, 0.0, distance)),
+    )
+    exploded = []
+    assigned = np.zeros(patches.n_cells, dtype=bool)
+    for axis, coordinate, offset in face_specs:
+        on_face = np.isclose(centers[:, axis], coordinate)
+        assigned |= on_face
+        face = patches.extract_cells(on_face)
+        face.translate(offset, inplace=True)
+        exploded.append(face)
+
+    if not assigned.all():
+        msg = "some boundary triangles are not on a cube face"
+        raise RuntimeError(msg)
+    return exploded
+
+
 def main() -> None:
     """Remesh a curved level set in both modes and compare the results."""
     background = background_mesh(resolution=10)
@@ -101,14 +130,8 @@ def main() -> None:
     boundary_tetrahedra = boundary.extract_cells(
         boundary.celltypes == pv.CellType.TETRA
     )
-    boundary_tetra_centers = boundary_tetrahedra.cell_centers().points
-    boundary_cutaway = boundary_tetrahedra.extract_cells(
-        boundary_tetra_centers[:, 1] >= 0.5
-    )
-
     boundary_patches = boundary.extract_cells(boundary_triangle_mask)
-    patch_centers = boundary_patches.cell_centers().points
-    boundary_patch_cutaway = boundary_patches.extract_cells(patch_centers[:, 1] >= 0.5)
+    exploded_patches = explode_boundary_faces(boundary_patches)
 
     plotter = pv.Plotter(shape=(1, 3), window_size=(1800, 650))
     plotter.set_background("#eeeeee")
@@ -147,26 +170,27 @@ def main() -> None:
 
     plotter.subplot(0, 2)
     plotter.add_mesh(
-        boundary_cutaway,
-        color="white",
-        opacity=0.58,
+        boundary_tetrahedra,
+        color="gainsboro",
+        opacity=1.0,
         show_edges=True,
         edge_color="gray",
-        line_width=0.3,
+        line_width=0.2,
     )
-    plotter.add_mesh(
-        boundary_patch_cutaway,
-        scalars="refs",
-        categories=True,
-        clim=(2, 3),
-        cmap=["steelblue", "coral"],
-        opacity=0.88,
-        show_edges=False,
-        show_scalar_bar=False,
-    )
-    plotter.add_title("surface_only=True: SINGLE VOLUME (REF 0)", font_size=9)
+    for face in exploded_patches:
+        plotter.add_mesh(
+            face,
+            scalars="refs",
+            categories=True,
+            clim=(2, 3),
+            cmap=["steelblue", "coral"],
+            opacity=1.0,
+            show_edges=False,
+            show_scalar_bar=False,
+        )
+    plotter.add_title("surface_only=True: EXPLODED BOUNDARY SKIN", font_size=9)
     plotter.add_text(
-        "Colors are boundary triangles, not volumes",
+        "Colored faces pulled away from the single neutral volume (ref 0)",
         position=(20, 30),
         font_size=9,
     )
