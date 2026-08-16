@@ -727,5 +727,7 @@ Some differences do not correspond to a missing C callable:
   consistently across supported platforms; mmgpy supplies a portable, non-identical mesh
   motion workflow ([#374](https://github.com/kmarchais/mmgpy/issues/374)).
 - Text multi-solution I/O is bound. Binary `.solb` multi-solution I/O remains disabled
-  pending a reliable upstream MMG round-trip
-  ([#375](https://github.com/kmarchais/mmgpy/issues/375)).
+  for affected MMG releases, including the bundled 5.8.0. The raw bindings and Python
+  wrappers raise an actionable error instead of returning corrupted values. Follow the
+  [upstream MMG report](https://github.com/MmgTools/mmg/issues/326) and
+  [mmgpy #375](https://github.com/kmarchais/mmgpy/issues/375) for the fix.

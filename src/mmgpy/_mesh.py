@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 import numpy as np
 import pyvista as pv
 
-from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D, MmgMeshS
+from mmgpy._mmgpy import MMG_VERSION, MmgMesh2D, MmgMesh3D, MmgMeshS
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Sequence
@@ -53,11 +53,25 @@ _TETRA_VERTS = 4
 _TRI_VERTS = 3
 _EDGE_VERTS = 2
 _2D_DETECTION_TOLERANCE = 1e-8
+_SOLB_MULTISOL_UPSTREAM_ISSUE = "https://github.com/MmgTools/mmg/issues/326"
 
 ValidationCheck = Literal["geometry", "topology", "quality"]
 _ALL_CHECKS: frozenset[ValidationCheck] = frozenset(
     ("geometry", "topology", "quality"),
 )
+
+
+def _reject_unreliable_solb_multisol(path: str | Path) -> None:
+    """Reject binary multi-solution I/O for the bundled, affected MMG."""
+    if Path(path).suffix.lower() != ".solb":
+        return
+    msg = (
+        f"Binary .solb multi-solution I/O is disabled for MMG {MMG_VERSION} "
+        "because its writer corrupts binary records. Track the upstream fix at "
+        f"{_SOLB_MULTISOL_UPSTREAM_ISSUE} and use .sol (text) until a fixed MMG "
+        "release is bundled."
+    )
+    raise NotImplementedError(msg)
 
 
 @cache
@@ -1877,14 +1891,7 @@ class Mesh:
             ``(N, dim*(dim+1)/2)``.
 
         """
-        from pathlib import Path as _Path  # noqa: PLC0415
-
-        if _Path(filename).suffix.lower() == ".solb":
-            msg = (
-                "Binary .solb is not supported: MMG's multi-sol .solb "
-                "round-trip is broken at the library level."
-            )
-            raise NotImplementedError(msg)
+        _reject_unreliable_solb_multisol(filename)
         raw = self._impl.load_all_sols(filename)
         out: dict[str, NDArray[np.float64]] = {}
         type_counts = {1: 0, 2: 0, 3: 0}
@@ -1926,23 +1933,14 @@ class Mesh:
 
         Raises
         ------
-        NotImplementedError
-            If a binary ``.solb`` path is given.
         ValueError
             If ``arrays`` is empty, or any block's shape does not match
             a scalar / vector / tensor layout for the mesh dimension.
 
         """
-        from pathlib import Path as _Path  # noqa: PLC0415
-
         from mmgpy._sol import infer_sol_type  # noqa: PLC0415
 
-        if _Path(filename).suffix.lower() == ".solb":
-            msg = (
-                "Binary .solb is not supported: MMG's multi-sol .solb "
-                "round-trip is broken at the library level."
-            )
-            raise NotImplementedError(msg)
+        _reject_unreliable_solb_multisol(filename)
         if not arrays:
             msg = "save_all_sols: arrays must contain at least one block"
             raise ValueError(msg)
