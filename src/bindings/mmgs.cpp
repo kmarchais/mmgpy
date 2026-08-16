@@ -37,7 +37,7 @@ int mmgs_save_mesh(MMG5_pMesh mesh, MMG5_pSol met,
 
 bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
               const py::object &output_mesh, const py::object &output_sol,
-              py::dict options) {
+              py::dict options, const py::object &parameter_file) {
   // Convert paths to strings
   std::string input_mesh_str = path_to_string(input_mesh);
   std::string input_sol_str =
@@ -46,6 +46,11 @@ bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
       output_mesh.is_none() ? "" : path_to_string(output_mesh);
   std::string output_sol_str =
       output_sol.is_none() ? "" : path_to_string(output_sol);
+  std::string parameter_file_str =
+      parameter_file.is_none() ? "" : path_to_string(parameter_file);
+  if (!parameter_file_str.empty()) {
+    validate_parameter_file(parameter_file_str);
+  }
 
   // Initialize structures
   auto [mesh, met, ls] = init_mmgs_structures();
@@ -53,6 +58,14 @@ bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
   // Set mesh names
   MMGS_Set_inputMeshName(mesh, input_mesh_str.c_str());
   MMGS_Set_outputMeshName(mesh, output_mesh_str.c_str());
+
+  if (!parameter_file_str.empty()) {
+    if (!MMGS_Set_inputParamName(mesh, parameter_file_str.c_str())) {
+      cleanup_mmgs_structures(mesh, met, ls);
+      throw std::runtime_error("Failed to set MMG parameter file: " +
+                               parameter_file_str);
+    }
+  }
 
   if (!input_sol_str.empty()) {
     MMGS_Set_inputSolName(mesh, met, input_sol_str.c_str());
@@ -86,6 +99,12 @@ bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
           throw std::runtime_error("Failed to load solution");
         }
       }
+    }
+
+    // MMGS keeps its native parser private; mirror it through public APIs.
+    // Parse first so explicit Python options take precedence.
+    if (!parameter_file_str.empty()) {
+      parse_mmgs_parameter_file(mesh, met, parameter_file_str);
     }
 
     // Set all mesh options

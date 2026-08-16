@@ -1,7 +1,11 @@
 #include "mmg_common.hpp"
 
+#include "mmg/mmgs/libmmgs.h"
+
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
+#include <fstream>
 #include <regex>
 #include <sstream>
 
@@ -21,6 +25,134 @@ typedef SSIZE_T ssize_t;
 #include <cstdlib>
 #include <unistd.h>
 #endif
+
+namespace {
+
+std::string lowercase(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  return value;
+}
+
+template <typename T>
+T read_parameter_value(std::istream &input, const std::string &filename,
+                       const char *description) {
+  T value{};
+  if (!(input >> value)) {
+    throw std::runtime_error("Invalid MMG parameter file '" + filename +
+                             "': expected " + description);
+  }
+  return value;
+}
+
+void require_mmgs_success(int success, const std::string &filename,
+                          const std::string &operation) {
+  if (!success) {
+    throw std::runtime_error("Invalid MMGS parameter file '" + filename +
+                             "': failed to " + operation);
+  }
+}
+
+} // namespace
+
+void validate_parameter_file(const std::string &filename) {
+  std::error_code error;
+  bool is_file = std::filesystem::is_regular_file(filename, error);
+  if (error || !is_file) {
+    throw std::runtime_error("MMG parameter file not found: " + filename);
+  }
+
+  std::ifstream input(filename);
+  if (!input.is_open()) {
+    throw std::runtime_error("MMG parameter file is not readable: " + filename);
+  }
+}
+
+void parse_mmgs_parameter_file(MMG5_pMesh mesh, MMG5_pSol met,
+                               const std::string &filename) {
+  validate_parameter_file(filename);
+  std::ifstream input(filename);
+  std::string section;
+
+  while (input >> section) {
+    section = lowercase(section);
+    if (section == "parameters") {
+      int count = read_parameter_value<int>(input, filename, "parameter count");
+      require_mmgs_success(
+          MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLocalParam, count),
+          filename, "set the local-parameter count");
+      for (int i = 0; i < count; ++i) {
+        MMG5_int ref =
+            read_parameter_value<MMG5_int>(input, filename, "entity reference");
+        std::string entity = lowercase(
+            read_parameter_value<std::string>(input, filename, "entity type"));
+        double hmin =
+            read_parameter_value<double>(input, filename, "minimum size");
+        double hmax =
+            read_parameter_value<double>(input, filename, "maximum size");
+        double hausd =
+            read_parameter_value<double>(input, filename, "Hausdorff distance");
+        if (entity != "triangle" && entity != "triangles") {
+          throw std::runtime_error(
+              "Invalid MMGS parameter file '" + filename +
+              "': local parameters only support triangle references");
+        }
+        require_mmgs_success(MMGS_Set_localParameter(mesh, met, MMG5_Triangle,
+                                                     ref, hmin, hmax, hausd),
+                             filename,
+                             "set local parameter for reference " +
+                                 std::to_string(ref));
+      }
+    } else if (section == "lsbasereferences") {
+      int count =
+          read_parameter_value<int>(input, filename, "LS base-reference count");
+      require_mmgs_success(
+          MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLSBaseReferences,
+                              count),
+          filename, "set the LS base-reference count");
+      for (int i = 0; i < count; ++i) {
+        MMG5_int ref = read_parameter_value<MMG5_int>(input, filename,
+                                                      "LS base reference");
+        require_mmgs_success(MMGS_Set_lsBaseReference(mesh, met, ref), filename,
+                             "set LS base reference " + std::to_string(ref));
+      }
+    } else if (section == "lsreferences") {
+      int count =
+          read_parameter_value<int>(input, filename, "LS reference count");
+      require_mmgs_success(
+          MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfMat, count),
+          filename, "set the LS reference count");
+      for (int i = 0; i < count; ++i) {
+        MMG5_int ref =
+            read_parameter_value<MMG5_int>(input, filename, "LS reference");
+        std::string split_token = read_parameter_value<std::string>(
+            input, filename, "'nosplit' or inside reference");
+        int split = MMG5_MMAT_NoSplit;
+        MMG5_int ref_minus = ref;
+        MMG5_int ref_plus = ref;
+        if (lowercase(split_token) != "nosplit") {
+          try {
+            ref_minus = static_cast<MMG5_int>(std::stoll(split_token));
+          } catch (const std::exception &) {
+            throw std::runtime_error("Invalid MMGS parameter file '" +
+                                     filename +
+                                     "': expected 'nosplit' or "
+                                     "an inside reference");
+          }
+          ref_plus = read_parameter_value<MMG5_int>(input, filename,
+                                                    "outside reference");
+          split = MMG5_MMAT_Split;
+        }
+        require_mmgs_success(
+            MMGS_Set_multiMat(mesh, met, ref, split, ref_minus, ref_plus),
+            filename, "set LS reference " + std::to_string(ref));
+      }
+    } else {
+      throw std::runtime_error("Invalid MMGS parameter file '" + filename +
+                               "': unknown section '" + section + "'");
+    }
+  }
+}
 
 // StderrCapture implementation using temporary files.
 // Unlike pipes, temp files have no buffer limit, so MMG can write
@@ -178,12 +310,8 @@ std::vector<std::string> parse_mmg_warnings(const std::string &output) {
 }
 
 std::string path_to_string(const py::object &path) {
-  if (py::isinstance<py::str>(path)) {
-    return path.cast<std::string>();
-  } else {
-    // Assume it's a Path object and convert to string
-    return path.attr("__str__")().cast<std::string>();
-  }
+  py::object filesystem_path = py::module_::import("os").attr("fspath")(path);
+  return filesystem_path.cast<std::string>();
 }
 
 py::dict prepare_levelset_options(const py::dict &options) {

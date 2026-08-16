@@ -115,6 +115,7 @@ def _make_wrapped_remesh(
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
+        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
     ) -> bool:
@@ -137,6 +138,7 @@ def _make_wrapped_remesh(
                 output_mesh=output_mesh,
                 output_sol=sol.out_path,
                 options=forwarded,
+                parameter_file=parameter_file,
             )
 
         from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
@@ -150,6 +152,7 @@ def _make_wrapped_remesh(
         # Leave ``renum`` in forwarded so Mesh.remesh pops it (and emits the
         # one-time FutureWarning) and applies RCM in place.
         result = mesh.remesh(
+            parameter_file=parameter_file,
             progress=False,
             transfer_fields=transfer_fields,
             **forwarded,
@@ -180,6 +183,7 @@ class mmg3d:
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
+        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
     ) -> bool:
@@ -193,6 +197,9 @@ class mmg3d:
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
             ``(in_path, out_path)`` solution file paths (.sol/.solb).
+        parameter_file : str or Path, optional
+            Native ``.mmg3d`` parameter file. Explicit Python options override
+            settings loaded from this file.
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -209,6 +216,7 @@ class mmg3d:
             input_mesh,
             output_mesh,
             sol=sol,
+            parameter_file=parameter_file,
             options=options,
             transfer_fields=transfer_fields,
         )
@@ -225,6 +233,7 @@ class mmg2d:
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
+        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
     ) -> bool:
@@ -238,6 +247,9 @@ class mmg2d:
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
             ``(in_path, out_path)`` solution file paths (.sol/.solb).
+        parameter_file : str or Path, optional
+            Native ``.mmg2d`` parameter file. Explicit Python options override
+            settings loaded from this file.
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -254,6 +266,7 @@ class mmg2d:
             input_mesh,
             output_mesh,
             sol=sol,
+            parameter_file=parameter_file,
             options=options,
             transfer_fields=transfer_fields,
         )
@@ -268,6 +281,7 @@ class mmgs:
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
+        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
     ) -> bool:
@@ -281,6 +295,9 @@ class mmgs:
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
             ``(in_path, out_path)`` solution file paths (.sol/.solb).
+        parameter_file : str or Path, optional
+            Native ``.mmgs`` parameter file. Explicit Python options override
+            settings loaded from this file.
         options : dict, optional
             Remeshing options (hmax, hmin, hausd, etc.).
         transfer_fields : bool | list[str] | None, default=False
@@ -297,6 +314,7 @@ class mmgs:
             input_mesh,
             output_mesh,
             sol=sol,
+            parameter_file=parameter_file,
             options=options,
             transfer_fields=transfer_fields,
         )

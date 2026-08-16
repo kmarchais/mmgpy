@@ -676,9 +676,7 @@ void MmgMesh2D::set_input_parameter_name(
     const std::variant<std::string, std::filesystem::path> &filename) {
   check_not_corrupted("set input parameter name");
   std::string fname = variant_to_string(filename);
-  if (!std::filesystem::is_regular_file(fname)) {
-    throw std::runtime_error("MMG parameter file not found: " + fname);
-  }
+  validate_parameter_file(fname);
   if (!MMG2D_Set_inputParamName(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to set MMG parameter file: " + fname);
   }

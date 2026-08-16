@@ -637,13 +637,13 @@ Excluded functions fall into categories that should not become one-to-one Python
 
 ### I/O Configuration
 
-| Function                  | Status | Notes                                  |
-| ------------------------- | ------ | -------------------------------------- |
-| `MMGS_Set_inputMeshName`  | Bound  | Used in `mmgs.remesh()` file-based API |
-| `MMGS_Set_outputMeshName` | Bound  | Used in `mmgs.remesh()` file-based API |
-| `MMGS_Set_inputSolName`   | Bound  | Used in `mmgs.remesh()` file-based API |
-| `MMGS_Set_outputSolName`  | Bound  | Used in `mmgs.remesh()` file-based API |
-| `MMGS_Set_inputParamName` | Bound  | `MmgMeshS.set_input_parameter_name()`  |
+| Function                  | Status | Notes                                                       |
+| ------------------------- | ------ | ----------------------------------------------------------- |
+| `MMGS_Set_inputMeshName`  | Bound  | Used in `mmgs.remesh()` file-based API                      |
+| `MMGS_Set_outputMeshName` | Bound  | Used in `mmgs.remesh()` file-based API                      |
+| `MMGS_Set_inputSolName`   | Bound  | Used in `mmgs.remesh()` file-based API                      |
+| `MMGS_Set_outputSolName`  | Bound  | Used in `mmgs.remesh()` file-based API                      |
+| `MMGS_Set_inputParamName` | Bound  | `MmgMeshS.set_input_parameter_name()` and `parameter_file=` |
 
 ### File I/O
 
@@ -722,8 +722,8 @@ detailed tables has been reviewed and should not be ported one-to-one.
 Some differences do not correspond to a missing C callable:
 
 - MMGS publicly exposes `MMGS_Set_inputParamName` but keeps its parameter-file parser
-  private, unlike MMG3D and MMG2D. The filename setter is bound, but in-memory MMGS parsing
-  needs an upstream API change ([#373](https://github.com/kmarchais/mmgpy/issues/373)).
+  private, unlike MMG3D and MMG2D. mmgpy mirrors that small native parser through
+  MMGS's public setters so `parameter_file=` behaves consistently for all engines.
 
 - Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
   PyVista conversion path does not currently round-trip VTK wedge cells.
