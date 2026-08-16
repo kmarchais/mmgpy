@@ -1,5 +1,6 @@
 #include "mmg_common.hpp"
 
+#include "mmg/mmg2d/libmmg2d.h"
 #include "mmg/mmgs/libmmgs.h"
 
 #include <algorithm>
@@ -28,6 +29,79 @@ typedef SSIZE_T ssize_t;
 
 namespace {
 
+using SetIntegerParameter = int (*)(MMG5_pMesh, MMG5_pSol, int, MMG5_int);
+using SetLocalParameter = int (*)(MMG5_pMesh, MMG5_pSol, int, MMG5_int, double,
+                                  double, double);
+using SetMultiMaterial = int (*)(MMG5_pMesh, MMG5_pSol, MMG5_int, int, MMG5_int,
+                                 MMG5_int);
+using SetLsBaseReference = int (*)(MMG5_pMesh, MMG5_pSol, MMG5_int);
+
+struct ParameterApi {
+  const char *name;
+  int local_parameter_count;
+  int material_count;
+  int base_reference_count;
+  int secondary_entity_type;
+  const char *secondary_entity;
+  const char *secondary_entities;
+  SetIntegerParameter set_integer;
+  SetLocalParameter set_local;
+  SetMultiMaterial set_material;
+  SetLsBaseReference set_base_reference;
+};
+
+const ParameterApi &parameter_api(MmgParameterFileKind kind) {
+  static const ParameterApi mmg2d{
+      "MMG2D",
+      MMG2D_IPARAM_numberOfLocalParam,
+      MMG2D_IPARAM_numberOfMat,
+      MMG2D_IPARAM_numberOfLSBaseReferences,
+      MMG5_Edg,
+      "edge",
+      "edges",
+      &MMG2D_Set_iparameter,
+      &MMG2D_Set_localParameter,
+      &MMG2D_Set_multiMat,
+      &MMG2D_Set_lsBaseReference,
+  };
+  static const ParameterApi mmg3d{
+      "MMG3D",
+      MMG3D_IPARAM_numberOfLocalParam,
+      MMG3D_IPARAM_numberOfMat,
+      MMG3D_IPARAM_numberOfLSBaseReferences,
+      MMG5_Tetrahedron,
+      "tetrahedron",
+      "tetrahedra",
+      &MMG3D_Set_iparameter,
+      &MMG3D_Set_localParameter,
+      &MMG3D_Set_multiMat,
+      &MMG3D_Set_lsBaseReference,
+  };
+  static const ParameterApi mmgs{
+      "MMGS",
+      MMGS_IPARAM_numberOfLocalParam,
+      MMGS_IPARAM_numberOfMat,
+      MMGS_IPARAM_numberOfLSBaseReferences,
+      MMG5_Noentity,
+      nullptr,
+      nullptr,
+      &MMGS_Set_iparameter,
+      &MMGS_Set_localParameter,
+      &MMGS_Set_multiMat,
+      &MMGS_Set_lsBaseReference,
+  };
+
+  switch (kind) {
+  case MmgParameterFileKind::Mmg2D:
+    return mmg2d;
+  case MmgParameterFileKind::Mmg3D:
+    return mmg3d;
+  case MmgParameterFileKind::MmgS:
+    return mmgs;
+  }
+  throw std::logic_error("Unknown MMG parameter-file kind");
+}
+
 std::string lowercase(std::string value) {
   std::transform(value.begin(), value.end(), value.begin(),
                  [](unsigned char c) { return std::tolower(c); });
@@ -45,11 +119,103 @@ T read_parameter_value(std::istream &input, const std::string &filename,
   return value;
 }
 
-void require_mmgs_success(int success, const std::string &filename,
-                          const std::string &operation) {
+void require_parameter_success(const ParameterApi &api, int success,
+                               const std::string &filename,
+                               const std::string &operation) {
   if (!success) {
-    throw std::runtime_error("Invalid MMGS parameter file '" + filename +
-                             "': failed to " + operation);
+    throw std::runtime_error("Invalid " + std::string(api.name) +
+                             " parameter file '" + filename + "': failed to " +
+                             operation);
+  }
+}
+
+int parameter_entity_type(const ParameterApi &api, const std::string &entity,
+                          const std::string &filename) {
+  if (entity == "triangle" || entity == "triangles") {
+    return MMG5_Triangle;
+  }
+  if (api.secondary_entity != nullptr &&
+      (entity == api.secondary_entity || entity == api.secondary_entities)) {
+    return api.secondary_entity_type;
+  }
+  throw std::runtime_error("Invalid " + std::string(api.name) +
+                           " parameter file '" + filename +
+                           "': unsupported entity type '" + entity + "'");
+}
+
+void parse_local_parameters(std::istream &input, MMG5_pMesh mesh, MMG5_pSol met,
+                            const std::string &filename,
+                            const ParameterApi &api) {
+  int count = read_parameter_value<int>(input, filename, "parameter count");
+  require_parameter_success(
+      api, api.set_integer(mesh, met, api.local_parameter_count, count),
+      filename, "set the local-parameter count");
+  for (int i = 0; i < count; ++i) {
+    MMG5_int ref =
+        read_parameter_value<MMG5_int>(input, filename, "entity reference");
+    std::string entity = lowercase(
+        read_parameter_value<std::string>(input, filename, "entity type"));
+    double hmin = read_parameter_value<double>(input, filename, "minimum size");
+    double hmax = read_parameter_value<double>(input, filename, "maximum size");
+    double hausd =
+        read_parameter_value<double>(input, filename, "Hausdorff distance");
+    int entity_type = parameter_entity_type(api, entity, filename);
+    require_parameter_success(
+        api, api.set_local(mesh, met, entity_type, ref, hmin, hmax, hausd),
+        filename, "set local parameter for reference " + std::to_string(ref));
+  }
+}
+
+void parse_base_references(std::istream &input, MMG5_pMesh mesh, MMG5_pSol met,
+                           const std::string &filename,
+                           const ParameterApi &api) {
+  int count =
+      read_parameter_value<int>(input, filename, "LS base-reference count");
+  require_parameter_success(
+      api, api.set_integer(mesh, met, api.base_reference_count, count),
+      filename, "set the LS base-reference count");
+  for (int i = 0; i < count; ++i) {
+    MMG5_int ref =
+        read_parameter_value<MMG5_int>(input, filename, "LS base reference");
+    require_parameter_success(api, api.set_base_reference(mesh, met, ref),
+                              filename,
+                              "set LS base reference " + std::to_string(ref));
+  }
+}
+
+void parse_materials(std::istream &input, MMG5_pMesh mesh, MMG5_pSol met,
+                     const std::string &filename, const ParameterApi &api) {
+  int count = read_parameter_value<int>(input, filename, "LS reference count");
+  require_parameter_success(
+      api, api.set_integer(mesh, met, api.material_count, count), filename,
+      "set the LS reference count");
+  for (int i = 0; i < count; ++i) {
+    MMG5_int ref =
+        read_parameter_value<MMG5_int>(input, filename, "LS reference");
+    std::string split_token = read_parameter_value<std::string>(
+        input, filename, "'nosplit' or inside reference");
+    int split = MMG5_MMAT_NoSplit;
+    MMG5_int ref_minus = ref;
+    MMG5_int ref_plus = ref;
+    if (lowercase(split_token) != "nosplit") {
+      try {
+        std::size_t parsed = 0;
+        ref_minus = static_cast<MMG5_int>(std::stoll(split_token, &parsed, 10));
+        if (parsed != split_token.size()) {
+          throw std::invalid_argument("trailing characters");
+        }
+      } catch (const std::exception &) {
+        throw std::runtime_error(
+            "Invalid " + std::string(api.name) + " parameter file '" +
+            filename + "': expected 'nosplit' or an inside reference");
+      }
+      ref_plus =
+          read_parameter_value<MMG5_int>(input, filename, "outside reference");
+      split = MMG5_MMAT_Split;
+    }
+    require_parameter_success(
+        api, api.set_material(mesh, met, ref, split, ref_minus, ref_plus),
+        filename, "set LS reference " + std::to_string(ref));
   }
 }
 
@@ -68,114 +234,25 @@ void validate_parameter_file(const std::string &filename) {
   }
 }
 
-void validate_native_parameter_file(const std::string &filename,
-                                    const std::string &parser_extension) {
-  constexpr std::size_t buffer_capacity = 256;
-
-  // Mirror MMG5_Get_filenameExt: it only recognizes '/' as a path separator,
-  // treats a leading dot and the suffix ".o" as no extension, then appends the
-  // engine-specific extension. Both the initial strcpy and later strcat must
-  // leave room for the null terminator.
-  std::size_t stem_length = filename.size();
-  std::size_t dot = filename.find_last_of('.');
-  std::size_t slash = filename.find_last_of('/');
-  bool has_extension = dot != std::string::npos && dot != 0 &&
-                       (slash == std::string::npos || slash < dot) &&
-                       filename.substr(dot) != ".o";
-  if (has_extension) {
-    stem_length = dot;
-  }
-
-  if (filename.size() >= buffer_capacity ||
-      stem_length + parser_extension.size() >= buffer_capacity) {
-    throw std::runtime_error(
-        "MMG parameter file path is too long for the native parser: " +
-        filename);
-  }
+void parse_parameter_file(MMG5_pMesh mesh, MMG5_pSol met,
+                          const std::string &filename,
+                          MmgParameterFileKind kind) {
   validate_parameter_file(filename);
-}
-
-void parse_mmgs_parameter_file(MMG5_pMesh mesh, MMG5_pSol met,
-                               const std::string &filename) {
-  validate_parameter_file(filename);
+  const ParameterApi &api = parameter_api(kind);
   std::ifstream input(filename);
   std::string section;
 
   while (input >> section) {
     section = lowercase(section);
     if (section == "parameters") {
-      int count = read_parameter_value<int>(input, filename, "parameter count");
-      require_mmgs_success(
-          MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLocalParam, count),
-          filename, "set the local-parameter count");
-      for (int i = 0; i < count; ++i) {
-        MMG5_int ref =
-            read_parameter_value<MMG5_int>(input, filename, "entity reference");
-        std::string entity = lowercase(
-            read_parameter_value<std::string>(input, filename, "entity type"));
-        double hmin =
-            read_parameter_value<double>(input, filename, "minimum size");
-        double hmax =
-            read_parameter_value<double>(input, filename, "maximum size");
-        double hausd =
-            read_parameter_value<double>(input, filename, "Hausdorff distance");
-        if (entity != "triangle" && entity != "triangles") {
-          throw std::runtime_error(
-              "Invalid MMGS parameter file '" + filename +
-              "': local parameters only support triangle references");
-        }
-        require_mmgs_success(MMGS_Set_localParameter(mesh, met, MMG5_Triangle,
-                                                     ref, hmin, hmax, hausd),
-                             filename,
-                             "set local parameter for reference " +
-                                 std::to_string(ref));
-      }
+      parse_local_parameters(input, mesh, met, filename, api);
     } else if (section == "lsbasereferences") {
-      int count =
-          read_parameter_value<int>(input, filename, "LS base-reference count");
-      require_mmgs_success(
-          MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfLSBaseReferences,
-                              count),
-          filename, "set the LS base-reference count");
-      for (int i = 0; i < count; ++i) {
-        MMG5_int ref = read_parameter_value<MMG5_int>(input, filename,
-                                                      "LS base reference");
-        require_mmgs_success(MMGS_Set_lsBaseReference(mesh, met, ref), filename,
-                             "set LS base reference " + std::to_string(ref));
-      }
+      parse_base_references(input, mesh, met, filename, api);
     } else if (section == "lsreferences") {
-      int count =
-          read_parameter_value<int>(input, filename, "LS reference count");
-      require_mmgs_success(
-          MMGS_Set_iparameter(mesh, met, MMGS_IPARAM_numberOfMat, count),
-          filename, "set the LS reference count");
-      for (int i = 0; i < count; ++i) {
-        MMG5_int ref =
-            read_parameter_value<MMG5_int>(input, filename, "LS reference");
-        std::string split_token = read_parameter_value<std::string>(
-            input, filename, "'nosplit' or inside reference");
-        int split = MMG5_MMAT_NoSplit;
-        MMG5_int ref_minus = ref;
-        MMG5_int ref_plus = ref;
-        if (lowercase(split_token) != "nosplit") {
-          try {
-            ref_minus = static_cast<MMG5_int>(std::stoll(split_token));
-          } catch (const std::exception &) {
-            throw std::runtime_error("Invalid MMGS parameter file '" +
-                                     filename +
-                                     "': expected 'nosplit' or "
-                                     "an inside reference");
-          }
-          ref_plus = read_parameter_value<MMG5_int>(input, filename,
-                                                    "outside reference");
-          split = MMG5_MMAT_Split;
-        }
-        require_mmgs_success(
-            MMGS_Set_multiMat(mesh, met, ref, split, ref_minus, ref_plus),
-            filename, "set LS reference " + std::to_string(ref));
-      }
+      parse_materials(input, mesh, met, filename, api);
     } else {
-      throw std::runtime_error("Invalid MMGS parameter file '" + filename +
+      throw std::runtime_error("Invalid " + std::string(api.name) +
+                               " parameter file '" + filename +
                                "': unknown section '" + section + "'");
     }
   }

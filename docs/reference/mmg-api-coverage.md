@@ -12,8 +12,8 @@ corresponding Python binding in mmgpy. Functions are sourced from the official M
 
 | Library | Total | Bound | Indirect | Candidate | Excluded | Skipped | Functional Coverage |
 | ------- | ----: | ----: | -------: | --------: | -------: | ------: | ------------------: |
-| MMG3D   |   140 |    73 |       48 |         0 |       18 |       1 |                 86% |
-| MMG2D   |   119 |    62 |       41 |         0 |       15 |       1 |                 87% |
+| MMG3D   |   140 |    72 |       49 |         0 |       18 |       1 |                 86% |
+| MMG2D   |   119 |    61 |       42 |         0 |       15 |       1 |                 87% |
 | MMGS    |   109 |    61 |       37 |         0 |       11 |       0 |                 90% |
 
 **Functional coverage** = (Bound + Indirect) / Total. "Indirect" means the functionality
@@ -299,7 +299,7 @@ Excluded functions fall into categories that should not become one-to-one Python
 | ---------------------- | -------- | ----------------------------------------------------- |
 | `MMG3D_defaultValues`  | Excluded | Prints default values to stdout; CLI utility          |
 | `MMG3D_parsar`         | Excluded | Command-line argument parser; not relevant for Python |
-| `MMG3D_parsop`         | Bound    | Invoked internally before in-memory remeshing         |
+| `MMG3D_parsop`         | Indirect | Native format handled by mmgpy's shared safe parser   |
 | `MMG3D_usage`          | Excluded | Prints usage text; CLI utility                        |
 | `MMG3D_Set_commonFunc` | Excluded | Internal MMG function pointer setup                   |
 | `MMG3D_setfunc`        | Bound    | Initializes `MMG3D_doSol` for `build_size_map()`      |
@@ -509,7 +509,7 @@ Excluded functions fall into categories that should not become one-to-one Python
 | ---------------------- | -------- | ----------------------------------------------------- |
 | `MMG2D_defaultValues`  | Excluded | Prints default values to stdout; CLI utility          |
 | `MMG2D_parsar`         | Excluded | Command-line argument parser; not relevant for Python |
-| `MMG2D_parsop`         | Bound    | Invoked internally before in-memory remeshing         |
+| `MMG2D_parsop`         | Indirect | Native format handled by mmgpy's shared safe parser   |
 | `MMG2D_usage`          | Excluded | Prints usage text; CLI utility                        |
 | `MMG2D_Set_commonFunc` | Excluded | Internal MMG function pointer setup                   |
 | `MMG2D_setfunc`        | Bound    | Initializes `MMG2D_doSol` for `build_size_map()`      |
@@ -720,10 +720,6 @@ detailed tables has been reviewed and should not be ported one-to-one.
 ## Capability-Level Differences
 
 Some differences do not correspond to a missing C callable:
-
-- MMGS publicly exposes `MMGS_Set_inputParamName` but keeps its parameter-file parser
-  private, unlike MMG3D and MMG2D. mmgpy mirrors that small native parser through
-  MMGS's public setters so `parameter_file=` behaves consistently for all engines.
 
 - Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
   PyVista conversion path does not currently round-trip VTK wedge cells.

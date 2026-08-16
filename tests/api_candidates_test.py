@@ -23,21 +23,31 @@ def test_set_input_parameter_name_validates_path(
 
 
 @pytest.mark.parametrize(
-    ("mesh_type", "unsafe_path"),
+    ("mesh_type", "extension", "engine"),
     [
-        (MmgMesh3D, "x" * 256 + ".mmg3d"),
-        (MmgMesh3D, "x" * 250),
-        (MmgMesh2D, "x" * 256 + ".mmg2d"),
-        (MmgMesh2D, "x" * 250),
+        (MmgMesh3D, ".mmg3d", "MMG3D"),
+        (MmgMesh2D, ".mmg2d", "MMG2D"),
+        (MmgMeshS, ".mmgs", "MMGS"),
     ],
 )
-def test_native_parameter_parser_rejects_unsafe_path_length(
-    mesh_type: type[MmgMesh3D | MmgMesh2D],
-    unsafe_path: str,
+def test_parameter_file_errors_are_consistent(
+    mesh_type: type[MmgMesh3D | MmgMesh2D | MmgMeshS],
+    extension: str,
+    engine: str,
+    tmp_path: Path,
 ) -> None:
-    """Reject overflow in both MMG's initial copy and extension append."""
-    with pytest.raises(RuntimeError, match="too long for the native parser"):
-        mesh_type().set_input_parameter_name(unsafe_path)
+    """Report unsupported parameter entities consistently."""
+    parameter_file = tmp_path / f"invalid{extension}"
+    parameter_file.write_text(
+        "parameters\n1\n7 vertex 0.02 0.08 0.01\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=rf"Invalid {engine} parameter file .* unsupported entity type 'vertex'",
+    ):
+        mesh_type().remesh(parameter_file=parameter_file, verbose=-1)
 
 
 def test_integer_parameter_getters() -> None:

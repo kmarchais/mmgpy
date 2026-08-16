@@ -2075,7 +2075,6 @@ class Mesh:
         options: Mmg3DOptions | Mmg2DOptions | MmgSOptions | None = None,
         *,
         input_sol: str | Path | NDArray[np.float64] | None = None,
-        parameter_file: str | Path | None = None,
         progress: ProgressParam = True,
         transfer_fields: FieldTransferParam = False,
         interpolation: str = "linear",
@@ -2165,6 +2164,7 @@ class Mesh:
         )
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
+        parameter_file = kwargs.pop("parameter_file", None)
         self._load_remesh_input_solution(input_sol)
 
         # Validate interpolation method

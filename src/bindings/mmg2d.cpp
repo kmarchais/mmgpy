@@ -51,7 +51,7 @@ bool remesh_2d(const py::object &input_mesh, const py::object &input_sol,
   std::string parameter_file_str =
       parameter_file.is_none() ? "" : path_to_string(parameter_file);
   if (!parameter_file_str.empty()) {
-    validate_native_parameter_file(parameter_file_str, ".mmg2d");
+    validate_parameter_file(parameter_file_str);
   }
 
   // Initialize structures
@@ -114,11 +114,9 @@ bool remesh_2d(const py::object &input_mesh, const py::object &input_sol,
       }
     }
 
-    // Parameter-file settings are applied first so Python options override
-    // them.
-    if (!parameter_file_str.empty() && !MMG2D_parsop(mesh, met)) {
-      throw std::runtime_error("Failed to parse MMG2D parameter file: " +
-                               parameter_file_str);
+    if (!parameter_file_str.empty()) {
+      parse_parameter_file(mesh, met, parameter_file_str,
+                           MmgParameterFileKind::Mmg2D);
     }
 
     // Set all mesh options

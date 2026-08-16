@@ -713,7 +713,8 @@ void MmgMeshS::apply_input_parameter_file() {
   if (input_parameter_file_.empty()) {
     return;
   }
-  parse_mmgs_parameter_file(mesh, met, input_parameter_file_);
+  parse_parameter_file(mesh, met, input_parameter_file_,
+                       MmgParameterFileKind::MmgS);
   input_parameter_file_.clear();
 }
 

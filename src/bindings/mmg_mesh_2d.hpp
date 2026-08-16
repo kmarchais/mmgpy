@@ -158,7 +158,7 @@ private:
   void check_not_corrupted(const char *operation) const;
 
   bool corrupted_ = false;
-  bool has_input_parameter_file_ = false;
+  std::string input_parameter_file_;
 };
 
 #endif // MMG_MESH_2D_HPP

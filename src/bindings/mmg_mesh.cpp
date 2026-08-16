@@ -1060,21 +1060,20 @@ void MmgMesh::set_input_parameter_name(
     const std::variant<std::string, std::filesystem::path> &filename) {
   check_not_corrupted("set input parameter name");
   std::string fname = variant_to_string(filename);
-  validate_native_parameter_file(fname, ".mmg3d");
+  validate_parameter_file(fname);
   if (!MMG3D_Set_inputParamName(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to set MMG parameter file: " + fname);
   }
-  has_input_parameter_file_ = true;
+  input_parameter_file_ = fname;
 }
 
 void MmgMesh::apply_input_parameter_file() {
-  if (!has_input_parameter_file_) {
+  if (input_parameter_file_.empty()) {
     return;
   }
-  if (!MMG3D_parsop(mesh, met)) {
-    throw std::runtime_error("Failed to parse MMG3D parameter file");
-  }
-  has_input_parameter_file_ = false;
+  parse_parameter_file(mesh, met, input_parameter_file_,
+                       MmgParameterFileKind::Mmg3D);
+  input_parameter_file_.clear();
 }
 
 int MmgMesh::get_iparameter(MMG5_int parameter) const {

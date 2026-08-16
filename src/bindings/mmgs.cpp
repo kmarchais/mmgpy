@@ -101,10 +101,9 @@ bool remesh_s(const py::object &input_mesh, const py::object &input_sol,
       }
     }
 
-    // MMGS keeps its native parser private; mirror it through public APIs.
-    // Parse first so explicit Python options take precedence.
     if (!parameter_file_str.empty()) {
-      parse_mmgs_parameter_file(mesh, met, parameter_file_str);
+      parse_parameter_file(mesh, met, parameter_file_str,
+                           MmgParameterFileKind::MmgS);
     }
 
     // Set all mesh options

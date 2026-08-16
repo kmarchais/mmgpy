@@ -32,6 +32,9 @@ The same keyword is available on `Mesh.remesh(...)`,
 Both strings and path-like objects are accepted. Missing or unreadable files
 raise a `RuntimeError` before remeshing starts.
 
+mmgpy uses the same parser for all three engines and applies the parsed values
+through each engine's public MMG setters.
+
 MMG parameter files define local sizing by entity reference. For example, this
 `.mmg3d` file targets tetrahedra whose reference is `7`:
 

@@ -189,11 +189,9 @@ ignore = [
 ]
 "src/mmgpy/_remesh.py" = [
     "N801",    # class names match C++ API (mmg2d, mmg3d, mmgs)
-    "PLR0913", # public file APIs expose independent path and remesh controls
 ]
 "src/mmgpy/_mesh.py" = [
     "PLR0904", # Mesh exposes the full public API (auto-detected 2D/3D/surface)
-    "PLR0913", # remesh exposes independent solution, parameter, progress, and transfer controls
 ]
 "src/mmgpy/_pv_plugin.py" = [
     "PLR0904", # PyVista accessor exposes the full public API surface

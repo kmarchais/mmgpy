@@ -8,9 +8,16 @@ via ``Mesh.save()`` (PyVista).  No temporary files are created.
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Sequence
+from os import PathLike, fspath
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict
+
+if sys.version_info >= (3, 11):
+    from typing import Unpack
+else:
+    from typing_extensions import Unpack
 
 from mmgpy._generate import generate as _generate_2d
 from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
@@ -32,6 +39,30 @@ class SolPaths(NamedTuple):
 
     in_path: str | Path | None = None
     out_path: str | Path | None = None
+
+
+ParameterFile = str | PathLike[str]
+
+
+class _ParameterFileOptions(TypedDict, total=False):
+    parameter_file: ParameterFile | None
+
+
+def _extract_parameter_file(options: _ParameterFileOptions) -> ParameterFile | None:
+    unexpected = set(options) - {"parameter_file"}
+    if unexpected:
+        names = ", ".join(sorted(unexpected))
+        msg = f"Unexpected keyword argument(s): {names}"
+        raise TypeError(msg)
+    parameter_file = options.get("parameter_file")
+    if parameter_file is None or isinstance(parameter_file, str):
+        return parameter_file
+    if isinstance(parameter_file, PathLike):
+        path = fspath(parameter_file)
+        if isinstance(path, str):
+            return path
+    msg = "parameter_file must be a string or path-like object"
+    raise TypeError(msg)
 
 
 def _is_native(path: str | Path | None) -> bool:
@@ -98,15 +129,14 @@ def _make_wrapped_remesh(
 ) -> Callable[..., bool]:
     """Build a wrapper bound to a specific C++ remesh entry point.
 
-    Captures ``cpp_remesh`` in the closure so the returned callable stays
-    within the ``PLR0913`` arg-count budget while still sharing one
-    implementation across the three ``mmg{2d,3d,s}.remesh`` entry points.
+    Captures ``cpp_remesh`` in the closure so one implementation is shared
+    across the three ``mmg{2d,3d,s}.remesh`` entry points.
 
     Returns
     -------
     Callable[..., bool]
-        Wrapper accepting ``(input_mesh, output_mesh=None, *, sol, options,
-        transfer_fields)`` and returning the C++ success flag.
+        Wrapper accepting file paths and remeshing options and returning the
+        C++ success flag.
 
     """
 
@@ -115,10 +145,11 @@ def _make_wrapped_remesh(
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
-        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
+        **parameter_options: Unpack[_ParameterFileOptions],
     ) -> bool:
+        parameter_file = _extract_parameter_file(parameter_options)
         sol = sol or SolPaths()
         forwarded = dict(options or {})
         do_rcm = _renum_is_truthy(forwarded.get("renum"))
@@ -183,9 +214,9 @@ class mmg3d:
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
-        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
+        **parameter_options: Unpack[_ParameterFileOptions],
     ) -> bool:
         """Remesh a 3D mesh.
 
@@ -197,7 +228,8 @@ class mmg3d:
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
             ``(in_path, out_path)`` solution file paths (.sol/.solb).
-        parameter_file : str or Path, optional
+        **parameter_options : str or Path, optional
+            Accepts ``parameter_file`` as a string or path-like object.
             Native ``.mmg3d`` parameter file. Explicit Python options override
             settings loaded from this file.
         options : dict, optional
@@ -216,9 +248,9 @@ class mmg3d:
             input_mesh,
             output_mesh,
             sol=sol,
-            parameter_file=parameter_file,
             options=options,
             transfer_fields=transfer_fields,
+            **parameter_options,
         )
 
 
@@ -233,9 +265,9 @@ class mmg2d:
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
-        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
+        **parameter_options: Unpack[_ParameterFileOptions],
     ) -> bool:
         """Remesh a 2D mesh.
 
@@ -247,7 +279,8 @@ class mmg2d:
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
             ``(in_path, out_path)`` solution file paths (.sol/.solb).
-        parameter_file : str or Path, optional
+        **parameter_options : str or Path, optional
+            Accepts ``parameter_file`` as a string or path-like object.
             Native ``.mmg2d`` parameter file. Explicit Python options override
             settings loaded from this file.
         options : dict, optional
@@ -266,9 +299,9 @@ class mmg2d:
             input_mesh,
             output_mesh,
             sol=sol,
-            parameter_file=parameter_file,
             options=options,
             transfer_fields=transfer_fields,
+            **parameter_options,
         )
 
 
@@ -281,9 +314,9 @@ class mmgs:
         output_mesh: str | Path | None = None,
         *,
         sol: SolPaths | None = None,
-        parameter_file: str | Path | None = None,
         options: dict[str, Any] | None = None,
         transfer_fields: FieldTransferParam = False,
+        **parameter_options: Unpack[_ParameterFileOptions],
     ) -> bool:
         """Remesh a surface mesh.
 
@@ -295,7 +328,8 @@ class mmgs:
             Output mesh file. Any format supported by PyVista.
         sol : SolPaths, optional
             ``(in_path, out_path)`` solution file paths (.sol/.solb).
-        parameter_file : str or Path, optional
+        **parameter_options : str or Path, optional
+            Accepts ``parameter_file`` as a string or path-like object.
             Native ``.mmgs`` parameter file. Explicit Python options override
             settings loaded from this file.
         options : dict, optional
@@ -314,7 +348,7 @@ class mmgs:
             input_mesh,
             output_mesh,
             sol=sol,
-            parameter_file=parameter_file,
             options=options,
             transfer_fields=transfer_fields,
+            **parameter_options,
         )

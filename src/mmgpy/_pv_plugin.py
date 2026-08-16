@@ -597,7 +597,6 @@ def _apply_parameter_file(
     mesh: _Mesh,
     parameter_file: str | Path | None,
 ) -> None:
-    """Parse a parameter file before explicit accessor configuration."""
     if parameter_file is not None:
         mesh._impl.set_input_parameter_name(parameter_file)  # noqa: SLF001
         mesh._impl._apply_input_parameter_file()  # noqa: SLF001
