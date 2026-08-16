@@ -68,6 +68,33 @@ void validate_parameter_file(const std::string &filename) {
   }
 }
 
+void validate_native_parameter_file(const std::string &filename,
+                                    const std::string &parser_extension) {
+  constexpr std::size_t buffer_capacity = 256;
+
+  // Mirror MMG5_Get_filenameExt: it only recognizes '/' as a path separator,
+  // treats a leading dot and the suffix ".o" as no extension, then appends the
+  // engine-specific extension. Both the initial strcpy and later strcat must
+  // leave room for the null terminator.
+  std::size_t stem_length = filename.size();
+  std::size_t dot = filename.find_last_of('.');
+  std::size_t slash = filename.find_last_of('/');
+  bool has_extension = dot != std::string::npos && dot != 0 &&
+                       (slash == std::string::npos || slash < dot) &&
+                       filename.substr(dot) != ".o";
+  if (has_extension) {
+    stem_length = dot;
+  }
+
+  if (filename.size() >= buffer_capacity ||
+      stem_length + parser_extension.size() >= buffer_capacity) {
+    throw std::runtime_error(
+        "MMG parameter file path is too long for the native parser: " +
+        filename);
+  }
+  validate_parameter_file(filename);
+}
+
 void parse_mmgs_parameter_file(MMG5_pMesh mesh, MMG5_pSol met,
                                const std::string &filename) {
   validate_parameter_file(filename);

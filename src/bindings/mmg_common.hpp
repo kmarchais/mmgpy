@@ -122,6 +122,12 @@ std::string path_to_string(const py::object &path);
 // Validate that an MMG parameter file exists and can be opened for reading.
 void validate_parameter_file(const std::string &filename);
 
+// Validate a file before passing its name to MMG2D/MMG3D's native parser.
+// Those parsers use fixed 256-byte stack buffers for the original filename
+// and for the filename after replacing its extension.
+void validate_native_parameter_file(const std::string &filename,
+                                    const std::string &parser_extension);
+
 // MMGS keeps its native parameter-file parser private, unlike MMG2D/MMG3D.
 // Parse the same public file format and apply it through the public MMGS API.
 void parse_mmgs_parameter_file(MMG5_pMesh mesh, MMG5_pSol met,

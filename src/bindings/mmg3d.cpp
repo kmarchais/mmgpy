@@ -51,7 +51,7 @@ bool remesh_3d(const py::object &input_mesh, const py::object &input_sol,
   std::string parameter_file_str =
       parameter_file.is_none() ? "" : path_to_string(parameter_file);
   if (!parameter_file_str.empty()) {
-    validate_parameter_file(parameter_file_str);
+    validate_native_parameter_file(parameter_file_str, ".mmg3d");
   }
 
   // Initialize structures

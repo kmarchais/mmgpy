@@ -1110,6 +1110,9 @@ class MmgMesh3D:
     def set_input_parameter_name(self, path: str | Path) -> None:
         """Select an MMG parameter file to parse before remeshing."""
 
+    def _apply_input_parameter_file(self) -> None:
+        """Parse the selected MMG parameter file immediately."""
+
     def get_iparameter(self, parameter: int) -> int:
         """Return an MMG3D integer parameter by its ``MMG3D_Param`` value."""
 
@@ -1981,6 +1984,9 @@ class MmgMesh2D:
     def set_input_parameter_name(self, path: str | Path) -> None:
         """Select an MMG parameter file to parse before remeshing."""
 
+    def _apply_input_parameter_file(self) -> None:
+        """Parse the selected MMG parameter file immediately."""
+
     def save_tetgen(self, path: str | Path) -> None:
         """Save the mesh in Triangle/TetGen format."""
 
@@ -2771,6 +2777,9 @@ class MmgMeshS:
 
     def set_input_parameter_name(self, path: str | Path) -> None:
         """Select an MMG parameter file to parse before remeshing."""
+
+    def _apply_input_parameter_file(self) -> None:
+        """Parse the selected MMG parameter file immediately."""
 
     def get_iparameter(self, parameter: int) -> int:
         """Return an MMGS integer parameter by its ``MMGS_Param`` value."""

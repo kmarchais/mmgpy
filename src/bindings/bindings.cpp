@@ -185,6 +185,7 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.set_input_parameter_name(path_to_variant(path));
           },
           py::arg("path"))
+      .def("_apply_input_parameter_file", &MmgMesh::apply_input_parameter_file)
       .def("get_iparameter", &MmgMesh::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh::set_multi_materials,
@@ -384,6 +385,8 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.set_input_parameter_name(path_to_variant(path));
           },
           py::arg("path"))
+      .def("_apply_input_parameter_file",
+           &MmgMesh2D::apply_input_parameter_file)
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh2D::set_multi_materials,
            py::arg("materials"),
@@ -585,6 +588,7 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.set_input_parameter_name(path_to_variant(path));
           },
           py::arg("path"))
+      .def("_apply_input_parameter_file", &MmgMeshS::apply_input_parameter_file)
       .def("get_iparameter", &MmgMeshS::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMeshS::set_multi_materials,

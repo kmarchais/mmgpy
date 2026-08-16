@@ -22,6 +22,24 @@ def test_set_input_parameter_name_validates_path(
     mesh.set_input_parameter_name(parameter_file)
 
 
+@pytest.mark.parametrize(
+    ("mesh_type", "unsafe_path"),
+    [
+        (MmgMesh3D, "x" * 256 + ".mmg3d"),
+        (MmgMesh3D, "x" * 250),
+        (MmgMesh2D, "x" * 256 + ".mmg2d"),
+        (MmgMesh2D, "x" * 250),
+    ],
+)
+def test_native_parameter_parser_rejects_unsafe_path_length(
+    mesh_type: type[MmgMesh3D | MmgMesh2D],
+    unsafe_path: str,
+) -> None:
+    """Reject overflow in both MMG's initial copy and extension append."""
+    with pytest.raises(RuntimeError, match="too long for the native parser"):
+        mesh_type().set_input_parameter_name(unsafe_path)
+
+
 def test_integer_parameter_getters() -> None:
     """MMG3D and MMGS expose their native integer-parameter getter."""
     # In both public enums, zero is the verbosity parameter.

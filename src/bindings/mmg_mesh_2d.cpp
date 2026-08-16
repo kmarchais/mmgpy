@@ -676,11 +676,21 @@ void MmgMesh2D::set_input_parameter_name(
     const std::variant<std::string, std::filesystem::path> &filename) {
   check_not_corrupted("set input parameter name");
   std::string fname = variant_to_string(filename);
-  validate_parameter_file(fname);
+  validate_native_parameter_file(fname, ".mmg2d");
   if (!MMG2D_Set_inputParamName(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to set MMG parameter file: " + fname);
   }
   has_input_parameter_file_ = true;
+}
+
+void MmgMesh2D::apply_input_parameter_file() {
+  if (!has_input_parameter_file_) {
+    return;
+  }
+  if (!MMG2D_parsop(mesh, met)) {
+    throw std::runtime_error("Failed to parse MMG2D parameter file");
+  }
+  has_input_parameter_file_ = false;
 }
 
 // Multi-material and level-set
@@ -1093,12 +1103,7 @@ py::dict MmgMesh2D::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_2d(mesh, met);
 
-  if (has_input_parameter_file_) {
-    if (!MMG2D_parsop(mesh, met)) {
-      throw std::runtime_error("Failed to parse MMG2D parameter file");
-    }
-    has_input_parameter_file_ = false;
-  }
+  apply_input_parameter_file();
   set_mesh_options_2D(mesh, met, options);
 
   // Capture stderr to collect MMG warnings
@@ -1145,12 +1150,7 @@ py::dict MmgMesh2D::remesh_levelset(const py::array_t<double> &levelset,
 
   set_field("levelset", levelset);
   py::dict ls_options = prepare_levelset_options(options);
-  if (has_input_parameter_file_) {
-    if (!MMG2D_parsop(mesh, met)) {
-      throw std::runtime_error("Failed to parse MMG2D parameter file");
-    }
-    has_input_parameter_file_ = false;
-  }
+  apply_input_parameter_file();
   set_mesh_options_2D(mesh, met, ls_options);
 
   // Capture stderr to collect MMG warnings

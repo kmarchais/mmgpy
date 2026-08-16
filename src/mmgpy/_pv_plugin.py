@@ -593,6 +593,16 @@ def _apply_pending_mmg_config(
         mesh._impl.set_ls_base_references(list(references))  # noqa: SLF001
 
 
+def _apply_parameter_file(
+    mesh: _Mesh,
+    parameter_file: str | Path | None,
+) -> None:
+    """Parse a parameter file before explicit accessor configuration."""
+    if parameter_file is not None:
+        mesh._impl.set_input_parameter_name(parameter_file)  # noqa: SLF001
+        mesh._impl._apply_input_parameter_file()  # noqa: SLF001
+
+
 def _apply_local_sizing_specs(
     mesh: _Mesh,
     specs: list[Mapping[str, Any]] | None,
@@ -1098,6 +1108,7 @@ class MmgAccessor:
         _apply_metric_kwarg(mesh, self._dataset, metric)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_parameter_file(mesh, parameter_file)
         _apply_pending_mmg_config(mesh, self._dataset)
         # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time
         # FutureWarning + in-place reverse Cuthill-McKee). Forwarding it
@@ -1106,9 +1117,9 @@ class MmgAccessor:
             if options:
                 msg = "pass either an options object or kwargs, not both"
                 raise TypeError(msg)
-            mesh.remesh(opts, parameter_file=parameter_file)
+            mesh.remesh(opts)
         else:
-            mesh.remesh(parameter_file=parameter_file, **options)
+            mesh.remesh(**options)
         return _to_pyvista_with_user_fields(mesh)
 
     def remesh_lagrangian(
@@ -1182,11 +1193,11 @@ class MmgAccessor:
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_parameter_file(mesh, parameter_file)
         _apply_pending_mmg_config(mesh, self._dataset)
         mesh.remesh_levelset(
             levelset,
             surface_only=surface_only,
-            parameter_file=parameter_file,
             **options,
         )
         return _to_pyvista_with_user_fields(mesh, include_boundary=surface_only)

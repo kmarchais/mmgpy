@@ -709,6 +709,14 @@ void MmgMeshS::set_input_parameter_name(
   input_parameter_file_ = fname;
 }
 
+void MmgMeshS::apply_input_parameter_file() {
+  if (input_parameter_file_.empty()) {
+    return;
+  }
+  parse_mmgs_parameter_file(mesh, met, input_parameter_file_);
+  input_parameter_file_.clear();
+}
+
 int MmgMeshS::get_iparameter(MMG5_int parameter) const {
   check_not_corrupted("get integer parameter");
   return MMGS_Get_iparameter(mesh, parameter);
@@ -1073,10 +1081,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
-  if (!input_parameter_file_.empty()) {
-    parse_mmgs_parameter_file(mesh, met, input_parameter_file_);
-    input_parameter_file_.clear();
-  }
+  apply_input_parameter_file();
   set_mesh_options_surface(mesh, met, options);
 
   // Capture stderr to collect MMG warnings
@@ -1123,10 +1128,7 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
 
   set_field("levelset", levelset);
   py::dict ls_options = prepare_levelset_options(options);
-  if (!input_parameter_file_.empty()) {
-    parse_mmgs_parameter_file(mesh, met, input_parameter_file_);
-    input_parameter_file_.clear();
-  }
+  apply_input_parameter_file();
   set_mesh_options_surface(mesh, met, ls_options);
 
   // Capture stderr to collect MMG warnings
