@@ -2716,6 +2716,9 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>Native MMG parameter-file support through <code>parameter_file=</code> on file,
+  in-memory, level-set, and PyVista remeshing APIs for MMG3D, MMG2D, and MMGS.
+  Explicit Python options are applied after file settings and take precedence.</li>
 <li><code>mmgpy.mmg2d.generate(boundary_vertices, boundary_edges, ...)</code> triangulates a 2D domain from a vertex+edge outline via MMG2D's mesh-generation path. The <code>.mmg</code> accessor auto-routes line-only <code>pv.PolyData</code> through the same path so <code>outline.mmg.remesh(hmax=...)</code> produces a triangulation directly.</li>
 <li>Promoted six high-value MMG flags to typed fields on the options dataclasses: <code>nreg</code> and <code>anisosize</code> on all three (<code>Mmg3DOptions</code>, <code>Mmg2DOptions</code>, <code>MmgSOptions</code>); <code>opnbdy</code> and <code>nofem</code> on <code>Mmg3DOptions</code> / <code>Mmg2DOptions</code>; <code>optim_les</code> on <code>Mmg3DOptions</code> (forwarded as <code>optimLES</code>); <code>keep_ref</code> on <code>MmgSOptions</code> (forwarded as <code>keepRef</code>). Niche options (<code>octree</code>, <code>numsubdomain</code>, <code>isoref</code>, <code>nosizreq</code>, <code>xreg</code>, <code>xreg_val</code>, <code>rmc</code>, <code>3dmedit</code>) remain as <code>**kwargs</code> on <code>remesh(...)</code>.</li>
 </ul>

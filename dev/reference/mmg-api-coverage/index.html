@@ -2965,8 +2965,8 @@ corresponding Python binding in mmgpy. Functions are sourced from the official M
 <tr>
 <td>MMG3D</td>
 <td style="text-align: right;">140</td>
-<td style="text-align: right;">73</td>
-<td style="text-align: right;">48</td>
+<td style="text-align: right;">72</td>
+<td style="text-align: right;">49</td>
 <td style="text-align: right;">0</td>
 <td style="text-align: right;">18</td>
 <td style="text-align: right;">1</td>
@@ -2975,8 +2975,8 @@ corresponding Python binding in mmgpy. Functions are sourced from the official M
 <tr>
 <td>MMG2D</td>
 <td style="text-align: right;">119</td>
-<td style="text-align: right;">62</td>
-<td style="text-align: right;">41</td>
+<td style="text-align: right;">61</td>
+<td style="text-align: right;">42</td>
 <td style="text-align: right;">0</td>
 <td style="text-align: right;">15</td>
 <td style="text-align: right;">1</td>
@@ -3951,8 +3951,8 @@ types and macros one-to-one.</p>
 </tr>
 <tr>
 <td><code>MMG3D_parsop</code></td>
-<td>Bound</td>
-<td>Invoked internally before in-memory remeshing</td>
+<td>Indirect</td>
+<td>Native format handled by mmgpy's shared safe parser</td>
 </tr>
 <tr>
 <td><code>MMG3D_usage</code></td>
@@ -4775,8 +4775,8 @@ types and macros one-to-one.</p>
 </tr>
 <tr>
 <td><code>MMG2D_parsop</code></td>
-<td>Bound</td>
-<td>Invoked internally before in-memory remeshing</td>
+<td>Indirect</td>
+<td>Native format handled by mmgpy's shared safe parser</td>
 </tr>
 <tr>
 <td><code>MMG2D_usage</code></td>
@@ -5285,7 +5285,7 @@ types and macros one-to-one.</p>
 <tr>
 <td><code>MMGS_Set_inputParamName</code></td>
 <td>Bound</td>
-<td><code>MmgMeshS.set_input_parameter_name()</code></td>
+<td><code>MmgMeshS.set_input_parameter_name()</code> and <code>parameter_file=</code></td>
 </tr>
 </tbody>
 </table>
@@ -5556,15 +5556,8 @@ detailed tables has been reviewed and should not be ported one-to-one.</p>
 <h2 id="capability-level-differences">Capability-Level Differences<a class="headerlink" href="#capability-level-differences" title="Permanent link">&para;</a></h2>
 <p>Some differences do not correspond to a missing C callable:</p>
 <ul>
-<li>
-<p>MMGS publicly exposes <code>MMGS_Set_inputParamName</code> but keeps its parameter-file parser
-  private, unlike MMG3D and MMG2D. The filename setter is bound, but in-memory MMGS parsing
-  needs an upstream API change (<a href="https://github.com/kmarchais/mmgpy/issues/373">#373</a>).</p>
-</li>
-<li>
-<p>Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
-  PyVista conversion path does not currently round-trip VTK wedge cells.</p>
-</li>
+<li>Mixed tetrahedron/prism meshes are supported by the low-level MMG3D bindings, but the
+  PyVista conversion path does not currently round-trip VTK wedge cells.</li>
 <li>Native <code>MMG3D_mmg3dmov</code> and <code>MMG2D_mmg2dmov</code> are skipped because ELAS is not available
   consistently across supported platforms; mmgpy supplies a portable, non-identical mesh
   motion workflow (<a href="https://github.com/kmarchais/mmgpy/issues/374">#374</a>).</li>

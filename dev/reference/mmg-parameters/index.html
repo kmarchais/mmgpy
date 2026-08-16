@@ -1414,6 +1414,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#native-parameter-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native parameter files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#size-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1888,6 +1899,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#native-parameter-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native parameter files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#size-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2277,6 +2299,39 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;input.mesh&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Complete reference for the keyword arguments accepted by <code>dataset.mmg.remesh(...)</code> (and its variants <code>remesh_optimize</code>, <code>remesh_uniform</code>, <code>remesh_levelset</code>, <code>move</code>). Each call returns a fresh PyVista dataset; the input is not mutated.</p>
+<h2 id="native-parameter-files">Native parameter files<a class="headerlink" href="#native-parameter-files" title="Permanent link">&para;</a></h2>
+<p>All three engines accept MMG's native local-parameter files through the
+<code>parameter_file</code> keyword. Pass a <code>.mmg3d</code> file for tetrahedral meshes, a
+<code>.mmg2d</code> file for planar meshes, or a <code>.mmgs</code> file for surface meshes:</p>
+<!-- mmgpy-test:skip -->
+
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">parameter_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;local.mmg3d&quot;</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">parameter_file</span><span class="o">=</span><span class="n">parameter_file</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>The same keyword is available on <code>Mesh.remesh(...)</code>,
+<code>Mesh.remesh_levelset(...)</code>, and the file APIs such as
+<code>mmgpy.mmg3d.remesh("in.mesh", "out.mesh", parameter_file=parameter_file)</code>.
+Both strings and path-like objects are accepted. Missing or unreadable files
+raise a <code>RuntimeError</code> before remeshing starts.</p>
+<p>mmgpy uses the same parser for all three engines and applies the parsed values
+through each engine's public MMG setters.</p>
+<p>MMG parameter files define local sizing by entity reference. For example, this
+<code>.mmg3d</code> file targets tetrahedra whose reference is <code>7</code>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>parameters
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>1
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>7 tetrahedra 0.02 0.08 0.01
+</span></code></pre></div>
+<p>The final three values are <code>hmin</code>, <code>hmax</code>, and <code>hausd</code>. MMG3D accepts
+<code>triangle(s)</code> and <code>tetrahedron(s)</code> references, MMG2D accepts <code>edge(s)</code> and
+<code>triangle(s)</code>, and MMGS accepts <code>triangle(s)</code>. Native <code>lsreferences</code> and
+<code>lsbasereferences</code> sections are supported as well.</p>
+<p>Parameter files are parsed first. Explicit Python options are applied second,
+so Python settings take precedence when both configure the same MMG parameter.</p>
 <h2 id="size-parameters">Size Parameters<a class="headerlink" href="#size-parameters" title="Permanent link">&para;</a></h2>
 <h3 id="hmin">hmin<a class="headerlink" href="#hmin" title="Permanent link">&para;</a></h3>
 <p>Minimum edge length.</p>
@@ -2302,7 +2357,7 @@
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmin</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmin</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Edges shorter than <code>hmin</code> will be collapsed or lengthened.</p>
 <hr />
@@ -2330,7 +2385,7 @@
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Edges longer than <code>hmax</code> will be split.</p>
 <hr />
@@ -2358,7 +2413,7 @@
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
 </span></code></pre></div>
 <p>When set, overrides <code>hmin</code> and <code>hmax</code> with uniform sizing.</p>
 <hr />
@@ -2386,7 +2441,7 @@
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hgrad</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hgrad</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li><code>hgrad=1.0</code>: No size variation allowed</li>
@@ -2419,7 +2474,7 @@
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Smaller values produce a closer geometric approximation at the cost of more elements.</p>
 <hr />
@@ -2447,7 +2502,7 @@
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">ar</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">ar</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li>Edges with dihedral angle greater than <code>ar</code> are treated as ridges and preserved during remeshing.</li>
@@ -2482,7 +2537,7 @@ on <code>remesh_levelset(...)</code>.</p>
 </table>
 <!-- mmgpy-test:skip -->
 
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">boundary_split</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_levelset</span><span class="p">(</span><span class="n">levelset</span><span class="p">,</span> <span class="n">surface_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">boundary_split</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_levelset</span><span class="p">(</span><span class="n">levelset</span><span class="p">,</span> <span class="n">surface_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <p>For MMG3D this splits boundary faces without splitting the interior volume into
 level-set regions. MMG2D and MMGS apply the mode to boundary or referenced edges.</p>
@@ -2511,7 +2566,7 @@ level-set regions. MMG2D and MMGS apply the mode to boundary or referenced edges
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>When enabled, only moves vertices to improve quality.</p>
 <hr />
@@ -2539,25 +2594,25 @@ level-set regions. MMG2D and MMGS apply the mode to boundary or referenced edges
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prevents adding new vertices during remeshing.</p>
 <hr />
 <h3 id="noswap">noswap<a class="headerlink" href="#noswap" title="Permanent link">&para;</a></h3>
 <p>Disable edge/face swapping.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">noswap</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">noswap</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prevents topology changes via edge/face swaps.</p>
 <hr />
 <h3 id="nomove">nomove<a class="headerlink" href="#nomove" title="Permanent link">&para;</a></h3>
 <p>Disable vertex movement.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">nomove</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">nomove</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Keeps vertices at their original positions.</p>
 <hr />
 <h3 id="nosurf">nosurf<a class="headerlink" href="#nosurf" title="Permanent link">&para;</a></h3>
 <p>Preserve surface vertices.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Prevents modification of surface mesh vertices.</p>
 <hr />
@@ -2586,56 +2641,56 @@ level-set regions. MMG2D and MMGS apply the mode to boundary or referenced edges
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">silent</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Silent</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">errors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>   <span class="c1"># Errors only</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># Standard info</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">debug</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>    <span class="c1"># Debug output</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">silent</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Silent</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">errors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>   <span class="c1"># Errors only</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># Standard info</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">debug</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>    <span class="c1"># Debug output</span>
 </span></code></pre></div>
 <hr />
 <h2 id="common-combinations">Common Combinations<a class="headerlink" href="#common-combinations" title="Permanent link">&para;</a></h2>
 <h3 id="quality-optimization-only">Quality optimization only<a class="headerlink" href="#quality-optimization-only" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Or use the convenience method:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_optimize</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_optimize</span><span class="p">()</span>
 </span></code></pre></div>
 <hr />
 <h3 id="uniform-remeshing">Uniform remeshing<a class="headerlink" href="#uniform-remeshing" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">uniform</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">uniform</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hsiz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Or use the convenience method:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">uniform</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">uniform</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h3 id="high-quality-surface-approximation">High-quality surface approximation<a class="headerlink" href="#high-quality-surface-approximation" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span>  <span class="c1"># Tight geometric tolerance</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>     <span class="c1"># Smooth size transition</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="p">)</span>
-</span></code></pre></div>
-<hr />
-<h3 id="preserve-sharp-features">Preserve sharp features<a class="headerlink" href="#preserve-sharp-features" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">ar</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>         <span class="c1"># Detect more ridges</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="p">)</span>
-</span></code></pre></div>
-<hr />
-<h3 id="fast-coarse-remeshing">Fast coarse remeshing<a class="headerlink" href="#fast-coarse-remeshing" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>     <span class="c1"># Allow large size variations</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>    <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span>  <span class="c1"># Tight geometric tolerance</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>     <span class="c1"># Smooth size transition</span>
 </span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h3 id="volume-interior-only">Volume interior only<a class="headerlink" href="#volume-interior-only" title="Permanent link">&para;</a></h3>
+<h3 id="preserve-sharp-features">Preserve sharp features<a class="headerlink" href="#preserve-sharp-features" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>    <span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>      <span class="c1"># Keep surface fixed</span>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="p">)</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>    <span class="n">ar</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>         <span class="c1"># Detect more ridges</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h3 id="fast-coarse-remeshing">Fast coarse remeshing<a class="headerlink" href="#fast-coarse-remeshing" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>     <span class="c1"># Allow large size variations</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>    <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h3 id="volume-interior-only">Volume interior only<a class="headerlink" href="#volume-interior-only" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>      <span class="c1"># Keep surface fixed</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="parameter-interactions">Parameter Interactions<a class="headerlink" href="#parameter-interactions" title="Permanent link">&para;</a></h2>
