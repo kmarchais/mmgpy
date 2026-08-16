@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-15T00:00:00Z",
+  "generated_at": "2026-08-16T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -882,6 +882,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-08-16",
+      "downloads": 6272,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
     }
   ],
   "reviews": [
@@ -1090,6 +1101,30 @@
       "version": "",
       "value": "/docs/",
       "source_url": "https://github.com/kmarchais/mmgpy/commit/08f799fc2e471308ee5a1da3f1af59f612c66893"
+    },
+    {
+      "date": "2026-08-15",
+      "type": "github_docs",
+      "label": "Docs update: Add first-class boundary-only level-set splitting (#378)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/b1554b3bc72311447e45791a2a5fabd0d7041d1f"
+    },
+    {
+      "date": "2026-08-15",
+      "type": "github_docs",
+      "label": "Docs update: Complete deterministic MMG API coverage",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/a9461a697863a785bdb95b0f17a7bb2dd9507564"
+    },
+    {
+      "date": "2026-08-15",
+      "type": "github_docs",
+      "label": "Docs update: Fix CI compatibility and fork docs builds",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/27c35f80010c66b47637b053310c61159d427506"
     }
   ]
 }
