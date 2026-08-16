@@ -2318,6 +2318,8 @@
 <code>mmgpy.mmg3d.remesh("in.mesh", "out.mesh", parameter_file=parameter_file)</code>.
 Both strings and path-like objects are accepted. Missing or unreadable files
 raise a <code>RuntimeError</code> before remeshing starts.</p>
+<p>mmgpy uses the same parser for all three engines and applies the parsed values
+through each engine's public MMG setters.</p>
 <p>MMG parameter files define local sizing by entity reference. For example, this
 <code>.mmg3d</code> file targets tetrahedra whose reference is <code>7</code>:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>parameters
