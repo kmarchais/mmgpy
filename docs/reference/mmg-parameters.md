@@ -8,6 +8,50 @@ mesh = pv.read("input.mesh")
 
 Complete reference for the keyword arguments accepted by `dataset.mmg.remesh(...)` (and its variants `remesh_optimize`, `remesh_uniform`, `remesh_levelset`, `move`). Each call returns a fresh PyVista dataset; the input is not mutated.
 
+## Native parameter files
+
+All three engines accept MMG's native local-parameter files through the
+`parameter_file` keyword. Pass a `.mmg3d` file for tetrahedral meshes, a
+`.mmg2d` file for planar meshes, or a `.mmgs` file for surface meshes:
+
+<!-- mmgpy-test:skip -->
+
+```python
+from pathlib import Path
+
+parameter_file = Path("local.mmg3d")
+remeshed = mesh.mmg.remesh(
+    parameter_file=parameter_file,
+    verbose=-1,
+)
+```
+
+The same keyword is available on `Mesh.remesh(...)`,
+`Mesh.remesh_levelset(...)`, and the file APIs such as
+`mmgpy.mmg3d.remesh("in.mesh", "out.mesh", parameter_file=parameter_file)`.
+Both strings and path-like objects are accepted. Missing or unreadable files
+raise a `RuntimeError` before remeshing starts.
+
+mmgpy uses the same parser for all three engines and applies the parsed values
+through each engine's public MMG setters.
+
+MMG parameter files define local sizing by entity reference. For example, this
+`.mmg3d` file targets tetrahedra whose reference is `7`:
+
+```text
+parameters
+1
+7 tetrahedra 0.02 0.08 0.01
+```
+
+The final three values are `hmin`, `hmax`, and `hausd`. MMG3D accepts
+`triangle(s)` and `tetrahedron(s)` references, MMG2D accepts `edge(s)` and
+`triangle(s)`, and MMGS accepts `triangle(s)`. Native `lsreferences` and
+`lsbasereferences` sections are supported as well.
+
+Parameter files are parsed first. Explicit Python options are applied second,
+so Python settings take precedence when both configure the same MMG parameter.
+
 ## Size Parameters
 
 ### hmin

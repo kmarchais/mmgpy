@@ -10,6 +10,7 @@ import pytest
 import pyvista as pv
 
 import mmgpy
+import mmgpy._pv_plugin as pv_plugin
 
 
 def _save_via_pv(grid: pv.DataSet, path: Path) -> None:
@@ -39,6 +40,85 @@ def _make_tet_mesh() -> pv.UnstructuredGrid:
 def _make_surface_mesh() -> pv.PolyData:
     """Return a triangulated cube as a PolyData surface mesh."""
     return pv.Cube().triangulate()
+
+
+@pytest.mark.parametrize("operation", ["remesh", "remesh_levelset"])
+def test_parameter_file_precedes_explicit_accessor_config(
+    monkeypatch: pytest.MonkeyPatch,
+    operation: str,
+) -> None:
+    """Stored Python configuration is reapplied after parameter-file parsing."""
+    events: list[str] = []
+
+    class FakeImpl:
+        def set_input_parameter_name(self, path: Path) -> None:
+            events.append(f"select:{path.name}")
+
+        def _apply_input_parameter_file(self) -> None:
+            events.append("parse")
+
+        def set_multi_materials(self, materials: list[dict[str, object]]) -> None:
+            assert materials
+            events.append("materials")
+
+        def set_local_parameters(self, parameters: list[dict[str, object]]) -> None:
+            assert parameters
+            events.append("parameters")
+
+        def set_ls_base_references(self, references: list[int]) -> None:
+            assert references
+            events.append("references")
+
+    class FakeMesh:
+        def __init__(self) -> None:
+            self._impl = FakeImpl()
+
+        def remesh(self, *_args: object, **_kwargs: object) -> None:
+            events.append("remesh")
+
+        def remesh_levelset(self, *_args: object, **_kwargs: object) -> None:
+            events.append("remesh_levelset")
+
+    dataset = _make_tet_mesh()
+    dataset.user_dict["mmg_multi_materials"] = [
+        {"ref": 0, "split": 1, "ref_minus": 10, "ref_plus": 20},
+    ]
+    dataset.user_dict["mmg_local_parameters"] = [
+        {
+            "type": "tetrahedron",
+            "ref": 0,
+            "hmin": 0.01,
+            "hmax": 0.1,
+            "hausd": 0.01,
+        },
+    ]
+    dataset.user_dict["mmg_ls_base_references"] = [1]
+    fake_mesh = FakeMesh()
+    monkeypatch.setattr(pv_plugin, "_build_mesh_with_mmg_fields", lambda _: fake_mesh)
+    monkeypatch.setattr(
+        pv_plugin,
+        "_to_pyvista_with_user_fields",
+        lambda *_args, **_kwargs: dataset,
+    )
+
+    parameter_file = Path("settings.mmg3d")
+    if operation == "remesh":
+        dataset.mmg.remesh(parameter_file=parameter_file, verbose=False)
+    else:
+        dataset.mmg.remesh_levelset(
+            np.ones(dataset.n_points),
+            parameter_file=parameter_file,
+            verbose=False,
+        )
+
+    assert events == [
+        f"select:{parameter_file.name}",
+        "parse",
+        "materials",
+        "parameters",
+        "references",
+        operation,
+    ]
 
 
 # ---------------------------------------------------------------------------

@@ -593,6 +593,15 @@ def _apply_pending_mmg_config(
         mesh._impl.set_ls_base_references(list(references))  # noqa: SLF001
 
 
+def _apply_parameter_file(
+    mesh: _Mesh,
+    parameter_file: str | Path | None,
+) -> None:
+    if parameter_file is not None:
+        mesh._impl.set_input_parameter_name(parameter_file)  # noqa: SLF001
+        mesh._impl._apply_input_parameter_file()  # noqa: SLF001
+
+
 def _apply_local_sizing_specs(
     mesh: _Mesh,
     specs: list[Mapping[str, Any]] | None,
@@ -939,6 +948,37 @@ def _apply_metric_kwarg(
         mesh["metric"] = _coerce_metric_kwarg(metric, int(dataset.n_points))
 
 
+def _line_only_remesh_error(
+    metric: NDArray[np.float64] | None,
+    local_sizing: list[Mapping[str, Any]] | None,
+    parameter_file: str | Path | None,
+) -> str | None:
+    """Describe an input unsupported by the line-to-2D generation path.
+
+    Returns
+    -------
+    str or None
+        The validation error, or ``None`` when all inputs are supported.
+
+    """
+    if local_sizing:
+        return (
+            "local_sizing is not supported when generating a 2D mesh "
+            "from a line-only PolyData"
+        )
+    if metric is not None:
+        return (
+            "metric is not supported when generating a 2D mesh "
+            "from a line-only PolyData"
+        )
+    if parameter_file is not None:
+        return (
+            "parameter_file is not supported when generating a 2D mesh "
+            "from a line-only PolyData"
+        )
+    return None
+
+
 # ---------------------------------------------------------------------------
 # .mmg dataset accessor
 # ---------------------------------------------------------------------------
@@ -985,6 +1025,7 @@ class MmgAccessor:
         *,
         metric: NDArray[np.float64] | None = None,
         local_sizing: list[Mapping[str, Any]] | None = None,
+        parameter_file: str | Path | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Remesh the underlying dataset and return a new PyVista dataset.
@@ -1004,6 +1045,9 @@ class MmgAccessor:
             ``"shape"`` key (``"sphere"``, ``"box"``, ``"cylinder"``, or
             ``"from_point"``) plus the parameters of the matching
             ``Mesh.set_size_*`` method.
+        parameter_file : str or Path, optional
+            Native MMG local-parameter file. Explicit Python options take
+            precedence over settings loaded from the file.
         **options : object
             Forwarded to :meth:`mmgpy.Mesh.remesh`. Common knobs include
             ``hmin``, ``hmax``, ``hsiz``, and ``hausd``. The reserved
@@ -1049,18 +1093,13 @@ class MmgAccessor:
                     msg = "pass either an options object or kwargs, not both"
                     raise TypeError(msg)
                 options = dict(opts.to_dict())
-            if local_sizing:
-                msg = (
-                    "local_sizing is not supported when generating a 2D mesh "
-                    "from a line-only PolyData"
-                )
-                raise ValueError(msg)
-            if metric is not None:
-                msg = (
-                    "metric is not supported when generating a 2D mesh "
-                    "from a line-only PolyData"
-                )
-                raise ValueError(msg)
+            line_error = _line_only_remesh_error(
+                metric,
+                local_sizing,
+                parameter_file,
+            )
+            if line_error is not None:
+                raise ValueError(line_error)
             return _generate_from_line_polydata(self._dataset, options)
 
         constraints = _split_constraint_kwargs(options)
@@ -1068,6 +1107,7 @@ class MmgAccessor:
         _apply_metric_kwarg(mesh, self._dataset, metric)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_parameter_file(mesh, parameter_file)
         _apply_pending_mmg_config(mesh, self._dataset)
         # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time
         # FutureWarning + in-place reverse Cuthill-McKee). Forwarding it
@@ -1117,6 +1157,7 @@ class MmgAccessor:
         *,
         surface_only: bool = False,
         local_sizing: list[Mapping[str, Any]] | None = None,
+        parameter_file: str | Path | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_levelset
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Level-set discretization remeshing.
@@ -1133,6 +1174,9 @@ class MmgAccessor:
             include the referenced boundary faces as TRIANGLE cells.
         local_sizing : list of dict, optional
             Sizing constraints; see :meth:`remesh`.
+        parameter_file : str or Path, optional
+            Native MMG local-parameter file. Explicit Python options take
+            precedence over settings loaded from the file.
         **options : object
             Forwarded to :meth:`mmgpy.Mesh.remesh_levelset`. The reserved
             constraint kwargs documented on :meth:`remesh` are honored
@@ -1148,8 +1192,13 @@ class MmgAccessor:
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_parameter_file(mesh, parameter_file)
         _apply_pending_mmg_config(mesh, self._dataset)
-        mesh.remesh_levelset(levelset, surface_only=surface_only, **options)
+        mesh.remesh_levelset(
+            levelset,
+            surface_only=surface_only,
+            **options,
+        )
         return _to_pyvista_with_user_fields(mesh, include_boundary=surface_only)
 
     def remesh_optimize(

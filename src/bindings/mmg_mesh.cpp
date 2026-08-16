@@ -1060,13 +1060,20 @@ void MmgMesh::set_input_parameter_name(
     const std::variant<std::string, std::filesystem::path> &filename) {
   check_not_corrupted("set input parameter name");
   std::string fname = variant_to_string(filename);
-  if (!std::filesystem::is_regular_file(fname)) {
-    throw std::runtime_error("MMG parameter file not found: " + fname);
-  }
+  validate_parameter_file(fname);
   if (!MMG3D_Set_inputParamName(mesh, fname.c_str())) {
     throw std::runtime_error("Failed to set MMG parameter file: " + fname);
   }
-  has_input_parameter_file_ = true;
+  input_parameter_file_ = fname;
+}
+
+void MmgMesh::apply_input_parameter_file() {
+  if (input_parameter_file_.empty()) {
+    return;
+  }
+  parse_parameter_file(mesh, met, input_parameter_file_,
+                       MmgParameterFileKind::Mmg3D);
+  input_parameter_file_.clear();
 }
 
 int MmgMesh::get_iparameter(MMG5_int parameter) const {
@@ -1519,12 +1526,7 @@ py::dict MmgMesh::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
-  if (has_input_parameter_file_) {
-    if (!MMG3D_parsop(mesh, met)) {
-      throw std::runtime_error("Failed to parse MMG3D parameter file");
-    }
-    has_input_parameter_file_ = false;
-  }
+  apply_input_parameter_file();
   set_mesh_options_3D(mesh, met, options);
 
   // Capture stderr to collect MMG warnings
@@ -1568,12 +1570,7 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
 
   set_field("levelset", levelset);
   py::dict ls_options = prepare_levelset_options(options);
-  if (has_input_parameter_file_) {
-    if (!MMG3D_parsop(mesh, met)) {
-      throw std::runtime_error("Failed to parse MMG3D parameter file");
-    }
-    has_input_parameter_file_ = false;
-  }
+  apply_input_parameter_file();
   set_mesh_options_3D(mesh, met, ls_options);
 
   // Capture stderr to collect MMG warnings

@@ -2090,6 +2090,10 @@ class Mesh:
             Solution data for adaptive remeshing.  Can be a path to a
             Medit .sol file, or a numpy array (scalar metric, Nx3/Nx6
             anisotropic tensor, or Nx2/Nx3 displacement vector).
+        parameter_file : str or Path, optional
+            Native MMG local-parameter file (``.mmg3d``, ``.mmg2d``, or
+            ``.mmgs``). Explicit Python options are applied afterward and
+            therefore take precedence.
         progress : bool | Callable[[ProgressEvent], bool] | None, default=True
             Progress reporting option:
             - True: Show Rich progress bar (default)
@@ -2160,6 +2164,7 @@ class Mesh:
         )
         from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
 
+        parameter_file = kwargs.pop("parameter_file", None)
         self._load_remesh_input_solution(input_sol)
 
         # Validate interpolation method
@@ -2223,7 +2228,10 @@ class Mesh:
                 raise CancellationError(phase="remesh")
 
             # Call raw C++ method and convert result
-            stats = self._impl.remesh(**kwargs)
+            stats = self._impl.remesh(
+                parameter_file=parameter_file,
+                **kwargs,
+            )
             final_vertices = len(self._impl.get_vertices())
 
             self._update_fields_after_remesh(
@@ -2257,6 +2265,7 @@ class Mesh:
         levelset: NDArray[np.float64],
         *,
         surface_only: bool = False,
+        parameter_file: str | Path | None = None,
         progress: ProgressParam = True,
         **kwargs: Any,  # noqa: ANN401
     ) -> RemeshResult:
@@ -2270,6 +2279,9 @@ class Mesh:
             If ``True``, split only the mesh boundary at the isovalue,
             corresponding to MMG's ``-lssurf`` / ``*_IPARAM_isosurf`` mode.
             The default ``False`` preserves full-domain level-set splitting.
+        parameter_file : str or Path, optional
+            Native MMG local-parameter file. Explicit Python options take
+            precedence over settings loaded from the file.
         progress : bool | Callable[[ProgressEvent], bool] | None, default=True
             Progress reporting option:
             - True: Show Rich progress bar (default)
@@ -2319,6 +2331,7 @@ class Mesh:
             stats = self._impl.remesh_levelset(  # type: ignore[arg-type]
                 levelset,
                 surface_only=surface_only,
+                parameter_file=parameter_file,
                 **kwargs,
             )
             final_vertices = len(self._impl.get_vertices())

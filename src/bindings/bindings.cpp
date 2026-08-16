@@ -1,5 +1,6 @@
 #include "bindings.h"
 #include "mmg/common/mmgversion.h"
+#include "mmg_common.hpp"
 #include "mmg_mesh.hpp"
 #include "mmg_mesh_2d.hpp"
 #include "mmg_mesh_s.hpp"
@@ -8,10 +9,18 @@ namespace {
 // Convert a Python str or Path object to a std::variant for C++ file I/O.
 std::variant<std::string, std::filesystem::path>
 path_to_variant(const py::object &path) {
-  if (py::isinstance<py::str>(path)) {
-    return path.cast<std::string>();
+  return path_to_string(path);
+}
+
+template <typename MeshType>
+void apply_parameter_file(MeshType &mesh, py::kwargs &kwargs) {
+  if (!kwargs.contains("parameter_file")) {
+    return;
   }
-  return std::filesystem::path(path.attr("__str__")().cast<std::string>());
+  py::object path = kwargs.attr("pop")("parameter_file");
+  if (!path.is_none()) {
+    mesh.set_input_parameter_name(path_to_variant(path));
+  }
 }
 
 // MMG verbose level constants for Pythonic bool conversion
@@ -176,6 +185,7 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.set_input_parameter_name(path_to_variant(path));
           },
           py::arg("path"))
+      .def("_apply_input_parameter_file", &MmgMesh::apply_input_parameter_file)
       .def("get_iparameter", &MmgMesh::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh::set_multi_materials,
@@ -254,6 +264,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh &self, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
@@ -262,6 +273,7 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_levelset",
           [](MmgMesh &self, const py::array_t<double> &levelset,
              bool surface_only, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh_levelset(levelset,
                                         levelset_options(surface_only, kwargs));
           },
@@ -373,6 +385,8 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.set_input_parameter_name(path_to_variant(path));
           },
           py::arg("path"))
+      .def("_apply_input_parameter_file",
+           &MmgMesh2D::apply_input_parameter_file)
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh2D::set_multi_materials,
            py::arg("materials"),
@@ -454,6 +468,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh2D &self, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
@@ -462,6 +477,7 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_levelset",
           [](MmgMesh2D &self, const py::array_t<double> &levelset,
              bool surface_only, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh_levelset(levelset,
                                         levelset_options(surface_only, kwargs));
           },
@@ -572,6 +588,7 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.set_input_parameter_name(path_to_variant(path));
           },
           py::arg("path"))
+      .def("_apply_input_parameter_file", &MmgMeshS::apply_input_parameter_file)
       .def("get_iparameter", &MmgMeshS::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMeshS::set_multi_materials,
@@ -641,6 +658,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMeshS &self, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
@@ -649,6 +667,7 @@ PYBIND11_MODULE(_mmgpy, m) {
           "remesh_levelset",
           [](MmgMeshS &self, const py::array_t<double> &levelset,
              bool surface_only, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh_levelset(levelset,
                                         levelset_options(surface_only, kwargs));
           },
@@ -687,19 +706,22 @@ PYBIND11_MODULE(_mmgpy, m) {
                   py::arg("input_sol") = py::none(),
                   py::arg("output_mesh") = py::none(),
                   py::arg("output_sol") = py::none(),
-                  py::arg("options") = py::dict());
+                  py::arg("options") = py::dict(),
+                  py::arg("parameter_file") = py::none());
 
   py::class_<mmg2d>(m, "mmg2d")
       .def_static("remesh", remesh_2d, py::arg("input_mesh"),
                   py::arg("input_sol") = py::none(),
                   py::arg("output_mesh") = py::none(),
                   py::arg("output_sol") = py::none(),
-                  py::arg("options") = py::dict());
+                  py::arg("options") = py::dict(),
+                  py::arg("parameter_file") = py::none());
 
   py::class_<mmgs>(m, "mmgs").def_static(
       "remesh", remesh_s, py::arg("input_mesh"),
       py::arg("input_sol") = py::none(), py::arg("output_mesh") = py::none(),
-      py::arg("output_sol") = py::none(), py::arg("options") = py::dict());
+      py::arg("output_sol") = py::none(), py::arg("options") = py::dict(),
+      py::arg("parameter_file") = py::none());
 
   m.attr("MMG_VERSION") = MMG_VERSION_RELEASE;
 }

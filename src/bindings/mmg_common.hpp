@@ -119,6 +119,14 @@ void set_mesh_options_surface(MMG5_pMesh mesh, MMG5_pSol met,
 
 std::string path_to_string(const py::object &path);
 
+void validate_parameter_file(const std::string &filename);
+
+enum class MmgParameterFileKind { Mmg2D, Mmg3D, MmgS };
+
+void parse_parameter_file(MMG5_pMesh mesh, MMG5_pSol met,
+                          const std::string &filename,
+                          MmgParameterFileKind kind);
+
 // Select the requested level-set mode and explicitly clear the inactive mode.
 py::dict prepare_levelset_options(const py::dict &options);
 

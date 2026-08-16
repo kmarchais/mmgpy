@@ -81,6 +81,7 @@ public:
   void set_local_parameters(const py::list &parameters);
   void set_input_parameter_name(
       const std::variant<std::string, std::filesystem::path> &filename);
+  void apply_input_parameter_file();
 
   // Multi-material and level-set
   void set_multi_materials(const py::list &materials);
@@ -157,7 +158,7 @@ private:
   void check_not_corrupted(const char *operation) const;
 
   bool corrupted_ = false;
-  bool has_input_parameter_file_ = false;
+  std::string input_parameter_file_;
 };
 
 #endif // MMG_MESH_2D_HPP
