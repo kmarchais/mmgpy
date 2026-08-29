@@ -3109,16 +3109,16 @@ wheels = [
 
 [[package]]
 name = "trame-vtklocal"
-version = "1.2.0"
+version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "trame" },
     { name = "trame-common" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/2f/d688dd7a4ce22f22ec520953a4eb29675a765b043a968e55832ce0c3cad1/trame_vtklocal-1.2.0.tar.gz", hash = "sha256:81f062cc679af3830761f3c003a611c5a82e885504817ee61849a25cfda3986d", size = 26800, upload-time = "2026-08-09T04:14:13.015Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/41/69b246c103b57101dbb0758b00e5fb308c65ac8dad8532891b711b4aada1/trame_vtklocal-1.3.0.tar.gz", hash = "sha256:15a2a5d19d54d744e55906749c541b0b0289d2d4189ac89ec210655fe75a210f", size = 28566, upload-time = "2026-08-25T00:45:20.718Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/a6/4d2a8b88655527ab4c3d8bbe049270de11877103f483e68c4a47d4de7192/trame_vtklocal-1.2.0-py3-none-any.whl", hash = "sha256:4f7562ce77bbdddd03a39d21ce1ab3542659fc84f74902084e80152845b0298d", size = 30348, upload-time = "2026-08-09T04:14:11.572Z" },
+    { url = "https://files.pythonhosted.org/packages/17/6e/f520d96aa89af31450a2564b5cd18bc355e159f279264fce272342ac9b3f/trame_vtklocal-1.3.0-py3-none-any.whl", hash = "sha256:c4516419ada1e394ba7e9636da342c72f7106c6a61421c914c822dd7955df002", size = 32054, upload-time = "2026-08-25T00:45:19.332Z" },
 ]
 
 [[package]]
