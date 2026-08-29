@@ -1509,7 +1509,6 @@ ui = [
     { name = "pywebview" },
     { name = "trame" },
     { name = "trame-vtk" },
-    { name = "trame-vtklocal" },
     { name = "trame-vuetify" },
 ]
 
@@ -1543,7 +1542,6 @@ ui = [
     { name = "pywebview" },
     { name = "trame" },
     { name = "trame-vtk" },
-    { name = "trame-vtklocal" },
     { name = "trame-vuetify" },
 ]
 
@@ -1559,7 +1557,6 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.13.0,<2" },
     { name = "trame", marker = "extra == 'ui'", specifier = ">=3.13.1,<4" },
     { name = "trame-vtk", marker = "extra == 'ui'", specifier = ">=2.11.6,<3" },
-    { name = "trame-vtklocal", marker = "extra == 'ui'", specifier = ">=0.17.1,<2" },
     { name = "trame-vuetify", marker = "extra == 'ui'", specifier = ">=3.2.1,<4" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.12.0,<5" },
 ]
@@ -1594,7 +1591,6 @@ ui = [
     { name = "pywebview", specifier = ">=6.2.1" },
     { name = "trame", specifier = ">=3.13.1" },
     { name = "trame-vtk", specifier = ">=2.11.6" },
-    { name = "trame-vtklocal", specifier = ">=0.17.1" },
     { name = "trame-vuetify", specifier = ">=3.2.1" },
 ]
 
@@ -3105,20 +3101,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6a/14/497d520a7a0d177e47a3624bcf200657b3c353fe1936a36bdc4ef360dcba/trame_vtk-2.11.16.tar.gz", hash = "sha256:9525a05cfd135794a72e4267521fd4b3b47ed929d52e03b5465a1579e469d9a7", size = 829781, upload-time = "2026-08-14T11:30:30.376Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/7b/fe6c5674facfe47c23e7b77fc72df893b9e145ca04396ce8769a8d170dbd/trame_vtk-2.11.16-py3-none-any.whl", hash = "sha256:2b5eadaf152d1cc59604f1a5e7cabab933a79bb4f889cf15eecec8db0cc8721d", size = 851994, upload-time = "2026-08-14T11:30:28.433Z" },
-]
-
-[[package]]
-name = "trame-vtklocal"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-    { name = "trame" },
-    { name = "trame-common" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/2f/d688dd7a4ce22f22ec520953a4eb29675a765b043a968e55832ce0c3cad1/trame_vtklocal-1.2.0.tar.gz", hash = "sha256:81f062cc679af3830761f3c003a611c5a82e885504817ee61849a25cfda3986d", size = 26800, upload-time = "2026-08-09T04:14:13.015Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/a6/4d2a8b88655527ab4c3d8bbe049270de11877103f483e68c4a47d4de7192/trame_vtklocal-1.2.0-py3-none-any.whl", hash = "sha256:4f7562ce77bbdddd03a39d21ce1ab3542659fc84f74902084e80152845b0298d", size = 30348, upload-time = "2026-08-09T04:14:11.572Z" },
 ]
 
 [[package]]
