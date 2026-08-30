@@ -237,7 +237,7 @@ go away but the sharp edges are rounded, so reach for it when a hard guarantee
 against degenerate triangles (collision / FEM meshes) matters more than feature
 fidelity.
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 from mmgpy import MmgSOptions
