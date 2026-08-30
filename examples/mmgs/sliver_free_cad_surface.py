@@ -37,7 +37,7 @@ from pathlib import Path
 import numpy as np
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor and Medit reader
 from mmgpy import MmgSOptions
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "compressor_wheel.stl"
