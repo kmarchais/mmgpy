@@ -1,5 +1,6 @@
 #include "bindings.h"
 #include "mmg/common/mmgversion.h"
+#include "mmg_common.hpp"
 #include "mmg_mesh.hpp"
 #include "mmg_mesh_2d.hpp"
 #include "mmg_mesh_s.hpp"
@@ -8,10 +9,18 @@ namespace {
 // Convert a Python str or Path object to a std::variant for C++ file I/O.
 std::variant<std::string, std::filesystem::path>
 path_to_variant(const py::object &path) {
-  if (py::isinstance<py::str>(path)) {
-    return path.cast<std::string>();
+  return path_to_string(path);
+}
+
+template <typename MeshType>
+void apply_parameter_file(MeshType &mesh, py::kwargs &kwargs) {
+  if (!kwargs.contains("parameter_file")) {
+    return;
   }
-  return std::filesystem::path(path.attr("__str__")().cast<std::string>());
+  py::object path = kwargs.attr("pop")("parameter_file");
+  if (!path.is_none()) {
+    mesh.set_input_parameter_name(path_to_variant(path));
+  }
 }
 
 // MMG verbose level constants for Pythonic bool conversion
@@ -33,6 +42,23 @@ py::dict kwargs_to_options(const py::kwargs &kwargs) {
     } else {
       options[item.first] = item.second;
     }
+  }
+  return options;
+}
+
+// Translate the Python convenience flag to MMG's mutually exclusive
+// level-set modes. Raw iso/isosurf kwargs remain available for compatibility
+// when surface_only is false.
+py::dict levelset_options(bool surface_only, const py::kwargs &kwargs) {
+  if (surface_only && (kwargs.contains("iso") || kwargs.contains("isosurf"))) {
+    throw py::type_error(
+        "surface_only cannot be combined with raw iso or isosurf options");
+  }
+
+  py::dict options = kwargs_to_options(kwargs);
+  if (surface_only) {
+    options["iso"] = py::int_(0);
+    options["isosurf"] = py::int_(1);
   }
   return options;
 }
@@ -153,6 +179,14 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      .def(
+          "set_input_parameter_name",
+          [](MmgMesh &self, const py::object &path) {
+            self.set_input_parameter_name(path_to_variant(path));
+          },
+          py::arg("path"))
+      .def("_apply_input_parameter_file", &MmgMesh::apply_input_parameter_file)
+      .def("get_iparameter", &MmgMesh::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh::set_multi_materials,
            py::arg("materials"),
@@ -190,6 +224,12 @@ PYBIND11_MODULE(_mmgpy, m) {
              self.save(path_to_variant(path));
            })
       .def(
+          "save_tetgen",
+          [](const MmgMesh &self, const py::object &path) {
+            self.save_tetgen(path_to_variant(path));
+          },
+          py::arg("path"))
+      .def(
           "load_sol",
           [](MmgMesh &self, const py::object &path,
              const std::string &channel) {
@@ -224,6 +264,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh &self, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
@@ -231,13 +272,16 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh_levelset",
           [](MmgMesh &self, const py::array_t<double> &levelset,
-             py::kwargs kwargs) {
-            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+             bool surface_only, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
+            return self.remesh_levelset(levelset,
+                                        levelset_options(surface_only, kwargs));
           },
-          py::arg("levelset"),
+          py::arg("levelset"), py::kw_only(), py::arg("surface_only") = false,
           "Remesh the mesh to conform to a level-set isosurface.\n\n"
           "Args:\n"
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    surface_only: Split only boundary faces, like MMG's -lssurf.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
@@ -335,6 +379,14 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      .def(
+          "set_input_parameter_name",
+          [](MmgMesh2D &self, const py::object &path) {
+            self.set_input_parameter_name(path_to_variant(path));
+          },
+          py::arg("path"))
+      .def("_apply_input_parameter_file",
+           &MmgMesh2D::apply_input_parameter_file)
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMesh2D::set_multi_materials,
            py::arg("materials"),
@@ -376,6 +428,12 @@ PYBIND11_MODULE(_mmgpy, m) {
              self.save(path_to_variant(path));
            })
       .def(
+          "save_tetgen",
+          [](const MmgMesh2D &self, const py::object &path) {
+            self.save_tetgen(path_to_variant(path));
+          },
+          py::arg("path"))
+      .def(
           "load_sol",
           [](MmgMesh2D &self, const py::object &path,
              const std::string &channel) {
@@ -410,6 +468,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMesh2D &self, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
@@ -417,13 +476,16 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh_levelset",
           [](MmgMesh2D &self, const py::array_t<double> &levelset,
-             py::kwargs kwargs) {
-            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+             bool surface_only, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
+            return self.remesh_levelset(levelset,
+                                        levelset_options(surface_only, kwargs));
           },
-          py::arg("levelset"),
+          py::arg("levelset"), py::kw_only(), py::arg("surface_only") = false,
           "Remesh the mesh to conform to a level-set isoline.\n\n"
           "Args:\n"
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    surface_only: Split only boundary edges, like MMG's -lssurf.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
@@ -520,6 +582,14 @@ PYBIND11_MODULE(_mmgpy, m) {
            "        hmin: minimum edge size\n"
            "        hmax: maximum edge size\n"
            "        hausd: Hausdorff distance")
+      .def(
+          "set_input_parameter_name",
+          [](MmgMeshS &self, const py::object &path) {
+            self.set_input_parameter_name(path_to_variant(path));
+          },
+          py::arg("path"))
+      .def("_apply_input_parameter_file", &MmgMeshS::apply_input_parameter_file)
+      .def("get_iparameter", &MmgMeshS::get_iparameter, py::arg("parameter"))
       // Multi-material and level-set
       .def("set_multi_materials", &MmgMeshS::set_multi_materials,
            py::arg("materials"),
@@ -588,6 +658,7 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh",
           [](MmgMeshS &self, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
             return self.remesh(kwargs_to_options(kwargs));
           },
           "Remesh the mesh in-place. Common options: hmax, hmin, hsiz, hausd, "
@@ -595,13 +666,17 @@ PYBIND11_MODULE(_mmgpy, m) {
       .def(
           "remesh_levelset",
           [](MmgMeshS &self, const py::array_t<double> &levelset,
-             py::kwargs kwargs) {
-            return self.remesh_levelset(levelset, kwargs_to_options(kwargs));
+             bool surface_only, py::kwargs kwargs) {
+            apply_parameter_file(self, kwargs);
+            return self.remesh_levelset(levelset,
+                                        levelset_options(surface_only, kwargs));
           },
-          py::arg("levelset"),
+          py::arg("levelset"), py::kw_only(), py::arg("surface_only") = false,
           "Remesh the mesh to conform to a level-set isoline.\n\n"
           "Args:\n"
           "    levelset: Nx1 array of scalar level-set values per vertex.\n"
+          "    surface_only: Split only referenced boundary edges, like "
+          "MMG's -lssurf.\n"
           "    **kwargs: Remeshing options (hmax, hmin, verbose, etc.).\n"
           "              ls: Isovalue to discretize (default=0.0).\n"
           "              iso: Enable level-set mode (default=1).")
@@ -631,19 +706,22 @@ PYBIND11_MODULE(_mmgpy, m) {
                   py::arg("input_sol") = py::none(),
                   py::arg("output_mesh") = py::none(),
                   py::arg("output_sol") = py::none(),
-                  py::arg("options") = py::dict());
+                  py::arg("options") = py::dict(),
+                  py::arg("parameter_file") = py::none());
 
   py::class_<mmg2d>(m, "mmg2d")
       .def_static("remesh", remesh_2d, py::arg("input_mesh"),
                   py::arg("input_sol") = py::none(),
                   py::arg("output_mesh") = py::none(),
                   py::arg("output_sol") = py::none(),
-                  py::arg("options") = py::dict());
+                  py::arg("options") = py::dict(),
+                  py::arg("parameter_file") = py::none());
 
   py::class_<mmgs>(m, "mmgs").def_static(
       "remesh", remesh_s, py::arg("input_mesh"),
       py::arg("input_sol") = py::none(), py::arg("output_mesh") = py::none(),
-      py::arg("output_sol") = py::none(), py::arg("options") = py::dict());
+      py::arg("output_sol") = py::none(), py::arg("options") = py::dict(),
+      py::arg("parameter_file") = py::none());
 
   m.attr("MMG_VERSION") = MMG_VERSION_RELEASE;
 }

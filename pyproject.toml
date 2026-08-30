@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "scikit-build-core>=0.12.2",
+    "scikit-build-core>=1.0.0",
     "pybind11>=3.0.4",
     # Add numpy to build requirements for headers
     "numpy>=2.1.0",
@@ -50,7 +50,6 @@ ui = [
     "pywebview>=6.2.1,<7",
     "trame>=3.13.1,<4",
     "trame-vtk>=2.11.6,<3",
-    "trame-vtklocal>=0.17.1,<1",
     "trame-vuetify>=3.2.1,<4",
 ]
 
@@ -62,10 +61,11 @@ mmg_version = "5.8.0"
 no-build-isolation-package = ["mmgpy"]
 
 [tool.scikit-build]
+minimum-version = "build-system.requires"
+
 # Build configuration
 build.verbose = true
 cmake.version = ">=3.25"
-cmake.args = ["-DCMAKE_BUILD_TYPE=Release"]
 cmake.define = { BUILD_TESTING = "OFF", BUILD_SHARED_LIBS = "ON", MMGPY_SKIP_EXECUTABLES = "OFF" }
 
 build-dir = "build"
@@ -109,7 +109,7 @@ mmgpy-ui = "mmgpy.ui.__main__:main"
 [dependency-groups]
 dev = [
     # Build dependencies (needed for editable installs without build isolation)
-    "scikit-build-core>=0.12.2",
+    "scikit-build-core>=1.0.0",
     "pybind11>=3.0.4",
     "numpy>=2.1.0",
     # Dev tools
@@ -122,12 +122,13 @@ dev = [
     "pytest-benchmark>=5.2.3",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.14",
-    "pytest-codeblocks>=0.17.0",
+    "pytest-examples>=0.0.18",
     "pytest-pyvista>=0.3.3",
     "pyvista>=0.48,<1",
 ]
 docs = [
-    "mike @ git+https://github.com/squidfunk/mike.git@2d4ad799442f4592db8ad53b179bfb33db8c69ac",
+    "mike>=2.1.3,<3",
+    "mkdocs-material>=9.6,<10",
     "mkdocstrings-python>=2.0.0,<3",
     # Belt-and-braces: pymdown-extensions 10.21.2 fixed the html.escape(None)
     # crash that previously forced a `pygments<2.20` cap (see git history).
@@ -138,7 +139,6 @@ ui = [
     "pywebview>=6.2.1",
     "trame>=3.13.1",
     "trame-vtk>=2.11.6",
-    "trame-vtklocal>=0.17.1",
     "trame-vuetify>=3.2.1",
 ]
 
@@ -151,6 +151,12 @@ markers = [
 ]
 [tool.ruff]
 preview = true
+
+[tool.complexipy]
+# The UI is currently out of scope.
+paths = ["src/mmgpy"]
+exclude = ["ui/**"]
+failed = true
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -342,12 +348,14 @@ ignore = [
 ]
 
 [tool.ty.src]
-# Exclude tests, scripts, examples, and certain modules from type checking
+# Keep ty's full-project pre-commit hook focused on the package source,
+# matching `uv run ty check src/mmgpy/`.
+include = ["src/mmgpy"]
+# Exclude modules that rely on runtime integrations or incomplete third-party stubs.
 # Progress module uses union types that cause complex type inference issues
 # Interactive module uses PyVista types that have incomplete stubs
 # UI module uses trame which has no type stubs
-# Blender extension uses bpy property decorators that ty doesn't understand
-exclude = ["tests/**", "scripts/**", "examples/**", "docs/**", "src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**", "blender_mmgpy/**"]
+exclude = ["src/mmgpy/_progress.py", "src/mmgpy/interactive/**", "src/mmgpy/ui/**"]
 
 [tool.ty.rules]
 # Ignore unresolved imports for C++ extension module that isn't available at type-check time

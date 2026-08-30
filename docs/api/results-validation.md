@@ -32,7 +32,7 @@ print(f"Mean quality: {q_before.mean():.3f} -> {q_after.mean():.3f}")
 
 If you need the structured `RemeshResult` (return code, MMG warnings, duration), reach for the underlying module-level entry points:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 from mmgpy import mmg3d
@@ -94,8 +94,6 @@ else:
 
 ### Detailed Validation
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 report = mesh.mmg.validate(detailed=True)
 
@@ -111,8 +109,6 @@ for issue in report.issues:
 
 ### Strict Validation
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 from mmgpy import ValidationError
 
@@ -126,8 +122,6 @@ except ValidationError as e:
 ```
 
 ### Selective Validation
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 # Only check geometry

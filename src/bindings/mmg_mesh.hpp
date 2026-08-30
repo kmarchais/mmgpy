@@ -95,6 +95,10 @@ public:
 
   // Local parameters
   void set_local_parameters(const py::list &parameters);
+  void set_input_parameter_name(
+      const std::variant<std::string, std::filesystem::path> &filename);
+  void apply_input_parameter_file();
+  int get_iparameter(MMG5_int parameter) const;
 
   // Multi-material and level-set
   void set_multi_materials(const py::list &materials);
@@ -139,6 +143,8 @@ public:
 
   void
   save(const std::variant<std::string, std::filesystem::path> &filename) const;
+  void save_tetgen(
+      const std::variant<std::string, std::filesystem::path> &filename) const;
   void
   load_sol(const std::variant<std::string, std::filesystem::path> &filename,
            const std::string &channel = "metric");
@@ -186,6 +192,7 @@ private:
   void check_not_corrupted(const char *operation) const;
 
   bool corrupted_ = false;
+  std::string input_parameter_file_;
 };
 
 #endif // MMG_MESH_HPP

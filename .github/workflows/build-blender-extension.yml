@@ -116,7 +116,7 @@ jobs:
       # and embed the wrong version in the extension zip name and manifest.
       # Pin to the upstream run's head_branch (e.g. ``v0.14.0``) so the
       # version matches the wheels we are bundling.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
@@ -124,12 +124,12 @@ jobs:
                 || github.ref }}
 
       - name: Set up Python ${{ matrix.py }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.py }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
 
       - name: Sync version + dependency pin from pyproject.toml
         run: uv run --no-project python .github/scripts/sync_versions.py
@@ -394,7 +394,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'
@@ -402,7 +402,7 @@ jobs:
                 || github.ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
@@ -667,7 +667,7 @@ jobs:
       # Need the manifest at the release ref so the extension id matches
       # the version we are publishing (see the ``upload-to-release`` ref
       # logic for why we cannot use the default checkout on workflow_run).
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: >-
             ${{ github.event_name == 'workflow_run'

@@ -38,6 +38,7 @@ class mmg3d:  # noqa: N801
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
         options: dict[str, float | int] | None = None,
+        parameter_file: str | Path | None = None,
     ) -> bool:
         """Remesh a 3D mesh file using MMG3D.
 
@@ -53,6 +54,8 @@ class mmg3d:  # noqa: N801
             Path for output solution file.
         options : dict[str, float | int] | None
             Remeshing options (hmin, hmax, hsiz, hausd, hgrad, verbose, etc.).
+        parameter_file : str | Path | None
+            Native ``.mmg3d`` parameter file. Explicit options take precedence.
 
         Returns
         -------
@@ -71,6 +74,7 @@ class mmg2d:  # noqa: N801
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
         options: dict[str, float | int] | None = None,
+        parameter_file: str | Path | None = None,
     ) -> bool:
         """Remesh a 2D mesh file using MMG2D.
 
@@ -86,6 +90,8 @@ class mmg2d:  # noqa: N801
             Path for output solution file.
         options : dict[str, float | int] | None
             Remeshing options (hmin, hmax, hsiz, hausd, hgrad, verbose, etc.).
+        parameter_file : str | Path | None
+            Native ``.mmg2d`` parameter file. Explicit options take precedence.
 
         Returns
         -------
@@ -104,6 +110,7 @@ class mmgs:  # noqa: N801
         output_mesh: str | Path | None = None,
         output_sol: str | Path | None = None,
         options: dict[str, float | int] | None = None,
+        parameter_file: str | Path | None = None,
     ) -> bool:
         """Remesh a surface mesh file using MMGS.
 
@@ -119,6 +126,8 @@ class mmgs:  # noqa: N801
             Path for output solution file.
         options : dict[str, float | int] | None
             Remeshing options (hmin, hmax, hsiz, hausd, hgrad, verbose, etc.).
+        parameter_file : str | Path | None
+            Native ``.mmgs`` parameter file. Explicit options take precedence.
 
         Returns
         -------
@@ -1098,6 +1107,18 @@ class MmgMesh3D:
     def is_corrupted(self) -> bool:
         """Whether the mesh is in a corrupted state due to a failed bulk setter."""
 
+    def set_input_parameter_name(self, path: str | Path) -> None:
+        """Select an MMG parameter file to parse before remeshing."""
+
+    def _apply_input_parameter_file(self) -> None:
+        """Parse the selected MMG parameter file immediately."""
+
+    def get_iparameter(self, parameter: int) -> int:
+        """Return an MMG3D integer parameter by its ``MMG3D_Param`` value."""
+
+    def save_tetgen(self, path: str | Path) -> None:
+        """Save the mesh in TetGen format."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -1173,6 +1194,7 @@ class MmgMesh3D:
     def remesh(
         self,
         *,
+        parameter_file: str | Path | None = None,
         hmin: float | None = None,
         hmax: float | None = None,
         hsiz: float | None = None,
@@ -1190,6 +1212,8 @@ class MmgMesh3D:
 
         Parameters
         ----------
+        parameter_file : str | Path | None
+            Native ``.mmg3d`` parameter file. Explicit options take precedence.
         hmin : float | None
             Minimum edge size.
         hmax : float | None
@@ -1226,6 +1250,7 @@ class MmgMesh3D:
         self,
         levelset: NDArray[np.float64],
         *,
+        parameter_file: str | Path | None = None,
         ls: float | None = None,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -1233,6 +1258,7 @@ class MmgMesh3D:
         hausd: float | None = None,
         hgrad: float | None = None,
         verbose: int | bool | None = None,
+        surface_only: bool = False,
         iso: int | None = None,
         **kwargs: float | None,
     ) -> dict[str, Any]:
@@ -1245,6 +1271,8 @@ class MmgMesh3D:
         ----------
         levelset : NDArray[np.float64]
             Level-set values, shape (n_vertices, 1).
+        parameter_file : str | Path | None
+            Native ``.mmg3d`` parameter file. Explicit options take precedence.
         ls : float | None
             Isovalue to discretize (default 0.0).
         hmin : float | None
@@ -1259,6 +1287,9 @@ class MmgMesh3D:
             Gradation parameter.
         verbose : int | bool | None
             Verbosity level.
+        surface_only : bool
+            Split only boundary faces, corresponding to MMG's ``-lssurf`` /
+            ``MMG3D_IPARAM_isosurf`` mode. Defaults to ``False``.
         iso : int | None
             Enable level-set mode (default 1).
         **kwargs : float | int | None
@@ -1950,6 +1981,15 @@ class MmgMesh2D:
     def is_corrupted(self) -> bool:
         """Whether the mesh is in a corrupted state due to a failed bulk setter."""
 
+    def set_input_parameter_name(self, path: str | Path) -> None:
+        """Select an MMG parameter file to parse before remeshing."""
+
+    def _apply_input_parameter_file(self) -> None:
+        """Parse the selected MMG parameter file immediately."""
+
+    def save_tetgen(self, path: str | Path) -> None:
+        """Save the mesh in Triangle/TetGen format."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -2024,6 +2064,7 @@ class MmgMesh2D:
     def remesh(
         self,
         *,
+        parameter_file: str | Path | None = None,
         hmin: float | None = None,
         hmax: float | None = None,
         hsiz: float | None = None,
@@ -2040,6 +2081,8 @@ class MmgMesh2D:
 
         Parameters
         ----------
+        parameter_file : str | Path | None
+            Native ``.mmg2d`` parameter file. Explicit options take precedence.
         hmin : float | None
             Minimum edge size.
         hmax : float | None
@@ -2074,6 +2117,7 @@ class MmgMesh2D:
         self,
         levelset: NDArray[np.float64],
         *,
+        parameter_file: str | Path | None = None,
         ls: float | None = None,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -2081,6 +2125,7 @@ class MmgMesh2D:
         hausd: float | None = None,
         hgrad: float | None = None,
         verbose: int | bool | None = None,
+        surface_only: bool = False,
         iso: int | None = None,
         **kwargs: float | None,
     ) -> dict[str, Any]:
@@ -2090,6 +2135,8 @@ class MmgMesh2D:
         ----------
         levelset : NDArray[np.float64]
             Level-set values, shape (n_vertices, 1).
+        parameter_file : str | Path | None
+            Native ``.mmg2d`` parameter file. Explicit options take precedence.
         ls : float | None
             Isovalue to discretize (default 0.0).
         hmin : float | None
@@ -2104,6 +2151,9 @@ class MmgMesh2D:
             Gradation parameter.
         verbose : int | bool | None
             Verbosity level.
+        surface_only : bool
+            Split only boundary edges, corresponding to MMG's ``-lssurf`` /
+            ``MMG2D_IPARAM_isosurf`` mode. Defaults to ``False``.
         iso : int | None
             Enable level-set mode (default 1).
         **kwargs : float | int | None
@@ -2725,6 +2775,15 @@ class MmgMeshS:
     def is_corrupted(self) -> bool:
         """Whether the mesh is in a corrupted state due to a failed bulk setter."""
 
+    def set_input_parameter_name(self, path: str | Path) -> None:
+        """Select an MMG parameter file to parse before remeshing."""
+
+    def _apply_input_parameter_file(self) -> None:
+        """Parse the selected MMG parameter file immediately."""
+
+    def get_iparameter(self, parameter: int) -> int:
+        """Return an MMGS integer parameter by its ``MMGS_Param`` value."""
+
     def save(self, filename: str | Path) -> None:
         """Save mesh to file.
 
@@ -2799,6 +2858,7 @@ class MmgMeshS:
     def remesh(
         self,
         *,
+        parameter_file: str | Path | None = None,
         hmin: float | None = None,
         hmax: float | None = None,
         hsiz: float | None = None,
@@ -2815,6 +2875,8 @@ class MmgMeshS:
 
         Parameters
         ----------
+        parameter_file : str | Path | None
+            Native ``.mmgs`` parameter file. Explicit options take precedence.
         hmin : float | None
             Minimum edge size.
         hmax : float | None
@@ -2849,6 +2911,7 @@ class MmgMeshS:
         self,
         levelset: NDArray[np.float64],
         *,
+        parameter_file: str | Path | None = None,
         ls: float | None = None,
         hmin: float | None = None,
         hmax: float | None = None,
@@ -2856,6 +2919,7 @@ class MmgMeshS:
         hausd: float | None = None,
         hgrad: float | None = None,
         verbose: int | bool | None = None,
+        surface_only: bool = False,
         iso: int | None = None,
         **kwargs: float | None,
     ) -> dict[str, Any]:
@@ -2865,6 +2929,8 @@ class MmgMeshS:
         ----------
         levelset : NDArray[np.float64]
             Level-set values, shape (n_vertices, 1).
+        parameter_file : str | Path | None
+            Native ``.mmgs`` parameter file. Explicit options take precedence.
         ls : float | None
             Isovalue to discretize (default 0.0).
         hmin : float | None
@@ -2879,6 +2945,9 @@ class MmgMeshS:
             Gradation parameter.
         verbose : int | bool | None
             Verbosity level.
+        surface_only : bool
+            Split only referenced boundary edges, corresponding to MMG's
+            ``-lssurf`` / ``MMGS_IPARAM_isosurf`` mode. Defaults to ``False``.
         iso : int | None
             Enable level-set mode (default 1).
         **kwargs : float | int | None

@@ -24,9 +24,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -38,14 +38,14 @@ jobs:
       - run: uv sync --extra fem -v
       - run: uv run python -c "import mmgpy"
       - name: Run tests with coverage
-        run: uv run pytest --ignore=tests/examples_test.py --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+        run: uv run pytest --ignore=tests/examples_test.py --ignore=tests/docs_test.py --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Test documentation code blocks
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
-        run: uv run pytest --codeblocks docs/ -v
+        run: uv run pytest tests/docs_test.py -v
 
       - name: Run examples
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
@@ -56,7 +56,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml

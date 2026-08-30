@@ -259,6 +259,15 @@ void MmgMesh::save(
   }
 }
 
+void MmgMesh::save_tetgen(
+    const std::variant<std::string, std::filesystem::path> &filename) const {
+  check_not_corrupted("save TetGen mesh");
+  std::string fname = variant_to_string(filename);
+  if (MMG3D_saveTetgenMesh(mesh, fname.c_str()) != 1) {
+    throw std::runtime_error("Failed to save TetGen mesh: " + fname);
+  }
+}
+
 void MmgMesh::load_sol(
     const std::variant<std::string, std::filesystem::path> &filename,
     const std::string &channel) {
@@ -282,7 +291,7 @@ void MmgMesh::save_sol(
 }
 
 namespace {
-constexpr MultiSolApi MMG3D_MULTISOL_API = {
+const MultiSolApi MMG3D_MULTISOL_API = {
     &MMG3D_Set_solsAtVerticesSize,
     &MMG3D_Get_solsAtVerticesSize,
     &MMG3D_Set_ithSols_inSolsAtVertices,
@@ -1047,6 +1056,31 @@ void MmgMesh::set_local_parameters(const py::list &parameters) {
   }
 }
 
+void MmgMesh::set_input_parameter_name(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("set input parameter name");
+  std::string fname = variant_to_string(filename);
+  validate_parameter_file(fname);
+  if (!MMG3D_Set_inputParamName(mesh, fname.c_str())) {
+    throw std::runtime_error("Failed to set MMG parameter file: " + fname);
+  }
+  input_parameter_file_ = fname;
+}
+
+void MmgMesh::apply_input_parameter_file() {
+  if (input_parameter_file_.empty()) {
+    return;
+  }
+  parse_parameter_file(mesh, met, input_parameter_file_,
+                       MmgParameterFileKind::Mmg3D);
+  input_parameter_file_.clear();
+}
+
+int MmgMesh::get_iparameter(MMG5_int parameter) const {
+  check_not_corrupted("get integer parameter");
+  return MMG3D_Get_iparameter(mesh, parameter);
+}
+
 // Multi-material and level-set
 
 void MmgMesh::set_multi_materials(const py::list &materials) {
@@ -1492,6 +1526,7 @@ py::dict MmgMesh::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
+  apply_input_parameter_file();
   set_mesh_options_3D(mesh, met, options);
 
   // Capture stderr to collect MMG warnings
@@ -1534,7 +1569,8 @@ py::dict MmgMesh::remesh_levelset(const py::array_t<double> &levelset,
   RemeshStats before = collect_mesh_stats_3d(mesh, met);
 
   set_field("levelset", levelset);
-  py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
+  py::dict ls_options = prepare_levelset_options(options);
+  apply_input_parameter_file();
   set_mesh_options_3D(mesh, met, ls_options);
 
   // Capture stderr to collect MMG warnings

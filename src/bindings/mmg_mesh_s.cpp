@@ -698,6 +698,31 @@ void MmgMeshS::set_local_parameters(const py::list &parameters) {
   }
 }
 
+void MmgMeshS::set_input_parameter_name(
+    const std::variant<std::string, std::filesystem::path> &filename) {
+  check_not_corrupted("set input parameter name");
+  std::string fname = variant_to_string(filename);
+  validate_parameter_file(fname);
+  if (!MMGS_Set_inputParamName(mesh, fname.c_str())) {
+    throw std::runtime_error("Failed to set MMG parameter file: " + fname);
+  }
+  input_parameter_file_ = fname;
+}
+
+void MmgMeshS::apply_input_parameter_file() {
+  if (input_parameter_file_.empty()) {
+    return;
+  }
+  parse_parameter_file(mesh, met, input_parameter_file_,
+                       MmgParameterFileKind::MmgS);
+  input_parameter_file_.clear();
+}
+
+int MmgMeshS::get_iparameter(MMG5_int parameter) const {
+  check_not_corrupted("get integer parameter");
+  return MMGS_Get_iparameter(mesh, parameter);
+}
+
 // Multi-material and level-set
 
 void MmgMeshS::set_multi_materials(const py::list &materials) {
@@ -991,7 +1016,7 @@ void MmgMeshS::save_sol(
 }
 
 namespace {
-constexpr MultiSolApi MMGS_MULTISOL_API = {
+const MultiSolApi MMGS_MULTISOL_API = {
     &MMGS_Set_solsAtVerticesSize,
     &MMGS_Get_solsAtVerticesSize,
     &MMGS_Set_ithSols_inSolsAtVertices,
@@ -1057,6 +1082,7 @@ py::dict MmgMeshS::remesh(const py::dict &options) {
   check_not_corrupted("remesh");
   RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
+  apply_input_parameter_file();
   set_mesh_options_surface(mesh, met, options);
 
   // Capture stderr to collect MMG warnings
@@ -1102,7 +1128,8 @@ py::dict MmgMeshS::remesh_levelset(const py::array_t<double> &levelset,
   RemeshStats before = collect_mesh_stats_surface(mesh, met);
 
   set_field("levelset", levelset);
-  py::dict ls_options = merge_options_with_default(options, "iso", py::int_(1));
+  py::dict ls_options = prepare_levelset_options(options);
+  apply_input_parameter_file();
   set_mesh_options_surface(mesh, met, ls_options);
 
   // Capture stderr to collect MMG warnings

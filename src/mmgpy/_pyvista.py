@@ -20,7 +20,7 @@ Example:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, NamedTuple, overload
 
 import numpy as np
 import pyvista as pv
@@ -66,7 +66,7 @@ _SOLUTION_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 def _apply_solution_aliases(
     mmg_mesh: MmgMesh3D | MmgMesh2D | MmgMeshS,
-    point_data: Any,  # noqa: ANN401 - pyvista.DataSetAttributes is not a Mapping
+    point_data: pv.DataSetAttributes,
 ) -> None:
     """Auto-populate ``metric`` / ``levelset`` from VTK-style array names.
 
@@ -76,18 +76,8 @@ def _apply_solution_aliases(
     """
     if not point_data:
         return
-    matches: dict[str, tuple[str, NDArray[np.float64]]] = {}
-    for key in point_data:
-        for slot, hints in _SOLUTION_HINTS:
-            if slot in matches:
-                continue
-            if any(hint in key for hint in hints):
-                matches[slot] = (key, np.asarray(point_data[key], dtype=np.float64))
-                break
-        if len(matches) == len(_SOLUTION_HINTS):
-            break
-    for slot, (key, arr) in matches.items():
-        shaped = arr.reshape(-1, 1) if arr.ndim == 1 else arr
+    for slot, (key, values) in _find_solution_aliases(point_data).items():
+        shaped = values.reshape(-1, 1) if values.ndim == 1 else values
         try:
             mmg_mesh[slot] = shaped
         except (RuntimeError, ValueError) as exc:
@@ -97,6 +87,46 @@ def _apply_solution_aliases(
                 slot,
                 exc,
             )
+
+
+def _find_solution_aliases(
+    point_data: pv.DataSetAttributes,
+) -> dict[str, tuple[str, NDArray[np.float64]]]:
+    """Return the first point-data array matching each solution slot.
+
+    Returns
+    -------
+    dict
+        Solution slots mapped to their source key and converted values.
+
+    """
+    matches: dict[str, tuple[str, NDArray[np.float64]]] = {}
+    for key in point_data:
+        slot = _match_solution_slot(key, matches)
+        if slot is None:
+            continue
+        matches[slot] = (key, np.asarray(point_data[key], dtype=np.float64))
+        if len(matches) == len(_SOLUTION_HINTS):
+            break
+    return matches
+
+
+def _match_solution_slot(
+    key: str,
+    matches: dict[str, tuple[str, NDArray[np.float64]]],
+) -> str | None:
+    """Find an unmatched solution slot whose hint occurs in ``key``.
+
+    Returns
+    -------
+    str | None
+        The matching slot, or ``None`` when no unused hint matches.
+
+    """
+    for slot, hints in _SOLUTION_HINTS:
+        if slot not in matches and any(hint in key for hint in hints):
+            return slot
+    return None
 
 
 def _all_faces_are_triangles(mesh: pv.PolyData) -> bool:
@@ -491,6 +521,88 @@ def _extract_element_refs(
     return None
 
 
+class _Mmg3DCells(NamedTuple):
+    """Connectivity and reference arrays extracted from a 3D grid."""
+
+    elements: NDArray[np.int32]
+    edges: NDArray[np.int32] | None
+    edge_refs: NDArray[np.int64] | None
+    triangles: NDArray[np.int32] | None
+    triangle_refs: NDArray[np.int64] | None
+
+
+def _extract_mmg3d_cells(
+    mesh: pv.UnstructuredGrid,
+    cells_dict: CellsDict | None,
+) -> _Mmg3DCells:
+    """Extract MMG-compatible connectivity from a 3D grid.
+
+    Returns
+    -------
+    _Mmg3DCells
+        The extracted connectivity and reference arrays.
+
+    Raises
+    ------
+    ValueError
+        If the mixed-cell grid does not contain tetrahedra.
+
+    """
+    celltypes = np.asarray(mesh.celltypes)
+    tetra_type = int(pv.CellType.TETRA)
+    if celltypes.size > 0 and bool((celltypes == tetra_type).all()):
+        elements = np.asarray(mesh.cell_connectivity).reshape(-1, 4).astype(np.int32)
+        return _Mmg3DCells(elements, None, None, None, None)
+
+    if cells_dict is None:
+        cells_dict = mesh.cells_dict
+    if pv.CellType.TETRA not in cells_dict:
+        msg = "UnstructuredGrid must contain tetrahedra (CellType.TETRA)"
+        raise ValueError(msg)
+
+    elements = cells_dict[pv.CellType.TETRA].astype(np.int32)
+    edges, edge_refs = _extract_edges(mesh, cells_dict=cells_dict)
+    triangles = _triangle_connectivity_unstructured(mesh, cells_dict=cells_dict)
+    triangle_refs = None
+    if triangles is not None:
+        triangle_refs = _refs_for_unstructured_grid_cells(
+            mesh,
+            pv.CellType.TRIANGLE,
+            len(triangles),
+        )
+    return _Mmg3DCells(elements, edges, edge_refs, triangles, triangle_refs)
+
+
+def _build_mmg3d_mesh(
+    vertices: NDArray[np.float64],
+    cells: _Mmg3DCells,
+) -> MmgMesh3D:
+    """Build a 3D MMG mesh from vertices and connectivity.
+
+    Returns
+    -------
+    MmgMesh3D
+        The populated 3D mesh.
+
+    """
+    if cells.edges is None and cells.triangles is None:
+        return MmgMesh3D(vertices, cells.elements)
+
+    mmg_mesh = MmgMesh3D()
+    size_kwargs: dict[str, int] = {
+        "vertices": len(vertices),
+        "tetrahedra": len(cells.elements),
+    }
+    if cells.edges is not None:
+        size_kwargs["edges"] = len(cells.edges)
+    if cells.triangles is not None:
+        size_kwargs["triangles"] = len(cells.triangles)
+    mmg_mesh.set_mesh_size(**size_kwargs)
+    mmg_mesh.set_vertices(vertices)
+    mmg_mesh.set_tetrahedra(cells.elements)
+    return mmg_mesh
+
+
 def _from_pyvista_to_mmg3d(
     mesh: pv.UnstructuredGrid,
     cells_dict: CellsDict | None = None,
@@ -516,70 +628,24 @@ def _from_pyvista_to_mmg3d(
     MmgMesh3D
         The populated 3D mesh.
 
-    Raises
-    ------
-    ValueError
-        If the mixed-cell path is taken and no TETRA cells are present.
-
     """
-    celltypes = np.asarray(mesh.celltypes)
-    tetra_type = int(pv.CellType.TETRA)
-    is_all_tetra = celltypes.size > 0 and bool((celltypes == tetra_type).all())
-
-    if is_all_tetra:
-        elements = np.asarray(mesh.cell_connectivity).reshape(-1, 4).astype(np.int32)
-        edges, edge_refs = None, None
-        triangles, tri_refs = None, None
-    else:
-        if cells_dict is None:
-            cells_dict = mesh.cells_dict
-        if pv.CellType.TETRA not in cells_dict:
-            msg = "UnstructuredGrid must contain tetrahedra (CellType.TETRA)"
-            raise ValueError(msg)
-        elements = cells_dict[pv.CellType.TETRA].astype(np.int32)
-        edges, edge_refs = _extract_edges(mesh, cells_dict=cells_dict)
-        triangles = _triangle_connectivity_unstructured(mesh, cells_dict=cells_dict)
-        tri_refs = (
-            _refs_for_unstructured_grid_cells(
-                mesh,
-                pv.CellType.TRIANGLE,
-                len(triangles),
-            )
-            if triangles is not None
-            else None
-        )
-
+    cells = _extract_mmg3d_cells(mesh, cells_dict)
     vertices = np.array(mesh.points, dtype=np.float64)
     elem_refs = _extract_element_refs(
         mesh,
-        len(elements),
+        len(cells.elements),
         cell_type=pv.CellType.TETRA,
     )
-
-    if edges is None and triangles is None:
-        mmg_mesh = MmgMesh3D(vertices, elements)
-    else:
-        mmg_mesh = MmgMesh3D()
-        size_kwargs: dict[str, int] = {
-            "vertices": len(vertices),
-            "tetrahedra": len(elements),
-        }
-        if edges is not None:
-            size_kwargs["edges"] = len(edges)
-        if triangles is not None:
-            size_kwargs["triangles"] = len(triangles)
-        mmg_mesh.set_mesh_size(**size_kwargs)
-        mmg_mesh.set_vertices(vertices)
-        mmg_mesh.set_tetrahedra(elements)
+    mmg_mesh = _build_mmg3d_mesh(vertices, cells)
 
     if elem_refs is not None:
-        mmg_mesh.set_tetrahedra(elements, elem_refs)
+        mmg_mesh.set_tetrahedra(cells.elements, elem_refs)
 
-    if edges is not None:
-        mmg_mesh.set_edges(edges, edge_refs)
+    if cells.edges is not None:
+        mmg_mesh.set_edges(cells.edges, cells.edge_refs)
 
-    if triangles is not None:
-        mmg_mesh.set_triangles(triangles, tri_refs)
+    if cells.triangles is not None:
+        mmg_mesh.set_triangles(cells.triangles, cells.triangle_refs)
 
     _apply_solution_aliases(mmg_mesh, mesh.point_data)
 
@@ -850,6 +916,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.UnstructuredGrid: ...
 
 
@@ -859,6 +926,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.PolyData: ...
 
 
@@ -868,6 +936,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.PolyData: ...
 
 
@@ -876,6 +945,7 @@ def to_pyvista(
     *,
     include_refs: bool = True,
     include_edges: bool = False,
+    include_boundary: bool = False,
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Convert an mmgpy mesh to a PyVista mesh.
 
@@ -891,6 +961,11 @@ def to_pyvista(
         contains only the primary cell type, matching common downstream
         expectations (e.g. matplotlib ``tripcolor``). Set ``True`` for
         round-trip / file-save workflows that must preserve edge markers.
+    include_boundary : bool
+        If ``True`` for an ``MmgMesh3D``, include MMG boundary faces as
+        TRIANGLE cells. Their references share the ``cell_data["refs"]``
+        array with the tetrahedra. Ignored for MMG2D and MMGS, whose
+        triangles are already the primary cells.
 
     Returns
     -------
@@ -919,6 +994,7 @@ def to_pyvista(
             mesh,
             include_refs=include_refs,
             include_edges=include_edges,
+            include_boundary=include_boundary,
         )
     if isinstance(mesh, MmgMesh2D):
         return _mmg2d_to_pyvista(
@@ -951,18 +1027,62 @@ def _build_lines_array(edges: NDArray[np.int32]) -> NDArray[np.int32]:
     ).ravel()
 
 
+def _get_mmg3d_edges(
+    mesh: MmgMesh3D,
+    *,
+    include_refs: bool,
+    include_edges: bool,
+) -> tuple[NDArray[np.int32], NDArray[np.int64] | None]:
+    """Return optional MMG3D edges and references.
+
+    Returns
+    -------
+    tuple
+        Edge connectivity and, when requested, edge references.
+
+    """
+    if not include_edges:
+        return np.empty((0, 2), dtype=np.int32), None
+    if include_refs:
+        return mesh.get_edges_with_refs()
+    return mesh.get_edges(), None
+
+
+def _get_mmg3d_boundary(
+    mesh: MmgMesh3D,
+    *,
+    include_refs: bool,
+    include_boundary: bool,
+) -> tuple[NDArray[np.int32], NDArray[np.int64] | None]:
+    """Return optional MMG3D boundary triangles and references.
+
+    Returns
+    -------
+    tuple
+        Triangle connectivity and, when requested, triangle references.
+
+    """
+    if not include_boundary:
+        return np.empty((0, 3), dtype=np.int32), None
+    if include_refs:
+        return mesh.get_triangles_with_refs()
+    return mesh.get_triangles(), None
+
+
 def _mmg3d_to_pyvista(
     mesh: MmgMesh3D,
     *,
     include_refs: bool,
     include_edges: bool,
+    include_boundary: bool,
 ) -> pv.UnstructuredGrid:
     """Convert MmgMesh3D to PyVista UnstructuredGrid.
 
     Returns
     -------
     pv.UnstructuredGrid
-        Tetrahedral cells, with refs (and edges) attached when requested.
+        Tetrahedral cells, with refs, boundary triangles, and edges attached
+        when requested.
 
     """
     vertices = mesh.get_vertices()
@@ -973,23 +1093,31 @@ def _mmg3d_to_pyvista(
         elements = mesh.get_elements()
         refs = None
 
-    edges, edge_refs = (np.empty((0, 2), dtype=np.int32), None)
-    if include_edges:
-        if include_refs:
-            edges, edge_refs = mesh.get_edges_with_refs()
-        else:
-            edges = mesh.get_edges()
+    edges, edge_refs = _get_mmg3d_edges(
+        mesh,
+        include_refs=include_refs,
+        include_edges=include_edges,
+    )
+    triangles, triangle_refs = _get_mmg3d_boundary(
+        mesh,
+        include_refs=include_refs,
+        include_boundary=include_boundary,
+    )
 
     cells_dict: dict[int, NDArray[np.int32]] = {pv.CellType.TETRA: elements}
+    if len(triangles) > 0:
+        cells_dict[pv.CellType.TRIANGLE] = triangles
     if len(edges) > 0:
         cells_dict[pv.CellType.LINE] = edges
     grid = pv.UnstructuredGrid(cells_dict, vertices)
 
     if refs is not None:
+        refs_by_type: list[NDArray[np.int64]] = [refs]
+        if len(triangles) > 0 and triangle_refs is not None:
+            refs_by_type.append(triangle_refs)
         if len(edges) > 0 and edge_refs is not None:
-            grid.cell_data["refs"] = np.concatenate([refs, edge_refs])
-        else:
-            grid.cell_data["refs"] = refs
+            refs_by_type.append(edge_refs)
+        grid.cell_data["refs"] = np.concatenate(refs_by_type)
 
     return grid
 

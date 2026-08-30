@@ -34,7 +34,7 @@ re-entrant corner and the foot bows visibly.
 
 ![Laplacian vs elasticity on a 2D L-bracket](../assets/elasticity_propagation_2d.gif)
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 from mmgpy.lagrangian import (
@@ -73,7 +73,7 @@ Full script:
 The accessor's `move()` method exposes the propagator via the
 `propagation_method` keyword:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```python
 import numpy as np
@@ -97,7 +97,7 @@ moved_ela = mesh.mmg.move(
 
 ## Installing the `fedoo` extra
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```bash
 uv sync --extra fem
@@ -115,7 +115,7 @@ and `propagation_method="elasticity"` need it.
 isn't reachable via `conda install mmgpy`. Install fedoo separately into
 the same environment:
 
-<!-- pytest-codeblocks:skip -->
+<!-- mmgpy-test:skip -->
 
 ```bash
 conda install -c conda-forge mmgpy

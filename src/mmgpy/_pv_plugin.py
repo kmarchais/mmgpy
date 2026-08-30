@@ -236,6 +236,8 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
 
 def _to_pyvista_with_user_fields(
     mesh: _Mesh,
+    *,
+    include_boundary: bool = False,
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Convert *mesh* back to PyVista, restoring any non-MMG point_data.
 
@@ -249,10 +251,15 @@ def _to_pyvista_with_user_fields(
     -------
     pv.UnstructuredGrid or pv.PolyData
         The PyVista dataset with user fields re-attached where their
-        length matches the new vertex count.
+        length matches the new vertex count. When requested, an MMG3D
+        result also includes referenced boundary faces as TRIANGLE cells.
 
     """
-    result = mesh.to_pyvista(include_refs=True, include_edges=True)
+    result = mesh.to_pyvista(
+        include_refs=True,
+        include_edges=True,
+        include_boundary=include_boundary,
+    )
     n_points = result.n_points
     for name, arr in mesh.get_user_fields().items():
         if arr.shape[0] != n_points:
@@ -378,11 +385,50 @@ def _collect_constraints_from_data(
         Mapping from MMG constraint kwarg name to the (zero-indexed)
         per-entity indices marked by the dataset's reserved tag arrays.
 
+    """
+    out = _collect_point_constraints(dataset)
+    out.update(_collect_cell_constraints(dataset))
+    return out
+
+
+def _constraint_mask(
+    data: pv.DataSetAttributes,
+    tag_name: str,
+    expected_count: int,
+    association: str,
+) -> NDArray[np.bool_]:
+    """Return a constraint tag as a validated Boolean mask.
+
+    Returns
+    -------
+    ndarray of bool
+        The normalized constraint mask.
+
     Raises
     ------
     ValueError
-        If any reserved tag array does not match ``dataset.n_points`` or
-        ``dataset.n_cells``.
+        If the tag length does not match the expected entity count.
+
+    """
+    mask = np.asarray(data[tag_name]).astype(bool, copy=False)
+    if mask.shape[0] != expected_count:
+        msg = (
+            f"{association}_data[{tag_name!r}] length {mask.shape[0]} does not "
+            f"match dataset.n_{association}s {expected_count}"
+        )
+        raise ValueError(msg)
+    return mask
+
+
+def _collect_point_constraints(
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+) -> dict[str, NDArray[np.int32]]:
+    """Collect constraint indices from reserved point tags.
+
+    Returns
+    -------
+    dict[str, ndarray of int32]
+        Constraint names mapped to marked point indices.
 
     """
     out: dict[str, NDArray[np.int32]] = {}
@@ -390,15 +436,28 @@ def _collect_constraints_from_data(
     for tag_name, kwarg_name in _POINT_TAG_TO_KWARG.items():
         if tag_name not in dataset.point_data:
             continue
-        mask = np.asarray(dataset.point_data[tag_name]).astype(bool, copy=False)
-        if mask.shape[0] != dataset.n_points:
-            msg = (
-                f"point_data[{tag_name!r}] length {mask.shape[0]} does not "
-                f"match dataset.n_points {dataset.n_points}"
-            )
-            raise ValueError(msg)
+        mask = _constraint_mask(
+            dataset.point_data,
+            tag_name,
+            int(dataset.n_points),
+            "point",
+        )
         out[kwarg_name] = np.where(mask)[0].astype(np.int32, copy=False)
+    return out
 
+
+def _collect_cell_constraints(
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+) -> dict[str, NDArray[np.int32]]:
+    """Collect constraint indices from reserved cell tags.
+
+    Returns
+    -------
+    dict[str, ndarray of int32]
+        Constraint names mapped to marked per-type cell indices.
+
+    """
+    out: dict[str, NDArray[np.int32]] = {}
     cell_tags_present = [
         (tag_name, kwarg_name, cell_type)
         for tag_name, (kwarg_name, cell_type) in _CELL_TAG_TO_KWARG.items()
@@ -406,23 +465,20 @@ def _collect_constraints_from_data(
     ]
     if not cell_tags_present:
         return out
-
-    # For UnstructuredGrid we cache `celltypes` and per-cell-type cumsums
-    # across all cell tags (the loop visits up to 6 tags but at most 3
-    # distinct cell types). PolyData stays on the per-tag fast path in
-    # `_per_type_indices_marked` since its slicing is already O(1) lookups.
-    is_unstructured = isinstance(dataset, pv.UnstructuredGrid)
-    types_arr = np.asarray(dataset.celltypes) if is_unstructured else None
+    types_arr = (
+        np.asarray(dataset.celltypes)
+        if isinstance(dataset, pv.UnstructuredGrid)
+        else None
+    )
     per_type_cache: dict[int, tuple[NDArray[np.bool_], NDArray[np.intp]]] = {}
 
     for tag_name, kwarg_name, cell_type in cell_tags_present:
-        mask = np.asarray(dataset.cell_data[tag_name]).astype(bool, copy=False)
-        if mask.shape[0] != dataset.n_cells:
-            msg = (
-                f"cell_data[{tag_name!r}] length {mask.shape[0]} does not "
-                f"match dataset.n_cells {dataset.n_cells}"
-            )
-            raise ValueError(msg)
+        mask = _constraint_mask(
+            dataset.cell_data,
+            tag_name,
+            int(dataset.n_cells),
+            "cell",
+        )
 
         if types_arr is None:
             out[kwarg_name] = _per_type_indices_marked(dataset, cell_type, mask)
@@ -535,6 +591,15 @@ def _apply_pending_mmg_config(
     references = user_dict.get(_MMG_CONFIG_KEY_LS_BASE_REFERENCES)
     if references is not None:
         mesh._impl.set_ls_base_references(list(references))  # noqa: SLF001
+
+
+def _apply_parameter_file(
+    mesh: _Mesh,
+    parameter_file: str | Path | None,
+) -> None:
+    if parameter_file is not None:
+        mesh._impl.set_input_parameter_name(parameter_file)  # noqa: SLF001
+        mesh._impl._apply_input_parameter_file()  # noqa: SLF001
 
 
 def _apply_local_sizing_specs(
@@ -873,6 +938,47 @@ def _coerce_metric_kwarg(
     return arr
 
 
+def _apply_metric_kwarg(
+    mesh: _Mesh,
+    dataset: pv.UnstructuredGrid | pv.PolyData,
+    metric: NDArray[np.float64] | None,
+) -> None:
+    """Apply an explicit metric to a mesh when one is supplied."""
+    if metric is not None:
+        mesh["metric"] = _coerce_metric_kwarg(metric, int(dataset.n_points))
+
+
+def _line_only_remesh_error(
+    metric: NDArray[np.float64] | None,
+    local_sizing: list[Mapping[str, Any]] | None,
+    parameter_file: str | Path | None,
+) -> str | None:
+    """Describe an input unsupported by the line-to-2D generation path.
+
+    Returns
+    -------
+    str or None
+        The validation error, or ``None`` when all inputs are supported.
+
+    """
+    if local_sizing:
+        return (
+            "local_sizing is not supported when generating a 2D mesh "
+            "from a line-only PolyData"
+        )
+    if metric is not None:
+        return (
+            "metric is not supported when generating a 2D mesh "
+            "from a line-only PolyData"
+        )
+    if parameter_file is not None:
+        return (
+            "parameter_file is not supported when generating a 2D mesh "
+            "from a line-only PolyData"
+        )
+    return None
+
+
 # ---------------------------------------------------------------------------
 # .mmg dataset accessor
 # ---------------------------------------------------------------------------
@@ -919,6 +1025,7 @@ class MmgAccessor:
         *,
         metric: NDArray[np.float64] | None = None,
         local_sizing: list[Mapping[str, Any]] | None = None,
+        parameter_file: str | Path | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Remesh the underlying dataset and return a new PyVista dataset.
@@ -938,6 +1045,9 @@ class MmgAccessor:
             ``"shape"`` key (``"sphere"``, ``"box"``, ``"cylinder"``, or
             ``"from_point"``) plus the parameters of the matching
             ``Mesh.set_size_*`` method.
+        parameter_file : str or Path, optional
+            Native MMG local-parameter file. Explicit Python options take
+            precedence over settings loaded from the file.
         **options : object
             Forwarded to :meth:`mmgpy.Mesh.remesh`. Common knobs include
             ``hmin``, ``hmax``, ``hsiz``, and ``hausd``. The reserved
@@ -983,32 +1093,21 @@ class MmgAccessor:
                     msg = "pass either an options object or kwargs, not both"
                     raise TypeError(msg)
                 options = dict(opts.to_dict())
-            if local_sizing:
-                msg = (
-                    "local_sizing is not supported when generating a 2D mesh "
-                    "from a line-only PolyData"
-                )
-                raise ValueError(msg)
-            if metric is not None:
-                msg = (
-                    "metric is not supported when generating a 2D mesh "
-                    "from a line-only PolyData"
-                )
-                raise ValueError(msg)
+            line_error = _line_only_remesh_error(
+                metric,
+                local_sizing,
+                parameter_file,
+            )
+            if line_error is not None:
+                raise ValueError(line_error)
             return _generate_from_line_polydata(self._dataset, options)
 
         constraints = _split_constraint_kwargs(options)
         mesh = _build_mesh_with_mmg_fields(self._dataset)
-        if metric is not None:
-            # Smart routing in Mesh.__setitem__ dispatches to the scalar or
-            # tensor channel based on shape; overrides any metric loaded
-            # from point_data above without mutating self._dataset.
-            mesh["metric"] = _coerce_metric_kwarg(
-                metric,
-                int(self._dataset.n_points),
-            )
+        _apply_metric_kwarg(mesh, self._dataset, metric)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_parameter_file(mesh, parameter_file)
         _apply_pending_mmg_config(mesh, self._dataset)
         # ``renum`` is popped + handled inside ``Mesh.remesh`` (one-time
         # FutureWarning + in-place reverse Cuthill-McKee). Forwarding it
@@ -1056,7 +1155,9 @@ class MmgAccessor:
         self,
         levelset: NDArray[np.float64],
         *,
+        surface_only: bool = False,
         local_sizing: list[Mapping[str, Any]] | None = None,
+        parameter_file: str | Path | None = None,
         **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_levelset
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Level-set discretization remeshing.
@@ -1066,8 +1167,16 @@ class MmgAccessor:
         levelset : ndarray
             Per-vertex level-set field; the zero isosurface becomes an
             explicit boundary in the output mesh.
+        surface_only : bool, default=False
+            If ``True``, split only boundary entities at the isovalue using
+            MMG's ``-lssurf`` / ``*_IPARAM_isosurf`` mode. The interior
+            domain is not split into level-set materials. MMG3D results
+            include the referenced boundary faces as TRIANGLE cells.
         local_sizing : list of dict, optional
             Sizing constraints; see :meth:`remesh`.
+        parameter_file : str or Path, optional
+            Native MMG local-parameter file. Explicit Python options take
+            precedence over settings loaded from the file.
         **options : object
             Forwarded to :meth:`mmgpy.Mesh.remesh_levelset`. The reserved
             constraint kwargs documented on :meth:`remesh` are honored
@@ -1083,9 +1192,14 @@ class MmgAccessor:
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _apply_constraint_markers(mesh, self._dataset, constraints)
         _apply_local_sizing_specs(mesh, local_sizing)
+        _apply_parameter_file(mesh, parameter_file)
         _apply_pending_mmg_config(mesh, self._dataset)
-        mesh.remesh_levelset(levelset, **options)
-        return _to_pyvista_with_user_fields(mesh)
+        mesh.remesh_levelset(
+            levelset,
+            surface_only=surface_only,
+            **options,
+        )
+        return _to_pyvista_with_user_fields(mesh, include_boundary=surface_only)
 
     def remesh_optimize(
         self,

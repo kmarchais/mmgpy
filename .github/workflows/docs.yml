@@ -19,12 +19,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
 
@@ -32,7 +32,7 @@ jobs:
         run: uv python install 3.12
 
       - name: Cache apt packages
-        uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 # v1.6.0
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0
@@ -60,11 +60,23 @@ jobs:
 
       # Deploy PR preview (not shown in version selector)
       - name: Deploy PR preview
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
         run: uv run mike deploy "pr-${{ github.event.pull_request.number }}" --push
 
+      # Tokens for pull requests from forks are read-only. Build the docs without
+      # publishing a preview so external contributions are still validated.
+      - name: Build fork PR documentation
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name != github.repository
+        run: uv run mkdocs build
+
       - name: Comment PR preview link
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v9
         with:
           script: |
@@ -93,7 +105,9 @@ jobs:
 
       # Clean up previews for closed/merged PRs
       - name: Clean up stale PR previews
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

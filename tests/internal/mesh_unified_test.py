@@ -699,6 +699,32 @@ class TestMeshMethods:
 class TestMeshRemeshing:
     """Tests for Mesh remeshing operations."""
 
+    @pytest.mark.parametrize(
+        "metric",
+        [np.ones(4), np.ones((4, 1))],
+        ids=["one-dimensional", "two-dimensional"],
+    )
+    def test_load_remesh_input_solution_array(
+        self,
+        tetra_vertices: np.ndarray,
+        tetra_cells: np.ndarray,
+        metric: np.ndarray,
+    ) -> None:
+        """Array input solutions are stored as column-shaped metrics."""
+        mesh = Mesh(tetra_vertices, tetra_cells)
+
+        mesh._load_remesh_input_solution(metric)
+
+        np.testing.assert_array_equal(mesh["metric"], np.ones((4, 1)))
+
+    def test_load_remesh_input_solution_path(self) -> None:
+        """Path input solutions are loaded into the mesh metric."""
+        mesh = read(_ASSETS / "hole.mesh")
+
+        mesh._load_remesh_input_solution(_ASSETS / "hole.sol")
+
+        assert len(mesh["metric"]) == len(mesh.get_vertices())
+
     def test_remesh(self) -> None:
         """Test basic remeshing."""
         x = np.linspace(0, 1, 4)

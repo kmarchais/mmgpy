@@ -8,6 +8,50 @@ mesh = pv.read("input.mesh")
 
 Complete reference for the keyword arguments accepted by `dataset.mmg.remesh(...)` (and its variants `remesh_optimize`, `remesh_uniform`, `remesh_levelset`, `move`). Each call returns a fresh PyVista dataset; the input is not mutated.
 
+## Native parameter files
+
+All three engines accept MMG's native local-parameter files through the
+`parameter_file` keyword. Pass a `.mmg3d` file for tetrahedral meshes, a
+`.mmg2d` file for planar meshes, or a `.mmgs` file for surface meshes:
+
+<!-- mmgpy-test:skip -->
+
+```python
+from pathlib import Path
+
+parameter_file = Path("local.mmg3d")
+remeshed = mesh.mmg.remesh(
+    parameter_file=parameter_file,
+    verbose=-1,
+)
+```
+
+The same keyword is available on `Mesh.remesh(...)`,
+`Mesh.remesh_levelset(...)`, and the file APIs such as
+`mmgpy.mmg3d.remesh("in.mesh", "out.mesh", parameter_file=parameter_file)`.
+Both strings and path-like objects are accepted. Missing or unreadable files
+raise a `RuntimeError` before remeshing starts.
+
+mmgpy uses the same parser for all three engines and applies the parsed values
+through each engine's public MMG setters.
+
+MMG parameter files define local sizing by entity reference. For example, this
+`.mmg3d` file targets tetrahedra whose reference is `7`:
+
+```text
+parameters
+1
+7 tetrahedra 0.02 0.08 0.01
+```
+
+The final three values are `hmin`, `hmax`, and `hausd`. MMG3D accepts
+`triangle(s)` and `tetrahedron(s)` references, MMG2D accepts `edge(s)` and
+`triangle(s)`, and MMGS accepts `triangle(s)`. Native `lsreferences` and
+`lsbasereferences` sections are supported as well.
+
+Parameter files are parsed first. Explicit Python options are applied second,
+so Python settings take precedence when both configure the same MMG parameter.
+
 ## Size Parameters
 
 ### hmin
@@ -19,8 +63,6 @@ Minimum edge length.
 | Type     | `float`       |
 | Default  | Auto-computed |
 | Range    | > 0           |
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(hmin=0.01)
@@ -40,8 +82,6 @@ Maximum edge length.
 | Default  | Auto-computed |
 | Range    | > hmin        |
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(hmax=0.1)
 ```
@@ -60,8 +100,6 @@ Uniform target edge size.
 | Default  | None    |
 | Range    | > 0     |
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(hsiz=0.05)
 ```
@@ -79,8 +117,6 @@ Gradation parameter controlling size transition.
 | Type     | `float` |
 | Default  | 1.3     |
 | Range    | >= 1.0  |
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(hgrad=1.2)
@@ -104,8 +140,6 @@ Hausdorff distance, maximum distance between input and output geometry.
 | Default  | 0.01 \* bounding box diagonal |
 | Range    | > 0                           |
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(hausd=0.001)
 ```
@@ -123,8 +157,6 @@ Ridge detection angle (degrees).
 | Type     | `float` |
 | Default  | 45.0    |
 | Range    | 0 - 180 |
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(ar=30)
@@ -159,6 +191,28 @@ remeshed = mesh.mmg.remesh(angle=0, hmax=0.1)
 
 ## Control Flags
 
+### surface_only
+
+Restrict level-set discretization to the mesh boundary. This keyword is available only
+on `remesh_levelset(...)`.
+
+| Property    | Value                                |
+| ----------- | ------------------------------------ |
+| Type        | `bool`                               |
+| Default     | `False`                              |
+| MMG mapping | `-lssurf`; `MMG*_IPARAM_isosurf = 1` |
+
+<!-- mmgpy-test:skip -->
+
+```python
+boundary_split = mesh.mmg.remesh_levelset(levelset, surface_only=True)
+```
+
+For MMG3D this splits boundary faces without splitting the interior volume into
+level-set regions. MMG2D and MMGS apply the mode to boundary or referenced edges.
+
+---
+
 ### optim
 
 Enable optimization mode (no topology changes).
@@ -168,8 +222,6 @@ Enable optimization mode (no topology changes).
 | Type     | `int`           |
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(optim=1)
@@ -189,8 +241,6 @@ Disable vertex insertion.
 | Default  | 0               |
 | Values   | 0 (off), 1 (on) |
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(noinsert=1)
 ```
@@ -202,8 +252,6 @@ Prevents adding new vertices during remeshing.
 ### noswap
 
 Disable edge/face swapping.
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(noswap=1)
@@ -217,8 +265,6 @@ Prevents topology changes via edge/face swaps.
 
 Disable vertex movement.
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(nomove=1)
 ```
@@ -230,8 +276,6 @@ Keeps vertices at their original positions.
 ### nosurf
 
 Preserve surface vertices.
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(nosurf=1)
@@ -253,8 +297,6 @@ Verbosity level.
 | Default  | 1        |
 | Range    | -1 to 10 |
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 silent = mesh.mmg.remesh(verbose=-1)  # Silent
 errors = mesh.mmg.remesh(verbose=0)   # Errors only
@@ -268,15 +310,11 @@ debug = mesh.mmg.remesh(verbose=5)    # Debug output
 
 ### Quality optimization only
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 optimized = mesh.mmg.remesh(optim=1, noinsert=1)
 ```
 
 Or use the convenience method:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 optimized = mesh.mmg.remesh_optimize()
@@ -286,15 +324,11 @@ optimized = mesh.mmg.remesh_optimize()
 
 ### Uniform remeshing
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 uniform = mesh.mmg.remesh(hsiz=0.05)
 ```
 
 Or use the convenience method:
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 uniform = mesh.mmg.remesh_uniform(size=0.05)
@@ -303,8 +337,6 @@ uniform = mesh.mmg.remesh_uniform(size=0.05)
 ---
 
 ### High-quality surface approximation
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -318,8 +350,6 @@ remeshed = mesh.mmg.remesh(
 
 ### Preserve sharp features
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -332,8 +362,6 @@ remeshed = mesh.mmg.remesh(
 
 ### Fast coarse remeshing
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.5,
@@ -345,8 +373,6 @@ remeshed = mesh.mmg.remesh(
 ---
 
 ### Volume interior only
-
-<!-- pytest-codeblocks:cont -->
 
 ```python
 remeshed = mesh.mmg.remesh(

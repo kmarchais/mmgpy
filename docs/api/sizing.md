@@ -116,8 +116,6 @@ remeshed = mesh.mmg.remesh(
 
 ### Multiple Regions
 
-<!-- pytest-codeblocks:cont -->
-
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,

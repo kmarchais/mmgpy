@@ -25,8 +25,8 @@ jobs:
   build-wheels-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Build manylinux_2_28 x86_64 wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
@@ -59,8 +59,8 @@ jobs:
   build-wheels-linux-aarch64:
     runs-on: ubuntu-24.04-arm # Native ARM runner (no QEMU needed)
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Build manylinux_2_28 aarch64 wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
@@ -93,8 +93,8 @@ jobs:
   build-wheels-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       # ``repair-wheel-command`` is overridden in pyproject.toml so that
       # delvewheel vendors the MSVC runtime into ``mmgpy.libs/`` (see #299).
       # Overriding the default also disables cibuildwheel's auto-install of
@@ -135,8 +135,8 @@ jobs:
   build-wheels-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Build wheels
         env:
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
@@ -169,8 +169,8 @@ jobs:
     name: Build source distribution
 
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
 
       - name: Install build dependencies
         run: |
@@ -203,12 +203,12 @@ jobs:
     if: github.event_name == 'pull_request' || (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # examples_test.py discovers examples via `git ls-files`, so the
           # checkout must include the .git directory.
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
       - name: Install GL and start Xvfb
@@ -224,27 +224,23 @@ jobs:
           path: wheelhouse/
       - name: Create venv and install the freshly built wheel
         run: |
-          uv venv .venv
-          # Let uv pick the matching wheel for the venv's Python from
-          # wheelhouse/. We deliberately do NOT `uv sync` here, which would
-          # build mmgpy from source and shadow the wheel under test.
-          # --find-links makes the local wheel win for mmgpy; PyPI is still
-          # used for transitive deps (numpy, pyvista, ...).
-          # mmgpy[pyvista] because the docs codeblocks and examples this
-          # gate validates use pyvista; the slim mmgpy core no longer
-          # pulls pyvista (and therefore Pillow), which crashed
-          # pytest-pyvista's plugin import at module load time.
-          uv pip install --python .venv/bin/python --find-links wheelhouse 'mmgpy[pyvista]'
+          uv venv --python 3.10 .venv
+          shopt -s nullglob
+          wheels=(wheelhouse/mmgpy-*-cp310-cp310-manylinux*.whl)
+          test "${#wheels[@]}" -eq 1
+          # Install the artifact by path so PyPI can never satisfy the mmgpy
+          # requirement. PyPI remains available for runtime dependencies.
+          uv pip install --python .venv/bin/python "${wheels[0]}" 'pyvista>=0.48,<1'
           # fedoo is needed for the elasticity_propagation example.
-          uv pip install --python .venv/bin/python pytest pytest-codeblocks pytest-pyvista fedoo
+          uv pip install --python .venv/bin/python pytest pytest-examples pytest-pyvista fedoo
       - name: Verify the installed mmgpy is the wheel
         run: |
-          .venv/bin/python -c "import mmgpy; print(mmgpy.__version__, mmgpy.__file__); assert 'site-packages' in mmgpy.__file__"
+          .venv/bin/python -c "import mmgpy; from mmgpy._mmgpy import MmgMesh3D; print(mmgpy.__version__, mmgpy.__file__); assert 'site-packages' in mmgpy.__file__; assert 'surface_only' in MmgMesh3D.remesh_levelset.__doc__"
       - name: Test documentation code blocks
         env:
           PYVISTA_OFF_SCREEN: "true"
           MPLBACKEND: Agg
-        run: .venv/bin/pytest --codeblocks docs/ -v
+        run: .venv/bin/pytest tests/docs_test.py -v
       - name: Run examples (smoke; image-regression diffs are a build-and-test concern)
         env:
           PYVISTA_OFF_SCREEN: "true"
@@ -340,11 +336,11 @@ jobs:
     name: Test uvx (${{ matrix.os }})
 
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
 
       - name: Wait for TestPyPI to index package
         shell: bash
@@ -428,21 +424,27 @@ jobs:
     needs: publish-to-pypi
     runs-on: ubuntu-latest
     name: Deploy versioned docs
-    if: github.event_name == 'release' && github.event.action == 'published' && !github.event.release.prerelease
+    if: >-
+      (github.event_name == 'release' &&
+       github.event.action == 'published' &&
+       !github.event.release.prerelease) ||
+      (github.event_name == 'workflow_dispatch' &&
+       inputs.publish_to_pypi &&
+       startsWith(github.ref, 'refs/tags/v'))
     permissions:
       contents: write
     concurrency:
       group: docs-deploy
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
       - run: uv python install 3.12
-      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 # v1.6.0
+      - uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: libvtk9-dev qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0

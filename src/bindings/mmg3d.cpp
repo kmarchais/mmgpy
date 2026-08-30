@@ -39,7 +39,7 @@ int mmg3d_save_mesh(MMG5_pMesh mesh, MMG5_pSol met,
 
 bool remesh_3d(const py::object &input_mesh, const py::object &input_sol,
                const py::object &output_mesh, const py::object &output_sol,
-               py::dict options) {
+               py::dict options, const py::object &parameter_file) {
   // Convert paths to strings
   std::string input_mesh_str = path_to_string(input_mesh);
   std::string output_mesh_str =
@@ -48,6 +48,11 @@ bool remesh_3d(const py::object &input_mesh, const py::object &input_sol,
       input_sol.is_none() ? "" : path_to_string(input_sol);
   std::string output_sol_str =
       output_sol.is_none() ? "" : path_to_string(output_sol);
+  std::string parameter_file_str =
+      parameter_file.is_none() ? "" : path_to_string(parameter_file);
+  if (!parameter_file_str.empty()) {
+    validate_parameter_file(parameter_file_str);
+  }
 
   // Initialize structures
   auto [mesh, met, disp, ls] = init_mmg3d_structures();
@@ -55,6 +60,14 @@ bool remesh_3d(const py::object &input_mesh, const py::object &input_sol,
   // Set mesh names
   MMG3D_Set_inputMeshName(mesh, input_mesh_str.c_str());
   MMG3D_Set_outputMeshName(mesh, output_mesh_str.c_str());
+
+  if (!parameter_file_str.empty()) {
+    if (!MMG3D_Set_inputParamName(mesh, parameter_file_str.c_str())) {
+      cleanup_mmg3d_structures(mesh, met, disp, ls);
+      throw std::runtime_error("Failed to set MMG parameter file: " +
+                               parameter_file_str);
+    }
+  }
 
   if (!input_sol_str.empty()) {
     MMG3D_Set_inputSolName(mesh, met, input_sol_str.c_str());
@@ -77,6 +90,11 @@ bool remesh_3d(const py::object &input_mesh, const py::object &input_sol,
       if (MMG3D_loadSol(mesh, met, input_sol_str.c_str()) != 1) {
         throw std::runtime_error("Failed to load solution file");
       }
+    }
+
+    if (!parameter_file_str.empty()) {
+      parse_parameter_file(mesh, met, parameter_file_str,
+                           MmgParameterFileKind::Mmg3D);
     }
 
     // Set all mesh options

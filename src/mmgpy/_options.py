@@ -33,6 +33,80 @@ _MAX_ANGLE_DEGREES = 180
 _MIN_GRADATION = 1.0
 
 
+def _validate_positive_option(name: str, value: float | None) -> None:
+    """Validate an optional positive numeric value.
+
+    Raises
+    ------
+    ValueError
+        If the value is not positive.
+
+    """
+    if value is not None and value <= 0:
+        msg = f"{name} must be positive"
+        raise ValueError(msg)
+
+
+def _validate_size_options(
+    opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions,
+) -> None:
+    """Validate the common mesh size options.
+
+    Raises
+    ------
+    ValueError
+        If a size option is invalid.
+
+    """
+    for name, value in (
+        ("hmin", opts.hmin),
+        ("hmax", opts.hmax),
+        ("hsiz", opts.hsiz),
+        ("hausd", opts.hausd),
+    ):
+        _validate_positive_option(name, value)
+    if opts.hmin is not None and opts.hmax is not None and opts.hmin > opts.hmax:
+        msg = "hmin must be less than or equal to hmax"
+        raise ValueError(msg)
+
+
+def _validate_gradation_options(
+    opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions,
+) -> None:
+    """Validate the common gradation options.
+
+    Raises
+    ------
+    ValueError
+        If a gradation option is invalid.
+
+    """
+    if opts.hgrad is not None and opts.hgrad < _MIN_GRADATION:
+        msg = f"hgrad must be >= {_MIN_GRADATION}"
+        raise ValueError(msg)
+    if (
+        opts.hgradreq is not None
+        and opts.hgradreq != -1
+        and opts.hgradreq < _MIN_GRADATION
+    ):
+        msg = f"hgradreq must be >= {_MIN_GRADATION} or -1 to disable"
+        raise ValueError(msg)
+
+
+def _validate_angle_option(value: float | None) -> None:
+    """Validate the angle detection option.
+
+    Raises
+    ------
+    ValueError
+        If the angle is outside the supported range.
+
+    """
+    if value is not None and (value < 0 or value > _MAX_ANGLE_DEGREES):
+        msg = f"ar (angle detection) must be between 0 and {_MAX_ANGLE_DEGREES} degrees"
+        raise ValueError(msg)
+
+
 def _validate_common_options(opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions) -> None:
     """Validate options common to all mesh types.
 
@@ -41,44 +115,11 @@ def _validate_common_options(opts: Mmg3DOptions | Mmg2DOptions | MmgSOptions) ->
     opts : Mmg3DOptions | Mmg2DOptions | MmgSOptions
         Options object to validate.
 
-    Raises
-    ------
-    ValueError
-        If any option value is invalid.
-
     """
-    if opts.hmin is not None and opts.hmin <= 0:
-        msg = "hmin must be positive"
-        raise ValueError(msg)
-    if opts.hmax is not None and opts.hmax <= 0:
-        msg = "hmax must be positive"
-        raise ValueError(msg)
-    if opts.hsiz is not None and opts.hsiz <= 0:
-        msg = "hsiz must be positive"
-        raise ValueError(msg)
-    if opts.hmin is not None and opts.hmax is not None and opts.hmin > opts.hmax:
-        msg = "hmin must be less than or equal to hmax"
-        raise ValueError(msg)
-    if opts.hausd is not None and opts.hausd <= 0:
-        msg = "hausd must be positive"
-        raise ValueError(msg)
-    if opts.hgrad is not None and opts.hgrad < _MIN_GRADATION:
-        msg = f"hgrad must be >= {_MIN_GRADATION}"
-        raise ValueError(msg)
-    # hgradreq can be -1 to disable, or >= 1.0 for gradation control
-    if (
-        opts.hgradreq is not None
-        and opts.hgradreq != -1
-        and opts.hgradreq < _MIN_GRADATION
-    ):
-        msg = f"hgradreq must be >= {_MIN_GRADATION} or -1 to disable"
-        raise ValueError(msg)
-    if opts.ar is not None and (opts.ar < 0 or opts.ar > _MAX_ANGLE_DEGREES):
-        msg = f"ar (angle detection) must be between 0 and {_MAX_ANGLE_DEGREES} degrees"
-        raise ValueError(msg)
-    if opts.mem is not None and opts.mem <= 0:
-        msg = "mem must be positive"
-        raise ValueError(msg)
+    _validate_size_options(opts)
+    _validate_gradation_options(opts)
+    _validate_angle_option(opts.ar)
+    _validate_positive_option("mem", opts.mem)
 
 
 def _options_to_dict(
