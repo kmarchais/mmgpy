@@ -246,43 +246,25 @@ class TestMmgSPromotedFlags:
         assert "nofem" not in names
 
 
-class TestDetectRidges:
-    """Tests for the tri-state detect_ridges toggle (MMG ``-nr`` / ``angle``)."""
+@pytest.mark.parametrize("cls", [Mmg3DOptions, Mmg2DOptions, MmgSOptions])
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(None, {}), (False, {"angle": 0}), (True, {"angle": 1})],
+)
+def test_detect_ridges(
+    cls: type,
+    *,
+    value: bool | None,
+    expected: dict[str, int],
+) -> None:
+    """Serialize each ridge-detection state for every MMG variant."""
+    assert cls(detect_ridges=value).to_dict() == expected
 
-    @pytest.mark.parametrize("cls", [Mmg3DOptions, Mmg2DOptions, MmgSOptions])
-    def test_default_is_none(self, cls: type) -> None:
-        """detect_ridges defaults to None (MMG keeps detection on)."""
-        assert cls().detect_ridges is None
 
-    @pytest.mark.parametrize("cls", [Mmg3DOptions, Mmg2DOptions, MmgSOptions])
-    def test_default_omitted_from_dict(self, cls: type) -> None:
-        """None must not emit angle, so MMG's default is left untouched."""
-        assert "angle" not in cls().to_dict()
-
-    @pytest.mark.parametrize("cls", [Mmg3DOptions, Mmg2DOptions, MmgSOptions])
-    def test_false_emits_angle_zero(self, cls: type) -> None:
-        """detect_ridges=False is the -nr toggle and must emit angle=0."""
-        assert cls(detect_ridges=False).to_dict() == {"angle": 0}
-
-    @pytest.mark.parametrize("cls", [Mmg3DOptions, Mmg2DOptions, MmgSOptions])
-    def test_true_emits_angle_one(self, cls: type) -> None:
-        """detect_ridges=True explicitly enables detection (angle=1)."""
-        assert cls(detect_ridges=True).to_dict() == {"angle": 1}
-
-    def test_combined_with_sizing(self) -> None:
-        """detect_ridges round-trips alongside numeric sizing options."""
-        d = MmgSOptions(
-            detect_ridges=False,
-            hmin=1.1,
-            hmax=1.8,
-            hausd=0.25,
-        ).to_dict()
-        assert d == {"angle": 0, "hmin": 1.1, "hmax": 1.8, "hausd": 0.25}
-
-    def test_does_not_break_plain_false_flags(self) -> None:
-        """A False detect_ridges must not drag other False flags into the dict."""
-        d = MmgSOptions(detect_ridges=False, optim=False, nomove=False).to_dict()
-        assert d == {"angle": 0}
+def test_detect_ridges_does_not_emit_other_false_flags() -> None:
+    """Keep ordinary disabled flags out of the serialized options."""
+    opts = MmgSOptions(detect_ridges=False, optim=False, nomove=False)
+    assert opts.to_dict() == {"angle": 0}
 
 
 class TestNoRenumField:

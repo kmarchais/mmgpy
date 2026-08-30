@@ -259,32 +259,6 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 ## Surface Meshing (mmgs)
 
-### Collapsing Feature-Edge Slivers on a CAD Surface
-
-A CAD part (here a compressor wheel with thin blades) has near-90° dihedrals
-that MMGS keeps as ridges by default, protecting the degenerate slivers on them.
-`detect_ridges=False` (the CLI `-nr` toggle) frees the remesher to collapse
-them. It is a trade-off: the slivers vanish and worst-element quality jumps, but
-the sharp blade edges are rounded, so use it when a hard guarantee against
-degenerate triangles matters more than feature fidelity.
-
-```python
-"""Uniform, sliver-free remesh of a CAD surface."""
-import pyvista as pv
-import mmgpy  # noqa: F401
-from mmgpy import MmgSOptions
-
-mesh = pv.read("part.stl").triangulate()
-
-clean = mesh.mmg.remesh(
-    MmgSOptions(detect_ridges=False, hmin=0.9, hmax=1.4, hausd=0.25),
-)
-```
-
-[View full example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/sliver_free_cad_surface.py)
-
----
-
 ### Mechanical Piece Remeshing
 
 Industrial part surface remeshing.
@@ -316,15 +290,17 @@ Surface smoothing and refinement.
 ```python
 """Smooth surface mesh optimization."""
 import pyvista as pv
-import mmgpy  # noqa: F401
+from mmgpy import MmgSOptions
 
 mesh = pv.read("surface.mesh")
 
-remeshed = mesh.mmg.remesh(
+options = MmgSOptions(
+    detect_ridges=False,
     hmax=0.1,
-    hausd=0.0001,  # Tight approximation
-    hgrad=1.1,     # Smooth gradation
+    hausd=0.0001,
+    hgrad=1.1,
 )
+remeshed = mesh.mmg.remesh(options)
 ```
 
 ![Smooth surface remeshing](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/smooth_surface_remeshing.png)

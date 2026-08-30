@@ -53,20 +53,11 @@ members: - **init** - fine - coarse - optimize_only - to_dict
 
 ### Geometric Parameters
 
-| Parameter       | Type    | Description                                                                                        |
-| --------------- | ------- | -------------------------------------------------------------------------------------------------- |
-| `hausd`         | `float` | Hausdorff distance: max distance to input geometry                                                 |
-| `ar`            | `float` | Ridge detection _threshold_ in degrees (default: 45.0). Only active while ridge detection is on    |
-| `detect_ridges` | `bool`  | Ridge detection on/off (CLI `-nr`). `None`=MMG default (on); `False` disables feature preservation |
-
-!!! tip "`ar` vs `detect_ridges`"
-
-    `ar` sets the angle _threshold_ used to decide which edges are ridges; it
-    only matters while detection runs and **cannot turn detection off**. To stop
-    preserving feature edges entirely (so the remesher can collapse sub-`hmin`
-    slivers at sharp or thin features), set `detect_ridges=False` (the CLI `-nr`
-    toggle), not a large `ar`. See the
-    [sliver-free CAD surface recipe](#for-uniform-sliver-free-cad-surfaces).
+| Parameter       | Type          | Description                                                    |
+| --------------- | ------------- | -------------------------------------------------------------- |
+| `hausd`         | `float`       | Hausdorff distance: max distance to input geometry             |
+| `ar`            | `float`       | Ridge detection threshold in degrees (default: 45.0)           |
+| `detect_ridges` | `bool \| None` | Enable ridge detection; `False` is equivalent to CLI `-nr` |
 
 ### Control Parameters
 
@@ -225,32 +216,3 @@ opts = Mmg3DOptions(
     verbose=1,
 )
 ```
-
-### For Uniform, Sliver-Free CAD Surfaces
-
-CAD parts with thin or sharp features (impeller blades, fins, ribs) have
-near-90° dihedral angles. By default MMGS detects these as ridges and refuses
-to collapse the sub-`hmin` slivers sitting on them, leaving degenerate,
-high-aspect-ratio triangles that hurt downstream solvers. Disable ridge
-detection so those slivers can be collapsed. This is a trade-off: the slivers
-go away but the sharp edges are rounded, so reach for it when a hard guarantee
-against degenerate triangles (collision / FEM meshes) matters more than feature
-fidelity.
-
-<!-- mmgpy-test:skip -->
-
-```python
-from mmgpy import MmgSOptions
-
-opts = MmgSOptions(
-    detect_ridges=False,  # CLI -nr: stop protecting feature edges
-    hmin=0.9,
-    hmax=1.4,
-    hausd=0.25,
-)
-
-clean = mesh.mmg.remesh(opts)
-```
-
-See the full
-[sliver-free CAD surface example](https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/sliver_free_cad_surface.py).

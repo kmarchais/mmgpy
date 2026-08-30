@@ -149,14 +149,8 @@ def _options_to_dict(
             continue
         key = f.metadata.get("mmg_name", f.name)
         if isinstance(value, bool):
-            # Plain flags (default ``False``) are only emitted when enabled,
-            # matching MMG's CLI flag semantics. Tri-state toggles (default
-            # ``None``) are emitted as 0 or 1 so an explicit ``False`` can turn
-            # off an MMG behaviour that is on by default (e.g. ridge detection).
-            if value:
-                result[key] = 1
-            elif f.default is None:
-                result[key] = 0
+            if value or f.metadata.get("emit_false", False):
+                result[key] = int(value)
         else:
             result[key] = value
     return result
@@ -194,34 +188,21 @@ class _MmgOptionsBase:
     or -1 to disable gradation control on required entities."""
 
     # Geometry detection
-    detect_ridges: bool | None = field(default=None, metadata={"mmg_name": "angle"})
-    """Ridge (feature-edge) detection toggle (MMG CLI ``-nr``).
+    detect_ridges: bool | None = field(
+        default=None,
+        metadata={"mmg_name": "angle", "emit_false": True},
+    )
+    """Enable ridge detection.
 
-    When ``None`` (default), MMG's built-in ridge detection stays enabled and
-    edges whose dihedral angle is sharper than ``ar`` are detected as ridges
-    and marked required, so the remesher will not collapse short edges or
-    slivers along them.
-
-    Set ``detect_ridges=False`` to disable detection entirely (equivalent to
-    the CLI ``-nr``). This frees the remesher to collapse sub-``hmin`` edges and
-    degenerate slivers at sharp or thin features (e.g. impeller blade rims). It
-    is a trade-off, not a free win: the slivers go away but the sharp edges are
-    rounded, since nothing protects them any more. Use it when you need a hard
-    guarantee against degenerate triangles (collision / FEM meshes) and can
-    accept softened features, not when feature fidelity matters.
-
-    Note that ``ar`` only sets the *threshold* used while detection runs; it
-    cannot turn detection off. To stop preserving feature edges, set this flag
-    to ``False`` rather than raising ``ar``."""
+    ``None`` leaves MMG's default unchanged. ``False`` is equivalent to the
+    CLI ``-nr``; ``True`` explicitly enables detection.
+    """
 
     ar: float | None = None
-    """Ridge angle-detection *threshold* in degrees (0-180). Edges whose
-    dihedral angle is sharper than this are detected as ridges and preserved.
+    """Ridge detection threshold in degrees (0-180).
 
-    This only takes effect while ridge detection is enabled (the default).
-    Raising ``ar`` above a feature's dihedral angle stops that feature from
-    being preserved, but to disable feature-edge preservation altogether use
-    ``detect_ridges=False`` (CLI ``-nr``) instead. See ``detect_ridges``."""
+    Use ``detect_ridges=False`` for the explicit CLI ``-nr`` behavior.
+    """
 
     # Runtime parameters
     verbose: int | None = None
