@@ -53,10 +53,10 @@ members: - **init** - fine - coarse - optimize_only - to_dict
 
 ### Geometric Parameters
 
-| Parameter       | Type          | Description                                                    |
-| --------------- | ------------- | -------------------------------------------------------------- |
-| `hausd`         | `float`       | Hausdorff distance: max distance to input geometry             |
-| `ar`            | `float`       | Ridge detection threshold in degrees (default: 45.0)           |
+| Parameter       | Type           | Description                                                |
+| --------------- | -------------- | ---------------------------------------------------------- |
+| `hausd`         | `float`        | Hausdorff distance: max distance to input geometry         |
+| `ar`            | `float`        | Ridge detection threshold in degrees (default: 45.0)       |
 | `detect_ridges` | `bool \| None` | Enable ridge detection; `False` is equivalent to CLI `-nr` |
 
 ### Control Parameters
