@@ -246,6 +246,27 @@ class TestMmgSPromotedFlags:
         assert "nofem" not in names
 
 
+@pytest.mark.parametrize("cls", [Mmg3DOptions, Mmg2DOptions, MmgSOptions])
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(None, {}), (False, {"angle": 0}), (True, {"angle": 1})],
+)
+def test_detect_ridges(
+    cls: type,
+    *,
+    value: bool | None,
+    expected: dict[str, int],
+) -> None:
+    """Serialize each ridge-detection state for every MMG variant."""
+    assert cls(detect_ridges=value).to_dict() == expected
+
+
+def test_detect_ridges_does_not_emit_other_false_flags() -> None:
+    """Keep ordinary disabled flags out of the serialized options."""
+    opts = MmgSOptions(detect_ridges=False, optim=False, nomove=False)
+    assert opts.to_dict() == {"angle": 0}
+
+
 class TestNoRenumField:
     """renum is not a typed option (#248 replaced it with reorder_cuthill_mckee)."""
 

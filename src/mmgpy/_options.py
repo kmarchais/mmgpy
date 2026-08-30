@@ -149,8 +149,8 @@ def _options_to_dict(
             continue
         key = f.metadata.get("mmg_name", f.name)
         if isinstance(value, bool):
-            if value:
-                result[key] = 1
+            if value or f.metadata.get("emit_false", False):
+                result[key] = int(value)
         else:
             result[key] = value
     return result
@@ -188,9 +188,21 @@ class _MmgOptionsBase:
     or -1 to disable gradation control on required entities."""
 
     # Geometry detection
+    detect_ridges: bool | None = field(
+        default=None,
+        metadata={"mmg_name": "angle", "emit_false": True},
+    )
+    """Enable ridge detection.
+
+    ``None`` leaves MMG's default unchanged. ``False`` is equivalent to the
+    CLI ``-nr``; ``True`` explicitly enables detection.
+    """
+
     ar: float | None = None
-    """Angle detection threshold in degrees (0-180). Edges with angles
-    sharper than this are preserved as ridges."""
+    """Ridge detection threshold in degrees (0-180).
+
+    Use ``detect_ridges=False`` for the explicit CLI ``-nr`` behavior.
+    """
 
     # Runtime parameters
     verbose: int | None = None
@@ -299,8 +311,8 @@ class Mmg3DOptions(_MmgOptionsBase):
     Options are immutable after creation.
 
     Inherits from _MmgOptionsBase:
-        hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
-        optim, noinsert, noswap, nomove, nreg, anisosize
+        hmin, hmax, hsiz, hausd, hgrad, hgradreq, detect_ridges, ar,
+        verbose, mem, optim, noinsert, noswap, nomove, nreg, anisosize
 
     Additional Attributes
     ---------------------
@@ -346,8 +358,8 @@ class Mmg2DOptions(_MmgOptionsBase):
     Options are immutable after creation.
 
     Inherits from _MmgOptionsBase:
-        hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
-        optim, noinsert, noswap, nomove, nreg, anisosize
+        hmin, hmax, hsiz, hausd, hgrad, hgradreq, detect_ridges, ar,
+        verbose, mem, optim, noinsert, noswap, nomove, nreg, anisosize
 
     Additional Attributes
     ---------------------
@@ -382,8 +394,8 @@ class MmgSOptions(_MmgOptionsBase):
     Options are immutable after creation.
 
     Inherits from _MmgOptionsBase:
-        hmin, hmax, hsiz, hausd, hgrad, hgradreq, ar, verbose, mem,
-        optim, noinsert, noswap, nomove, nreg, anisosize
+        hmin, hmax, hsiz, hausd, hgrad, hgradreq, detect_ridges, ar,
+        verbose, mem, optim, noinsert, noswap, nomove, nreg, anisosize
 
     Note: Surface remeshing (MMGS) does not have a nosurf option.
 

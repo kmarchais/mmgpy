@@ -163,7 +163,21 @@ remeshed = mesh.mmg.remesh(ar=30)
 ```
 
 - Edges with dihedral angle greater than `ar` are treated as ridges and preserved during remeshing.
-- `ar=180` disables ridge detection.
+- `ar=180` effectively disables ridge detection. The typed
+  `detect_ridges=False` option is the explicit equivalent of CLI `-nr`.
+
+---
+
+### detect_ridges
+
+Enable ridge detection in typed options. `None` leaves MMG's default
+unchanged; `False` maps to `MMG*_IPARAM_angle=0` (CLI `-nr`).
+
+```python
+from mmgpy import Mmg3DOptions
+
+remeshed = mesh.mmg.remesh(Mmg3DOptions(detect_ridges=False, hmax=0.1))
+```
 
 ---
 

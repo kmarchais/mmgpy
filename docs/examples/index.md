@@ -290,15 +290,17 @@ Surface smoothing and refinement.
 ```python
 """Smooth surface mesh optimization."""
 import pyvista as pv
-import mmgpy  # noqa: F401
+from mmgpy import MmgSOptions
 
 mesh = pv.read("surface.mesh")
 
-remeshed = mesh.mmg.remesh(
+options = MmgSOptions(
+    detect_ridges=False,
     hmax=0.1,
-    hausd=0.0001,  # Tight approximation
-    hgrad=1.1,     # Smooth gradation
+    hausd=0.0001,
+    hgrad=1.1,
 )
+remeshed = mesh.mmg.remesh(options)
 ```
 
 ![Smooth surface remeshing](https://raw.githubusercontent.com/kmarchais/mmgpy/main/assets/smooth_surface_remeshing.png)
