@@ -1588,17 +1588,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#for-uniform-sliver-free-cad-surfaces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        For Uniform, Sliver-Free CAD Surfaces
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2507,17 +2496,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#for-uniform-sliver-free-cad-surfaces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        For Uniform, Sliver-Free CAD Surfaces
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -3222,24 +3200,15 @@ members: - <strong>init</strong> - fine - coarse - optimize_only - to_dict</p>
 <tr>
 <td><code>ar</code></td>
 <td><code>float</code></td>
-<td>Ridge detection <em>threshold</em> in degrees (default: 45.0). Only active while ridge detection is on</td>
+<td>Ridge detection threshold in degrees (default: 45.0)</td>
 </tr>
 <tr>
 <td><code>detect_ridges</code></td>
-<td><code>bool</code></td>
-<td>Ridge detection on/off (CLI <code>-nr</code>). <code>None</code>=MMG default (on); <code>False</code> disables feature preservation</td>
+<td><code>bool \| None</code></td>
+<td>Enable ridge detection; <code>False</code> is equivalent to CLI <code>-nr</code></td>
 </tr>
 </tbody>
 </table>
-<div class="admonition tip">
-<p class="admonition-title"><code>ar</code> vs <code>detect_ridges</code></p>
-<p><code>ar</code> sets the angle <em>threshold</em> used to decide which edges are ridges; it
-only matters while detection runs and <strong>cannot turn detection off</strong>. To stop
-preserving feature edges entirely (so the remesher can collapse sub-<code>hmin</code>
-slivers at sharp or thin features), set <code>detect_ridges=False</code> (the CLI <code>-nr</code>
-toggle), not a large <code>ar</code>. See the
-<a href="#for-uniform-sliver-free-cad-surfaces">sliver-free CAD surface recipe</a>.</p>
-</div>
 <h3 id="control-parameters">Control Parameters<a class="headerlink" href="#control-parameters" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -3468,30 +3437,6 @@ exposed as fields on the dataclasses:</p>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="for-uniform-sliver-free-cad-surfaces">For Uniform, Sliver-Free CAD Surfaces<a class="headerlink" href="#for-uniform-sliver-free-cad-surfaces" title="Permanent link">&para;</a></h3>
-<p>CAD parts with thin or sharp features (impeller blades, fins, ribs) have
-near-90° dihedral angles. By default MMGS detects these as ridges and refuses
-to collapse the sub-<code>hmin</code> slivers sitting on them, leaving degenerate,
-high-aspect-ratio triangles that hurt downstream solvers. Disable ridge
-detection so those slivers can be collapsed. This is a trade-off: the slivers
-go away but the sharp edges are rounded, so reach for it when a hard guarantee
-against degenerate triangles (collision / FEM meshes) matters more than feature
-fidelity.</p>
-<!-- mmgpy-test:skip -->
-
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mmgpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MmgSOptions</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">MmgSOptions</span><span class="p">(</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">detect_ridges</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># CLI -nr: stop protecting feature edges</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">hmin</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">)</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">clean</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
-</span></code></pre></div>
-<p>See the full
-<a href="https://github.com/kmarchais/mmgpy/blob/main/examples/mmgs/sliver_free_cad_surface.py">sliver-free CAD surface example</a>.</p>
 
 
 
