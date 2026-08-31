@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T00:00:00Z",
+  "generated_at": "2026-08-31T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -1047,6 +1047,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-08-31",
+      "downloads": 7159,
+      "reviews": 2,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
     }
   ],
   "reviews": [
@@ -1287,6 +1298,22 @@
       "version": "",
       "value": "/docs/",
       "source_url": "https://github.com/kmarchais/mmgpy/commit/783dca8027c75c0c6aab10236913d3dd1a15860e"
+    },
+    {
+      "date": "2026-08-30",
+      "type": "github_docs",
+      "label": "Docs update: Expose detect_ridges (-nr) toggle on typed MMG options (#328)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/58e318d39c892ffd9dfe5eb1b9218cb27b595e60"
+    },
+    {
+      "date": "2026-08-31",
+      "type": "github_release",
+      "label": "GitHub release v0.17.0",
+      "version": "v0.17.0",
+      "value": "v0.17.0",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.17.0"
     }
   ]
 }
