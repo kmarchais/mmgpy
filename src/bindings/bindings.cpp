@@ -248,7 +248,8 @@ PYBIND11_MODULE(_mmgpy, m) {
             return self.load_all_sols(path_to_variant(path));
           },
           py::arg("path"),
-          "Load every solution block from a Medit .sol/.solb file. Returns a "
+          "Load every solution block from a Medit .sol file. Binary .solb "
+          "is rejected for affected MMG releases (MmgTools/mmg#326). Returns a "
           "list of (mmg_type, ndarray) tuples in file order. "
           "mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def(
@@ -258,8 +259,9 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.save_all_sols(path_to_variant(path), sols);
           },
           py::arg("path"), py::arg("sols"),
-          "Write a list of (mmg_type, ndarray) tuples as a multi-block "
-          ".sol/.solb file. mmg_type is 1=scalar, 2=vector, 3=tensor.")
+          "Write a list of (mmg_type, ndarray) tuples as a multi-block .sol "
+          "file. Binary .solb is rejected for affected MMG releases "
+          "(MmgTools/mmg#326). mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def_property_readonly("is_corrupted", &MmgMesh::is_corrupted)
       .def(
           "remesh",
@@ -452,7 +454,8 @@ PYBIND11_MODULE(_mmgpy, m) {
             return self.load_all_sols(path_to_variant(path));
           },
           py::arg("path"),
-          "Load every solution block from a Medit .sol/.solb file. Returns a "
+          "Load every solution block from a Medit .sol file. Binary .solb "
+          "is rejected for affected MMG releases (MmgTools/mmg#326). Returns a "
           "list of (mmg_type, ndarray) tuples in file order. "
           "mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def(
@@ -462,8 +465,9 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.save_all_sols(path_to_variant(path), sols);
           },
           py::arg("path"), py::arg("sols"),
-          "Write a list of (mmg_type, ndarray) tuples as a multi-block "
-          ".sol/.solb file. mmg_type is 1=scalar, 2=vector, 3=tensor.")
+          "Write a list of (mmg_type, ndarray) tuples as a multi-block .sol "
+          "file. Binary .solb is rejected for affected MMG releases "
+          "(MmgTools/mmg#326). mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def_property_readonly("is_corrupted", &MmgMesh2D::is_corrupted)
       .def(
           "remesh",
@@ -642,7 +646,8 @@ PYBIND11_MODULE(_mmgpy, m) {
             return self.load_all_sols(path_to_variant(path));
           },
           py::arg("path"),
-          "Load every solution block from a Medit .sol/.solb file. Returns a "
+          "Load every solution block from a Medit .sol file. Binary .solb "
+          "is rejected for affected MMG releases (MmgTools/mmg#326). Returns a "
           "list of (mmg_type, ndarray) tuples in file order. "
           "mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def(
@@ -652,8 +657,9 @@ PYBIND11_MODULE(_mmgpy, m) {
             self.save_all_sols(path_to_variant(path), sols);
           },
           py::arg("path"), py::arg("sols"),
-          "Write a list of (mmg_type, ndarray) tuples as a multi-block "
-          ".sol/.solb file. mmg_type is 1=scalar, 2=vector, 3=tensor.")
+          "Write a list of (mmg_type, ndarray) tuples as a multi-block .sol "
+          "file. Binary .solb is rejected for affected MMG releases "
+          "(MmgTools/mmg#326). mmg_type is 1=scalar, 2=vector, 3=tensor.")
       .def_property_readonly("is_corrupted", &MmgMeshS::is_corrupted)
       .def(
           "remesh",
