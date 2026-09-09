@@ -1,0 +1,29 @@
+name: Documentation and examples
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  examples:
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [docs, examples]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      - name: Install offscreen rendering libraries
+        run: sudo apt-get update && sudo apt-get install -y libosmesa6-dev libgl1-mesa-dev
+      - run: uv sync --locked --extra fem
+      - name: Run documentation or example tests
+        env:
+          MPLBACKEND: Agg
+          PYVISTA_OFF_SCREEN: "true"
+          SUITE: ${{ matrix.suite }}
+        run: uv run --locked pytest "tests/${SUITE}_test.py" -v

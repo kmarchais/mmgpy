@@ -260,3 +260,47 @@ gdb --args python -c "import mmgpy; ..."
 - Open an [issue](https://github.com/kmarchais/mmgpy/issues) for questions
 - Join [discussions](https://github.com/kmarchais/mmgpy/discussions) for broader topics
 - Tag @kmarchais for urgent matters
+
+# CI checks
+
+Pull requests use one required check, `CI passed`. It waits for lint and every
+check selected from the complete PR diff. Failures, cancellations, missing
+selection outputs, and unexpected skips block merging.
+
+| Change                                                            | Checks                                                                                                                         |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Only `ty` or `prek` package records in `uv.lock`                  | Lockfile validation, all hooks using locked prek, and locked ty                                                                |
+| Documentation or examples                                         | Lint, docs build, documentation snippets and example tests                                                                     |
+| Python code                                                       | Lint, tests on all three operating systems, docs/examples, representative installed wheels; benchmarks for non-UI package code |
+| Native bindings                                                   | The code checks plus the full wheel matrix and conda builds                                                                    |
+| Conda recipe                                                      | Lint and conda builds                                                                                                          |
+| Benchmark code                                                    | Lint and a baseline-versus-PR comparison                                                                                       |
+| Manifests, runtime dependencies, workflows, or unrecognized files | Full validation                                                                                                                |
+
+Tool-only detection compares parsed lockfiles, including metadata and packages
+outside the tool allowlist. A mixed change still runs the checks needed by its
+other files. Ruff updates currently take the full path because its locked
+version and the pinned lint hook differ.
+
+Documentation snippets and examples run in separate jobs alongside platform
+tests. New PR commits cancel obsolete runs. Pushes to main and nightly runs
+perform full validation. Publishing to PyPI or TestPyPI also requires source
+tests, lint, examples, conda builds, benchmarks, and installed-wheel validation
+on the release checkout. Only wheel and source-distribution artifacts are
+downloaded for publishing.
+
+To request a benchmark comparison on any branch:
+
+```sh
+gh workflow run benchmark.yml --ref YOUR_BRANCH -f baseline_ref=main
+```
+
+To request the full CI suite on a branch:
+
+```sh
+gh workflow run ci.yml --ref YOUR_BRANCH
+```
+
+The source tests retain their pytest coverage threshold. Codecov uploads remain
+available for review, but external Codecov statuses are not separate required
+checks under this policy.

@@ -1,10 +1,7 @@
 name: Documentation
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: write
@@ -40,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --group docs
 
+      - name: Build documentation
+        run: uv run mkdocs build
+
       - name: Configure Git for mike
         run: |
           git config user.name "github-actions[bot]"
@@ -62,7 +62,7 @@ jobs:
       - name: Deploy PR preview
         if: >-
           github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name == github.repository
+          github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         run: uv run mike deploy "pr-${{ github.event.pull_request.number }}" --push
 
       # Tokens for pull requests from forks are read-only. Build the docs without
@@ -76,7 +76,7 @@ jobs:
       - name: Comment PR preview link
         if: >-
           github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name == github.repository
+          github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         uses: actions/github-script@v9
         with:
           script: |
@@ -107,7 +107,7 @@ jobs:
       - name: Clean up stale PR previews
         if: >-
           github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name == github.repository
+          github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

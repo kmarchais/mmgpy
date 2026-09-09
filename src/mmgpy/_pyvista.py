@@ -249,7 +249,7 @@ def _extract_triangles_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32]:
 
     """
     if hasattr(mesh, "cells_dict") and pv.CellType.TRIANGLE in mesh.cells_dict:
-        return mesh.cells_dict[pv.CellType.TRIANGLE].astype(np.int32)
+        return mesh.cells_dict[np.uint8(pv.CellType.TRIANGLE)].astype(np.int32)
 
     faces = mesh.faces
     if len(faces) == 0:
@@ -321,7 +321,7 @@ def _line_connectivity(
     if cells_dict is None and hasattr(mesh, "cells_dict"):
         cells_dict = mesh.cells_dict
     if cells_dict is not None and pv.CellType.LINE in cells_dict:
-        edges = cells_dict[pv.CellType.LINE].astype(np.int32)
+        edges = cells_dict[np.uint8(pv.CellType.LINE)].astype(np.int32)
     elif isinstance(mesh, pv.PolyData):
         edges = _extract_lines_from_polydata(mesh)
     else:
@@ -353,7 +353,7 @@ def _triangle_connectivity_unstructured(
         cells_dict = mesh.cells_dict
     if pv.CellType.TRIANGLE not in cells_dict:
         return None
-    tris = cells_dict[pv.CellType.TRIANGLE].astype(np.int32)
+    tris = cells_dict[np.uint8(pv.CellType.TRIANGLE)].astype(np.int32)
     if len(tris) == 0:
         return None
     return tris
@@ -560,7 +560,7 @@ def _extract_mmg3d_cells(
         msg = "UnstructuredGrid must contain tetrahedra (CellType.TETRA)"
         raise ValueError(msg)
 
-    elements = cells_dict[pv.CellType.TETRA].astype(np.int32)
+    elements = cells_dict[np.uint8(pv.CellType.TETRA)].astype(np.int32)
     edges, edge_refs = _extract_edges(mesh, cells_dict=cells_dict)
     triangles = _triangle_connectivity_unstructured(mesh, cells_dict=cells_dict)
     triangle_refs = None

@@ -2,10 +2,11 @@
 name: Build Wheels
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_call:
+    inputs:
+      full:
+        type: boolean
+        default: true
   release:
     types: [published]
   workflow_dispatch:
@@ -22,6 +23,30 @@ on:
         type: boolean
 
 jobs:
+  release-lint:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    uses: ./.github/workflows/prek.yml
+
+  release-tests:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    uses: ./.github/workflows/build-and-test.yml
+    secrets: inherit
+
+  release-examples:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    uses: ./.github/workflows/examples.yml
+    secrets: inherit
+
+  release-conda:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    uses: ./.github/workflows/conda-build.yml
+    secrets: inherit
+
+  release-benchmarks:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    uses: ./.github/workflows/benchmark.yml
+    secrets: inherit
+
   build-wheels-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +54,7 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Build manylinux_2_28 x86_64 wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && !inputs.full && 'cp310-*' || '' }}
           CIBW_ARCHS_LINUX: x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
         uses: pypa/cibuildwheel@v3.4.1
@@ -57,13 +82,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
   build-wheels-linux-aarch64:
+    if: github.event_name != 'pull_request' || inputs.full
     runs-on: ubuntu-24.04-arm # Native ARM runner (no QEMU needed)
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Build manylinux_2_28 aarch64 wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && !inputs.full && 'cp310-*' || '' }}
           CIBW_ARCHS_LINUX: aarch64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
         uses: pypa/cibuildwheel@v3.4.1
@@ -107,7 +133,7 @@ jobs:
         run: uv tool install delvewheel
       - name: Build wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && !inputs.full && 'cp310-*' || '' }}
         uses: pypa/cibuildwheel@v3.4.1
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v7
@@ -139,7 +165,7 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Build wheels
         env:
-          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp310-* cp314-*' || '' }}
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && !inputs.full && 'cp310-*' || '' }}
         uses: pypa/cibuildwheel@v3.4.1
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v7
@@ -200,7 +226,8 @@ jobs:
     # examples before tagging, not after; v0.16.0 shipped a slim install
     # that broke pytest-pyvista's PIL import and the publish chain only
     # surfaced it during the wheel-build dispatch.
-    if: github.event_name == 'pull_request' || (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    # Validate installed artifacts on every selected wheel run, including nightly.
+    if: ${{ !cancelled() }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -256,6 +283,11 @@ jobs:
         build-wheels-macos,
         build-sdist,
         validate-release,
+        release-lint,
+        release-tests,
+        release-examples,
+        release-conda,
+        release-benchmarks,
       ]
     runs-on: ubuntu-latest
     name: Publish to PyPI
@@ -270,10 +302,16 @@ jobs:
       actions: read
 
     steps:
-      - name: Download all artifacts
+      - name: Download wheel artifacts
         uses: actions/download-artifact@v8
         with:
+          pattern: wheels-*
           merge-multiple: true
+          path: dist/
+      - name: Download source distribution
+        uses: actions/download-artifact@v8
+        with:
+          name: sdist
           path: dist/
 
       - name: Publish to PyPI
@@ -298,6 +336,11 @@ jobs:
         build-wheels-macos,
         build-sdist,
         validate-release,
+        release-lint,
+        release-tests,
+        release-examples,
+        release-conda,
+        release-benchmarks,
       ]
     runs-on: ubuntu-latest
     name: Publish to TestPyPI
@@ -311,10 +354,16 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download all artifacts
+      - name: Download wheel artifacts
         uses: actions/download-artifact@v8
         with:
+          pattern: wheels-*
           merge-multiple: true
+          path: dist/
+      - name: Download source distribution
+        uses: actions/download-artifact@v8
+        with:
+          name: sdist
           path: dist/
 
       - name: List artifacts
