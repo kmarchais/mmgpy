@@ -1,11 +1,13 @@
 name: Benchmarks
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_call:
   workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: "Compare this branch with a base ref, for example main"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -15,7 +17,8 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    timeout-minutes: 30
+    if: github.event_name != 'pull_request' && inputs.baseline_ref == ''
     # Share the gh-pages mutex with mike deploys (docs.yml, redeploy-docs.yml,
     # build-wheels.yml deploy-versioned-docs). Without this, the benchmark
     # auto-push step can interleave with a mike push and reject it with a
@@ -53,6 +56,7 @@ jobs:
             --benchmark-disable-gc
 
       - name: Store benchmark result
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
         with:
           tool: "pytest"
@@ -73,13 +77,14 @@ jobs:
 
   benchmark-pr:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    timeout-minutes: 30
+    if: github.event_name == 'pull_request' || inputs.baseline_ref != ''
 
     steps:
       # --- Setup ---
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.base.sha || inputs.baseline_ref }}
           fetch-depth: 0
 
       - name: Cache apt packages
@@ -111,7 +116,7 @@ jobs:
       # --- Phase 2: Current (PR branch) ---
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           clean: false
 
       - name: Install dependencies (PR branch)
@@ -186,6 +191,7 @@ jobs:
           EOF
 
       - name: Comment benchmark summary on PR
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         uses: actions/github-script@v9
         with:
           script: |

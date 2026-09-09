@@ -1,12 +1,8 @@
 name: Build and Test
 
 on:
-  push:
-    branches: [main]
-  pull_request: # Any pull request
-  workflow_dispatch: # Allow manual triggering of the workflow
-  schedule:
-    - cron: "0 0 * * *" # Run at midnight UTC every day
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -22,6 +18,7 @@ jobs:
           - "3.14"
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v7
@@ -39,20 +36,6 @@ jobs:
       - run: uv run python -c "import mmgpy"
       - name: Run tests with coverage
         run: uv run pytest --ignore=tests/examples_test.py --ignore=tests/docs_test.py --cov=src/mmgpy --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
-
-      - name: Test documentation code blocks
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
-        env:
-          PYVISTA_OFF_SCREEN: "true"
-          MPLBACKEND: Agg
-        run: uv run pytest tests/docs_test.py -v
-
-      - name: Run examples
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
-        env:
-          MPLBACKEND: Agg
-          PYVISTA_OFF_SCREEN: "true"
-        run: uv run pytest tests/examples_test.py -v
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'

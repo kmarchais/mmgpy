@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only PR runs supersede one another. Release and scheduled work must finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    outputs:
+      tests: ${{ steps.select.outputs.tests }}
+      examples: ${{ steps.select.outputs.examples }}
+      docs: ${{ steps.select.outputs.docs }}
+      wheels: ${{ steps.select.outputs.wheels }}
+      full_wheels: ${{ steps.select.outputs.full_wheels }}
+      conda: ${{ steps.select.outputs.conda }}
+      benchmarks: ${{ steps.select.outputs.benchmarks }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: select
+        run: python .github/scripts/select_ci.py
+
+  lint:
+    uses: ./.github/workflows/prek.yml
+
+  tests:
+    needs: select
+    if: needs.select.outputs.tests == 'true'
+    uses: ./.github/workflows/build-and-test.yml
+    secrets: inherit
+
+  examples:
+    needs: select
+    if: needs.select.outputs.examples == 'true'
+    uses: ./.github/workflows/examples.yml
+
+  docs:
+    needs: select
+    if: needs.select.outputs.docs == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
+
+  wheels:
+    needs: select
+    if: needs.select.outputs.wheels == 'true'
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      deployments: write
+      pull-requests: write
+    uses: ./.github/workflows/build-wheels.yml
+    with:
+      full: ${{ needs.select.outputs.full_wheels == 'true' }}
+    secrets: inherit
+
+  conda:
+    needs: select
+    if: needs.select.outputs.conda == 'true'
+    uses: ./.github/workflows/conda-build.yml
+
+  benchmarks:
+    needs: select
+    if: needs.select.outputs.benchmarks == 'true'
+    permissions:
+      contents: write
+      deployments: write
+      pull-requests: write
+    uses: ./.github/workflows/benchmark.yml
+    secrets: inherit
+
+  passed:
+    name: CI passed
+    if: ${{ always() }}
+    needs: [select, lint, tests, examples, docs, wheels, conda, benchmarks]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check every selected job
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: python .github/scripts/check_ci_result.py

@@ -1,9 +1,8 @@
 name: prek
 
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   prek:
@@ -11,4 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-      - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
+      - name: Validate lockfile
+        run: uv lock --check
+      - name: Test CI selection and required-check behavior
+        run: python -m unittest discover -s .github/scripts -p 'test_ci_policy.py' -v
+      - name: Run locked development tools
+        run: uv run --no-project python .github/scripts/check_dev_tools.py
