@@ -116,9 +116,12 @@ class TestFromPyvista:
 
     def test_mixed_cell_grid_preserves_each_connectivity(self) -> None:
         """Typed VTK keys must preserve tetrahedra, boundary faces, and edges."""
-        points = np.array(
-            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-        )
+        points = np.array([
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ])
         tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
         triangles = np.array([[0, 1, 2]], dtype=np.int32)
         edges = np.array([[0, 1]], dtype=np.int32)
