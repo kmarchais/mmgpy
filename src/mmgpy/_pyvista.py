@@ -249,7 +249,7 @@ def _extract_triangles_from_polydata(mesh: pv.PolyData) -> NDArray[np.int32]:
 
     """
     if hasattr(mesh, "cells_dict") and pv.CellType.TRIANGLE in mesh.cells_dict:
-        return mesh.cells_dict[np.uint8(pv.CellType.TRIANGLE)].astype(np.int32)
+        return mesh.cells_dict[pv.CellType.TRIANGLE].astype(np.int32)
 
     faces = mesh.faces
     if len(faces) == 0:

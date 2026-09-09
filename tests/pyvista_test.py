@@ -114,6 +114,29 @@ def mmgs_mesh() -> MmgMeshS:
 class TestFromPyvista:
     """Tests for from_pyvista function."""
 
+    def test_mixed_cell_grid_preserves_each_connectivity(self) -> None:
+        """Typed VTK keys must preserve tetrahedra, boundary faces, and edges."""
+        points = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        )
+        tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
+        triangles = np.array([[0, 1, 2]], dtype=np.int32)
+        edges = np.array([[0, 1]], dtype=np.int32)
+        grid = pv.UnstructuredGrid(
+            {
+                pv.CellType.TETRA: tetrahedra,
+                pv.CellType.TRIANGLE: triangles,
+                pv.CellType.LINE: edges,
+            },
+            points,
+        )
+
+        mesh = from_pyvista(grid)
+
+        np.testing.assert_array_equal(mesh.get_elements(), tetrahedra)
+        np.testing.assert_array_equal(mesh.get_triangles(), triangles)
+        np.testing.assert_array_equal(mesh.get_edges(), edges)
+
     def test_unstructured_grid_to_mmg3d(self, tetra_grid: pv.UnstructuredGrid) -> None:
         """Test converting UnstructuredGrid to MmgMesh3D."""
         mesh = from_pyvista(tetra_grid)
