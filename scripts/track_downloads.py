@@ -251,6 +251,21 @@ def _parse_review_date(value: str) -> str:
         .replace("a.m", "AM")
         .replace("p.m", "PM")
     )
+    # Django's English date format uses AP-style month abbreviations.
+    month, rest = normalized.split(" ", 1)
+    months = {
+        "Jan.": "January",
+        "Feb.": "February",
+        "Mar.": "March",
+        "Apr.": "April",
+        "Aug.": "August",
+        "Sep.": "September",
+        "Sept.": "September",
+        "Oct.": "October",
+        "Nov.": "November",
+        "Dec.": "December",
+    }
+    normalized = f"{months.get(month, month)} {rest}"
     parsed = datetime.strptime(normalized, "%B %d, %Y, %I:%M %p").replace(
         tzinfo=timezone.utc,
     )
