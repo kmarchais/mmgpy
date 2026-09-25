@@ -36,7 +36,7 @@ jobs:
           packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0
 
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           python-version: "3.12"
           enable-cache: true
@@ -57,7 +57,7 @@ jobs:
 
       - name: Store benchmark result
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
         with:
           tool: "pytest"
           output-file-path: benchmark-results.json
@@ -93,7 +93,7 @@ jobs:
           packages: qtbase5-dev qt5-qmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
           version: 1.0
 
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           python-version: "3.12"
           enable-cache: true
