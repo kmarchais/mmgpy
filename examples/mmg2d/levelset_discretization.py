@@ -143,7 +143,13 @@ def main() -> None:
     )
     circle = pv.Spline(circle_points, 100)
 
-    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
+    pl = pv.Plotter(
+        shape=(1, 2),
+        border=True,
+        border_color="black",
+        border_width=2,
+        window_size=(1400, 700),
+    )
 
     pl.subplot(0, 0)
     pl.add_mesh(

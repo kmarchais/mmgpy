@@ -174,7 +174,13 @@ def main() -> None:
     )
 
     # Visualization
-    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
+    pl = pv.Plotter(
+        shape=(1, 2),
+        border=True,
+        border_color="black",
+        border_width=2,
+        window_size=(1400, 700),
+    )
 
     # Left: Surface mesh
     pl.subplot(0, 0)
