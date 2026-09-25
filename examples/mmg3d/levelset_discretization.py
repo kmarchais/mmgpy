@@ -152,7 +152,13 @@ def main() -> None:
     print(f"  Result: {n_tri} triangles, {n_pts} vertices")
 
     # Visualization
-    pl = pv.Plotter(shape=(1, 2), window_size=(1400, 700))
+    pl = pv.Plotter(
+        shape=(1, 2),
+        border=True,
+        border_color="black",
+        border_width=2,
+        window_size=(1400, 700),
+    )
 
     pl.subplot(0, 0)
     pl.add_mesh(

@@ -939,6 +939,10 @@ void MmgMeshS::set_field(const std::string &field_name,
 
 py::array_t<double> MmgMeshS::get_field(const std::string &field_name) const {
   auto field = get_solution_field(field_name);
+  const auto sol = *field.sol_ptr;
+  if (!sol || !sol->m || sol->np == 0) {
+    throw std::runtime_error(field_name + " field is not set");
+  }
   MMG5_int np = mesh->np;
 
   py::array_t<double> values({static_cast<py::ssize_t>(np),

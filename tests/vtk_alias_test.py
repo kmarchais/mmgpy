@@ -249,5 +249,6 @@ class TestSizeMismatch:
 
         assert "sol:metric" in caplog.text
         assert "metric" in caplog.text
-        # Slot remained at its default (N, 1) instead of being overwritten.
-        assert mesh["metric"].shape == (tetra_grid.n_points, 1)
+        # Rejecting the invalid input must leave the solution slot unset.
+        with pytest.raises(RuntimeError, match="metric field is not set"):
+            mesh["metric"]

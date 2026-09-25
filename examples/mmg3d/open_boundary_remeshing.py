@@ -19,7 +19,13 @@ import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "island.mesh"
 
-pl = pv.Plotter(shape=(1, 2), window_size=(800, 400))
+pl = pv.Plotter(
+    shape=(1, 2),
+    border=True,
+    border_color="black",
+    border_width=2,
+    window_size=(800, 400),
+)
 for open_boundary in [False, True]:
     pl.subplot(0, int(open_boundary))
 
