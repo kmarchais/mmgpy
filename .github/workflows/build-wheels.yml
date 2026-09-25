@@ -22,6 +22,11 @@ on:
         default: false
         type: boolean
 
+# Builds and validation only need to read the checkout. Jobs that publish
+# results declare their additional permissions below.
+permissions:
+  contents: read
+
 jobs:
   release-lint:
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
@@ -44,6 +49,12 @@ jobs:
 
   release-benchmarks:
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && (inputs.publish_to_pypi || inputs.publish_to_testpypi))
+    # Match the reusable workflow's contract; called workflows cannot elevate
+    # the permissions granted by their caller.
+    permissions:
+      contents: write
+      deployments: write
+      pull-requests: write
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
 
