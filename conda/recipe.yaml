@@ -35,6 +35,9 @@ requirements:
     - python
     - numpy >=2.0.2,<3
     - pyvista >=0.48,<1
+    # PyVista 0.49 requires Cocoa on macOS; its conda metadata omits it.
+    - if: osx
+      then: pyobjc-framework-cocoa
     - rich >=13.0.0,<15
     - scipy >=1.11.0,<2
     - mmgsuite

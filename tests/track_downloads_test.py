@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from scripts.track_downloads import (
     EventSources,
     ExtensionStats,
@@ -94,6 +96,23 @@ def test_parse_extension_stats_without_reviews() -> None:
     stats = parse_extension_stats(html)
 
     assert stats == ExtensionStats(downloads=127, reviews=0, rating=None)
+
+
+@pytest.mark.parametrize("month", ["September", "Sept.", "Sep."])
+def test_parse_review_events_abbreviated_month(month: str) -> None:
+    """Accept the month names used by the extension review page."""
+    html = f"""
+    <article id="review-1" class="comment-card">
+      <a class="stars-helper"><span title="Rated 5 out of 5"></span></a>
+      <a href="/add-ons/mmgpy/versions/#v0170">v0.17.0</a>
+      <a href="#review-1" title="{month} 18, 2026, 2:49 p.m.">1 d</a>
+    </article>
+    """.encode()
+
+    events = parse_review_events(html)
+
+    assert len(events) == 1
+    assert events[0].date == "2026-09-18"
 
 
 def test_parse_review_events() -> None:
