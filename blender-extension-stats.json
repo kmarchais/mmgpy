@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T00:00:00Z",
+  "generated_at": "2026-09-26T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -1227,7 +1227,18 @@
     {
       "date": "2026-09-18",
       "downloads": 8348,
-      "reviews": 2,
+      "reviews": 3,
+      "rating": 5.0,
+      "current_version": "0.16.2",
+      "updated_at": "2026-05-23T15:22:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-09-26",
+      "downloads": 8866,
+      "reviews": 3,
       "rating": 5.0,
       "current_version": "0.16.2",
       "updated_at": "2026-05-23T15:22:00Z",
@@ -1256,6 +1267,16 @@
       "author": "cheteron",
       "body": "The addon is great, but it's still not entirely clear how some of the settings work. A tutorial video would be very helpful.",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-7828"
+    },
+    {
+      "review_id": "8779",
+      "date": "2026-09-18",
+      "reviewed_at": "Sept. 18, 2026, 2:49 p.m.",
+      "score": 5,
+      "version": "v0.16.2",
+      "author": "tusk",
+      "body": "thank you",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-8779"
     }
   ],
   "events": [
@@ -1490,6 +1511,14 @@
       "version": "v0.17.0",
       "value": "v0.17.0",
       "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.17.0"
+    },
+    {
+      "date": "2026-09-18",
+      "type": "review",
+      "label": "5-star review for v0.16.2",
+      "version": "v0.16.2",
+      "value": "5",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
     }
   ]
 }
