@@ -40,7 +40,7 @@ classifiers = [
 # Note: dependency-groups below are for local dev with uv sync --group <name>
 [project.optional-dependencies]
 fem = [
-    "fedoo>=0.8.3,<1",
+    "fedoo>=0.8.3,<2",
 ]
 pyvista = [
     "pyvista>=0.48,<1",
@@ -48,7 +48,7 @@ pyvista = [
 ui = [
     "mmgpy[pyvista]",
     "pywebview>=6.2.1,<7",
-    "trame>=3.13.1,<4",
+    "trame>=3.13.1,<5",
     "trame-vtk>=2.11.6,<3",
     "trame-vuetify>=3.2.1,<4",
 ]
