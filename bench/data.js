@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790403048824,
+  "lastUpdate": 1790484455777,
   "repoUrl": "https://github.com/kmarchais/mmgpy",
   "entries": {
     "Benchmark": [
@@ -21260,6 +21260,154 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00021683076594705542",
             "extra": "mean: 73.68871199998596 msec\nrounds: 14"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]",
+            "email": "49699333+dependabot[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "78d06b60cd78deda90a21e55649fef75d4f483fb",
+          "message": "chore(deps): bump the python-deps group across 1 directory with 6 updates (#403)\n\nBumps the python-deps group with 6 updates in the / directory:\n\n| Package | From | To |\n| --- | --- | --- |\n| [fedoo](https://github.com/3MAH/fedoo) | `0.8.4` | `1.0.0` |\n| [trame](https://github.com/Kitware/trame) | `3.13.2` | `4.0.0` |\n| [trame-vtk](https://github.com/Kitware/trame-vtk) | `2.11.16` | `2.11.17` |\n| [ty](https://github.com/astral-sh/ty) | `0.0.81` | `0.0.83` |\n| [pymdown-extensions](https://github.com/facelessuser/pymdown-extensions) | `12.0.1` | `12.1` |\n| [zensical](https://github.com/zensical/zensical) | `0.0.62` | `0.0.64` |\n\n\n\nUpdates `fedoo` from 0.8.4 to 1.0.0\n- [Release notes](https://github.com/3MAH/fedoo/releases)\n- [Changelog](https://github.com/3MAH/fedoo/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/3MAH/fedoo/compare/v0.8.4...v1.0.0)\n\nUpdates `trame` from 3.13.2 to 4.0.0\n- [Release notes](https://github.com/Kitware/trame/releases)\n- [Changelog](https://github.com/Kitware/trame/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Kitware/trame/compare/v3.13.2...v4.0.0)\n\nUpdates `trame-vtk` from 2.11.16 to 2.11.17\n- [Release notes](https://github.com/Kitware/trame-vtk/releases)\n- [Changelog](https://github.com/Kitware/trame-vtk/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Kitware/trame-vtk/compare/v2.11.16...v2.11.17)\n\nUpdates `ty` from 0.0.81 to 0.0.83\n- [Release notes](https://github.com/astral-sh/ty/releases)\n- [Changelog](https://github.com/astral-sh/ty/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/astral-sh/ty/compare/0.0.81...0.0.83)\n\nUpdates `pymdown-extensions` from 12.0.1 to 12.1\n- [Release notes](https://github.com/facelessuser/pymdown-extensions/releases)\n- [Commits](https://github.com/facelessuser/pymdown-extensions/compare/12.0.1...12.1)\n\nUpdates `zensical` from 0.0.62 to 0.0.64\n- [Release notes](https://github.com/zensical/zensical/releases)\n- [Commits](https://github.com/zensical/zensical/compare/v0.0.62...v0.0.64)\n\n---\nupdated-dependencies:\n- dependency-name: fedoo\n  dependency-version: 1.0.0\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n  dependency-group: python-deps\n- dependency-name: pymdown-extensions\n  dependency-version: '12.1'\n  dependency-type: direct:development\n  update-type: version-update:semver-minor\n  dependency-group: python-deps\n- dependency-name: trame\n  dependency-version: 4.0.0\n  dependency-type: direct:development\n  update-type: version-update:semver-major\n  dependency-group: python-deps\n- dependency-name: trame-vtk\n  dependency-version: 2.11.17\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: ty\n  dependency-version: 0.0.83\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n- dependency-name: zensical\n  dependency-version: 0.0.64\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n  dependency-group: python-deps\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-09-26T06:00:41Z",
+          "url": "https://github.com/kmarchais/mmgpy/commit/78d06b60cd78deda90a21e55649fef75d4f483fb"
+        },
+        "date": 1790484454049,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_construction_3d",
+            "value": 33.32274317513629,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005172084787735456",
+            "extra": "mean: 30.00953417142885 msec\nrounds: 35"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_io_roundtrip_3d",
+            "value": 18.304979143831893,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006295634350698845",
+            "extra": "mean: 54.62994478947349 msec\nrounds: 19"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_pyvista_roundtrip_3d",
+            "value": 32.092020433774024,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00024200475393118873",
+            "extra": "mean: 31.160393969698095 msec\nrounds: 33"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_quality_3d",
+            "value": 3384.843081726923,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000013013587034199473",
+            "extra": "mean: 295.434670339225 usec\nrounds: 3449"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_validate_3d",
+            "value": 77.75807018627488,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005314823788404927",
+            "extra": "mean: 12.860401468354736 msec\nrounds: 79"
+          },
+          {
+            "name": "benchmarks/bench_operations.py::TestOperations::test_metric_field_set_get",
+            "value": 7092.816950484471,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000008097947776739876",
+            "extra": "mean: 140.98770727922079 usec\nrounds: 18024"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_adaptive_hmin_hmax_hausd",
+            "value": 0.1221771347698163,
+            "unit": "iter/sec",
+            "range": "stddev: 0.015895273316502107",
+            "extra": "mean: 8.184837546599994 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_metric_hgrad",
+            "value": 0.10601890966805073,
+            "unit": "iter/sec",
+            "range": "stddev: 0.06881711715793444",
+            "extra": "mean: 9.432279610600016 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh3D::test_3d_optimize",
+            "value": 0.3413764175351903,
+            "unit": "iter/sec",
+            "range": "stddev: 0.005680609474675204",
+            "extra": "mean: 2.9293177520000087 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_adaptive_hmax_hgrad_angle",
+            "value": 4.380825642748587,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00012012149477620308",
+            "extra": "mean: 228.26747320000322 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_metric_hmin_hausd",
+            "value": 4.378955560368446,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00015459262681950773",
+            "extra": "mean: 228.36495739999236 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemesh2D::test_2d_uniform_angle",
+            "value": 4.366380859152879,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004953408799760915",
+            "extra": "mean: 229.02262359999668 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_adaptive_hmin_hgrad",
+            "value": 5.105116501421888,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0017059286605569648",
+            "extra": "mean: 195.8819156666607 msec\nrounds: 6"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_metric_hmax_hausd_angle",
+            "value": 2.0854849281337158,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003910784648326474",
+            "extra": "mean: 479.50478399999383 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_optimize",
+            "value": 2.0883513571066317,
+            "unit": "iter/sec",
+            "range": "stddev: 0.001416542805652273",
+            "extra": "mean: 478.84662539999 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_remesh.py::TestRemeshSurface::test_surface_uniform",
+            "value": 2.8575825394887016,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003559295862806799",
+            "extra": "mean: 349.946147199978 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_10k",
+            "value": 169.95282458382832,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000028372204310820492",
+            "extra": "mean: 5.883985761629724 msec\nrounds: 172"
+          },
+          {
+            "name": "benchmarks/bench_validation.py::TestDuplicateVertexDetectionBenchmarks::test_duplicate_detection_100k",
+            "value": 14.340184342381425,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00024418193322799716",
+            "extra": "mean: 69.73411053333317 msec\nrounds: 15"
           }
         ]
       }
