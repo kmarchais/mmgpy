@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 import pyvista as pv
 
-from mmgpy._mesh import _ALL_CHECKS
+from mmgpy._mesh import _ALL_CHECKS, _reject_unreliable_solb_multisol
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -1484,13 +1484,7 @@ class MmgAccessor:
 
         """
         sol_path = Path(path)
-        if sol_path.suffix.lower() == ".solb":
-            msg = (
-                "Binary .solb files are not supported via "
-                "mesh.mmg.load_all_sols() — MMG's .solb round-trip is "
-                "broken at the library level."
-            )
-            raise NotImplementedError(msg)
+        _reject_unreliable_solb_multisol(sol_path)
         _attach_sol_fields(self._dataset, sol_path)
 
     def save_all_sols(
@@ -1525,8 +1519,6 @@ class MmgAccessor:
 
         Raises
         ------
-        NotImplementedError
-            If ``path`` is a binary ``.solb`` file.
         ValueError
             If no eligible point or cell arrays are available to write.
 
@@ -1535,13 +1527,7 @@ class MmgAccessor:
         from mmgpy._sol import write_sol_file  # noqa: PLC0415
 
         sol_path = Path(path)
-        if sol_path.suffix.lower() == ".solb":
-            msg = (
-                "Binary .solb files are not supported via "
-                "mesh.mmg.save_all_sols() — MMG's .solb writer interleaves "
-                "stray newlines that break round-trip. Use .sol (text)."
-            )
-            raise NotImplementedError(msg)
+        _reject_unreliable_solb_multisol(sol_path)
 
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         dim = mesh.solution_dim
