@@ -130,13 +130,24 @@ if(NOT MMGPY_SKIP_EXECUTABLES AND NOT MMGPY_CONDA_BUILD)
     # Install executables from MMG build directory
     # Note: We don't use if(EXISTS) here because the directory is created during build,
     # not during configure. The OPTIONAL keyword handles missing files gracefully.
-    install(DIRECTORY "${mmg_BINARY_DIR}/bin/"
-        DESTINATION "${SCRIPTS_DIR}"
-        USE_SOURCE_PERMISSIONS
-        OPTIONAL
-        FILES_MATCHING PATTERN "mmg*"
-        PATTERN "genheader" EXCLUDE
-    )
+    if(WIN32)
+        # Multi-config generators put executables in bin/Release and omit _O3.
+        # Keep the wheel layout consistent with Unix and beside the MMG DLLs.
+        foreach(mmg_command mmg2d mmg3d mmgs)
+            install(PROGRAMS "$<TARGET_FILE:${mmg_command}>"
+                DESTINATION "${SCRIPTS_DIR}"
+                RENAME "${mmg_command}_O3.exe"
+            )
+        endforeach()
+    else()
+        install(DIRECTORY "${mmg_BINARY_DIR}/bin/"
+            DESTINATION "${SCRIPTS_DIR}"
+            USE_SOURCE_PERMISSIONS
+            OPTIONAL
+            FILES_MATCHING PATTERN "mmg*"
+            PATTERN "genheader" EXCLUDE
+        )
+    endif()
 
     # Set RPATH for MMG executables (mmgpy/bin/ -> mmgpy/lib/)
     if(UNIX)
@@ -188,51 +199,6 @@ if(NOT MMGPY_SKIP_EXECUTABLES AND NOT MMGPY_CONDA_BUILD)
             endforeach()
         ")
     endif()
-
-    # For development installs, create symlinks (Unix) or copies (Windows) in the venv
-    install(CODE "
-        # Find virtual environment bin directory (bin on Unix, Scripts on Windows)
-        execute_process(
-            COMMAND \"\${Python_EXECUTABLE}\" -c \"import sys; import os; bin_name = 'Scripts' if sys.platform == 'win32' else 'bin'; print(os.path.join(sys.prefix, bin_name))\"
-            OUTPUT_VARIABLE VENV_BIN_DIR
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-
-        # For editable installs, executables are in CMAKE_INSTALL_PREFIX/mmgpy/bin
-        # For wheel installs, they go to site-packages/mmgpy/bin
-        set(EXEC_SOURCE_DIR \"\${CMAKE_INSTALL_PREFIX}/${SCRIPTS_DIR}\")
-
-        if(EXISTS \"\${EXEC_SOURCE_DIR}\" AND EXISTS \"\${VENV_BIN_DIR}\")
-            file(GLOB SOURCE_EXECS \"\${EXEC_SOURCE_DIR}/mmg*\")
-            foreach(exec \${SOURCE_EXECS})
-                get_filename_component(exec_name \"\${exec}\" NAME)
-                set(target_path \"\${VENV_BIN_DIR}/\${exec_name}\")
-
-                # Remove existing file if it exists
-                if(EXISTS \"\${target_path}\")
-                    file(REMOVE \"\${target_path}\")
-                endif()
-
-                # On Windows, copy the file; on Unix, create symlink
-                if(WIN32)
-                    file(COPY \"\${exec}\" DESTINATION \"\${VENV_BIN_DIR}\")
-                    message(STATUS \"Copied: \${exec} -> \${target_path}\")
-                else()
-                    execute_process(
-                        COMMAND ln -sf \"\${exec}\" \"\${target_path}\"
-                        RESULT_VARIABLE symlink_result
-                    )
-                    if(symlink_result EQUAL 0)
-                        message(STATUS \"Created symlink: \${target_path} -> \${exec}\")
-                    else()
-                        message(WARNING \"Failed to create symlink: \${target_path}\")
-                    endif()
-                endif()
-            endforeach()
-        else()
-            message(STATUS \"Skipping venv bin symlinks: source=\${EXEC_SOURCE_DIR} venv=\${VENV_BIN_DIR}\")
-        endif()
-    ")
 
     # On Windows, also copy the DLLs to the scripts dir for the executables
     if(WIN32)

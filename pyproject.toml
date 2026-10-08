@@ -86,6 +86,12 @@ sdist.exclude = ["vtk*/**", "vtk*.tar.gz", "*.mesh", "*.sol", "*.vtk"]
 [project.scripts]
 mmgpy = "mmgpy._cli:_run_mmg"
 mmg = "mmgpy._cli:_run_mmg"
+mmg2d = "mmgpy._cli:_run_mmg2d"
+mmg2d_O3 = "mmgpy._cli:_run_mmg2d"
+mmg3d = "mmgpy._cli:_run_mmg3d"
+mmg3d_O3 = "mmgpy._cli:_run_mmg3d"
+mmgs = "mmgpy._cli:_run_mmgs"
+mmgs_O3 = "mmgpy._cli:_run_mmgs"
 
 [project.entry-points."mmgpy.ui"]
 ui = "mmgpy.ui:run_ui"
@@ -367,7 +373,7 @@ build = "cp310-* cp311-* cp312-* cp313-* cp314-* cp314t-*"
 # Skip 32-bit builds, musllinux (pyvista depends on vtk which has no musllinux wheels),
 # and free-threaded builds on Windows/macOS (vtk has no free-threaded wheels there)
 skip = "*-win32 *-manylinux_i686 *-musllinux* cp314t-win* cp314t-macosx*"
-test-command = 'python -c "import mmgpy"'
+test-command = 'python {project}/tests/native_cli_smoke_test.py'
 build-verbosity = 1
 
 [[tool.cibuildwheel.overrides]]
