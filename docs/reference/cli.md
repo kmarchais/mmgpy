@@ -11,7 +11,10 @@ Installing mmgpy gives you access to the MMG command-line executables:
 
 ## Installation
 
-The executables are included with mmgpy:
+The native executables are bundled with mmgpy. Installation creates launchers
+in the environment's scripts directory, so the specific commands and their
+`_O3` aliases are available on `PATH`, including through `uv run`. The launchers
+forward arguments and exit codes to the native executables.
 
 <!-- mmgpy-test:skip -->
 
@@ -29,7 +32,9 @@ uv tool install mmgpy
 
 ## Unified `mmg` Command
 
-The `mmg` command automatically detects the mesh type and delegates to the appropriate executable:
+The `mmg` command automatically detects the mesh type and remeshes through the
+Python API. The specific `mmg2d`, `mmg3d`, and `mmgs` commands run native MMG
+executables:
 
 <!-- mmgpy-test:skip -->
 

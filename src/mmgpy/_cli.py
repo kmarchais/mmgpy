@@ -11,9 +11,13 @@ and mapped directly to the underlying C++ library calls.
 from __future__ import annotations
 
 import logging
+import os
+import shutil
 import site
 import stat
+import subprocess  # noqa: S404  # Native CLI compatibility requires a child process.
 import sys
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -152,10 +156,27 @@ def _find_in_venv_bin(exe_name: str) -> str | None:  # pragma: no cover
     # the real MMG binaries are well above this threshold. This size filter
     # is why we don't reuse `_check_exe` here.
     min_native_exe_size = 1024
-    if not venv_bin.exists() or venv_bin.stat().st_size <= min_native_exe_size:
+    if (
+        not venv_bin.exists()
+        or venv_bin.stat().st_size <= min_native_exe_size
+        or _is_cli_launcher(venv_bin)
+    ):
         return None
     _ensure_executable(venv_bin)
     return str(venv_bin)
+
+
+def _is_cli_launcher(path: Path) -> bool:
+    """Identify script launchers, including Windows console-script executables.
+
+    Returns
+    -------
+    bool
+        Whether the file is a script or a Windows launcher with an embedded ZIP.
+
+    """
+    with path.open("rb") as stream:
+        return stream.read(2) == b"#!" or zipfile.is_zipfile(path)
 
 
 def _find_in_build_dir(exe_name: str) -> str | None:  # pragma: no cover
@@ -185,9 +206,8 @@ def _find_in_build_dir(exe_name: str) -> str | None:  # pragma: no cover
 def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
     """Find an MMG executable in mmgpy/bin, venv bin, or system PATH.
 
-    .. note:: No longer used by the CLI entry point (the unified ``mmg``
-       command calls the Python API directly).  Kept for the public
-       re-export in ``__init__.py`` and for test usage.
+    The native compatibility commands use this resolver. The unified ``mmg``
+    command calls the Python API directly.
 
     Parameters
     ----------
@@ -212,10 +232,68 @@ def _find_mmg_executable(base_name: str) -> str | None:  # pragma: no cover
         if hit is not None:
             return hit
 
-    # Last resort: check system PATH via shutil.which()
-    import shutil  # noqa: PLC0415
+    # Skip our own launchers and continue to native conda/system executables.
+    for directory in os.get_exec_path():
+        candidate = shutil.which(base_name, path=directory)
+        if candidate is not None and not _is_cli_launcher(Path(candidate)):
+            return candidate
+    return None
 
-    return shutil.which(base_name)
+
+def _run_native_mmg(base_name: str) -> int:
+    """Forward arguments to a native MMG executable without parsing them.
+
+    Returns
+    -------
+    int
+        Native exit status, or 127 when no native executable is available.
+
+    """
+    executable = _find_mmg_executable(base_name)
+    if executable is None:
+        _get_cli_logger().error("Native %s executable not found", base_name)
+        return 127
+    result = subprocess.run(  # noqa: S603  # Resolved native binary; arguments are passed verbatim.
+        [executable, *sys.argv[1:]],
+        check=False,
+    )
+    return 128 - result.returncode if result.returncode < 0 else result.returncode
+
+
+def _run_mmg2d() -> int:
+    """Run the native 2D MMG command.
+
+    Returns
+    -------
+    int
+        Native process exit status.
+
+    """
+    return _run_native_mmg("mmg2d_O3")
+
+
+def _run_mmg3d() -> int:
+    """Run the native 3D MMG command.
+
+    Returns
+    -------
+    int
+        Native process exit status.
+
+    """
+    return _run_native_mmg("mmg3d_O3")
+
+
+def _run_mmgs() -> int:
+    """Run the native surface MMG command.
+
+    Returns
+    -------
+    int
+        Native process exit status.
+
+    """
+    return _run_native_mmg("mmgs_O3")
 
 
 # -- Argument parsing --------------------------------------------------------
