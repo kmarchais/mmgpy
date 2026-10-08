@@ -1812,7 +1812,10 @@
 </tbody>
 </table>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>The executables are included with mmgpy:</p>
+<p>The native executables are bundled with mmgpy. Installation creates launchers
+in the environment's scripts directory, so the specific commands and their
+<code>_O3</code> aliases are available on <code>PATH</code>, including through <code>uv run</code>. The launchers
+forward arguments and exit codes to the native executables.</p>
 <!-- mmgpy-test:skip -->
 
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>mmgpy
@@ -1823,7 +1826,9 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>mmgpy
 </span></code></pre></div>
 <h2 id="unified-mmg-command">Unified <code>mmg</code> Command<a class="headerlink" href="#unified-mmg-command" title="Permanent link">&para;</a></h2>
-<p>The <code>mmg</code> command automatically detects the mesh type and delegates to the appropriate executable:</p>
+<p>The <code>mmg</code> command automatically detects the mesh type and remeshes through the
+Python API. The specific <code>mmg2d</code>, <code>mmg3d</code>, and <code>mmgs</code> commands run native MMG
+executables:</p>
 <!-- mmgpy-test:skip -->
 
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mmg<span class="w"> </span>input.mesh<span class="w"> </span>-o<span class="w"> </span>output.mesh<span class="w"> </span>-hmax<span class="w"> </span><span class="m">0</span>.1
