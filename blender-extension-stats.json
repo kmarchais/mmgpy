@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-07T00:00:00Z",
+  "generated_at": "2026-10-08T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -1355,6 +1355,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.1 MB; macOS Apple Silicon=14.3 MB; Linux=18.4 MB"
+    },
+    {
+      "date": "2026-10-08",
+      "downloads": 9640,
+      "reviews": 3,
+      "rating": 5.0,
+      "current_version": "0.17.1",
+      "updated_at": "2026-10-08T12:59:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
     }
   ],
   "reviews": [
@@ -1629,6 +1640,38 @@
       "version": "v0.16.2",
       "value": "5",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
+    },
+    {
+      "date": "2026-10-08",
+      "type": "github_docs",
+      "label": "Docs update: Restore native MMG command launchers (#410)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/76ed494493116e1374e8afb4b2e8aca3cb358f7e"
+    },
+    {
+      "date": "2026-10-08",
+      "type": "github_release",
+      "label": "GitHub release v0.17.1",
+      "version": "v0.17.1",
+      "value": "v0.17.1",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.17.1"
+    },
+    {
+      "date": "2026-10-08",
+      "type": "platform_package_change",
+      "label": "Platform/package metadata changed",
+      "version": "0.17.1",
+      "value": "Windows; macOS Apple Silicon; Linux; Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-10-08",
+      "type": "version_release",
+      "label": "Blender extension v0.17.1",
+      "version": "0.17.1",
+      "value": "",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
     }
   ]
 }
