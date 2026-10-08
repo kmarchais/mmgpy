@@ -13,11 +13,25 @@ from mmgpy import _cli
 
 
 @pytest.mark.parametrize(("returncode", "expected"), [(0, 0), (2, 2), (-15, 143)])
-def test_native_arguments_and_exit_code(monkeypatch, returncode, expected):
+@pytest.mark.parametrize(
+    ("runner", "base_name"),
+    [
+        (_cli._run_mmg2d, "mmg2d_O3"),
+        (_cli._run_mmg3d, "mmg3d_O3"),
+        (_cli._run_mmgs, "mmgs_O3"),
+    ],
+)
+def test_native_arguments_and_exit_code(
+    monkeypatch,
+    returncode,
+    expected,
+    runner,
+    base_name,
+):
     """Forward unknown native options, paths with spaces, and failure status."""
-    monkeypatch.setattr(_cli, "_find_mmg_executable", lambda _: "/native/mmg3d_O3")
+    monkeypatch.setattr(_cli, "_find_mmg_executable", lambda name: f"/native/{name}")
     monkeypatch.setattr(
-        _cli.sys, "argv", ["mmg3d_O3", "-in", "mesh with spaces.mesh", "-nofem"]
+        _cli.sys, "argv", [base_name, "-in", "mesh with spaces.mesh", "-nofem"]
     )
     calls = []
 
@@ -26,9 +40,9 @@ def test_native_arguments_and_exit_code(monkeypatch, returncode, expected):
         return subprocess.CompletedProcess(command, returncode)
 
     monkeypatch.setattr(_cli.subprocess, "run", run)
-    assert _cli._run_mmg3d() == expected
+    assert runner() == expected
     assert calls == [
-        (["/native/mmg3d_O3", "-in", "mesh with spaces.mesh", "-nofem"], False)
+        ([f"/native/{base_name}", "-in", "mesh with spaces.mesh", "-nofem"], False)
     ]
 
 
