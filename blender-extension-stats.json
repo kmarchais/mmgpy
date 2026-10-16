@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-15T00:00:00Z",
+  "generated_at": "2026-10-16T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -1443,6 +1443,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
+    },
+    {
+      "date": "2026-10-16",
+      "downloads": 10414,
+      "reviews": 4,
+      "rating": 5.0,
+      "current_version": "0.17.1",
+      "updated_at": "2026-10-08T12:59:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
     }
   ],
   "reviews": [
@@ -1475,6 +1486,16 @@
       "author": "tusk",
       "body": "thank you",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-8779"
+    },
+    {
+      "review_id": "9086",
+      "date": "2026-10-16",
+      "reviewed_at": "Oct. 16, 2026, 11:32 a.m.",
+      "score": 5,
+      "version": "v0.17.1",
+      "author": "crwde",
+      "body": "it simply works!!",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-9086"
     }
   ],
   "events": [
@@ -1749,6 +1770,14 @@
       "version": "0.17.1",
       "value": "",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/versions/"
+    },
+    {
+      "date": "2026-10-16",
+      "type": "review",
+      "label": "5-star review for v0.17.1",
+      "version": "v0.17.1",
+      "value": "5",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
     }
   ]
 }
