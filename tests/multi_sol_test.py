@@ -11,7 +11,7 @@ Covers:
   ``point_data`` / ``cell_data`` slots.
 * Binary ``.solb`` is explicitly unsupported here because MMG itself emits
   stray newlines in its binary writer (even the existing single-channel
-  ``.solb`` round-trip is broken at the library level).
+  ``.solb`` round-trip is broken at the library level; see MmgTools/mmg#326).
 """
 
 from __future__ import annotations
@@ -160,6 +160,35 @@ def test_cpp_binding_rejects_wrong_column_count(tmp_path: Path) -> None:
         impl.save_all_sols(tmp_path / "bad.sol", [(3, bad)])
 
 
+@pytest.mark.parametrize(
+    "make_impl",
+    [_make_3d_impl, _make_2d_impl, _make_s_impl],
+    ids=["mmg3d", "mmg2d", "mmgs"],
+)
+@pytest.mark.parametrize("operation", ["load", "save"])
+def test_cpp_binding_rejects_solb_with_upstream_issue(
+    make_impl,
+    operation: str,
+    tmp_path: Path,
+) -> None:
+    """Every raw binding blocks corrupt MMG 5.8.0 binary multi-sol I/O."""
+    impl = make_impl()
+    path = tmp_path / "multi.SOLB"
+    scalar = np.arange(impl.get_mesh_size()[0], dtype=np.float64)
+
+    def call() -> None:
+        if operation == "load":
+            impl.load_all_sols(path)
+        else:
+            impl.save_all_sols(path, [(1, scalar)])
+
+    with pytest.raises(
+        NotImplementedError,
+        match=r"MMG 5\.8\.0.*MmgTools/mmg/issues/326",
+    ):
+        call()
+
+
 # ---------------------------------------------------------------------------
 # Mesh-level wrapper
 # ---------------------------------------------------------------------------
@@ -183,9 +212,9 @@ def test_mesh_save_load_roundtrip_with_positional_names(tmp_path: Path) -> None:
 
 
 def test_mesh_save_rejects_solb(tmp_path: Path) -> None:
-    """Mesh-level writer refuses .solb (MMG library bug)."""
+    """Mesh-level writer reports the affected MMG version and upstream issue."""
     mesh = _read_mesh_internal(_tet_pv_dataset())
-    with pytest.raises(NotImplementedError, match="\\.solb"):
+    with pytest.raises(NotImplementedError, match="MmgTools/mmg/issues/326"):
         mesh.save_all_sols(
             tmp_path / "x.solb",
             {"f": np.zeros(mesh._impl.get_mesh_size()[0])},
@@ -193,9 +222,9 @@ def test_mesh_save_rejects_solb(tmp_path: Path) -> None:
 
 
 def test_mesh_load_rejects_solb(tmp_path: Path) -> None:
-    """Mesh-level reader refuses .solb (MMG library bug)."""
+    """Mesh-level reader reports the affected MMG version and upstream issue."""
     mesh = _read_mesh_internal(_tet_pv_dataset())
-    with pytest.raises(NotImplementedError, match="\\.solb"):
+    with pytest.raises(NotImplementedError, match="MmgTools/mmg/issues/326"):
         mesh.load_all_sols(tmp_path / "x.solb")
 
 
@@ -296,17 +325,17 @@ def test_accessor_save_explicit_keys_raise_on_missing(tmp_path: Path) -> None:
 
 
 def test_accessor_save_solb_raises(tmp_path: Path) -> None:
-    """Accessor writer refuses .solb due to the upstream MMG bug."""
+    """Accessor writer links the upstream MMG bug."""
     grid = _tet_pv_dataset()
     grid.point_data["scalar"] = np.arange(grid.n_points, dtype=np.float64)
-    with pytest.raises(NotImplementedError, match="\\.solb"):
+    with pytest.raises(NotImplementedError, match="MmgTools/mmg/issues/326"):
         grid.mmg.save_all_sols(tmp_path / "x.solb")
 
 
 def test_accessor_load_solb_raises(tmp_path: Path) -> None:
-    """Accessor reader refuses .solb due to the upstream MMG bug."""
+    """Accessor reader links the upstream MMG bug."""
     grid = _tet_pv_dataset()
-    with pytest.raises(NotImplementedError, match="\\.solb"):
+    with pytest.raises(NotImplementedError, match="MmgTools/mmg/issues/326"):
         grid.mmg.load_all_sols(tmp_path / "x.solb")
 
 

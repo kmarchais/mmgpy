@@ -2,7 +2,10 @@
 #define MMG_MULTISOL_HPP
 
 #include "mmg/common/libmmgtypes.h"
+#include "mmg/common/mmgversion.h"
 #include "mmg_common.hpp"
+#include <algorithm>
+#include <cctype>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -10,6 +13,33 @@
 #include <vector>
 
 namespace py = pybind11;
+
+inline bool has_solb_extension(const std::string &fname) {
+  const std::size_t dot = fname.find_last_of('.');
+  if (dot == std::string::npos) {
+    return false;
+  }
+  std::string extension = fname.substr(dot);
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char value) {
+                   return static_cast<char>(std::tolower(value));
+                 });
+  return extension == ".solb";
+}
+
+inline void reject_unreliable_solb_multisol(const std::string &fname) {
+  if (!has_solb_extension(fname)) {
+    return;
+  }
+  PyErr_Format(
+      PyExc_NotImplementedError,
+      "Binary .solb multi-solution I/O is disabled for MMG %s because its "
+      "writer corrupts binary records. Track the upstream fix at "
+      "https://github.com/MmgTools/mmg/issues/326 and use .sol (text) until "
+      "a fixed MMG release is bundled.",
+      MMG_VERSION_RELEASE);
+  throw py::error_already_set();
+}
 
 // Function pointer signatures shared by MMG3D/MMG2D/MMGS multi-sol API.
 using SetSolsAtVerticesSizeFn = int (*)(MMG5_pMesh, MMG5_pSol *, int, MMG5_int,
@@ -56,6 +86,7 @@ inline int components_for_type(int type, int dim) {
 inline py::list load_all_sols_vertices(MMG5_pMesh mesh,
                                        const std::string &fname,
                                        const MultiSolApi &api) {
+  reject_unreliable_solb_multisol(fname);
   MMG5_pSol sols = nullptr;
   int ret = api.load_all_sols(mesh, &sols, fname.c_str());
   if (ret != 1) {
@@ -181,6 +212,7 @@ inline void save_all_sols_vertices(MMG5_pMesh mesh, MMG5_int nentities,
                                    const std::string &fname,
                                    const py::list &sols,
                                    const MultiSolApi &api) {
+  reject_unreliable_solb_multisol(fname);
   int nsols = static_cast<int>(py::len(sols));
   if (nsols <= 0) {
     throw std::invalid_argument("save_all_sols: empty solution list");

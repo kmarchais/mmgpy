@@ -1173,11 +1173,14 @@ class MmgMesh3D:
         self,
         path: str | Path,
     ) -> list[tuple[int, NDArray[np.float64]]]:
-        """Load every vertex-located solution block from a Medit .sol/.solb file.
+        """Load every vertex-located solution block from a Medit .sol file.
 
         Returns a list of ``(mmg_type, ndarray)`` tuples in file order;
         ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. Scalar
         arrays are 1D; vector and tensor arrays are 2D.
+
+        Binary ``.solb`` is rejected for affected MMG releases; see
+        https://github.com/MmgTools/mmg/issues/326.
         """
 
     def save_all_sols(
@@ -1189,6 +1192,9 @@ class MmgMesh3D:
 
         ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. All
         arrays must share the vertex count.
+
+        Binary ``.solb`` is rejected for affected MMG releases; see
+        https://github.com/MmgTools/mmg/issues/326.
         """
 
     def remesh(
@@ -2043,11 +2049,14 @@ class MmgMesh2D:
         self,
         path: str | Path,
     ) -> list[tuple[int, NDArray[np.float64]]]:
-        """Load every vertex-located solution block from a Medit .sol/.solb file.
+        """Load every vertex-located solution block from a Medit .sol file.
 
         Returns a list of ``(mmg_type, ndarray)`` tuples in file order;
         ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. Scalar
         arrays are 1D; vector and tensor arrays are 2D.
+
+        Binary ``.solb`` is rejected for affected MMG releases; see
+        https://github.com/MmgTools/mmg/issues/326.
         """
 
     def save_all_sols(
@@ -2059,6 +2068,9 @@ class MmgMesh2D:
 
         ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. All
         arrays must share the vertex count.
+
+        Binary ``.solb`` is rejected for affected MMG releases; see
+        https://github.com/MmgTools/mmg/issues/326.
         """
 
     def remesh(
@@ -2837,11 +2849,14 @@ class MmgMeshS:
         self,
         path: str | Path,
     ) -> list[tuple[int, NDArray[np.float64]]]:
-        """Load every vertex-located solution block from a Medit .sol/.solb file.
+        """Load every vertex-located solution block from a Medit .sol file.
 
         Returns a list of ``(mmg_type, ndarray)`` tuples in file order;
         ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. Scalar
         arrays are 1D; vector and tensor arrays are 2D.
+
+        Binary ``.solb`` is rejected for affected MMG releases; see
+        https://github.com/MmgTools/mmg/issues/326.
         """
 
     def save_all_sols(
@@ -2853,6 +2868,9 @@ class MmgMeshS:
 
         ``mmg_type`` is ``1=scalar``, ``2=vector``, ``3=tensor``. All
         arrays must share the vertex count.
+
+        Binary ``.solb`` is rejected for affected MMG releases; see
+        https://github.com/MmgTools/mmg/issues/326.
         """
 
     def remesh(
