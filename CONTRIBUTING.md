@@ -152,6 +152,38 @@ uv run pytest tests/mmg3d_test.py -v
 uv run pytest --cov=mmgpy --cov-report=html
 ```
 
+### Testing documentation
+
+Build and preview the documentation with Zensical:
+
+```bash
+uv sync --group docs
+uv run --group docs zensical build --strict
+uv run --group docs zensical serve
+```
+
+Run the Python snippets with `uv run pytest docs/`. CI runs this command on
+documentation changes and against the freshly built wheel before a release.
+`pytest-codeblock` collects Python fences, including unnamed ones. Shell commands
+are displayed as instructions and are not executed by this runner.
+
+Put `<!-- codeblock-name: test_page -->` before each Python fence that shares a
+namespace within one Markdown file. These snippets execute in page order.
+Give independent examples distinct names. Mark an example that
+requires user interaction, a download, or unfinished input with
+`<!-- pytestmark: skip -->` immediately before its fence, and explain the
+requirement in the surrounding text. Keep skipped snippets unnamed so they do not
+skip a runnable group.
+
+`docs/conftest.py` creates the named input meshes and copies them into a temporary
+working directory for each test. Reads and writes use the real library. Add any
+new input filename to that fixture, or make the example generate its own mesh.
+Add assertions for the behavior an example demonstrates, such as valid output or
+preserved fields.
+
+Versioned deployments use Zensical's Mike fork, pinned in `pyproject.toml` and
+`uv.lock`. Keep `mkdocs.yml` as the shared configuration for Zensical and Mike.
+
 ### Writing Tests
 
 ```python

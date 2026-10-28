@@ -71,8 +71,8 @@ jobs:
       - name: Deploy with mike
         run: |
           if [[ "${{ inputs.set_latest }}" == "true" ]]; then
-            uv run mike deploy "${{ inputs.version }}" latest --update-aliases --push
-            uv run mike set-default latest --push
+            uv run --group docs mike deploy "${{ inputs.version }}" latest --update-aliases --push
+            uv run --group docs mike set-default latest --push
           else
-            uv run mike deploy "${{ inputs.version }}" --push
+            uv run --group docs mike deploy "${{ inputs.version }}" --push
           fi

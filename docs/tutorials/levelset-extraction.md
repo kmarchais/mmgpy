@@ -15,6 +15,8 @@ Level-set remeshing extracts an isosurface from a scalar field defined on a mesh
 
 Define a level-set function and extract the zero isosurface:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -41,6 +43,8 @@ print(f"Extracted dataset has {discretized.n_cells} cells")
 
 The background mesh should encompass the region where the level-set is defined:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -55,6 +59,8 @@ mesh = pv.read("unit_cube.mesh")
 
 ### Sphere
 
+<!-- codeblock-name: test_page -->
+
 ```python
 def sphere_levelset(coords, center=(0.5, 0.5, 0.5), radius=0.3):
     return (np.linalg.norm(coords - np.array(center), axis=1) - radius).reshape(-1, 1)
@@ -64,6 +70,8 @@ levelset = sphere_levelset(np.asarray(mesh.points))
 ```
 
 ### Torus
+
+<!-- codeblock-name: test_page -->
 
 ```python
 def torus_levelset(coords, R=0.5, r=0.15):
@@ -77,6 +85,8 @@ levelset = torus_levelset(np.asarray(mesh.points))
 ```
 
 ### Gyroid
+
+<!-- codeblock-name: test_page -->
 
 ```python
 def gyroid_levelset(coords, scale=2 * np.pi):
@@ -95,7 +105,7 @@ levelset = gyroid_levelset(np.asarray(mesh.points))
 
 Combine shapes using min/max operations:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 def union(ls1, ls2):
@@ -119,6 +129,8 @@ result_ls = subtract(sphere, cylinder)
 
 Level-set extraction also works with 2D meshes:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -139,6 +151,8 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 For surface meshes, level-set can extract curves:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -158,7 +172,7 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 Set `surface_only=True` to discretize the level set only on the mesh boundary while
 leaving the interior regions unsplit:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 boundary_split = mesh.mmg.remesh_levelset(levelset, surface_only=True)
@@ -177,7 +191,7 @@ For MMG3D, the returned `UnstructuredGrid` contains both tetrahedra and the
 referenced boundary triangles. Select a boundary patch through its cell type and
 reference:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import pyvista as pv
@@ -192,7 +206,7 @@ patch = boundary_split.extract_cells(is_patch)
 
 Combine level-set extraction with size parameters:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 discretized = mesh.mmg.remesh_levelset(
@@ -206,7 +220,7 @@ discretized = mesh.mmg.remesh_levelset(
 
 ## Complete Example: Implicit Domain Meshing
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import numpy as np
@@ -242,6 +256,8 @@ discretized.save("double_sphere.vtk")
 
 ## Visualization
 
+<!-- codeblock-name: test_page -->
+
 ```python
 discretized.plot(show_edges=True)
 ```
@@ -253,7 +269,7 @@ discretized.plot(show_edges=True)
 3. **Narrow band**: If your level-set is only valid near the surface, ensure the background mesh is refined in that region
 4. **Validation**: After extraction, validate the mesh to ensure quality:
 
-   <!-- mmgpy-test:skip -->
+   <!-- pytestmark: skip -->
 
    ```python
    assert discretized.mmg.validate(), "Extracted mesh has quality issues"

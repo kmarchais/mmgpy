@@ -6,6 +6,8 @@ Get started with mmgpy in 5 minutes.
 
 The simplest way to use mmgpy is to load a mesh, remesh it, and save the result:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers the .mmg accessor + Medit reader/writer
@@ -15,6 +17,9 @@ mesh = pv.read("input.mesh")
 
 # Remesh with a target edge size
 remeshed = mesh.mmg.remesh(hmax=0.1)
+
+assert remeshed.n_cells > 0
+assert remeshed.mmg.validate()
 
 print(f"Vertices: {mesh.n_points} -> {remeshed.n_points}")
 print(f"Cells:    {mesh.n_cells} -> {remeshed.n_cells}")
@@ -29,6 +34,7 @@ For more control, use typed options objects with IDE autocomplete:
 
 === "3D Mesh"
 
+    <!-- codeblock-name: test_page -->
     ```python
     import pyvista as pv
     from mmgpy import Mmg3DOptions
@@ -47,6 +53,7 @@ For more control, use typed options objects with IDE autocomplete:
 
 === "2D Mesh"
 
+    <!-- codeblock-name: test_page -->
     ```python
     import pyvista as pv
     from mmgpy import Mmg2DOptions
@@ -64,6 +71,7 @@ For more control, use typed options objects with IDE autocomplete:
 
 === "Surface Mesh"
 
+    <!-- codeblock-name: test_page -->
     ```python
     import pyvista as pv
     from mmgpy import MmgSOptions
@@ -84,6 +92,8 @@ For more control, use typed options objects with IDE autocomplete:
 
 Options classes provide convenient factory methods for common use cases:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 from mmgpy import Mmg3DOptions
 
@@ -100,6 +110,8 @@ opt_opts = Mmg3DOptions.optimize_only()
 ## Local Sizing Control
 
 Refine the mesh in specific regions:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -130,6 +142,8 @@ remeshed = mesh.mmg.remesh(
 
 Visualize meshes with PyVista's `plot()` method:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -147,6 +161,8 @@ remeshed.plot(color="lightblue", opacity=0.8)
 
 For custom plotters, use the dataset directly:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 plotter = pv.Plotter()
 plotter.add_mesh(remeshed, show_edges=True)
@@ -154,6 +170,8 @@ plotter.show()
 ```
 
 Remesh from PyVista geometry:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -170,6 +188,8 @@ remeshed.plot(show_edges=True)
 ## Mesh Validation
 
 Check mesh quality before and after remeshing:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv

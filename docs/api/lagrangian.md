@@ -19,6 +19,8 @@ This is useful for:
 
 `dataset.mmg.move()` applies the displacement and remeshes for every mesh kind (TET, 2D, surface) with no external dependency. For interior propagation it ships two solvers: a pure-Python Laplacian smoother (default) and an optional fedoo-backed linear elasticity solver, selectable via `propagation_method`.
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -75,7 +77,7 @@ should call the `move`/`move_mesh` API directly.
 
 ## Accessor Method
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import numpy as np
@@ -95,7 +97,7 @@ moved = mesh.mmg.move(displacement)
 
 ### Basic Lagrangian Remeshing
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import numpy as np
@@ -120,7 +122,7 @@ print(f"Cells: {mesh.n_cells} -> {remeshed.n_cells}")
 
 Move only boundary vertices and let `move()` propagate the displacement into the interior. PyVista's `extract_surface` gives the boundary vertex set for any mesh kind:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import numpy as np
@@ -147,7 +149,7 @@ moved = mesh.mmg.move(
 
 For large deformations, use multiple sub-steps via the `n_steps` argument:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 moved = mesh.mmg.move(total_displacement, n_steps=10, hmax=0.1, verbose=-1)
@@ -157,7 +159,7 @@ moved = mesh.mmg.move(total_displacement, n_steps=10, hmax=0.1, verbose=-1)
 
 Combine with remeshing parameters:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 remeshed = mesh.mmg.move(
@@ -173,7 +175,7 @@ remeshed = mesh.mmg.move(
 
 Deform a sphere into an ellipsoid:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import numpy as np

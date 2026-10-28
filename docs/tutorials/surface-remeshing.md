@@ -6,6 +6,8 @@ This tutorial covers remeshing 3D surface meshes with mmgpy.
 
 Surface meshes can be loaded from various formats via PyVista:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -23,6 +25,8 @@ mesh = pv.read("surface.mesh")
 ## Basic Surface Remeshing
 
 Remesh a surface with target edge lengths:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -43,6 +47,8 @@ print(f"Triangles: {mesh.n_cells} -> {remeshed.n_cells}")
 
 The `hausd` parameter is crucial for surface meshes - it controls how closely the remeshed surface approximates the original:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 # Tight approximation (more triangles, better geometry)
 tight = mesh.mmg.remesh(hmax=0.1, hausd=0.0001)
@@ -58,6 +64,8 @@ Setting `hausd` too large can cause loss of geometric features. Start with small
 
 MMG can detect and preserve sharp edges based on the angle between adjacent faces:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -70,6 +78,8 @@ remeshed = mesh.mmg.remesh(
 
 To prevent vertex movement during remeshing (vertices stay in place, but edges may still be swapped or split):
 
+<!-- codeblock-name: test_page -->
+
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -80,6 +90,8 @@ remeshed = mesh.mmg.remesh(
 ## Smooth Surface Remeshing
 
 For smooth surfaces without sharp features:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 from mmgpy import MmgSOptions
@@ -98,6 +110,8 @@ remeshed = mesh.mmg.remesh(opts)
 
 For industrial/CAD parts with sharp edges:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 from mmgpy import MmgSOptions
 
@@ -115,6 +129,8 @@ remeshed = mesh.mmg.remesh(opts)
 
 The accessor works on any PyVista geometry without an intermediate wrapper:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -127,6 +143,8 @@ remeshed.plot(show_edges=True)
 ## Visualization
 
 Visualize before and after:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -150,6 +168,8 @@ pl.show()
 ```
 
 ## Complete Example
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv

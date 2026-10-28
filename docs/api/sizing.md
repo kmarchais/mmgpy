@@ -44,6 +44,8 @@ show_root_heading: true
 
 Pass sizing specifications to `mesh.mmg.remesh(...)` via the `local_sizing` keyword. Each entry is a dict with a `"shape"` key (`"sphere"`, `"box"`, `"cylinder"`, or `"from_point"`) plus the matching parameters:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -100,6 +102,8 @@ show_root_heading: true
 
 ### Basic Usage
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -115,6 +119,8 @@ remeshed = mesh.mmg.remesh(
 ```
 
 ### Multiple Regions
+
+<!-- codeblock-name: test_page -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -137,6 +143,8 @@ remeshed = mesh.mmg.remesh(
 ```
 
 ### Using the Dataclasses Directly
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import numpy as np
@@ -168,6 +176,8 @@ remeshed = mesh.mmg.remesh()
 
 ### Workflow with Validation
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -198,6 +208,8 @@ assert remeshed.mmg.validate(), "remeshed mesh failed validation"
 5. **Remeshing**, MMG uses the metric field to guide remeshing.
 
 Constraints become the `point_data["metric"]` array on the remeshed dataset (an isotropic scalar). Build it manually if you want full control:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import numpy as np

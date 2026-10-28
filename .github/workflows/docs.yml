@@ -38,40 +38,19 @@ jobs:
         run: uv sync --group docs
 
       - name: Build documentation
-        run: uv run mkdocs build
+        run: uv run --group docs zensical build --strict
 
       - name: Configure Git for mike
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # One-time migration: wipe legacy gh-pages from mkdocs gh-deploy
-      # so mike starts with a clean branch (safe no-op once versions.json exists)
-      - name: Clean up legacy gh-pages
-        if: github.event_name == 'push'
-        run: |
-          git fetch origin gh-pages:refs/remotes/origin/gh-pages 2>/dev/null || true
-          if git show origin/gh-pages:versions.json &>/dev/null 2>&1; then
-            echo "mike already initialized, skipping cleanup"
-          else
-            echo "First mike deploy — wiping legacy gh-pages for clean start"
-            git push origin --delete gh-pages 2>/dev/null || true
-          fi
-
       # Deploy PR preview (not shown in version selector)
       - name: Deploy PR preview
         if: >-
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
-        run: uv run mike deploy "pr-${{ github.event.pull_request.number }}" --push
-
-      # Tokens for pull requests from forks are read-only. Build the docs without
-      # publishing a preview so external contributions are still validated.
-      - name: Build fork PR documentation
-        if: >-
-          github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name != github.repository
-        run: uv run mkdocs build
+        run: uv run --group docs mike deploy "pr-${{ github.event.pull_request.number }}" --push
 
       - name: Comment PR preview link
         if: >-
@@ -130,7 +109,7 @@ jobs:
               state = result.stdout.strip()
               if state in ('CLOSED', 'MERGED'):
                   print(f'Deleting preview for {name} (PR is {state})')
-                  subprocess.run(['uv', 'run', 'mike', 'delete', name, '--push'])
+                  subprocess.run(['uv', 'run', '--group', 'docs', 'mike', 'delete', name, '--push'])
               else:
                   print(f'Keeping {name} (PR is {state})')
           "
@@ -141,4 +120,4 @@ jobs:
       # wheel never shipped).
       - name: Deploy dev docs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: uv run mike deploy dev --push
+        run: uv run --group docs mike deploy dev --push

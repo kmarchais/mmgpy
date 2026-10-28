@@ -12,6 +12,8 @@ show_root_heading: true
 
 ### Usage
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -32,7 +34,7 @@ print(f"Mean quality: {q_before.mean():.3f} -> {q_after.mean():.3f}")
 
 If you need the structured `RemeshResult` (return code, MMG warnings, duration), reach for the underlying module-level entry points:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 from mmgpy import mmg3d
@@ -80,6 +82,8 @@ show_root_heading: true
 
 ### Quick Validation
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -94,6 +98,8 @@ else:
 ```
 
 ### Detailed Validation
+
+<!-- codeblock-name: test_page -->
 
 ```python
 report = mesh.mmg.validate(detailed=True)
@@ -110,6 +116,8 @@ for issue in report.issues:
 
 ### Strict Validation
 
+<!-- codeblock-name: test_page -->
+
 ```python
 from mmgpy import ValidationError
 
@@ -123,6 +131,8 @@ except ValidationError as e:
 ```
 
 ### Selective Validation
+
+<!-- codeblock-name: test_page -->
 
 ```python
 # Only check geometry
@@ -140,6 +150,8 @@ report = mesh.mmg.validate(
 ```
 
 ## Complete Example
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv

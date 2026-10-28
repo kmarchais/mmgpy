@@ -23,6 +23,8 @@ Python bindings for the [MMG](https://www.mmgtools.org) remeshing library.
 
 ## Quick Start
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers the Medit reader/writer + .mmg accessor
@@ -40,8 +42,6 @@ remeshed.save("output.vtk")
 ## Installation
 
 === "pip"
-
-    <!-- mmgpy-test:skip -->
 
     ```bash
     pip install mmgpy

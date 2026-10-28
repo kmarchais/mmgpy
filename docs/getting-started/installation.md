@@ -20,8 +20,6 @@ The fastest way to install mmgpy:
 
 === "pip"
 
-    <!-- mmgpy-test:skip -->
-
     ```bash
     pip install mmgpy
     ```
@@ -46,15 +44,11 @@ PyPI wheels bundle all native libraries (MMG, VTK), so no compiler or system pac
 
 If you use conda or mamba for scientific computing:
 
-<!-- mmgpy-test:skip -->
-
 ```bash
 conda install -c conda-forge mmgpy
 ```
 
 or with [pixi](https://pixi.sh/):
-
-<!-- mmgpy-test:skip -->
 
 ```bash
 pixi add mmgpy
@@ -73,8 +67,6 @@ Use **PyPI** for the fastest, most portable setup. Use **conda-forge** when you 
 
 Lagrangian motion is available on every install channel via `mmgpy.move_mesh`. The default Laplacian propagator has no extra dependencies; the elasticity propagator requires the optional [`fedoo`](https://github.com/3MAH/fedoo) extra:
 
-<!-- mmgpy-test:skip -->
-
 ```bash
 uv pip install "mmgpy[fem]"
 ```
@@ -82,8 +74,6 @@ uv pip install "mmgpy[fem]"
 ## Installing from Source
 
 To install the latest development version:
-
-<!-- mmgpy-test:skip -->
 
 ```bash
 pip install git+https://github.com/kmarchais/mmgpy.git
@@ -102,6 +92,8 @@ Building from source requires:
 
 After installation, verify that mmgpy is working correctly:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import mmgpy
 
@@ -110,6 +102,8 @@ print(f"MMG version: {mmgpy.MMG_VERSION}")
 ```
 
 Test basic functionality:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import numpy as np
@@ -152,6 +146,8 @@ If you encounter DLL loading errors on Windows:
 1. Ensure Visual C++ Redistributable is installed
 2. Try enabling debug mode to see DLL search paths:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import mmgpy
 
@@ -161,6 +157,8 @@ mmgpy.enable_debug()
 ### Debug Logging
 
 Enable detailed logging to diagnose issues:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import mmgpy

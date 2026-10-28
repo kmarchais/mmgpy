@@ -101,6 +101,8 @@ exposed as fields on the dataclasses:
 
 ### Basic Usage
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -120,6 +122,8 @@ remeshed = mesh.mmg.remesh(opts)
 
 ### Factory Methods
 
+<!-- codeblock-name: test_page -->
+
 ```python
 from mmgpy import Mmg3DOptions
 
@@ -135,7 +139,7 @@ opt_opts = Mmg3DOptions.optimize_only()
 
 ### Converting to Dictionary
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 opts = Mmg3DOptions(hmax=0.1, hausd=0.001)
@@ -150,6 +154,8 @@ remeshed = mesh.mmg.remesh(**opts.to_dict())
 
 ### Customizing Presets
 
+<!-- codeblock-name: test_page -->
+
 ```python
 # Start with fine preset values, then customize
 custom = Mmg3DOptions(hmax=0.05, hausd=0.01, hgrad=1.2, verbose=1)
@@ -159,7 +165,7 @@ custom = Mmg3DOptions(hmax=0.05, hausd=0.01, hgrad=1.2, verbose=1)
 
 Options objects and keyword arguments cannot be mixed:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 # Correct: use options object
@@ -176,6 +182,8 @@ remeshed = mesh.mmg.remesh(opts, verbose=1)  # TypeError!
 
 ### For Quality Optimization
 
+<!-- codeblock-name: test_page -->
+
 ```python
 opts = Mmg3DOptions(
     optim=1,  # Enable optimization mode
@@ -186,6 +194,8 @@ opts = Mmg3DOptions(
 
 ### For Surface Preservation
 
+<!-- codeblock-name: test_page -->
+
 ```python
 opts = Mmg3DOptions(
     hmax=0.1,
@@ -195,6 +205,8 @@ opts = Mmg3DOptions(
 ```
 
 ### For CFD Meshes
+
+<!-- codeblock-name: test_page -->
 
 ```python
 opts = Mmg3DOptions(
@@ -207,6 +219,8 @@ opts = Mmg3DOptions(
 ```
 
 ### For FEM Meshes
+
+<!-- codeblock-name: test_page -->
 
 ```python
 opts = Mmg3DOptions(
