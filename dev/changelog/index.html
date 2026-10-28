@@ -1036,34 +1036,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/mesh-classes.md" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Mesh Classes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/options/" class="md-nav__link">
         
   
@@ -2724,6 +2696,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 </ul>
 <h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>Python 3.10 support. Python 3.11 is now the minimum supported version.</li>
 <li><code>mmg2d</code>, <code>mmg3d</code>, <code>mmgs</code> CLI commands — use the unified <code>mmg</code> command instead</li>
 <li><code>mmgpy.Mesh</code> and <code>mmgpy.MeshCheckpoint</code> from the public API (deprecated in 0.12). Use the <code>.mmg</code> PyVista accessor on a <code>pv.UnstructuredGrid</code> / <code>pv.PolyData</code> instead.</li>
 <li><code>Mesh.checkpoint()</code> (deprecated in 0.12). Snapshot a dataset with <code>snap = dataset.copy()</code> and reassign on success.</li>

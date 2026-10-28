@@ -1038,34 +1038,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../mesh-classes.md" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Mesh Classes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -3408,25 +3380,25 @@ exposed as fields on the dataclasses:</p>
 <h2 id="recommended-values">Recommended Values<a class="headerlink" href="#recommended-values" title="Permanent link">&para;</a></h2>
 <h3 id="for-quality-optimization">For Quality Optimization<a class="headerlink" href="#for-quality-optimization" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">Mmg3DOptions</span><span class="p">(</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>       <span class="c1"># Enable optimization mode</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>    <span class="c1"># Don&#39;t add vertices</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>     <span class="c1"># Gentle gradation</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">optim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Enable optimization mode</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">noinsert</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Don&#39;t add vertices</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span>  <span class="c1"># Gentle gradation</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="for-surface-preservation">For Surface Preservation<a class="headerlink" href="#for-surface-preservation" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">Mmg3DOptions</span><span class="p">(</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span>  <span class="c1"># Tight approximation</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>      <span class="c1"># Preserve surface vertices</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">nosurf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Preserve surface vertices</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="for-cfd-meshes">For CFD Meshes<a class="headerlink" href="#for-cfd-meshes" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">opts</span> <span class="o">=</span> <span class="n">Mmg3DOptions</span><span class="p">(</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">hmin</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>     <span class="c1"># Smooth size transition</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">hgrad</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>  <span class="c1"># Smooth size transition</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">hausd</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">ar</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>       <span class="c1"># Detect more ridges</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">ar</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>  <span class="c1"># Detect more ridges</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="for-fem-meshes">For FEM Meshes<a class="headerlink" href="#for-fem-meshes" title="Permanent link">&para;</a></h3>
