@@ -29,4 +29,11 @@ jobs:
           MPLBACKEND: Agg
           PYVISTA_OFF_SCREEN: "true"
           SUITE: ${{ matrix.suite }}
-        run: uv run --locked pytest "tests/${SUITE}_test.py" -v
+        run: uv run --locked pytest "tests/${SUITE}_test.py" --failed_image_dir=image-regressions -v
+      - name: Upload image regression diagnostics
+        if: failure() && matrix.suite == 'examples'
+        uses: actions/upload-artifact@v7
+        with:
+          name: example-image-regressions
+          path: image-regressions/
+          if-no-files-found: ignore
