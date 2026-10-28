@@ -145,6 +145,15 @@ outline = pv.PolyData(verts_3d, lines=lines)
 mesh = outline.mmg.remesh(hmax=0.1)
 ```
 
+## Low-level conversion
+
+Most users can remesh PyVista datasets directly through the `.mmg` accessor.
+These functions provide access to the underlying MMG binding objects.
+
+::: mmgpy.from_pyvista
+
+::: mmgpy.to_pyvista
+
 ## Tips
 
 1. **MMG native format**: Use `.mesh` for fastest I/O with MMG (mmgpy's reader plugin handles ridges and reference markers natively).
