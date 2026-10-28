@@ -15,11 +15,11 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Run ID of a completed 'Build Wheels' workflow to consume artifacts from"
+        description: "Successful release-tag 'Build Wheels' run whose artifacts will be packaged"
         required: true
         type: string
       upload_to_release:
-        description: "Upload built zips to the latest release"
+        description: "Upload built zips to the release matching the wheel run"
         required: false
         default: false
         type: boolean
@@ -29,8 +29,11 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+
 jobs:
-  build-extension:
+  validate-source:
     # Run when triggered by a successful Build Wheels run for a release:
     # either the historical ``release`` event path, or the current path
     # where the release workflow dispatches Build Wheels against the new
@@ -42,6 +45,34 @@ jobs:
        (github.event.workflow_run.event == 'release' ||
         (github.event.workflow_run.event == 'workflow_dispatch' &&
          startsWith(github.event.workflow_run.head_branch, 'v'))))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run_id: ${{ steps.source.outputs.run_id }}
+      sha: ${{ steps.source.outputs.sha }}
+      tag: ${{ steps.source.outputs.tag }}
+    steps:
+      # Validation code comes from the workflow's immutable commit, never
+      # from the run or artifact being validated.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Validate the release wheel run
+        id: source
+        uses: actions/github-script@v9
+        env:
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+        with:
+          script: |
+            const { validateSource } = require('./.github/scripts/validate_blender_source.cjs');
+            const source = await validateSource(github, context.repo, process.env.SOURCE_RUN_ID);
+            for (const [name, value] of Object.entries(source)) core.setOutput(name, value);
+
+  build-extension:
+    needs: validate-source
     strategy:
       fail-fast: false
       matrix:
@@ -109,30 +140,51 @@ jobs:
       contents: read
 
     steps:
-      # For ``workflow_run`` events, ``github.ref`` is the default branch
-      # (typically main), not the ref the upstream workflow ran on. Without
-      # an explicit ``ref``, we would read main's ``pyproject.toml`` (which
-      # is already bumped to the next dev version after a release lands)
-      # and embed the wrong version in the extension zip name and manifest.
-      # Pin to the upstream run's head_branch (e.g. ``v0.14.0``) so the
-      # version matches the wheels we are bundling.
+      # Run only packaging code from this workflow's immutable commit.
+      # Release source is fetched below as passive package data.
       - uses: actions/checkout@v7
         with:
-          ref: >-
-            ${{ github.event_name == 'workflow_run'
-                && github.event.workflow_run.head_branch
-                || github.ref }}
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+
+      - name: Fetch release package files as data
+        uses: actions/github-script@v9
+        env:
+          SOURCE_SHA: ${{ needs.validate-source.outputs.sha }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const required = new Set([
+              'pyproject.toml',
+              'blender_mmgpy/blender_manifest.toml',
+              'blender_mmgpy/__init__.py',
+            ]);
+            const paths = [...required, ...[
+              '_register.py', 'operators.py', 'panels.py', 'preferences.py',
+              'properties.py', 'utils.py', 'README.md',
+            ].map(name => `blender_mmgpy/${name}`)];
+            for (const path of paths) {
+              fs.rmSync(path, { force: true });
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  ...context.repo, path, ref: process.env.SOURCE_SHA,
+                });
+                if (data.type !== 'file' || data.encoding !== 'base64') {
+                  throw new Error(`Expected a release file: ${path}`);
+                }
+                fs.writeFileSync(path, Buffer.from(data.content, 'base64'));
+              } catch (error) {
+                if (error.status !== 404 || required.has(path)) throw error;
+              }
+            }
 
       - name: Set up Python ${{ matrix.py }}
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.py }}
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-
       - name: Sync version + dependency pin from pyproject.toml
-        run: uv run --no-project python .github/scripts/sync_versions.py
+        run: python -I .github/scripts/sync_versions.py
 
       - name: Download wheels artifact from build-wheels run
         uses: actions/download-artifact@v8
@@ -140,10 +192,7 @@ jobs:
           name: ${{ matrix.wheels_artifact }}
           path: blender_mmgpy/wheels/
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: >-
-            ${{ github.event_name == 'workflow_run'
-                && github.event.workflow_run.id
-                || inputs.run_id }}
+          run-id: ${{ needs.validate-source.outputs.run_id }}
 
       - name: Keep only the matching mmgpy wheel
         working-directory: blender_mmgpy/wheels
@@ -195,7 +244,7 @@ jobs:
           # ``_mmgpy.so`` and every Python module in the wheel are left
           # untouched -- this is a METADATA-only strip.
           for wheel in mmgpy-*.whl; do
-            python ../../.github/scripts/strip_blender_wheel_metadata.py "$wheel"
+            python -I ../../.github/scripts/strip_blender_wheel_metadata.py "$wheel"
           done
 
       - name: Verify the stripped METADATA matches the slim contract
@@ -228,7 +277,7 @@ jobs:
         working-directory: blender_mmgpy
         shell: bash
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           from pathlib import Path
 
           manifest = Path("blender_manifest.toml")
@@ -262,7 +311,7 @@ jobs:
         working-directory: blender_mmgpy
         shell: bash
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           import os
           import re
           import zipfile
@@ -312,14 +361,17 @@ jobs:
       - name: Validate zip structure
         working-directory: blender_mmgpy
         shell: bash
+        env:
+          ZIP_PATH: ${{ steps.zip.outputs.path }}
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
+          import os
           import sys
           import tomllib
           import zipfile
           from pathlib import Path
 
-          zip_path = Path("${{ steps.zip.outputs.path }}")
+          zip_path = Path(os.environ["ZIP_PATH"])
           with zipfile.ZipFile(zip_path) as zf:
               names = set(zf.namelist())
 
@@ -367,14 +419,16 @@ jobs:
 
       - name: Summary row
         shell: bash
+        env:
+          ZIP_PATH: ${{ steps.zip.outputs.path }}
         run: |
-          size=$(du -h "blender_mmgpy/${{ steps.zip.outputs.path }}" | cut -f1)
+          size=$(du -h "blender_mmgpy/$ZIP_PATH" | cut -f1)
           {
             echo "## ${{ matrix.platform }} / py${{ matrix.py }} (Blender ${{ matrix.blender_min }}+)"
             echo ""
             echo "| Package | Size |"
             echo "|---------|------|"
-            echo "| ${{ steps.zip.outputs.path }} | $size |"
+            echo "| $ZIP_PATH | $size |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # For each OS, combine the two per-(OS, Python) artifacts produced by
@@ -385,7 +439,7 @@ jobs:
   # accepts one zip per OS for a given extension version and serves the
   # right one based on the user's platform.
   build-per-os-extension:
-    needs: build-extension
+    needs: [validate-source, build-extension]
     strategy:
       fail-fast: false
       matrix:
@@ -394,13 +448,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: >-
-            ${{ github.event_name == 'workflow_run'
-                && github.event.workflow_run.head_branch
-                || github.ref }}
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -417,7 +464,7 @@ jobs:
         env:
           OS_TAG: ${{ matrix.os }}
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           import os
           import re
           import shutil
@@ -514,8 +561,9 @@ jobs:
       - name: Validate per-OS zip
         env:
           OS_TAG: ${{ matrix.os }}
+          ZIP_PATH: ${{ steps.per_os.outputs.path }}
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           import os
           import sys
           import tomllib
@@ -523,7 +571,7 @@ jobs:
           from pathlib import Path
 
           os_tag = os.environ["OS_TAG"]
-          zip_path = Path("${{ steps.per_os.outputs.path }}")
+          zip_path = Path(os.environ["ZIP_PATH"])
           with zipfile.ZipFile(zip_path) as zf:
               names = set(zf.namelist())
               with zf.open("blender_manifest.toml") as f:
@@ -564,30 +612,30 @@ jobs:
           retention-days: 30
 
       - name: Summary
+        env:
+          ZIP_PATH: ${{ steps.per_os.outputs.path }}
         run: |
-          size=$(du -h "${{ steps.per_os.outputs.path }}" | cut -f1)
+          size=$(du -h "$ZIP_PATH" | cut -f1)
           {
             echo "## Per-OS zip: ${{ matrix.os }}"
             echo ""
             echo "| Package | Size |"
             echo "|---------|------|"
-            echo "| ${{ steps.per_os.outputs.path }} | $size |"
+            echo "| $ZIP_PATH | $size |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   upload-to-release:
-    needs: build-per-os-extension
+    needs: [validate-source, build-per-os-extension]
     runs-on: ubuntu-latest
     # Mirror the build gate: any tag-driven Build Wheels completion, plus
     # explicit dispatch with ``upload_to_release=true``.
     if: >-
-      (github.event_name == 'workflow_run' &&
-       (github.event.workflow_run.event == 'release' ||
-        (github.event.workflow_run.event == 'workflow_dispatch' &&
-         startsWith(github.event.workflow_run.head_branch, 'v')))) ||
-      (github.event_name == 'workflow_dispatch'
-       && inputs.upload_to_release)
+      github.event_name == 'workflow_run' || inputs.upload_to_release
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ needs.validate-source.outputs.tag }}
+      GH_REPO: ${{ github.repository }}
 
     steps:
       - name: Download per-OS extension artifacts
@@ -595,29 +643,14 @@ jobs:
         with:
           pattern: blender-extension-release-*
           merge-multiple: true
-          path: extensions/
-
-      - name: Resolve the release tag
-        id: tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            TAG="${{ github.event.workflow_run.head_branch }}"
-          else
-            TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' \
-                  --repo "${{ github.repository }}")
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Uploading to release: $TAG"
+          path: ${{ runner.temp }}/extensions
 
       - name: Upload zips to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for zip in extensions/*.zip; do
-            gh release upload "${{ steps.tag.outputs.tag }}" "$zip" \
-              --clobber --repo "${{ github.repository }}"
+          for zip in "$RUNNER_TEMP/extensions"/*.zip; do
+            gh release upload "$RELEASE_TAG" "$zip" --clobber --repo "$GH_REPO"
           done
 
       - name: Summary
@@ -625,9 +658,9 @@ jobs:
           {
             echo "## Blender Extension Release"
             echo ""
-            echo "Uploaded to \`${{ steps.tag.outputs.tag }}\`:"
+            echo "Uploaded to \`$RELEASE_TAG\`:"
             echo ""
-            for zip in extensions/*.zip; do
+            for zip in "$RUNNER_TEMP/extensions"/*.zip; do
               echo "- $(basename "$zip")"
             done
           } >> "$GITHUB_STEP_SUMMARY"
@@ -649,68 +682,62 @@ jobs:
   #      cannot create the listing, only upload new versions of an
   #      existing one.
   publish-to-extensions-blender-org:
-    needs: upload-to-release
+    needs: [validate-source, upload-to-release]
     runs-on: ubuntu-latest
     # Mirror ``upload-to-release`` exactly: real release path or
     # explicit dispatch with the publish flag flipped on.
     if: >-
-      (github.event_name == 'workflow_run' &&
-       (github.event.workflow_run.event == 'release' ||
-        (github.event.workflow_run.event == 'workflow_dispatch' &&
-         startsWith(github.event.workflow_run.head_branch, 'v')))) ||
-      (github.event_name == 'workflow_dispatch'
-       && inputs.publish_to_extensions_org)
+      github.event_name == 'workflow_run' || inputs.publish_to_extensions_org
     environment: blender-extensions
     permissions:
       contents: read
+    env:
+      RELEASE_TAG: ${{ needs.validate-source.outputs.tag }}
+      GH_REPO: ${{ github.repository }}
     steps:
-      # Need the manifest at the release ref so the extension id matches
-      # the version we are publishing (see the ``upload-to-release`` ref
-      # logic for why we cannot use the default checkout on workflow_run).
-      - uses: actions/checkout@v7
-        with:
-          ref: >-
-            ${{ github.event_name == 'workflow_run'
-                && github.event.workflow_run.head_branch
-                || github.ref }}
-
-      - name: Read extension id from manifest
-        id: ext
-        run: |
-          ext_id=$(python3 -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('blender_mmgpy/blender_manifest.toml').read_text())['id'])")
-          echo "id=$ext_id" >> "$GITHUB_OUTPUT"
-          echo "Extension id: $ext_id"
-
       - name: Download per-OS extension artifacts
         uses: actions/download-artifact@v8
         with:
           pattern: blender-extension-release-*
           merge-multiple: true
-          path: extensions/
+          path: ${{ runner.temp }}/extensions
 
-      - name: Resolve the release tag
-        id: tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Read data from the built packages without checking out or importing
+      # release source in the job that receives the marketplace credential.
+      - name: Read extension id from built packages
+        id: ext
         run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            TAG="${{ github.event.workflow_run.head_branch }}"
-          else
-            TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' \
-                  --repo "${{ github.repository }}")
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          python3 -I - <<'PY'
+          import os
+          import re
+          import tomllib
+          import zipfile
+          from pathlib import Path
+
+          identifiers = set()
+          for package in (Path(os.environ["RUNNER_TEMP"]) / "extensions").glob("*.zip"):
+              with zipfile.ZipFile(package) as archive:
+                  manifest = tomllib.loads(archive.read("blender_manifest.toml").decode())
+              identifier = manifest["id"]
+              if not isinstance(identifier, str) or not re.fullmatch(r"[a-z][a-z0-9_]*", identifier):
+                  raise ValueError("Invalid extension identifier")
+              identifiers.add(identifier)
+          if len(identifiers) != 1:
+              raise ValueError("Extension packages must share one identifier")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"id={identifiers.pop()}\n")
+          PY
 
       - name: Fetch release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view "${{ steps.tag.outputs.tag }}" \
-              --repo "${{ github.repository }}" --json body -q .body \
+          gh release view "$RELEASE_TAG" \
+              --repo "$GH_REPO" --json body -q .body \
               > release_notes.md
           # extensions.blender.org rejects empty release notes
           if [ ! -s release_notes.md ]; then
-            echo "Release ${{ steps.tag.outputs.tag }}" > release_notes.md
+            echo "Release $RELEASE_TAG" > release_notes.md
           fi
 
       - name: Submit zips to extensions.blender.org
@@ -723,7 +750,7 @@ jobs:
             exit 1
           fi
           shopt -s nullglob
-          zips=( extensions/*.zip )
+          zips=( "$RUNNER_TEMP/extensions"/*.zip )
           if (( ${#zips[@]} == 0 )); then
             echo "::error::No extension zips found in extensions/"
             exit 1
@@ -749,15 +776,17 @@ jobs:
 
       - name: Summary
         if: always()
+        env:
+          EXTENSION_ID: ${{ steps.ext.outputs.id }}
         run: |
           {
             echo "## extensions.blender.org submission"
             echo ""
-            echo "Submitted \`${{ steps.tag.outputs.tag }}\` of \`${{ steps.ext.outputs.id }}\` for moderator review."
+            echo "Submitted \`$RELEASE_TAG\` of \`$EXTENSION_ID\` for moderator review."
             echo ""
             echo "Each per-OS zip becomes a pending build under the version; the marketplace listing goes live after Blender's moderators approve it."
             echo ""
-            for zip in extensions/*.zip; do
+            for zip in "$RUNNER_TEMP/extensions"/*.zip; do
               echo "- $(basename "$zip")"
             done
           } >> "$GITHUB_STEP_SUMMARY"

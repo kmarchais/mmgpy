@@ -4,15 +4,22 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   prek:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - name: Validate lockfile
         run: uv lock --check
       - name: Test CI selection and required-check behavior
-        run: python -m unittest discover -s .github/scripts -p 'test_ci_policy.py' -v
+        run: |
+          python -m unittest discover -s .github/scripts -p 'test_ci_policy.py' -v
+          node --test .github/scripts/test_validate_blender_source.cjs
       - name: Run locked development tools
         run: uv run --no-project python .github/scripts/check_dev_tools.py
