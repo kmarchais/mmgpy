@@ -124,7 +124,7 @@ class MmgpyApp(ViewerMixin, RemeshingMixin):
                 self._update_viewer(reset_camera=False)
 
         @self.state.change("mesh_kind")
-        def on_mesh_kind_change(mesh_kind, **_):  # noqa: ARG001
+        def on_mesh_kind_change(mesh_kind, **_):  # ruff: ignore[unused-function-argument]
             self.state.remesh_mode_items = [
                 {"title": "Standard Remesh", "value": "standard"},
                 {"title": "Levelset Discretization", "value": "levelset"},

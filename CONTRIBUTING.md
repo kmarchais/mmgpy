@@ -159,14 +159,17 @@ import numpy as np
 import pytest
 from mmgpy import MmgMesh3D
 
+
 class TestNewFeature:
     """Tests for new feature."""
 
     @pytest.fixture
     def sample_mesh(self) -> MmgMesh3D:
         """Create a simple test mesh."""
-        vertices = np.array([[0,0,0], [1,0,0], [0,1,0], [0,0,1]], dtype=np.float64)
-        elements = np.array([[0,1,2,3]], dtype=np.int32)
+        vertices = np.array(
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64
+        )
+        elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
         return MmgMesh3D(vertices, elements)
 
     def test_feature_basic(self, sample_mesh: MmgMesh3D) -> None:

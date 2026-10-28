@@ -48,7 +48,7 @@ def _check_fedoo_available() -> None:
 
     """
     try:
-        import fedoo  # noqa: F401, PLC0415
+        import fedoo  # ruff: ignore[unused-import, import-outside-top-level]
     except ImportError:
         msg = (
             "fedoo is required for elasticity-based displacement propagation. "
@@ -136,7 +136,7 @@ def propagate_displacement_elasticity(
 
     """
     _check_fedoo_available()
-    import fedoo as fd  # noqa: PLC0415
+    import fedoo as fd  # ruff: ignore[import-outside-top-level]
 
     n_vertices = len(vertices)
     n_dims = vertices.shape[1]
@@ -453,7 +453,7 @@ def move_mesh(
         ``propagation_method`` is not recognized.
 
     """
-    from ._mesh import Mesh  # noqa: PLC0415
+    from ._mesh import Mesh  # ruff: ignore[import-outside-top-level]
 
     valid_methods = ("laplacian", "elasticity")
     if propagation_method not in valid_methods:
@@ -467,7 +467,7 @@ def move_mesh(
     # in-place, which the Mesh wrapper references, so changes are visible
     # to the caller.
     if isinstance(mesh, Mesh):
-        mesh = mesh._impl_unwrap  # noqa: SLF001
+        mesh = mesh._impl_unwrap  # ruff: ignore[private-member-access]
 
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)
@@ -542,10 +542,10 @@ def detect_boundary_vertices(
         vertices.
 
     """
-    from ._mesh import Mesh  # noqa: PLC0415
+    from ._mesh import Mesh  # ruff: ignore[import-outside-top-level]
 
     if isinstance(mesh, Mesh):
-        mesh = mesh._impl_unwrap  # noqa: SLF001
+        mesh = mesh._impl_unwrap  # ruff: ignore[private-member-access]
 
     n_vertices = len(mesh.get_vertices())
     boundary_mask = np.zeros(n_vertices, dtype=bool)

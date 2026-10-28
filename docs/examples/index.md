@@ -10,6 +10,7 @@ Improve mesh quality without changing topology.
 
 ```python
 """Mesh quality improvement with mean edge length preservation."""
+
 import pyvista as pv
 import mmgpy  # noqa: F401
 
@@ -33,6 +34,7 @@ Remesh volumetric mesh with open boundaries.
 
 ```python
 """Remeshing with open boundary handling."""
+
 import pyvista as pv
 import mmgpy  # noqa: F401
 
@@ -56,6 +58,7 @@ Remesh while applying mesh displacement.
 
 ```python
 """Lagrangian mesh motion remeshing."""
+
 import numpy as np
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -79,6 +82,7 @@ Extract isosurface from implicit function.
 
 ```python
 """Level-set based surface extraction."""
+
 import numpy as np
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -86,9 +90,7 @@ import mmgpy  # noqa: F401
 mesh = pv.read("background.mesh")
 vertices = np.asarray(mesh.points)
 
-levelset = (
-    np.linalg.norm(vertices - [0.5, 0.5, 0.5], axis=1) - 0.3
-).reshape(-1, 1)
+levelset = (np.linalg.norm(vertices - [0.5, 0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
 
 discretized = mesh.mmg.remesh_levelset(levelset)
 ```
@@ -105,6 +107,7 @@ Apply regional mesh refinement via the `local_sizing` argument.
 
 ```python
 """Per-region mesh density control."""
+
 import pyvista as pv
 import mmgpy  # noqa: F401
 
@@ -133,6 +136,7 @@ Adapt mesh to a solution field via a custom metric on `point_data`.
 
 ```python
 """Mesh adaptation to solution gradients."""
+
 import numpy as np
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -170,7 +174,7 @@ walkthrough.
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
 hessian = compute_hessian(vertices, triangles, field)
-metric  = create_metric_from_hessian(hessian, target_error=5e-3, hmin=3e-3, hmax=8e-2)
+metric = create_metric_from_hessian(hessian, target_error=5e-3, hmin=3e-3, hmax=8e-2)
 
 mesh.point_data["metric"] = metric
 adapted = mesh.mmg.remesh(hgrad=2.0)
@@ -198,8 +202,12 @@ demo on an L-bracket cantilever.
 from mmgpy.lagrangian import propagate_displacement_elasticity
 
 field = propagate_displacement_elasticity(
-    vertices, elements, boundary_mask, boundary_displacement,
-    E=1e6, nu=0.3,
+    vertices,
+    elements,
+    boundary_mask,
+    boundary_displacement,
+    E=1e6,
+    nu=0.3,
 )
 ```
 
@@ -215,6 +223,7 @@ Directional mesh refinement.
 
 ```python
 """Anisotropic mesh adaptation."""
+
 import numpy as np
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -240,6 +249,7 @@ Generate mesh from implicit function.
 
 ```python
 """Generate 2D mesh from implicit domain definition."""
+
 import numpy as np
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -265,6 +275,7 @@ Industrial part surface remeshing.
 
 ```python
 """Mechanical part surface optimization."""
+
 import pyvista as pv
 import mmgpy  # noqa: F401
 
@@ -273,7 +284,7 @@ mesh = pv.read("part.stl")
 remeshed = mesh.mmg.remesh(
     hmax=0.05,
     hausd=0.001,
-    ar=30,     # Preserve sharp edges
+    ar=30,  # Preserve sharp edges
 )
 ```
 
@@ -289,6 +300,7 @@ Surface smoothing and refinement.
 
 ```python
 """Smooth surface mesh optimization."""
+
 import pyvista as pv
 from mmgpy import MmgSOptions
 
@@ -315,6 +327,7 @@ Generate a surface from an implicit function.
 
 ```python
 """Generate surface mesh from implicit function."""
+
 import numpy as np
 import pyvista as pv
 import mmgpy  # noqa: F401

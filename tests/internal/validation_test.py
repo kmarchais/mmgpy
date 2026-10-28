@@ -479,8 +479,8 @@ class TestValidationError:
             # which is fine - just verify the basic functionality
         except ValidationError as exc:
             # Verify the exception has the report attached
-            assert exc.report is not None  # noqa: PT017
-            assert isinstance(exc.report, ValidationReport)  # noqa: PT017
+            assert exc.report is not None  # ruff: ignore[pytest-assert-in-except]
+            assert isinstance(exc.report, ValidationReport)  # ruff: ignore[pytest-assert-in-except]
 
 
 # =============================================================================

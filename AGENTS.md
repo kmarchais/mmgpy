@@ -8,7 +8,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, Cursor, etc
 
 - **Build system:** CMake + scikit-build-core
 - **Package manager:** uv (with pip fallback)
-- **Python support:** 3.9 - 3.13
+- **Python support:** 3.11 - 3.14
 
 ## Common Commands
 

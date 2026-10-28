@@ -1,9 +1,8 @@
 """Run the lockfile's development tools without compiling the native package."""
 
 import subprocess
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 
 def main() -> None:
@@ -14,8 +13,8 @@ def main() -> None:
         ("prek", ["run", "--all-files"]),
         ("ty", ["check", "src/mmgpy/"]),
     ):
-        subprocess.run(  # noqa: S603 - fixed tool commands, no shell
-            ["uv", "tool", "run", "--from", f"{tool}=={versions[tool]}", tool, *args],  # noqa: S607
+        subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true] - fixed tool commands, no shell
+            ["uv", "tool", "run", "--from", f"{tool}=={versions[tool]}", tool, *args],  # ruff: ignore[start-process-with-partial-path]
             check=True,
         )
 

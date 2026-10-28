@@ -307,8 +307,20 @@ constrained = mesh.mmg.remesh(
     local_sizing=[
         {"shape": "sphere", "center": (0, 0, 0), "radius": 0.4, "size": 0.05},
         {"shape": "box", "bounds": [[0, 0, 0], [1, 1, 1]], "size": 0.1},
-        {"shape": "cylinder", "point1": (0, 0, 0), "point2": (1, 0, 0), "radius": 0.2, "size": 0.05},
-        {"shape": "from_point", "point": (0.5, 0.5, 0.5), "near_size": 0.02, "far_size": 0.1, "influence_radius": 0.5},
+        {
+            "shape": "cylinder",
+            "point1": (0, 0, 0),
+            "point2": (1, 0, 0),
+            "radius": 0.2,
+            "size": 0.05,
+        },
+        {
+            "shape": "from_point",
+            "point": (0.5, 0.5, 0.5),
+            "near_size": 0.02,
+            "far_size": 0.1,
+            "influence_radius": 0.5,
+        },
     ],
 )
 ```
@@ -346,9 +358,9 @@ PyVista exposes 0-based VTK adjacency via `dataset.cell_neighbors(idx)` and `dat
 <!-- mmgpy-test:skip -->
 
 ```python
-mesh.mmg.adjacent_elements(1)   # MMG-adjacent elements of element 1
-mesh.mmg.vertex_neighbors(1)    # MMG-adjacent vertices of vertex 1
-mesh.mmg.center_of_mass()       # volume-weighted (3D) or area-weighted (2D)
+mesh.mmg.adjacent_elements(1)  # MMG-adjacent elements of element 1
+mesh.mmg.vertex_neighbors(1)  # MMG-adjacent vertices of vertex 1
+mesh.mmg.center_of_mass()  # volume-weighted (3D) or area-weighted (2D)
 ```
 
 ### Mesh kind

@@ -3,9 +3,8 @@
 import json
 import os
 import subprocess
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 CHECKS = ("tests", "examples", "docs", "wheels", "conda", "benchmarks")
 TOOLS = {"ty", "prek"}
@@ -58,7 +57,7 @@ def select(paths: list[str], *, tools_only: bool = False, full: bool = False) ->
 
 def git(*args: str) -> bytes:
     """Read the repository without relying on filenames in shell commands."""
-    return subprocess.check_output(["git", *args])  # noqa: S603, S607 - fixed executable, no shell
+    return subprocess.check_output(["git", *args])  # ruff: ignore[subprocess-without-shell-equals-true, start-process-with-partial-path] - fixed executable, no shell
 
 
 def main() -> None:

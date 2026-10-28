@@ -14,13 +14,12 @@ name = "mmgpy"
 version = "0.18.0.dev0"
 description = "Python bindings for the MMG software"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "numpy>=2.1.0,<3",
     "patchelf>=0.17.2.4,<1; sys_platform == 'linux'",
     "rich>=13.0.0,<16",
     "scipy>=1.13.0,<2",
-    "typing-extensions>=4.12.0,<5; python_version < '3.11'",
 ]
 authors = [{ name = "Kevin Marchais", email = "kevinmarchais@gmail.com" }]
 license = { text = "MIT" }
@@ -29,7 +28,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -167,11 +165,11 @@ failed = true
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "D203",   # incompatible with D211 (no-blank-line-before-class)
-    "D213",   # incompatible with D212 (multi-line-summary-first-line)
-    "COM812", # conflicts with formatter
+    "incorrect-blank-line-before-class",   # incompatible with D211 (no-blank-line-before-class)
+    "multi-line-summary-second-line",   # incompatible with D212 (multi-line-summary-first-line)
+    "missing-trailing-comma", # conflicts with formatter
     # Project-wide opt-out (header boilerplate not wanted).
-    "CPY001", # missing-copyright-notice
+    "missing-copyright-notice", # missing-copyright-notice
 ]
 
 # Preview-rule enforcement is currently scoped to ``src/mmgpy/`` (the public
@@ -185,156 +183,163 @@ ignore = [
 # non-src tree.
 [tool.ruff.lint.extend-per-file-ignores]
 "docs/**/*.py" = [
-    "INP001",  # docs/ is not a package, conftest.py doesn't need __init__.py
-    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
-    "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB118", "FURB142", "FURB152",         # preview refactors
-    "RUF027",                                # preview missing-f-string
+    "implicit-namespace-package",  # docs/ is not a package, conftest.py doesn't need __init__.py
+    "docstring-missing-returns", "docstring-missing-yields", "docstring-missing-exception", "docstring-extraneous-exception",  # preview docstring rules
+    "import-private-name", "suspicious-subprocess-import", "unspecified-encoding",            # preview imports / IO
+    "reimplemented-operator", "for-loop-set-mutations", "math-constant",         # preview refactors
+    "missing-f-string-syntax",                                # preview missing-f-string
 ]
 "src/mmgpy/_remesh.py" = [
-    "N801",    # class names match C++ API (mmg2d, mmg3d, mmgs)
+    "invalid-class-name",    # class names match C++ API (mmg2d, mmg3d, mmgs)
 ]
 "src/mmgpy/_mesh.py" = [
-    "PLR0904", # Mesh exposes the full public API (auto-detected 2D/3D/surface)
+    "too-many-public-methods", # Mesh exposes the full public API (auto-detected 2D/3D/surface)
 ]
 "src/mmgpy/_pv_plugin.py" = [
-    "PLR0904", # PyVista accessor exposes the full public API surface
+    "too-many-public-methods", # PyVista accessor exposes the full public API surface
 ]
 "tests/**/*.py" = [
-    "S101",    # asserts allowed in tests
-    "T201",    # print statements allowed in tests for debugging
-    "SLF001",  # accessing private members allowed in tests
-    "BLE001",  # broad exception catching allowed in tests
-    "PLC0415", # imports inside functions are intentional for fixtures
-    "N806",    # uppercase variable names for matrices (M, D, H) standard in math
-    "PLR2004", # magic values allowed in tests
-    "PLR0904", # test classes group many test methods
-    "PLR0913", # many arguments allowed in test helper functions
-    "PLR0914", # many locals allowed in test setup
-    "PLR6301", # test methods don't need to use self
-    "PLC1901", # tests assert empty-string sentinels literally
-    "S603",    # subprocess calls allowed in tests
-    "S607",    # partial executable paths allowed in tests
-    "TC003",   # pathlib import in runtime allowed for test fixtures
+    "assert",    # asserts allowed in tests
+    "print",    # print statements allowed in tests for debugging
+    "private-member-access",  # accessing private members allowed in tests
+    "blind-except",  # broad exception catching allowed in tests
+    "import-outside-top-level", # imports inside functions are intentional for fixtures
+    "non-lowercase-variable-in-function",    # uppercase variable names for matrices (M, D, H) standard in math
+    "magic-value-comparison", # magic values allowed in tests
+    "too-many-public-methods", # test classes group many test methods
+    "too-many-arguments", # many arguments allowed in test helper functions
+    "too-many-locals", # many locals allowed in test setup
+    "no-self-use", # test methods don't need to use self
+    "compare-to-empty-string", # tests assert empty-string sentinels literally
+    "subprocess-without-shell-equals-true",    # subprocess calls allowed in tests
+    "start-process-with-partial-path",    # partial executable paths allowed in tests
+    "typing-only-standard-library-import",   # pathlib import in runtime allowed for test fixtures
     "ANN",     # type annotations not required for tests
-    "INP001",  # tests/ subdirectories are intentional, not packages
-    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
-    "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB118", "FURB142", "FURB152",         # preview refactors
-    "RUF027",                                # preview missing-f-string
-    "RUF069",                                # exact float assertions are intentional in tests
+    "implicit-namespace-package",  # tests/ subdirectories are intentional, not packages
+    "docstring-missing-returns", "docstring-missing-yields", "docstring-missing-exception", "docstring-extraneous-exception",  # preview docstring rules
+    "import-private-name", "suspicious-subprocess-import", "unspecified-encoding",            # preview imports / IO
+    "reimplemented-operator", "for-loop-set-mutations", "math-constant",         # preview refactors
+    "missing-f-string-syntax",                                # preview missing-f-string
+    "float-equality-comparison",                                # exact float assertions are intentional in tests
+]
+"tests/docs_test.py" = [
+    "pytest-fixture-autouse", # session I/O patches must cover every docs example
+]
+"tests/logging_test.py" = [
+    "pytest-fixture-autouse", # restore global logging state after every test
 ]
 ".github/scripts/**/*.py" = [
-    "INP001",  # CI scripts are not a package
-    "T201",    # print statements needed for CI output
-    "PLR2004", # magic values (like argument counts) are fine in scripts
-    "C901",    # complex wheel optimization function is acceptable
-    "PLR0911", # multiple early returns in CLI dispatchers are clearer than nested branches
-    "PLR0912", # many branches in wheel optimization is acceptable
-    "PLR0915", # many statements in wheel optimization is acceptable
-    "PLC0415", # lazy imports keep optional deps (e.g. ``packaging``) opt-in for fast paths
-    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
-    "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB118", "FURB142", "FURB152",         # preview refactors
-    "RUF027",                                # preview missing-f-string
+    "implicit-namespace-package",  # CI scripts are not a package
+    "print",    # print statements needed for CI output
+    "magic-value-comparison", # magic values (like argument counts) are fine in scripts
+    "complex-structure",    # complex wheel optimization function is acceptable
+    "too-many-return-statements", # multiple early returns in CLI dispatchers are clearer than nested branches
+    "too-many-branches", # many branches in wheel optimization is acceptable
+    "too-many-statements", # many statements in wheel optimization is acceptable
+    "import-outside-top-level", # lazy imports keep optional deps (e.g. ``packaging``) opt-in for fast paths
+    "docstring-missing-returns", "docstring-missing-yields", "docstring-missing-exception", "docstring-extraneous-exception",  # preview docstring rules
+    "import-private-name", "suspicious-subprocess-import", "unspecified-encoding",            # preview imports / IO
+    "reimplemented-operator", "for-loop-set-mutations", "math-constant",         # preview refactors
+    "missing-f-string-syntax",                                # preview missing-f-string
 ]
 "src/mmgpy/lagrangian.py" = [
-    "PLR0913", # elasticity solver and move_mesh take genuinely required parameters
+    "too-many-arguments", # elasticity solver and move_mesh take genuinely required parameters
 ]
 "examples/**/*.py" = [
-    "T201",    # print statements essential for example output
-    "PLR0913", # many arguments allowed for clarity in examples
-    "PLR0914", # many locals allowed for didactic examples
-    "PLR0915", # long functions allowed for comprehensive examples
-    "PERF401", # list comprehensions not required in examples (readability first)
-    "PTH123",  # open() is fine for simple examples
-    "PLR2004", # magic values allowed in examples
-    "N806",    # uppercase variable names for matrices in examples
-    "INP001",  # examples/ subdirectories are not packages
-    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
-    "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB113", "FURB118", "FURB142", "FURB152",  # preview refactors
-    "RUF027",                                # preview missing-f-string
+    "print",    # print statements essential for example output
+    "too-many-arguments", # many arguments allowed for clarity in examples
+    "too-many-locals", # many locals allowed for didactic examples
+    "too-many-statements", # long functions allowed for comprehensive examples
+    "manual-list-comprehension", # list comprehensions not required in examples (readability first)
+    "builtin-open",  # open() is fine for simple examples
+    "magic-value-comparison", # magic values allowed in examples
+    "non-lowercase-variable-in-function",    # uppercase variable names for matrices in examples
+    "implicit-namespace-package",  # examples/ subdirectories are not packages
+    "docstring-missing-returns", "docstring-missing-yields", "docstring-missing-exception", "docstring-extraneous-exception",  # preview docstring rules
+    "import-private-name", "suspicious-subprocess-import", "unspecified-encoding",            # preview imports / IO
+    "repeated-append", "reimplemented-operator", "for-loop-set-mutations", "math-constant",  # preview refactors
+    "missing-f-string-syntax",                                # preview missing-f-string
 ]
 "scripts/**/*.py" = [
-    "INP001",  # scripts are not a package
-    "T201",    # print statements allowed in scripts
-    "EXE001",  # shebang is fine in scripts
-    "PLR2004", # magic values allowed in scripts
-    "S603",    # subprocess calls are safe (calling our own executables)
-    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
-    "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB118", "FURB142", "FURB152",         # preview refactors
-    "RUF027",                                # preview missing-f-string
+    "implicit-namespace-package",  # scripts are not a package
+    "print",    # print statements allowed in scripts
+    "shebang-not-executable",  # shebang is fine in scripts
+    "magic-value-comparison", # magic values allowed in scripts
+    "subprocess-without-shell-equals-true",    # subprocess calls are safe (calling our own executables)
+    "docstring-missing-returns", "docstring-missing-yields", "docstring-missing-exception", "docstring-extraneous-exception",  # preview docstring rules
+    "import-private-name", "suspicious-subprocess-import", "unspecified-encoding",            # preview imports / IO
+    "reimplemented-operator", "for-loop-set-mutations", "math-constant",         # preview refactors
+    "missing-f-string-syntax",                                # preview missing-f-string
 ]
 "benchmarks/**/*.py" = [
-    "S101",    # asserts allowed in benchmarks
-    "PLR2004", # magic values allowed in benchmarks
-    "PLR0914", # many locals allowed in benchmark setup
-    "PLR6301", # benchmark methods don't need to use self
-    "INP001",  # benchmarks directory is not a package
-    "TC002",   # third-party imports in runtime for type annotations
-    "TC003",   # stdlib imports in runtime for type annotations
-    "S603",    # subprocess calls are safe (calling our own executables)
-    "S607",    # partial executable paths are intentional for benchmarks
-    "PLC0415", # imports in functions are fine for benchmarks
-    "T201",    # print statements used for timing reports
-    "DOC201", "DOC402", "DOC501", "DOC502",  # preview docstring rules
-    "PLC2701", "S404", "PLW1514",            # preview imports / IO
-    "FURB113", "FURB118", "FURB142", "FURB152",  # preview refactors
-    "RUF027",                                # preview missing-f-string
+    "assert",    # asserts allowed in benchmarks
+    "magic-value-comparison", # magic values allowed in benchmarks
+    "too-many-locals", # many locals allowed in benchmark setup
+    "no-self-use", # benchmark methods don't need to use self
+    "implicit-namespace-package",  # benchmarks directory is not a package
+    "typing-only-third-party-import",   # third-party imports in runtime for type annotations
+    "typing-only-standard-library-import",   # stdlib imports in runtime for type annotations
+    "subprocess-without-shell-equals-true",    # subprocess calls are safe (calling our own executables)
+    "start-process-with-partial-path",    # partial executable paths are intentional for benchmarks
+    "import-outside-top-level", # imports in functions are fine for benchmarks
+    "print",    # print statements used for timing reports
+    "docstring-missing-returns", "docstring-missing-yields", "docstring-missing-exception", "docstring-extraneous-exception",  # preview docstring rules
+    "import-private-name", "suspicious-subprocess-import", "unspecified-encoding",            # preview imports / IO
+    "repeated-append", "reimplemented-operator", "for-loop-set-mutations", "math-constant",  # preview refactors
+    "missing-f-string-syntax",                                # preview missing-f-string
 ]
 "src/mmgpy/__init__.py" = [
-    "E402",   # imports after re-export of _find_mmg_executable
-    "D417",   # self parameter doesn't need documenting for methods
-    "PLR0915", # wrapper functions that patch multiple mesh classes have many statements
-    "RUF067", # try/except for optional _version module is a packaging pattern
+    "module-import-not-at-top-of-file",   # imports after re-export of _find_mmg_executable
+    "undocumented-param",   # self parameter doesn't need documenting for methods
+    "too-many-statements", # wrapper functions that patch multiple mesh classes have many statements
+    "non-empty-init-module", # try/except for optional _version module is a packaging pattern
 ]
 "src/mmgpy/_logging.py" = [
-    "PLC0415", # imports inside functions for optional Rich dependency
+    "import-outside-top-level", # imports inside functions for optional Rich dependency
 ]
 "src/mmgpy/_progress.py" = [
-    "PLC0415", # imports inside functions for optional Rich dependency
-    "PLR0917", # _emit_event mirrors the progress callback signature (positional)
+    "import-outside-top-level", # imports inside functions for optional Rich dependency
+    "too-many-positional-arguments", # _emit_event mirrors the progress callback signature (positional)
 ]
 "src/mmgpy/_mmgpy.pyi" = [
-    "PYI021",  # Docstrings intentionally included for IDE support (issue #111)
-    "D418",    # Docstrings in @overload methods intentional for IDE support
+    "docstring-in-stub",  # Docstrings intentionally included for IDE support (issue #111)
+    "overload-with-docstring",    # Docstrings in @overload methods intentional for IDE support
 ]
 "src/mmgpy/interactive/*.py" = [
-    "PLC0415", # imports inside functions to avoid circular imports
+    "import-outside-top-level", # imports inside functions to avoid circular imports
 ]
 "src/mmgpy/ui/**/*.py" = [
+    "too-many-statements-in-try-clause", # callbacks report failures for the complete UI operation
     # Trame/UI patterns
-    "PLC0415", # imports inside functions for lazy loading
-    "ARG002",  # unused kwargs in callbacks (trame pattern)
+    "import-outside-top-level", # imports inside functions for lazy loading
+    "unused-method-argument",  # unused kwargs in callbacks (trame pattern)
     "ANN",     # type annotations not required for UI callbacks
     "FBT",     # boolean positional args for debug flag
-    "SIM117",  # nested withs for trame context managers
-    "E501",    # long lines in UI strings (tooltips, JS expressions)
+    "multiple-with-statements",  # nested withs for trame context managers
+    "line-too-long",    # long lines in UI strings (tooltips, JS expressions)
     # Complexity (parser and validation logic)
-    "C901",    # complex functions in parsers and remeshing
-    "PLR0911", # many returns in recursive AST evaluator
-    "PLR0912", # many branches in parser and validation logic
-    "PLR0914", # many locals in upload handlers and remeshing flow
-    "PLR0915", # many statements in sol file parser
-    "PLR2004", # magic values (MMG solution types, VTK cell types)
+    "complex-structure",    # complex functions in parsers and remeshing
+    "too-many-return-statements", # many returns in recursive AST evaluator
+    "too-many-branches", # many branches in parser and validation logic
+    "too-many-locals", # many locals in upload handlers and remeshing flow
+    "too-many-statements", # many statements in sol file parser
+    "magic-value-comparison", # magic values (MMG solution types, VTK cell types)
     # Error handling
-    "BLE001",  # broad exception catching for UI error handling
-    "S110",    # try-except-pass for optional features
-    "SIM105",  # try-except-pass for optional feature detection
+    "blind-except",  # broad exception catching for UI error handling
+    "try-except-pass",    # try-except-pass for optional features
+    "suppressible-exception",  # try-except-pass for optional feature detection
     # Exception messages
-    "TRY003",  # exception messages are user-facing
-    "TRY301",  # simple raises in validation code
-    "EM101",   # string literals in exceptions for clarity
-    "EM102",   # f-string in exceptions for user messages
+    "raise-vanilla-args",  # exception messages are user-facing
+    "raise-within-try",  # simple raises in validation code
+    "raw-string-in-exception",   # string literals in exceptions for clarity
+    "f-string-in-exception",   # f-string in exceptions for user messages
     # Other
-    "RUF001",  # unicode multiplication sign intentional (×)
-    "RUF067",  # ui/__init__.py exposes top-level entry-point helpers
-    "RUF046",  # int(floor()) is explicit for significant figures
-    "PLW2901", # loop variable reassignment in parsers.py
-    "SIM102",  # nested ifs clearer in samples.py triangulate check
-    "T201",    # print used for debug HTML output
+    "ambiguous-unicode-character-string",  # unicode multiplication sign intentional (×)
+    "non-empty-init-module",  # ui/__init__.py exposes top-level entry-point helpers
+    "unnecessary-cast-to-int",  # int(floor()) is explicit for significant figures
+    "redefined-loop-name", # loop variable reassignment in parsers.py
+    "collapsible-if",  # nested ifs clearer in samples.py triangulate check
+    "print",    # print used for debug HTML output
 ]
 "blender_mmgpy/**/*.py" = [
     # ``bpy.utils.register_class()`` validates that an Operator / Panel
@@ -342,7 +347,7 @@ ignore = [
     # ``MMGPY_PT_main_panel``); CapWords would fail registration. Property
     # groups and AddonPreferences use CapWords already, so this only
     # applies to operator and panel definitions.
-    "N801",
+    "invalid-class-name",
     # ``bpy.props.<Property>`` callables are referenced *only* in class
     # annotations (e.g. ``radius: FloatProperty(default=0.1)``). Blender's
     # add-on metaclass evaluates those annotations at ``register_class()``
@@ -350,7 +355,7 @@ ignore = [
     # reachable from the module's runtime globals. ``exempt-modules`` would
     # be the surgical fix, but it is a global setting and tweaking it
     # changes lint behaviour in ``src/mmgpy/`` too.
-    "TC002",
+    "typing-only-third-party-import",
 ]
 
 [tool.ty.src]
@@ -369,7 +374,7 @@ unresolved-import = "ignore"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-build = "cp310-* cp311-* cp312-* cp313-* cp314-* cp314t-*"
+build = "cp311-* cp312-* cp313-* cp314-* cp314t-*"
 # Skip 32-bit builds, musllinux (pyvista depends on vtk which has no musllinux wheels),
 # and free-threaded builds on Windows/macOS (vtk has no free-threaded wheels there)
 skip = "*-win32 *-manylinux_i686 *-musllinux* cp314t-win* cp314t-macosx*"

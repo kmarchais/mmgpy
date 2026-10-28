@@ -77,8 +77,8 @@ For headless / server / CI use, the slim install (`pip install mmgpy`, no pyvist
 import numpy as np
 from mmgpy import MmgMeshS
 
-mesh = MmgMeshS(vertices, triangles)        # numpy arrays, shape (Nv, 3) and (Nt, 3)
-mesh["metric"] = sizing_array               # optional: per-vertex isotropic size
+mesh = MmgMeshS(vertices, triangles)  # numpy arrays, shape (Nv, 3) and (Nt, 3)
+mesh["metric"] = sizing_array  # optional: per-vertex isotropic size
 mesh.remesh(hmin=0.01, hmax=0.1, hausd=0.005)
 
 verts_out = mesh.get_vertices()
@@ -155,10 +155,20 @@ remeshed = mesh.mmg.remesh(
     local_sizing=[
         {"shape": "sphere", "center": [0.5, 0.5, 0.5], "radius": 0.2, "size": 0.01},
         {"shape": "box", "bounds": [[0, 0, 0], [0.3, 0.3, 0.3]], "size": 0.02},
-        {"shape": "cylinder", "point1": [0, 0, 0], "point2": [0, 0, 1],
-         "radius": 0.1, "size": 0.01},
-        {"shape": "from_point", "point": [0.5, 0.5, 0.5],
-         "near_size": 0.01, "far_size": 0.1, "influence_radius": 0.3},
+        {
+            "shape": "cylinder",
+            "point1": [0, 0, 0],
+            "point2": [0, 0, 1],
+            "radius": 0.1,
+            "size": 0.01,
+        },
+        {
+            "shape": "from_point",
+            "point": [0.5, 0.5, 0.5],
+            "near_size": 0.01,
+            "far_size": 0.1,
+            "influence_radius": 0.3,
+        },
     ],
 )
 ```
@@ -196,7 +206,10 @@ from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 
 hessian = compute_hessian(vertices, triangles, field)
 mesh.point_data["metric"] = create_metric_from_hessian(
-    hessian, target_error=5e-3, hmin=3e-3, hmax=8e-2,
+    hessian,
+    target_error=5e-3,
+    hmin=3e-3,
+    hmax=8e-2,
 )
 remeshed = mesh.mmg.remesh(hgrad=2.0)
 ```
@@ -206,9 +219,7 @@ remeshed = mesh.mmg.remesh(hgrad=2.0)
 ```python
 import numpy as np
 
-levelset = (
-    np.linalg.norm(mesh.points - [0.5, 0.5, 0.5], axis=1) - 0.3
-).reshape(-1, 1)
+levelset = (np.linalg.norm(mesh.points - [0.5, 0.5, 0.5], axis=1) - 0.3).reshape(-1, 1)
 
 discretized = mesh.mmg.remesh_levelset(levelset)
 ```

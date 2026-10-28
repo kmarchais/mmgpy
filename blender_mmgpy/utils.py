@@ -11,7 +11,7 @@ import bpy
 import mathutils
 import numpy as np
 
-from mmgpy._mmgpy import MmgMeshS  # noqa: PLC2701
+from mmgpy._mmgpy import MmgMeshS  # ruff: ignore[import-private-name]
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

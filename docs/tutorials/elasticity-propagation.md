@@ -46,11 +46,18 @@ from mmgpy.lagrangian import (
 # boundary_displacement: (N, 2), zero on interior, prescribed on boundary
 
 field_lap = propagate_displacement(
-    vertices, elements, boundary_mask, boundary_displacement,
+    vertices,
+    elements,
+    boundary_mask,
+    boundary_displacement,
 )
 field_ela = propagate_displacement_elasticity(
-    vertices, elements, boundary_mask, boundary_displacement,
-    E=1e6, nu=0.3,
+    vertices,
+    elements,
+    boundary_mask,
+    boundary_displacement,
+    E=1e6,
+    nu=0.3,
 )
 ```
 

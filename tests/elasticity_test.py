@@ -5,11 +5,11 @@ import numpy.testing as npt
 import pytest
 
 fedoo = pytest.importorskip("fedoo", reason="fedoo not installed")
-import fedoo as fd  # noqa: E402
-import pyvista as pv  # noqa: E402
+import fedoo as fd  # ruff: ignore[module-import-not-at-top-of-file]
+import pyvista as pv  # ruff: ignore[module-import-not-at-top-of-file]
 
-from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D  # noqa: E402
-from mmgpy.lagrangian import (  # noqa: E402
+from mmgpy._mmgpy import MmgMesh2D, MmgMesh3D  # ruff: ignore[module-import-not-at-top-of-file]
+from mmgpy.lagrangian import (  # ruff: ignore[module-import-not-at-top-of-file]
     move_mesh,
     propagate_displacement,
     propagate_displacement_elasticity,

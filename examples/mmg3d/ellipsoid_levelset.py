@@ -31,7 +31,7 @@ For a surface-only mesh, see examples/mmgs/ellipsoid_sdf.py.
 import numpy as np
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 
 
 def create_ellipsoid_sdf_grid(

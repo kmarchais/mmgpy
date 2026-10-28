@@ -8,16 +8,10 @@ via ``Mesh.save()`` (PyVista).  No temporary files are created.
 
 from __future__ import annotations
 
-import sys
 from collections.abc import Sequence
 from os import PathLike, fspath
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict
-
-if sys.version_info >= (3, 11):
-    from typing import Unpack
-else:
-    from typing_extensions import Unpack
+from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict, Unpack
 
 from mmgpy._generate import generate as _generate_2d
 from mmgpy._mmgpy import mmg2d as _mmg2d_cpp
@@ -77,7 +71,7 @@ def _load_sol(mesh: Mesh, sol_path: str | Path, channel: str = "metric") -> None
     Delegates to the C++ ``impl.load_sol()`` which handles both text
     (.sol) and binary (.solb) formats natively via the MMG library.
     """
-    mesh._impl.load_sol(str(sol_path), channel=channel)  # noqa: SLF001
+    mesh._impl.load_sol(str(sol_path), channel=channel)  # ruff: ignore[private-member-access]
 
 
 def _is_iso_mode(options: dict[str, Any] | None) -> bool:
@@ -98,7 +92,7 @@ def _is_iso_mode(options: dict[str, Any] | None) -> bool:
 
 def _save_sol(mesh: Mesh, sol_path: str | Path) -> None:
     """Save the metric/solution field to a Medit .sol file via the MMG C library."""
-    mesh._impl.save_sol(str(sol_path))  # noqa: SLF001
+    mesh._impl.save_sol(str(sol_path))  # ruff: ignore[private-member-access]
 
 
 def _renum_is_truthy(raw: object) -> bool:
@@ -172,7 +166,7 @@ def _make_wrapped_remesh(
                 parameter_file=parameter_file,
             )
 
-        from mmgpy._io import _read_mesh_internal as _read  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read  # ruff: ignore[import-outside-top-level]
 
         mesh = _read(input_mesh)
 

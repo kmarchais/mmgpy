@@ -86,7 +86,7 @@ def _attach_sol_fields(
         )
         return
 
-    from mmgpy._sol import parse_sol_file  # noqa: PLC0415
+    from mmgpy._sol import parse_sol_file  # ruff: ignore[import-outside-top-level]
 
     try:
         content = sol_path.read_text(encoding="utf-8")
@@ -177,8 +177,8 @@ def _generate_from_line_polydata(
         or the geometry is not planar (z varies across vertices).
 
     """
-    from mmgpy._generate import generate  # noqa: PLC0415
-    from mmgpy._pyvista import (  # noqa: PLC0415
+    from mmgpy._generate import generate  # ruff: ignore[import-outside-top-level]
+    from mmgpy._pyvista import (  # ruff: ignore[import-outside-top-level]
         _extract_lines_from_polydata,
         _refs_for_polydata_lines,
     )
@@ -219,7 +219,7 @@ def _build_mesh_with_mmg_fields(dataset: pv.UnstructuredGrid | pv.PolyData) -> _
         already pushed through the C++ layer.
 
     """
-    from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+    from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
     mesh = _read_mesh(dataset)
     for key in _MMG_FIELD_NAMES:
@@ -543,7 +543,7 @@ def _apply_constraint_markers(
     if not combined:
         return
 
-    impl = mesh._impl  # noqa: SLF001
+    impl = mesh._impl  # ruff: ignore[private-member-access]
     for name, idx in combined.items():
         # Empty array clears the constraint: an explicit ``required_X=array([])``
         # in `explicit` overrides any tag in `combined` after the merge above,
@@ -584,13 +584,13 @@ def _apply_pending_mmg_config(
     user_dict = dataset.user_dict
     materials = user_dict.get(_MMG_CONFIG_KEY_MULTI_MATERIALS)
     if materials is not None:
-        mesh._impl.set_multi_materials(list(materials))  # noqa: SLF001
+        mesh._impl.set_multi_materials(list(materials))  # ruff: ignore[private-member-access]
     parameters = user_dict.get(_MMG_CONFIG_KEY_LOCAL_PARAMETERS)
     if parameters is not None:
-        mesh._impl.set_local_parameters(list(parameters))  # noqa: SLF001
+        mesh._impl.set_local_parameters(list(parameters))  # ruff: ignore[private-member-access]
     references = user_dict.get(_MMG_CONFIG_KEY_LS_BASE_REFERENCES)
     if references is not None:
-        mesh._impl.set_ls_base_references(list(references))  # noqa: SLF001
+        mesh._impl.set_ls_base_references(list(references))  # ruff: ignore[private-member-access]
 
 
 def _apply_parameter_file(
@@ -598,8 +598,8 @@ def _apply_parameter_file(
     parameter_file: str | Path | None,
 ) -> None:
     if parameter_file is not None:
-        mesh._impl.set_input_parameter_name(parameter_file)  # noqa: SLF001
-        mesh._impl._apply_input_parameter_file()  # noqa: SLF001
+        mesh._impl.set_input_parameter_name(parameter_file)  # ruff: ignore[private-member-access]
+        mesh._impl._apply_input_parameter_file()  # ruff: ignore[private-member-access]
 
 
 def _apply_local_sizing_specs(
@@ -653,7 +653,7 @@ def _apply_local_sizing_specs(
 
 def read_mesh(
     path: str,
-    **kwargs: object,  # noqa: ARG001
+    **kwargs: object,  # ruff: ignore[unused-function-argument]
 ) -> pv.UnstructuredGrid | pv.PolyData:
     """Read a Medit ``.mesh``/``.meshb`` file and return a PyVista dataset.
 
@@ -670,8 +670,8 @@ def read_mesh(
         survive as ``LINE`` cells (``include_edges=True`` internally).
 
     """
-    from mmgpy._io import _load_medit_native  # noqa: PLC0415
-    from mmgpy._pyvista import to_pyvista  # noqa: PLC0415
+    from mmgpy._io import _load_medit_native  # ruff: ignore[import-outside-top-level]
+    from mmgpy._pyvista import to_pyvista  # ruff: ignore[import-outside-top-level]
 
     mesh_path = Path(path)
     impl = _load_medit_native(mesh_path, mesh_kind=None)
@@ -687,7 +687,7 @@ def read_mesh(
 def write_mesh(
     dataset: pv.DataSet,
     path: str,
-    **kwargs: object,  # noqa: ARG001
+    **kwargs: object,  # ruff: ignore[unused-function-argument]
 ) -> None:
     """Write *dataset* to a Medit ``.mesh``/``.meshb`` file.
 
@@ -702,7 +702,7 @@ def write_mesh(
         :class:`pyvista.PolyData` (MMG only handles those two).
 
     """
-    from mmgpy._pyvista import from_pyvista  # noqa: PLC0415
+    from mmgpy._pyvista import from_pyvista  # ruff: ignore[import-outside-top-level]
 
     if not isinstance(dataset, (pv.UnstructuredGrid, pv.PolyData)):
         msg = (
@@ -1010,12 +1010,12 @@ class MmgAccessor:
 
     @property
     def kind(self) -> MeshKind:
-        """Return the MMG mesh kind (TETRAHEDRAL, TRIANGULAR_2D, or TRIANGULAR_SURFACE).
+        """The MMG mesh kind (TETRAHEDRAL, TRIANGULAR_2D, or TRIANGULAR_SURFACE).
 
         Inferred from the dataset's cell types via the same auto-detection
         path used by ``mesh.mmg.remesh``.
         """
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         return _read_mesh(self._dataset).kind
 
@@ -1026,7 +1026,7 @@ class MmgAccessor:
         metric: NDArray[np.float64] | None = None,
         local_sizing: list[Mapping[str, Any]] | None = None,
         parameter_file: str | Path | None = None,
-        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh; see docstring
+        **options: Any,  # ruff: ignore[any-type]  -- forwarded to Mesh.remesh; see docstring
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Remesh the underlying dataset and return a new PyVista dataset.
 
@@ -1124,7 +1124,7 @@ class MmgAccessor:
     def remesh_lagrangian(
         self,
         displacement: NDArray[np.float64],
-        **options: Any,  # noqa: ANN401  -- forwarded to .mmg.move
+        **options: Any,  # ruff: ignore[any-type]  -- forwarded to .mmg.move
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Forward to :meth:`move` (deprecated alias).
 
@@ -1158,7 +1158,7 @@ class MmgAccessor:
         surface_only: bool = False,
         local_sizing: list[Mapping[str, Any]] | None = None,
         parameter_file: str | Path | None = None,
-        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_levelset
+        **options: Any,  # ruff: ignore[any-type]  -- forwarded to Mesh.remesh_levelset
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Level-set discretization remeshing.
 
@@ -1203,7 +1203,7 @@ class MmgAccessor:
 
     def remesh_optimize(
         self,
-        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_optimize
+        **options: Any,  # ruff: ignore[any-type]  -- forwarded to Mesh.remesh_optimize
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Quality optimization without topology changes.
 
@@ -1227,7 +1227,7 @@ class MmgAccessor:
     def remesh_uniform(
         self,
         size: float,
-        **options: Any,  # noqa: ANN401  -- forwarded to Mesh.remesh_uniform
+        **options: Any,  # ruff: ignore[any-type]  -- forwarded to Mesh.remesh_uniform
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Remesh with a uniform target edge size.
 
@@ -1260,7 +1260,7 @@ class MmgAccessor:
         propagate: bool = True,
         propagation_method: str = "laplacian",
         n_steps: int = 1,
-        **remesh_options: Any,  # noqa: ANN401  -- forwarded to mesh.remesh
+        **remesh_options: Any,  # ruff: ignore[any-type]  -- forwarded to mesh.remesh
     ) -> pv.UnstructuredGrid | pv.PolyData:
         """Apply a displacement field and remesh to maintain quality.
 
@@ -1297,7 +1297,7 @@ class MmgAccessor:
             A new dataset of the same kind as the input.
 
         """
-        from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
+        from mmgpy.lagrangian import move_mesh as _move_mesh  # ruff: ignore[import-outside-top-level]
 
         mesh = _build_mesh_with_mmg_fields(self._dataset)
         _move_mesh(
@@ -1323,7 +1323,7 @@ class MmgAccessor:
         ``remesh`` / ``remesh_levelset`` / ``remesh_optimize`` /
         ``remesh_uniform`` call. Pass an empty list to clear.
         """
-        from mmgpy._mesh import _normalize_local_parameters  # noqa: PLC0415
+        from mmgpy._mesh import _normalize_local_parameters  # ruff: ignore[import-outside-top-level]
 
         if parameters:
             normalized = _normalize_local_parameters(parameters, self.kind)
@@ -1342,7 +1342,7 @@ class MmgAccessor:
         to the underlying ``MmgMesh`` at the start of every subsequent
         accessor remesh call. Pass an empty list to clear.
         """
-        from mmgpy._mesh import _normalize_multi_materials  # noqa: PLC0415
+        from mmgpy._mesh import _normalize_multi_materials  # ruff: ignore[import-outside-top-level]
 
         if materials:
             normalized = _normalize_multi_materials(materials)
@@ -1358,7 +1358,7 @@ class MmgAccessor:
         to the underlying ``MmgMesh`` at the start of every subsequent
         accessor remesh call. Pass an empty list to clear.
         """
-        from mmgpy._mesh import _normalize_ls_base_references  # noqa: PLC0415
+        from mmgpy._mesh import _normalize_ls_base_references  # ruff: ignore[import-outside-top-level]
 
         if references:
             normalized = _normalize_ls_base_references(references)
@@ -1531,8 +1531,8 @@ class MmgAccessor:
             If no eligible point or cell arrays are available to write.
 
         """
-        from mmgpy._mesh import MeshKind  # noqa: PLC0415
-        from mmgpy._sol import write_sol_file  # noqa: PLC0415
+        from mmgpy._mesh import MeshKind  # ruff: ignore[import-outside-top-level]
+        from mmgpy._sol import write_sol_file  # ruff: ignore[import-outside-top-level]
 
         sol_path = Path(path)
         if sol_path.suffix.lower() == ".solb":
@@ -1605,7 +1605,7 @@ class MmgAccessor:
             :class:`mmgpy.ValidationReport` with full diagnostics.
 
         """
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         return _read_mesh(self._dataset).validate(
             checks=checks,
@@ -1626,7 +1626,7 @@ class MmgAccessor:
             MMG's in-radius-ratio quality in ``[0, 1]``.
 
         """
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         return _read_mesh(self._dataset).get_element_quality(idx)
 
@@ -1639,7 +1639,7 @@ class MmgAccessor:
             One quality value per element, each in ``[0, 1]``.
 
         """
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         return _read_mesh(self._dataset).get_element_qualities()
 
@@ -1656,7 +1656,7 @@ class MmgAccessor:
             1-indexed element neighbours, as MMG reports them.
 
         """
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         return _read_mesh(self._dataset).get_adjacent_elements(idx)
 
@@ -1673,7 +1673,7 @@ class MmgAccessor:
             1-indexed vertex neighbours, as MMG reports them.
 
         """
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         return _read_mesh(self._dataset).get_vertex_neighbors(idx)
 
@@ -1693,7 +1693,7 @@ class MmgAccessor:
             A reordered copy of the dataset.
 
         """
-        from mmgpy._reorder import reorder_cuthill_mckee  # noqa: PLC0415
+        from mmgpy._reorder import reorder_cuthill_mckee  # ruff: ignore[import-outside-top-level]
 
         return reorder_cuthill_mckee(self._dataset, symmetric_mode=symmetric_mode)
 
@@ -1710,7 +1710,7 @@ class MmgAccessor:
             The weighted centroid coordinates.
 
         """
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         return _read_mesh(self._dataset).get_center_of_mass()
 

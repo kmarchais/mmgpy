@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor and Medit reader
 from mmgpy._pv_plugin import (
     _CONSTRAINT_KWARGS,
     _apply_constraint_markers,
@@ -310,5 +310,5 @@ class TestAccessorEndToEnd:
         # Mesh.remesh / pybind11 and is not a stable contract; assert only
         # that the typo is not silently swallowed.
         ds = pv.read(_ASSETS / "cube.mesh")
-        with pytest.raises(Exception):  # noqa: B017, PT011
+        with pytest.raises(Exception):  # ruff: ignore[assert-raises-exception, pytest-raises-too-broad]
             ds.mmg.remesh(verbose=-1, required_traingles=np.array([0]))  # typo

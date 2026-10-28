@@ -36,7 +36,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 EXTENSION_SLUG = "mmgpy"
@@ -218,7 +218,7 @@ class EventSources:
 
 def fetch_url(url: str) -> bytes:
     """Fetch a public Blender Extensions page."""
-    req = urllib.request.Request(  # noqa: S310
+    req = urllib.request.Request(  # ruff: ignore[suspicious-url-open-usage]
         url,
         headers={
             "User-Agent": (
@@ -226,7 +226,7 @@ def fetch_url(url: str) -> bytes:
             ),
         },
     )
-    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # ruff: ignore[suspicious-url-open-usage]
         return resp.read()
 
 
@@ -267,7 +267,7 @@ def _parse_review_date(value: str) -> str:
     }
     normalized = f"{months.get(month, month)} {rest}"
     parsed = datetime.strptime(normalized, "%B %d, %Y, %I:%M %p").replace(
-        tzinfo=timezone.utc,
+        tzinfo=UTC,
     )
     return parsed.date().isoformat()
 
@@ -275,7 +275,7 @@ def _parse_review_date(value: str) -> str:
 def _parse_version_datetime(value: str) -> tuple[str, str]:
     normalized = _normalize_date_title(value)
     parsed = datetime.strptime(normalized, "%A %d, %B %Y - %H:%M").replace(
-        tzinfo=timezone.utc,
+        tzinfo=UTC,
     )
     return parsed.date().isoformat(), parsed.isoformat().replace("+00:00", "Z")
 
@@ -1128,7 +1128,7 @@ def gist_request(
         method=method,
         headers=headers,
     )
-    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # ruff: ignore[suspicious-url-open-usage]
         return json.loads(resp.read())
 
 
@@ -1137,7 +1137,7 @@ def main() -> int:
     gist_id = os.environ["GIST_ID"]
     token = os.environ["GIST_TOKEN"]
 
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(UTC).date().isoformat()
     version_events = fetch_version_events()
     snapshot = TrackerSnapshot(
         stats=enrich_stats_from_versions(fetch_extension_stats(), version_events),

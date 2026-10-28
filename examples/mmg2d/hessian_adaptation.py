@@ -39,7 +39,7 @@ import numpy as np
 from matplotlib.collections import LineCollection
 from PIL import Image, ImageDraw, ImageFont
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 

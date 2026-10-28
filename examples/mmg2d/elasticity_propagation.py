@@ -42,7 +42,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from scipy.spatial import Delaunay
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
 from mmgpy.lagrangian import (
     propagate_displacement,
@@ -126,7 +126,7 @@ def lift_displacement(
     return disp, boundary
 
 
-def main() -> None:  # noqa: C901
+def main() -> None:  # ruff: ignore[complex-structure]
     """Compute both propagated displacement fields and save an animated GIF."""
     vertices, triangles, fixed_mask, loaded_mask = make_l_bracket()
     print(f"Mesh: {len(vertices)} vertices, {len(triangles)} triangles")

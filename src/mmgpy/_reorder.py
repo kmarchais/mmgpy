@@ -224,7 +224,7 @@ def _remap_connectivity(
     inv_perm: NDArray[np.int64],
 ) -> None:
     """Rewrite vertex indices in *dataset*'s VTK cell arrays."""
-    from vtkmodules.util.numpy_support import (  # noqa: PLC0415
+    from vtkmodules.util.numpy_support import (  # ruff: ignore[import-outside-top-level]
         numpy_to_vtk,
         vtk_to_numpy,
     )
@@ -268,7 +268,7 @@ def _collect_mesh_element_blocks(
         absent.
 
     """
-    from mmgpy._mesh import MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import MeshKind  # ruff: ignore[import-outside-top-level]
 
     blocks: list[NDArray[np.int32]] = []
     tets: tuple[NDArray[np.int32], NDArray[np.int64]] | None = None
@@ -307,14 +307,14 @@ def _snapshot_permuted_fields(
 
     """
     mmg_snapshots: dict[str, NDArray[np.float64]] = {}
-    for name in mesh._MMG_FIELDS:  # noqa: SLF001
-        data = mesh._try_get_field(name)  # noqa: SLF001
+    for name in mesh._MMG_FIELDS:  # ruff: ignore[private-member-access]
+        data = mesh._try_get_field(name)  # ruff: ignore[private-member-access]
         if data is not None and len(data) == n_vertices:
             mmg_snapshots[name] = np.asarray(data)[perm]
 
     user_snapshots = {
         name: np.asarray(values)[perm]
-        for name, values in mesh._user_fields.items()  # noqa: SLF001
+        for name, values in mesh._user_fields.items()  # ruff: ignore[private-member-access]
         if len(values) == n_vertices
     }
     return mmg_snapshots, user_snapshots
@@ -328,11 +328,11 @@ def _apply_permuted_elements(
     edge_block: tuple[NDArray[np.int32], NDArray[np.int64]],
 ) -> None:
     """Write each element block back to *mesh* with vertex indices remapped."""
-    from mmgpy._mesh import MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import MeshKind  # ruff: ignore[import-outside-top-level]
 
     if mesh.kind == MeshKind.TETRAHEDRAL and tets is not None:
         tetrahedra, tetrahedra_refs = tets
-        impl_3d = cast("MmgMesh3D", mesh._impl)  # noqa: SLF001
+        impl_3d = cast("MmgMesh3D", mesh._impl)  # ruff: ignore[private-member-access]
         impl_3d.set_tetrahedra(inv_perm32[tetrahedra], tetrahedra_refs)
     if tris is not None:
         triangles, triangle_refs = tris
@@ -367,13 +367,13 @@ def _apply_rcm_to_mesh(mesh: Mesh) -> None:
     _apply_permuted_elements(mesh, inv_perm32, tets, tris, edge_block)
 
     for name, permuted in mmg_snapshots.items():
-        mesh._impl.set_field(name, permuted)  # noqa: SLF001
+        mesh._impl.set_field(name, permuted)  # ruff: ignore[private-member-access]
     for name, permuted in user_snapshots.items():
-        mesh._user_fields[name] = permuted  # noqa: SLF001
+        mesh._user_fields[name] = permuted  # ruff: ignore[private-member-access]
 
-    if mesh._lazy_source is not None:  # noqa: SLF001
-        mesh._lazy_source.invalidate()  # noqa: SLF001
-        mesh._lazy_source = None  # noqa: SLF001
+    if mesh._lazy_source is not None:  # ruff: ignore[private-member-access]
+        mesh._lazy_source.invalidate()  # ruff: ignore[private-member-access]
+        mesh._lazy_source = None  # ruff: ignore[private-member-access]
 
 
 __all__ = ["reorder_cuthill_mckee"]

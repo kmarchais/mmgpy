@@ -140,9 +140,9 @@ def _classify_filename(name: str) -> str:
 # Monkeypatch installers (NO side effects at import; called by the runner)
 # ---------------------------------------------------------------------------
 
-import mmgpy  # noqa: E402
-import mmgpy._io as _io_mod  # noqa: E402
-from mmgpy._mesh import Mesh  # noqa: E402
+import mmgpy  # ruff: ignore[module-import-not-at-top-of-file]
+import mmgpy._io as _io_mod  # ruff: ignore[module-import-not-at-top-of-file]
+from mmgpy._mesh import Mesh  # ruff: ignore[module-import-not-at-top-of-file]
 
 # Originals captured ONCE at import, before any patching can occur.
 _real_read = _io_mod.read
@@ -166,10 +166,10 @@ def _fake_read(
     name = str(source)
     kind = _classify_filename(name)
     if kind == "2d":
-        return Mesh._from_arrays(_VERTS_2D.copy(), _CELLS_2D.copy())  # noqa: SLF001
+        return Mesh._from_arrays(_VERTS_2D.copy(), _CELLS_2D.copy())  # ruff: ignore[private-member-access]
     if kind == "surface":
-        return Mesh._from_arrays(_VERTS_SURF.copy(), _CELLS_SURF.copy())  # noqa: SLF001
-    return Mesh._from_arrays(_VERTS_3D.copy(), _CELLS_3D.copy())  # noqa: SLF001
+        return Mesh._from_arrays(_VERTS_SURF.copy(), _CELLS_SURF.copy())  # ruff: ignore[private-member-access]
+    return Mesh._from_arrays(_VERTS_3D.copy(), _CELLS_3D.copy())  # ruff: ignore[private-member-access]
 
 
 def _patched_save(self: MeshType, filename: str | Path) -> None:

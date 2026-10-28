@@ -31,7 +31,7 @@ mpl.use("Agg")  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
 from mmgpy.sizing import (
     PointSize,

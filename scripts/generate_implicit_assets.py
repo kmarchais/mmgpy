@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the Medit reader
+import mmgpy  # ruff: ignore[unused-import]  -- registers the Medit reader
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 

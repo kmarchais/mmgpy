@@ -42,7 +42,7 @@ from __future__ import annotations
 import numpy as np
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 
 
 def _attach_boundary_triangles(

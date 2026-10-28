@@ -178,9 +178,9 @@ remeshed = mesh.mmg.remesh(opts, verbose=1)  # TypeError!
 
 ```python
 opts = Mmg3DOptions(
-    optim=1,       # Enable optimization mode
-    noinsert=1,    # Don't add vertices
-    hgrad=1.1,     # Gentle gradation
+    optim=1,  # Enable optimization mode
+    noinsert=1,  # Don't add vertices
+    hgrad=1.1,  # Gentle gradation
 )
 ```
 
@@ -190,7 +190,7 @@ opts = Mmg3DOptions(
 opts = Mmg3DOptions(
     hmax=0.1,
     hausd=0.0001,  # Tight approximation
-    nosurf=1,      # Preserve surface vertices
+    nosurf=1,  # Preserve surface vertices
 )
 ```
 
@@ -200,9 +200,9 @@ opts = Mmg3DOptions(
 opts = Mmg3DOptions(
     hmin=0.001,
     hmax=0.1,
-    hgrad=1.2,     # Smooth size transition
+    hgrad=1.2,  # Smooth size transition
     hausd=0.001,
-    ar=20,       # Detect more ridges
+    ar=20,  # Detect more ridges
 )
 ```
 

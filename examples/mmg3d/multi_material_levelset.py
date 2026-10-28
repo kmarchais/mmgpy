@@ -35,7 +35,7 @@ from __future__ import annotations
 import numpy as np
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 
 # Custom output references picked far from MMG's defaults (2, 3) so the
 # effect of set_multi_materials() is unambiguous in the output.

@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from ._cli import _find_mmg_executable  # noqa: F401  # Used by tests
+from ._cli import _find_mmg_executable  # ruff: ignore[unused-import]  # Used by tests
 from ._logging import (
     configure_logging,
     disable_logging,
@@ -36,7 +36,7 @@ from ._mmgpy import (  # type: ignore[attr-defined]
 )
 from ._options import Mmg2DOptions, Mmg3DOptions, MmgSOptions
 from ._progress import CancellationError, ProgressEvent, rich_progress
-from ._remesh import SolPaths, mmg2d, mmg3d, mmgs  # noqa: F401
+from ._remesh import SolPaths, mmg2d, mmg3d, mmgs  # ruff: ignore[unused-import]
 from ._result import RemeshResult
 from .sizing import (
     BoxSize,
@@ -105,7 +105,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
 }
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401  -- value is a module or attribute
+def __getattr__(name: str) -> Any:  # ruff: ignore[any-type]  -- value is a module or attribute
     target = _LAZY_IMPORTS.get(name)
     if target is None:
         msg = f"module {__name__!r} has no attribute {name!r}"

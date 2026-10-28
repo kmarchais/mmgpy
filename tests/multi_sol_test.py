@@ -117,7 +117,7 @@ def _tet_pv_dataset() -> pv.UnstructuredGrid:
 def test_cpp_binding_roundtrips_scalar_vector_tensor(
     make_impl,
     dim: int,
-    include_vector: bool,  # noqa: FBT001  -- parametrized fixture, not a flag
+    include_vector: bool,  # ruff: ignore[boolean-type-hint-positional-argument]  -- parametrized fixture, not a flag
     tmp_path: Path,
 ) -> None:
     """C++ bindings round-trip every supported sol type for the mesh kind."""

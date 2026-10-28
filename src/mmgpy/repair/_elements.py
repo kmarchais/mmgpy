@@ -102,8 +102,8 @@ def remove_degenerate_elements(
     >>> print(f"Removed {removed_count} degenerate elements")
 
     """
-    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
-    from mmgpy.repair._vertices import remove_orphan_vertices  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # ruff: ignore[import-outside-top-level]
+    from mmgpy.repair._vertices import remove_orphan_vertices  # ruff: ignore[import-outside-top-level]
 
     vertices = mesh.get_vertices()
 
@@ -171,7 +171,7 @@ def fix_inverted_elements(mesh: Mesh) -> tuple[Mesh, int]:
     >>> print(f"Fixed {fixed_count} inverted elements")
 
     """
-    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # ruff: ignore[import-outside-top-level]
 
     vertices = mesh.get_vertices()
 
@@ -226,8 +226,8 @@ def remove_duplicate_elements(mesh: Mesh) -> tuple[Mesh, int]:
     >>> print(f"Removed {removed_count} duplicate elements")
 
     """
-    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
-    from mmgpy.repair._vertices import remove_orphan_vertices  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # ruff: ignore[import-outside-top-level]
+    from mmgpy.repair._vertices import remove_orphan_vertices  # ruff: ignore[import-outside-top-level]
 
     vertices = mesh.get_vertices()
 

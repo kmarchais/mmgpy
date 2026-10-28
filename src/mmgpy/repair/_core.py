@@ -162,13 +162,13 @@ def auto_repair(
     ...     print(report)
 
     """
-    from mmgpy import MeshKind  # noqa: PLC0415
-    from mmgpy.repair._elements import (  # noqa: PLC0415
+    from mmgpy import MeshKind  # ruff: ignore[import-outside-top-level]
+    from mmgpy.repair._elements import (  # ruff: ignore[import-outside-top-level]
         fix_inverted_elements,
         remove_degenerate_elements,
         remove_duplicate_elements,
     )
-    from mmgpy.repair._vertices import (  # noqa: PLC0415
+    from mmgpy.repair._vertices import (  # ruff: ignore[import-outside-top-level]
         remove_duplicate_vertices,
         remove_orphan_vertices,
     )

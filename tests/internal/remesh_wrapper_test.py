@@ -57,7 +57,7 @@ class TestIsIsoMode:
     def test_predicate(
         self,
         options: dict[str, Any] | None,
-        expected: bool,  # noqa: FBT001
+        expected: bool,  # ruff: ignore[boolean-type-hint-positional-argument]
     ) -> None:
         """Verify the predicate handles ints, bools, and string values."""
         assert _is_iso_mode(options) is expected
@@ -87,7 +87,7 @@ class TestIsNative:
     def test_native_detection(
         self,
         path: object,
-        expected: bool,  # noqa: FBT001
+        expected: bool,  # ruff: ignore[boolean-type-hint-positional-argument]
     ) -> None:
         """Verify only ``.mesh`` / ``.meshb`` (and ``None``) are native."""
         assert _is_native(path) is expected  # type: ignore[arg-type]

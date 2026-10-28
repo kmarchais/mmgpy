@@ -27,12 +27,12 @@ requirements:
     - cmake >=3.15
     - ninja
   host:
-    - python
+    - python >=3.11
     - pybind11 >=3.0.0
     - numpy
     - mmgsuite
   run:
-    - python
+    - python >=3.11
     - numpy >=2.0.2,<3
     - pyvista >=0.48,<1
     # PyVista 0.49 requires Cocoa on macOS; its conda metadata omits it.
@@ -41,8 +41,6 @@ requirements:
     - rich >=13.0.0,<15
     - scipy >=1.11.0,<2
     - mmgsuite
-    - if: python < '3.11'
-      then: typing-extensions >=4.0.0,<5
 
 tests:
   - python:

@@ -148,4 +148,4 @@ def test_doc_file(doc_path: Path) -> None:
         # source line 1 with doc-file line ``start_line + 1``.
         padded = "\n" * example.start_line + example.source
         code = compile(padded, str(example.path), "exec")
-        exec(code, module_globals)  # noqa: S102
+        exec(code, module_globals)  # ruff: ignore[exec-builtin]

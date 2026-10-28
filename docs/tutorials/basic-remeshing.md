@@ -58,7 +58,7 @@ Control the range of edge lengths in the output mesh:
 ```python
 remeshed = mesh.mmg.remesh(
     hmin=0.01,  # Minimum edge length (prevents over-refinement)
-    hmax=0.1,   # Maximum edge length
+    hmax=0.1,  # Maximum edge length
 )
 ```
 
@@ -98,8 +98,8 @@ opts = Mmg3DOptions(
     hmin=0.01,
     hmax=0.1,
     hausd=0.001,
-    hgrad=1.3,      # Gradation: max ratio between adjacent edges
-    ar=45,          # Ridge detection angle (degrees)
+    hgrad=1.3,  # Gradation: max ratio between adjacent edges
+    ar=45,  # Ridge detection angle (degrees)
     verbose=1,
 )
 

@@ -27,7 +27,7 @@ repos:
       - id: name-tests-test
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.13"
+    rev: "v0.17.3"
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -68,10 +68,12 @@ repos:
         files: ^.*\.(py|rst|md)$
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    # v0.0.48
-    rev: a71646c845a122391e3ce3a43502fcf4003d1efa
+    rev: "v0.0.93"
     hooks:
       - id: ty
+        # uv check synchronizes/builds the native project; linting must stay isolated.
+        entry: ty check
+        additional_dependencies: ["ty==0.0.93"]
 
   - repo: local
     hooks:

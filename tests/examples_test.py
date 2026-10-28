@@ -109,7 +109,7 @@ def _id(rel: str) -> str:
 def test_pyvista_example(
     rel: str,
     isolated_examples: Path,
-    verify_image_cache,  # noqa: ARG001
+    verify_image_cache,  # ruff: ignore[unused-function-argument]
 ) -> None:
     """Run a PyVista example and diff its show() against a baseline."""
     _run(rel, isolated_examples)

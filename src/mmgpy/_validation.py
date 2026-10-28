@@ -134,12 +134,12 @@ class ValidationReport:
 
     @property
     def errors(self) -> list[ValidationIssue]:
-        """Get all error-level issues."""
+        """All error-level issues."""
         return [i for i in self.issues if i.severity == IssueSeverity.ERROR]
 
     @property
     def warnings(self) -> list[ValidationIssue]:
-        """Get all warning-level issues."""
+        """All warning-level issues."""
         return [i for i in self.issues if i.severity == IssueSeverity.WARNING]
 
     def __str__(self) -> str:

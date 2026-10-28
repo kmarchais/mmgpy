@@ -23,7 +23,7 @@ _DIMS_2D = 2
 _EDGE_VERTS = 2
 
 
-def generate(  # noqa: PLR0913  -- the standard MMG sizing knobs are explicit by design
+def generate(  # ruff: ignore[too-many-arguments]  -- the standard MMG sizing knobs are explicit by design
     boundary_vertices: ArrayLike,
     boundary_edges: ArrayLike,
     *,
@@ -32,7 +32,7 @@ def generate(  # noqa: PLR0913  -- the standard MMG sizing knobs are explicit by
     hmax: float | None = None,
     hausd: float | None = None,
     hgrad: float | None = None,
-    **opts: Any,  # noqa: ANN401  -- forwarded to MmgMesh2D.remesh
+    **opts: Any,  # ruff: ignore[any-type]  -- forwarded to MmgMesh2D.remesh
 ) -> pv.PolyData:
     """Triangulate a 2D domain from its boundary edges.
 
@@ -128,7 +128,7 @@ def generate(  # noqa: PLR0913  -- the standard MMG sizing knobs are explicit by
             options.setdefault(name, value)
 
     mesh.remesh(**options)
-    from mmgpy._pyvista import to_pyvista  # noqa: PLC0415
+    from mmgpy._pyvista import to_pyvista  # ruff: ignore[import-outside-top-level]
 
     return to_pyvista(mesh, include_refs=True, include_edges=True)
 

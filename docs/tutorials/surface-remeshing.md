@@ -87,8 +87,8 @@ from mmgpy import MmgSOptions
 opts = MmgSOptions(
     hmax=0.1,
     hausd=0.0001,  # Tight approximation
-    hgrad=1.1,     # Gentle size gradation
-    ar=180,        # No ridge detection
+    hgrad=1.1,  # Gentle size gradation
+    ar=180,  # No ridge detection
 )
 
 remeshed = mesh.mmg.remesh(opts)
