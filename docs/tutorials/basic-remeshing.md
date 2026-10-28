@@ -8,6 +8,8 @@ mmgpy operates on PyVista datasets through the `.mmg` accessor. Importing `mmgpy
 
 PyVista handles 40+ file formats out of the box. mmgpy adds Medit `.mesh`/`.meshb`:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -23,6 +25,8 @@ The accessor auto-detects the kind from cell types and coordinate dimensions; ac
 ## Simple Remeshing
 
 The simplest remeshing operation specifies only the maximum edge length:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -41,6 +45,8 @@ print(f"Cells:    {mesh.n_cells} -> {remeshed.n_cells}")
 
 `dataset.mmg.remesh(...)` returns a fresh PyVista dataset. Stats come from the dataset itself plus the accessor's quality helpers:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 qualities_before = mesh.mmg.element_qualities()
 qualities_after = remeshed.mmg.element_qualities()
@@ -55,6 +61,8 @@ print(f"Mean quality: {qualities_before.mean():.3f} -> {qualities_after.mean():.
 
 Control the range of edge lengths in the output mesh:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 remeshed = mesh.mmg.remesh(
     hmin=0.01,  # Minimum edge length (prevents over-refinement)
@@ -63,6 +71,8 @@ remeshed = mesh.mmg.remesh(
 ```
 
 For a uniform mesh with a single target size:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 # Using hsiz parameter
@@ -78,6 +88,8 @@ uniform = mesh.mmg.remesh_uniform(size=0.05)
 
 The `hausd` parameter controls how closely the output mesh approximates the input geometry:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
@@ -90,6 +102,8 @@ remeshed = mesh.mmg.remesh(
 ## Using Options Objects
 
 For complex configurations, use typed options objects:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -108,6 +122,8 @@ remeshed = mesh.mmg.remesh(opts)
 
 Options can also be unpacked as kwargs:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 remeshed = mesh.mmg.remesh(**opts.to_dict())
 ```
@@ -115,6 +131,8 @@ remeshed = mesh.mmg.remesh(**opts.to_dict())
 ## Optimization Without Topology Changes
 
 To improve quality without inserting/removing vertices:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 mesh = pv.read("input.mesh")
@@ -130,6 +148,8 @@ This only moves existing vertices to improve element quality.
 ## Factory Presets
 
 Options classes provide factory methods for common scenarios:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 from mmgpy import Mmg3DOptions
@@ -151,6 +171,8 @@ optimized = mesh.mmg.remesh(opt_opts)
 
 Save the remeshed output to any supported format:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 # Save to MMG native format
 remeshed.save("output.mesh")
@@ -160,6 +182,8 @@ remeshed.save("output.vtk")
 ```
 
 ## Complete Example
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv

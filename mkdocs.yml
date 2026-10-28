@@ -1,7 +1,7 @@
 site_name: mmgpy
 site_description: Python bindings for the MMG remeshing library
 # mike overrides site_url per version during deploy; this is the base for local builds
-site_url: https://kmarchais.github.io/mmgpy
+site_url: https://kmarchais.github.io/mmgpy/
 repo_url: https://github.com/kmarchais/mmgpy
 repo_name: kmarchais/mmgpy
 # NOTE: always points to main branch — "Edit" links on older versioned docs
@@ -10,7 +10,7 @@ edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2024-2026 Kevin Marchais
 
 theme:
-  name: material
+  variant: classic
   features:
     - navigation.instant
     - navigation.instant.prefetch
@@ -83,8 +83,8 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.snippets
   - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:zensical.extensions.emoji.twemoji
+      emoji_generator: !!python/name:zensical.extensions.emoji.to_svg
   - admonition
   - attr_list
   - md_in_html

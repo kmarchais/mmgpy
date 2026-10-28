@@ -114,6 +114,8 @@ entry on the `.mmg.remesh` call.
 
 Behind the scenes each constraint maps to
 
+<!-- codeblock-name: test_page -->
+
 ```python
 {"shape": "sphere", "center": [...], "radius": ..., "size": ...}
 # or
@@ -178,8 +180,6 @@ against an unreleased mmgpy version, the canonical pipeline lives in
 [workflow]: https://github.com/kmarchais/mmgpy/blob/main/.github/workflows/build-blender-extension.yml
 
 In short:
-
-<!-- mmgpy-test:skip -->
 
 ```bash
 # 1. Build the mmgpy wheel into ./blender_mmgpy/wheels

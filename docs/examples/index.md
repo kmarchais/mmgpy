@@ -8,6 +8,8 @@ This page showcases complete examples from the mmgpy repository. Every snippet h
 
 Improve mesh quality without changing topology.
 
+<!-- codeblock-name: test_page -->
+
 ```python
 """Mesh quality improvement with mean edge length preservation."""
 
@@ -32,6 +34,8 @@ print(f"Mean quality: {q_before.mean():.3f} -> {q_after.mean():.3f}")
 
 Remesh volumetric mesh with open boundaries.
 
+<!-- codeblock-name: test_page -->
+
 ```python
 """Remeshing with open boundary handling."""
 
@@ -54,7 +58,7 @@ remeshed = mesh.mmg.remesh(
 
 Remesh while applying mesh displacement.
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 """Lagrangian mesh motion remeshing."""
@@ -80,6 +84,8 @@ moved = mesh.mmg.move(displacement, hmax=0.1)
 
 Extract isosurface from implicit function.
 
+<!-- codeblock-name: test_page -->
+
 ```python
 """Level-set based surface extraction."""
 
@@ -104,6 +110,8 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 ### Local Sizing Control
 
 Apply regional mesh refinement via the `local_sizing` argument.
+
+<!-- codeblock-name: test_page -->
 
 ```python
 """Per-region mesh density control."""
@@ -133,6 +141,8 @@ remeshed = mesh.mmg.remesh(
 ### Solution-Based Adaptation
 
 Adapt mesh to a solution field via a custom metric on `point_data`.
+
+<!-- codeblock-name: test_page -->
 
 ```python
 """Mesh adaptation to solution gradients."""
@@ -168,7 +178,7 @@ walkthrough.
 
 ![2D Hessian adaptation](../assets/hessian_adaptation_2d.png)
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 from mmgpy.metrics import compute_hessian, create_metric_from_hessian
@@ -196,7 +206,7 @@ demo on an L-bracket cantilever.
 
 ![Laplacian vs elasticity on a 2D L-bracket](../assets/elasticity_propagation_2d.gif)
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 from mmgpy.lagrangian import propagate_displacement_elasticity
@@ -220,6 +230,8 @@ field = propagate_displacement_elasticity(
 ### Anisotropic Mesh Adaptation
 
 Directional mesh refinement.
+
+<!-- codeblock-name: test_page -->
 
 ```python
 """Anisotropic mesh adaptation."""
@@ -247,6 +259,8 @@ remeshed = mesh.mmg.remesh()
 
 Generate mesh from implicit function.
 
+<!-- codeblock-name: test_page -->
+
 ```python
 """Generate 2D mesh from implicit domain definition."""
 
@@ -273,6 +287,8 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 Industrial part surface remeshing.
 
+<!-- codeblock-name: test_page -->
+
 ```python
 """Mechanical part surface optimization."""
 
@@ -297,6 +313,8 @@ remeshed = mesh.mmg.remesh(
 ### Smooth Surface Remeshing
 
 Surface smoothing and refinement.
+
+<!-- codeblock-name: test_page -->
 
 ```python
 """Smooth surface mesh optimization."""
@@ -325,6 +343,8 @@ remeshed = mesh.mmg.remesh(options)
 
 Generate a surface from an implicit function.
 
+<!-- codeblock-name: test_page -->
+
 ```python
 """Generate surface mesh from implicit function."""
 
@@ -350,8 +370,6 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 ## Running Examples
 
 Clone the repository and run examples:
-
-<!-- mmgpy-test:skip -->
 
 ```bash
 git clone https://github.com/kmarchais/mmgpy.git

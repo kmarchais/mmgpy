@@ -15,6 +15,8 @@ This means the rest of mmgpy's API composes with PyVista without an intermediate
 
 PyVista's built-in `plot()` works on the dataset directly:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -33,6 +35,8 @@ remeshed.plot(color="lightblue", opacity=0.8, show_edges=False)
 
 For more complex visualizations, use any standard PyVista plotter:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -48,6 +52,8 @@ plotter.show()
 ## Working with PyVista datasets directly
 
 The `.mmg` accessor lets you operate on PyVista datasets without ever wrapping them:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -69,6 +75,8 @@ The accessor auto-detects the mesh kind (`mesh.mmg.kind` returns the matching `M
 ### Side-by-Side Comparison
 
 Compare before and after remeshing:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -95,6 +103,8 @@ pl.show()
 
 Visualize element quality with PyVista's built-in cell metrics:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -114,6 +124,8 @@ quality.plot(
 ### Animation
 
 Animate a remeshing sequence:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -140,6 +152,8 @@ pl.close()
 
 User-defined `point_data` survives on the dataset; `transfer_fields=True` interpolates non-MMG scalars onto the remeshed dataset:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -155,6 +169,8 @@ remeshed.plot(scalars="temperature", show_edges=True, cmap="coolwarm")
 ```
 
 ### From PyVista Primitives with Data
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -172,7 +188,7 @@ print(f"Elevation range: {elevation.min():.2f} to {elevation.max():.2f}")
 
 ### Interactive Refinement
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import pyvista as pv
@@ -202,7 +218,7 @@ pl.show()
 
 ### Picking Points for Refinement
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import pyvista as pv
@@ -230,6 +246,8 @@ pl.show()
 ## Complete Example
 
 Full workflow from PyVista primitive to remeshed output:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -270,7 +288,7 @@ When mmgpy is installed, every PyVista `UnstructuredGrid` and `PolyData` instanc
 
 ### Remeshing variants
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 import pyvista as pv
@@ -298,7 +316,7 @@ carved = mesh.mmg.remesh_levelset(levelset)
 
 Pass a `local_sizing` keyword to any remesh variant. Each constraint is a dict whose `"shape"` selects the geometry:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 constrained = mesh.mmg.remesh(
@@ -329,7 +347,7 @@ constrained = mesh.mmg.remesh(
 
 `.sol`/`.solb` files round-trip through the accessor; sibling `.sol` files are auto-loaded on `pv.read("foo.mesh")`:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 mesh.point_data["metric"] = my_metric
@@ -341,7 +359,7 @@ other.mmg.load_sol("foo.sol")
 
 ### Validation and quality
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 report = mesh.mmg.validate(detailed=True)  # ValidationReport
@@ -355,7 +373,7 @@ qualities = mesh.mmg.element_qualities()
 
 PyVista exposes 0-based VTK adjacency via `dataset.cell_neighbors(idx)` and `dataset.point_neighbors(idx)`. When you specifically need MMG's 1-based adjacency or its volume/area-weighted centroid (distinct from `dataset.center`, which is the unweighted arithmetic mean), use the accessor:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 mesh.mmg.adjacent_elements(1)  # MMG-adjacent elements of element 1
@@ -365,7 +383,7 @@ mesh.mmg.center_of_mass()  # volume-weighted (3D) or area-weighted (2D)
 
 ### Mesh kind
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 print(mesh.mmg.kind)  # MeshKind.TETRAHEDRAL / TRIANGULAR_2D / TRIANGULAR_SURFACE

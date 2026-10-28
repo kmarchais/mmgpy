@@ -16,15 +16,11 @@ in the environment's scripts directory, so the specific commands and their
 `_O3` aliases are available on `PATH`, including through `uv run`. The launchers
 forward arguments and exit codes to the native executables.
 
-<!-- mmgpy-test:skip -->
-
 ```bash
 pip install mmgpy
 ```
 
 If you only need the CLI tools (no Python API):
-
-<!-- mmgpy-test:skip -->
 
 ```bash
 uv tool install mmgpy
@@ -35,8 +31,6 @@ uv tool install mmgpy
 The `mmg` command automatically detects the mesh type and remeshes through the
 Python API. The specific `mmg2d`, `mmg3d`, and `mmgs` commands run native MMG
 executables:
-
-<!-- mmgpy-test:skip -->
 
 ```bash
 mmg input.mesh -o output.mesh -hmax 0.1
@@ -50,8 +44,6 @@ This is equivalent to running `mmg3d`, `mmg2d`, or `mmgs` depending on the input
 
 ### Version Information
 
-<!-- mmgpy-test:skip -->
-
 ```bash
 mmg --version
 # mmgpy 0.4.0
@@ -61,8 +53,6 @@ mmg --help
 ```
 
 ## Quick Examples
-
-<!-- mmgpy-test:skip -->
 
 ```bash
 # Auto-detect mesh type

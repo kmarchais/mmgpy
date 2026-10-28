@@ -17,6 +17,8 @@ Each constraint is a `dict` with a `"shape"` key plus the shape-specific paramet
 
 Refine mesh within a sphere:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -38,6 +40,8 @@ remeshed = mesh.mmg.remesh(
 ```
 
 Multiple spheres can be combined; where they overlap, the minimum size wins:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -63,6 +67,8 @@ remeshed = mesh.mmg.remesh(
 
 Refine within an axis-aligned bounding box:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -83,7 +89,7 @@ remeshed = mesh.mmg.remesh(
 
 For 2D meshes pass 2D bounds:
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -101,6 +107,8 @@ remeshed = mesh.mmg.remesh(
 ## Cylindrical Refinement
 
 Refine within a cylindrical region (3D meshes only):
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -125,6 +133,8 @@ remeshed = mesh.mmg.remesh(
 ## Distance-Based Sizing
 
 Create a graded mesh with size varying by distance from a point:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -151,6 +161,8 @@ This creates a smooth gradation from fine to coarse mesh.
 ## Combining Constraints
 
 Multiple sizing constraints can be combined. Where they overlap, the minimum size wins:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -187,6 +199,8 @@ remeshed = mesh.mmg.remesh(
 
 For total control, compute the per-vertex sizing metric yourself and place it on `point_data["metric"]`. The accessor will pick it up:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 from mmgpy.sizing import (
@@ -212,6 +226,8 @@ remeshed = mesh.mmg.remesh(nosizreq=True, hgrad=1.3, verbose=-1)
 ## Complete Example: CFD Boundary Layer
 
 Create a refined mesh near a surface for CFD simulations:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv

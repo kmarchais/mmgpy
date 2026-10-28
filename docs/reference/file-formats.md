@@ -69,6 +69,8 @@ End
 
 ## Format Selection Guide
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -79,6 +81,8 @@ mesh = pv.read("input.mesh")
 ### For MMG Processing
 
 Use `.mesh` format:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 mesh.save("output.mesh")
@@ -92,6 +96,8 @@ mesh.save("output.mesh")
 
 Use VTK formats:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 mesh.save("output.vtk")  # Legacy
 mesh.save("output.vtu")  # XML (preferred)
@@ -100,6 +106,8 @@ mesh.save("output.vtu")  # XML (preferred)
 ### For CAD/3D Printing
 
 Use STL:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -133,6 +141,8 @@ When reading a `.mesh` / `.meshb` file, a sibling `.sol` (same stem, same direct
 
 ### Writing companion `.sol` files
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -151,6 +161,8 @@ mesh.mmg.save_sol("output_metric.sol")
 ```
 
 ### Loading solution files
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -175,6 +187,8 @@ if "temperature" in mesh.point_data:
 | Human readable | Yes                 | No              |
 | Precision      | Text representation | Full precision  |
 
+<!-- codeblock-name: test_page -->
+
 ```python
 # ASCII
 mesh.save("output.mesh")
@@ -186,6 +200,8 @@ mesh.save("output.meshb")
 ## Format Detection
 
 PyVista (and mmgpy's registered Medit reader) automatically detect the format from the file extension:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -223,6 +239,8 @@ Some formats do not support all features:
 ### Large Files
 
 For large meshes:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 # Use binary format

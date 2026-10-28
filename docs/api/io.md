@@ -8,6 +8,8 @@ mmgpy registers a Medit reader/writer plugin with PyVista on import, so `pv.read
 
 Use `pyvista.read` for everything. With `mmgpy` imported, the same call also reads MMG's native Medit format:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -46,6 +48,8 @@ accessor.
 
 ### Usage
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -61,6 +65,8 @@ print(f"Kind: {mesh.mmg.kind}")  # MeshKind.TETRAHEDRAL, etc.
 ## From PyVista Primitives
 
 The accessor works on any `pv.UnstructuredGrid` or `pv.PolyData`, so you don't need an explicit conversion:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -83,6 +89,8 @@ remeshed_plane = plane.mmg.remesh(hsiz=0.1)
 
 Use PyVista's `save()`:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 # MMG native (registered reader/writer)
 remeshed_volume.save("output.mesh")
@@ -99,6 +107,8 @@ Format is inferred from the file extension.
 
 ## Complete Example
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -113,6 +123,10 @@ remeshed.save("output.mesh")  # MMG native (fast)
 remeshed.save("output.vtk")  # For ParaView
 remeshed.save("output.vtu")  # VTK XML format
 
+reloaded = pv.read("output.mesh")
+assert reloaded.n_points == remeshed.n_points
+assert reloaded.n_cells == remeshed.n_cells
+
 # Or build from a PyVista primitive
 torus = pv.ParametricTorus()
 remeshed_torus = torus.mmg.remesh(hmax=0.1)
@@ -122,6 +136,8 @@ remeshed_torus.save("torus.mesh")
 ## Generating a 2D Mesh from Boundary Edges
 
 `mmgpy.mmg2d.generate` triangulates a 2D domain described by a vertex+edge outline. Internally it drives the same `MMG2D_mmg2dmesh` entry point that the standalone executable uses when fed a `.mesh` file with no triangles.
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import numpy as np

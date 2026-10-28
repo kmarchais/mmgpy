@@ -16,6 +16,8 @@ Tetrahedral meshes representing 3D volumes. Used for:
 - Computational fluid dynamics (CFD)
 - Structural simulations
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -31,6 +33,8 @@ Triangular meshes in 2D. Used for:
 - 2D simulations
 - Planar domain meshing
 - Height field representations
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -48,6 +52,8 @@ Triangular meshes representing 3D surfaces. Used for:
 - CAD model preparation
 - Graphics and visualization
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -59,6 +65,8 @@ print(mesh.mmg.kind)  # MeshKind.TRIANGULAR_SURFACE
 ## Building Datasets
 
 You can use any PyVista construction path. The accessor detects the kind from cell types and coordinate dimensions:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import numpy as np
@@ -88,6 +96,8 @@ print(mesh_2d.mmg.kind)  # MeshKind.TRIANGULAR_2D
 
 The default `remesh()` operation modifies the mesh topology to achieve target element sizes:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 remeshed = mesh_3d.mmg.remesh(
     hmin=0.01,
@@ -106,6 +116,8 @@ This may:
 
 To improve quality without changing topology:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -115,6 +127,8 @@ optimized = mesh.mmg.remesh_optimize()
 ```
 
 Or equivalently:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import pyvista as pv
@@ -128,6 +142,8 @@ optimized = mesh.mmg.remesh(optim=1, noinsert=1)
 
 To remesh with a single target size everywhere:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -139,6 +155,8 @@ uniform = mesh.mmg.remesh_uniform(size=0.05)
 ### Level-Set Remeshing
 
 Extract and remesh an isosurface:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import numpy as np
@@ -159,7 +177,7 @@ discretized = mesh.mmg.remesh_levelset(levelset)
 
 Remesh while preserving a displacement field (useful for moving meshes):
 
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 ```python
 displacement = np.zeros((mesh.n_points, 3))
@@ -184,6 +202,8 @@ Control edge lengths globally:
 ### Local Sizing
 
 Refine specific regions with sizing constraints passed to `remesh()`:
+
+<!-- codeblock-name: test_page -->
 
 ```python
 remeshed = mesh.mmg.remesh(
@@ -222,6 +242,8 @@ remeshed = mesh.mmg.remesh(
 
 For anisotropic remeshing, define a metric tensor at each vertex via `point_data`:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import numpy as np
 import pyvista as pv
@@ -245,6 +267,8 @@ mmgpy uses normalized quality measures:
 
 Per-element quality is available via the accessor:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 qualities = remeshed.mmg.element_qualities()
 
@@ -267,6 +291,8 @@ mmgpy supports 40+ file formats through PyVista. VTK-native formats (`.vtk`, `.v
 
 Use `pv.read` and `dataset.save` for everything:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 mesh = pv.read("model.stl")
 mesh.save("output.vtk")
@@ -282,6 +308,8 @@ Control output verbosity:
 | `0`   | Errors only        |
 | `1`   | Standard info      |
 | `2+`  | Debug output       |
+
+<!-- codeblock-name: test_page -->
 
 ```python
 silent = mesh.mmg.remesh(hmax=0.1, verbose=-1)

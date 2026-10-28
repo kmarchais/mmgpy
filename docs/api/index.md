@@ -97,6 +97,8 @@ mmgpy
 
 ## Basic Usage Pattern
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
@@ -114,6 +116,8 @@ remeshed.save("output.vtk")
 
 All public APIs are fully typed. Use with a type-aware IDE for autocomplete:
 
+<!-- codeblock-name: test_page -->
+
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401
@@ -125,6 +129,8 @@ remeshed: pv.UnstructuredGrid = mesh.mmg.remesh(opts)
 ```
 
 ## Version Information
+
+<!-- codeblock-name: test_page -->
 
 ```python
 import mmgpy
