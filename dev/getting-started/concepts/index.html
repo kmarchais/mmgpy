@@ -13,6 +13,7 @@
         <link rel="canonical" href="https://kmarchais.github.io/mmgpy/latest/getting-started/concepts/">
       
       
+      
         <link rel="prev" href="../quickstart/">
       
       
@@ -23,7 +24,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="zensical-0.0.73">
     
     
       
@@ -31,10 +32,15 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/classic/main.94dd801d.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/classic/palette.813d4b3f.min.css">
       
       
 
@@ -48,16 +54,14 @@
         
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
-    
       <link rel="stylesheet" href="../../assets/css/blender-extension-stats.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -78,14 +82,11 @@
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
-    <label class="md-overlay" for="__drawer"></label>
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
     <div data-md-component="skip">
-      
-        
-        <a href="#core-concepts" class="md-skip">
-          Skip to content
-        </a>
-      
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
     </div>
     <div data-md-component="announce">
       
@@ -109,6 +110,7 @@
     <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -163,56 +165,28 @@
         <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
-        <div class="md-search" data-md-component="search" role="dialog">
-  <label class="md-search__overlay" for="__search"></label>
-  <div class="md-search__inner" role="search">
-    <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
-      <label class="md-search__icon md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
-      </label>
-      <nav class="md-search__options" aria-label="Search">
-        
-        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
-      </nav>
-      
-        <div class="md-search__suggest" data-md-component="search-suggest"></div>
-      
-    </form>
-    <div class="md-search__output">
-      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="search-result">
-          <div class="md-search-result__meta">
-            Initializing search
-          </div>
-          <ol class="md-search-result__list" role="presentation"></ol>
-        </div>
-      </div>
-    </div>
-  </div>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
 </div>
       
     
-    
-      <div class="md-header__source">
+    <div class="md-header__source">
+      
         <a href="https://github.com/kmarchais/mmgpy" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
   </div>
   <div class="md-source__repository">
     kmarchais/mmgpy
   </div>
 </a>
-      </div>
-    
+      
+    </div>
   </nav>
   
 </header>
@@ -236,9 +210,6 @@
       <a href="../.." class="md-tabs__link">
         
   
-  
-    
-  
   Home
 
       </a>
@@ -254,11 +225,13 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item md-tabs__item--active">
         <a href="../installation/" class="md-tabs__link">
           
-  
   
   Getting Started
 
@@ -274,11 +247,13 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item">
         <a href="../../tutorials/basic-remeshing/" class="md-tabs__link">
           
-  
   
   Tutorials
 
@@ -294,11 +269,13 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item">
         <a href="../../examples/" class="md-tabs__link">
           
-  
   
   Examples
 
@@ -314,11 +291,13 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item">
         <a href="../../api/" class="md-tabs__link">
           
-  
   
   API Reference
 
@@ -334,11 +313,13 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item">
         <a href="../../reference/cli/" class="md-tabs__link">
           
-  
   
   Reference
 
@@ -357,9 +338,6 @@
       <a href="../../blender-extension/" class="md-tabs__link">
         
   
-  
-    
-  
   Blender Extension
 
       </a>
@@ -375,9 +353,6 @@
     <li class="md-tabs__item">
       <a href="../../changelog/" class="md-tabs__link">
         
-  
-  
-    
   
   Changelog
 
@@ -421,7 +396,7 @@
       <a href="https://github.com/kmarchais/mmgpy" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
   </div>
   <div class="md-source__repository">
     kmarchais/mmgpy
@@ -445,8 +420,7 @@
   <span class="md-ellipsis">
     
   
-    Home
-  
+  Home
 
     
   </span>
@@ -493,8 +467,7 @@
   <span class="md-ellipsis">
     
   
-    Getting Started
-  
+  Getting Started
 
     
   </span>
@@ -504,19 +477,19 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
   
-    Getting Started
-  
+  Getting Started
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
               
                 
+                  
   
   
   
@@ -529,8 +502,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
-  
+  Installation
 
     
   </span>
@@ -541,10 +513,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -557,8 +529,7 @@
   <span class="md-ellipsis">
     
   
-    Quick Start
-  
+  Quick Start
 
     
   </span>
@@ -569,10 +540,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
     
@@ -581,7 +552,9 @@
   
     <li class="md-nav__item md-nav__item--active">
       
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
       
       
         
@@ -594,8 +567,7 @@
   <span class="md-ellipsis">
     
   
-    Core Concepts
-  
+  Core Concepts
 
     
   </span>
@@ -605,15 +577,14 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="./" class="md-nav__link md-nav__link--active">
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    Core Concepts
-  
+  Core Concepts
 
     
   </span>
@@ -624,7 +595,8 @@
       
         
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
   
   
   
@@ -633,16 +605,16 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      Table of contents
+      On this page
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
   <a href="#mesh-types" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Mesh Types
-      
+      </span>
     </span>
   </a>
   
@@ -652,9 +624,9 @@
           <li class="md-nav__item">
   <a href="#3d-volumetric-meshes-meshkindtetrahedral" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        3D Volumetric Meshes (MeshKind.TETRAHEDRAL)
-      
+      <span class="md-typeset">
+        3D Volumetric Meshes (<code>MeshKind.TETRAHEDRAL</code>)
+      </span>
     </span>
   </a>
   
@@ -663,9 +635,9 @@
           <li class="md-nav__item">
   <a href="#2d-planar-meshes-meshkindtriangular_2d" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        2D Planar Meshes (MeshKind.TRIANGULAR_2D)
-      
+      <span class="md-typeset">
+        2D Planar Meshes (<code>MeshKind.TRIANGULAR_2D</code>)
+      </span>
     </span>
   </a>
   
@@ -674,9 +646,9 @@
           <li class="md-nav__item">
   <a href="#3d-surface-meshes-meshkindtriangular_surface" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        3D Surface Meshes (MeshKind.TRIANGULAR_SURFACE)
-      
+      <span class="md-typeset">
+        3D Surface Meshes (<code>MeshKind.TRIANGULAR_SURFACE</code>)
+      </span>
     </span>
   </a>
   
@@ -690,9 +662,9 @@
         <li class="md-nav__item">
   <a href="#building-datasets" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Building Datasets
-      
+      </span>
     </span>
   </a>
   
@@ -701,9 +673,9 @@
         <li class="md-nav__item">
   <a href="#remeshing-operations" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Remeshing Operations
-      
+      </span>
     </span>
   </a>
   
@@ -713,9 +685,9 @@
           <li class="md-nav__item">
   <a href="#standard-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Standard Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -724,9 +696,9 @@
           <li class="md-nav__item">
   <a href="#optimization-only" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Optimization Only
-      
+      </span>
     </span>
   </a>
   
@@ -735,9 +707,9 @@
           <li class="md-nav__item">
   <a href="#uniform-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Uniform Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -746,9 +718,9 @@
           <li class="md-nav__item">
   <a href="#level-set-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Level-Set Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -757,9 +729,9 @@
           <li class="md-nav__item">
   <a href="#lagrangian-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Lagrangian Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -773,9 +745,9 @@
         <li class="md-nav__item">
   <a href="#mesh-size-control" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Mesh Size Control
-      
+      </span>
     </span>
   </a>
   
@@ -785,9 +757,9 @@
           <li class="md-nav__item">
   <a href="#global-sizing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Global Sizing
-      
+      </span>
     </span>
   </a>
   
@@ -796,9 +768,9 @@
           <li class="md-nav__item">
   <a href="#local-sizing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Local Sizing
-      
+      </span>
     </span>
   </a>
   
@@ -807,9 +779,9 @@
           <li class="md-nav__item">
   <a href="#metric-fields" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Metric Fields
-      
+      </span>
     </span>
   </a>
   
@@ -823,9 +795,9 @@
         <li class="md-nav__item">
   <a href="#quality-metrics" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Quality Metrics
-      
+      </span>
     </span>
   </a>
   
@@ -834,9 +806,9 @@
         <li class="md-nav__item">
   <a href="#file-formats" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         File Formats
-      
+      </span>
     </span>
   </a>
   
@@ -845,9 +817,9 @@
         <li class="md-nav__item">
   <a href="#verbosity-levels" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Verbosity Levels
-      
+      </span>
     </span>
   </a>
   
@@ -860,10 +832,11 @@
     </li>
   
 
+                
               
-            
-          </ul>
-        </nav>
+            </ul>
+          </nav>
+        
       
     </li>
   
@@ -901,8 +874,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
-  
+  Tutorials
 
     
   </span>
@@ -912,19 +884,19 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
   
-    Tutorials
-  
+  Tutorials
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
               
                 
+                  
   
   
   
@@ -937,8 +909,7 @@
   <span class="md-ellipsis">
     
   
-    Basic Remeshing
-  
+  Basic Remeshing
 
     
   </span>
@@ -949,10 +920,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -965,8 +936,7 @@
   <span class="md-ellipsis">
     
   
-    Surface Remeshing
-  
+  Surface Remeshing
 
     
   </span>
@@ -977,10 +947,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -993,8 +963,7 @@
   <span class="md-ellipsis">
     
   
-    Adaptive Sizing
-  
+  Adaptive Sizing
 
     
   </span>
@@ -1005,10 +974,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1021,8 +990,7 @@
   <span class="md-ellipsis">
     
   
-    Hessian-Based Adaptation
-  
+  Hessian-Based Adaptation
 
     
   </span>
@@ -1033,10 +1001,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1049,8 +1017,7 @@
   <span class="md-ellipsis">
     
   
-    Elasticity Propagation
-  
+  Elasticity Propagation
 
     
   </span>
@@ -1061,10 +1028,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1077,8 +1044,7 @@
   <span class="md-ellipsis">
     
   
-    PyVista Integration
-  
+  PyVista Integration
 
     
   </span>
@@ -1089,10 +1055,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1105,8 +1071,7 @@
   <span class="md-ellipsis">
     
   
-    Level-Set Extraction
-  
+  Level-Set Extraction
 
     
   </span>
@@ -1117,10 +1082,11 @@
     </li>
   
 
+                
               
-            
-          </ul>
-        </nav>
+            </ul>
+          </nav>
+        
       
     </li>
   
@@ -1158,8 +1124,7 @@
   <span class="md-ellipsis">
     
   
-    Examples
-  
+  Examples
 
     
   </span>
@@ -1169,19 +1134,19 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
   
-    Examples
-  
+  Examples
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
               
                 
+                  
   
   
   
@@ -1194,8 +1159,7 @@
   <span class="md-ellipsis">
     
   
-    Gallery
-  
+  Gallery
 
     
   </span>
@@ -1206,10 +1170,11 @@
     </li>
   
 
+                
               
-            
-          </ul>
-        </nav>
+            </ul>
+          </nav>
+        
       
     </li>
   
@@ -1247,8 +1212,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
-  
+  API Reference
 
     
   </span>
@@ -1258,19 +1222,19 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
   
-    API Reference
-  
+  API Reference
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
               
                 
+                  
   
   
   
@@ -1283,8 +1247,7 @@
   <span class="md-ellipsis">
     
   
-    Overview
-  
+  Overview
 
     
   </span>
@@ -1295,10 +1258,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1311,8 +1274,7 @@
   <span class="md-ellipsis">
     
   
-    Options
-  
+  Options
 
     
   </span>
@@ -1323,10 +1285,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1339,8 +1301,7 @@
   <span class="md-ellipsis">
     
   
-    Results & Validation
-  
+  Results & Validation
 
     
   </span>
@@ -1351,10 +1312,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1367,8 +1328,7 @@
   <span class="md-ellipsis">
     
   
-    Sizing Constraints
-  
+  Sizing Constraints
 
     
   </span>
@@ -1379,10 +1339,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1395,8 +1355,7 @@
   <span class="md-ellipsis">
     
   
-    Metrics
-  
+  Metrics
 
     
   </span>
@@ -1407,10 +1366,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1423,8 +1382,7 @@
   <span class="md-ellipsis">
     
   
-    I/O Functions
-  
+  I/O Functions
 
     
   </span>
@@ -1435,10 +1393,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1451,8 +1409,7 @@
   <span class="md-ellipsis">
     
   
-    Lagrangian Motion
-  
+  Lagrangian Motion
 
     
   </span>
@@ -1463,10 +1420,11 @@
     </li>
   
 
+                
               
-            
-          </ul>
-        </nav>
+            </ul>
+          </nav>
+        
       
     </li>
   
@@ -1504,8 +1462,7 @@
   <span class="md-ellipsis">
     
   
-    Reference
-  
+  Reference
 
     
   </span>
@@ -1515,19 +1472,19 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
   
-    Reference
-  
+  Reference
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
               
                 
+                  
   
   
   
@@ -1540,8 +1497,7 @@
   <span class="md-ellipsis">
     
   
-    CLI Tools
-  
+  CLI Tools
 
     
   </span>
@@ -1552,10 +1508,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1568,8 +1524,7 @@
   <span class="md-ellipsis">
     
   
-    File Formats
-  
+  File Formats
 
     
   </span>
@@ -1580,10 +1535,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1596,8 +1551,7 @@
   <span class="md-ellipsis">
     
   
-    MMG Parameters
-  
+  MMG Parameters
 
     
   </span>
@@ -1608,10 +1562,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1626,8 +1580,7 @@
   <span class="md-ellipsis">
     
   
-    API Coverage
-  
+  API Coverage
 
     
   </span>
@@ -1638,10 +1591,10 @@
     </li>
   
 
-              
-            
+                
               
                 
+                  
   
   
   
@@ -1656,8 +1609,7 @@
   <span class="md-ellipsis">
     
   
-    Benchmarks
-  
+  Benchmarks
 
     
   </span>
@@ -1668,10 +1620,11 @@
     </li>
   
 
+                
               
-            
-          </ul>
-        </nav>
+            </ul>
+          </nav>
+        
       
     </li>
   
@@ -1691,8 +1644,7 @@
   <span class="md-ellipsis">
     
   
-    Blender Extension
-  
+  Blender Extension
 
     
   </span>
@@ -1720,8 +1672,7 @@
   <span class="md-ellipsis">
     
   
-    Changelog
-  
+  Changelog
 
     
   </span>
@@ -1743,10 +1694,12 @@
               
               <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
+                  
                   <div class="md-sidebar__inner">
                     
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
   
   
   
@@ -1755,16 +1708,16 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      Table of contents
+      On this page
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
   <a href="#mesh-types" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Mesh Types
-      
+      </span>
     </span>
   </a>
   
@@ -1774,9 +1727,9 @@
           <li class="md-nav__item">
   <a href="#3d-volumetric-meshes-meshkindtetrahedral" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        3D Volumetric Meshes (MeshKind.TETRAHEDRAL)
-      
+      <span class="md-typeset">
+        3D Volumetric Meshes (<code>MeshKind.TETRAHEDRAL</code>)
+      </span>
     </span>
   </a>
   
@@ -1785,9 +1738,9 @@
           <li class="md-nav__item">
   <a href="#2d-planar-meshes-meshkindtriangular_2d" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        2D Planar Meshes (MeshKind.TRIANGULAR_2D)
-      
+      <span class="md-typeset">
+        2D Planar Meshes (<code>MeshKind.TRIANGULAR_2D</code>)
+      </span>
     </span>
   </a>
   
@@ -1796,9 +1749,9 @@
           <li class="md-nav__item">
   <a href="#3d-surface-meshes-meshkindtriangular_surface" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        3D Surface Meshes (MeshKind.TRIANGULAR_SURFACE)
-      
+      <span class="md-typeset">
+        3D Surface Meshes (<code>MeshKind.TRIANGULAR_SURFACE</code>)
+      </span>
     </span>
   </a>
   
@@ -1812,9 +1765,9 @@
         <li class="md-nav__item">
   <a href="#building-datasets" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Building Datasets
-      
+      </span>
     </span>
   </a>
   
@@ -1823,9 +1776,9 @@
         <li class="md-nav__item">
   <a href="#remeshing-operations" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Remeshing Operations
-      
+      </span>
     </span>
   </a>
   
@@ -1835,9 +1788,9 @@
           <li class="md-nav__item">
   <a href="#standard-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Standard Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -1846,9 +1799,9 @@
           <li class="md-nav__item">
   <a href="#optimization-only" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Optimization Only
-      
+      </span>
     </span>
   </a>
   
@@ -1857,9 +1810,9 @@
           <li class="md-nav__item">
   <a href="#uniform-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Uniform Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -1868,9 +1821,9 @@
           <li class="md-nav__item">
   <a href="#level-set-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Level-Set Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -1879,9 +1832,9 @@
           <li class="md-nav__item">
   <a href="#lagrangian-remeshing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Lagrangian Remeshing
-      
+      </span>
     </span>
   </a>
   
@@ -1895,9 +1848,9 @@
         <li class="md-nav__item">
   <a href="#mesh-size-control" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Mesh Size Control
-      
+      </span>
     </span>
   </a>
   
@@ -1907,9 +1860,9 @@
           <li class="md-nav__item">
   <a href="#global-sizing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Global Sizing
-      
+      </span>
     </span>
   </a>
   
@@ -1918,9 +1871,9 @@
           <li class="md-nav__item">
   <a href="#local-sizing" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Local Sizing
-      
+      </span>
     </span>
   </a>
   
@@ -1929,9 +1882,9 @@
           <li class="md-nav__item">
   <a href="#metric-fields" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Metric Fields
-      
+      </span>
     </span>
   </a>
   
@@ -1945,9 +1898,9 @@
         <li class="md-nav__item">
   <a href="#quality-metrics" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Quality Metrics
-      
+      </span>
     </span>
   </a>
   
@@ -1956,9 +1909,9 @@
         <li class="md-nav__item">
   <a href="#file-formats" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         File Formats
-      
+      </span>
     </span>
   </a>
   
@@ -1967,9 +1920,9 @@
         <li class="md-nav__item">
   <a href="#verbosity-levels" class="md-nav__link">
     <span class="md-ellipsis">
-      
+      <span class="md-typeset">
         Verbosity Levels
-      
+      </span>
     </span>
   </a>
   
@@ -2002,6 +1955,7 @@
     <li class="md-path__item">
       <a href="../.." class="md-path__link">
         
+  
   <span class="md-ellipsis">
     Home
   </span>
@@ -2017,9 +1971,13 @@
   
     
     
+    
+    
+    
       <li class="md-path__item">
         <a href="../installation/" class="md-path__link">
           
+  
   <span class="md-ellipsis">
     Getting Started
   </span>
@@ -2035,9 +1993,9 @@
 
               
               <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
                 
                   
-
 
   
   
@@ -2055,6 +2013,8 @@
 <li>Computational fluid dynamics (CFD)</li>
 <li>Structural simulations</li>
 </ul>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -2068,6 +2028,8 @@
 <li>Planar domain meshing</li>
 <li>Height field representations</li>
 </ul>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -2081,6 +2043,8 @@
 <li>CAD model preparation</li>
 <li>Graphics and visualization</li>
 </ul>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -2089,6 +2053,8 @@
 </span></code></pre></div>
 <h2 id="building-datasets">Building Datasets<a class="headerlink" href="#building-datasets" title="Permanent link">&para;</a></h2>
 <p>You can use any PyVista construction path. The accessor detects the kind from cell types and coordinate dimensions:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
@@ -2112,6 +2078,8 @@
 <h2 id="remeshing-operations">Remeshing Operations<a class="headerlink" href="#remeshing-operations" title="Permanent link">&para;</a></h2>
 <h3 id="standard-remeshing">Standard Remeshing<a class="headerlink" href="#standard-remeshing" title="Permanent link">&para;</a></h3>
 <p>The default <code>remesh()</code> operation modifies the mesh topology to achieve target element sizes:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh_3d</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">hmin</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
@@ -2126,6 +2094,8 @@
 </ul>
 <h3 id="optimization-only">Optimization Only<a class="headerlink" href="#optimization-only" title="Permanent link">&para;</a></h3>
 <p>To improve quality without changing topology:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
@@ -2133,6 +2103,8 @@
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">optimized</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh_optimize</span><span class="p">()</span>
 </span></code></pre></div>
 <p>Or equivalently:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
@@ -2141,6 +2113,8 @@
 </span></code></pre></div>
 <h3 id="uniform-remeshing">Uniform Remeshing<a class="headerlink" href="#uniform-remeshing" title="Permanent link">&para;</a></h3>
 <p>To remesh with a single target size everywhere:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -2149,6 +2123,8 @@
 </span></code></pre></div>
 <h3 id="level-set-remeshing">Level-Set Remeshing<a class="headerlink" href="#level-set-remeshing" title="Permanent link">&para;</a></h3>
 <p>Extract and remesh an isosurface:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
@@ -2164,7 +2140,7 @@
 </span></code></pre></div>
 <h3 id="lagrangian-remeshing">Lagrangian Remeshing<a class="headerlink" href="#lagrangian-remeshing" title="Permanent link">&para;</a></h3>
 <p>Remesh while preserving a displacement field (useful for moving meshes):</p>
-<!-- mmgpy-test:skip -->
+<!-- pytestmark: skip -->
 
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">displacement</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">mesh</span><span class="o">.</span><span class="n">n_points</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">displacement</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># Move all vertices in x</span>
@@ -2202,6 +2178,8 @@
 </table>
 <h3 id="local-sizing">Local Sizing<a class="headerlink" href="#local-sizing" title="Permanent link">&para;</a></h3>
 <p>Refine specific regions with sizing constraints passed to <code>remesh()</code>:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">remeshed</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">local_sizing</span><span class="o">=</span><span class="p">[</span>
@@ -2235,6 +2213,8 @@
 </span></code></pre></div>
 <h3 id="metric-fields">Metric Fields<a class="headerlink" href="#metric-fields" title="Permanent link">&para;</a></h3>
 <p>For anisotropic remeshing, define a metric tensor at each vertex via <code>point_data</code>:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyvista</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pv</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mmgpy</span>  <span class="c1"># noqa: F401</span>
@@ -2254,6 +2234,8 @@
 <li><strong>Quality = 0.0</strong> - Degenerate element (collapsed)</li>
 </ul>
 <p>Per-element quality is available via the accessor:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">qualities</span> <span class="o">=</span> <span class="n">remeshed</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">element_qualities</span><span class="p">()</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Min quality:  </span><span class="si">{</span><span class="n">qualities</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -2303,6 +2285,8 @@
 </tbody>
 </table>
 <p>Use <code>pv.read</code> and <code>dataset.save</code> for everything:</p>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">pv</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;model.stl&quot;</span><span class="p">)</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">mesh</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;output.vtk&quot;</span><span class="p">)</span>
 </span></code></pre></div>
@@ -2334,9 +2318,13 @@
 </tr>
 </tbody>
 </table>
+<!-- codeblock-name: test_page -->
+
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">silent</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">loud</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">mmg</span><span class="o">.</span><span class="n">remesh</span><span class="p">(</span><span class="n">hmax</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
+
+
 
 
 
@@ -2379,8 +2367,8 @@
   
   
     Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
     </a>
   
 </div>
@@ -2396,7 +2384,7 @@
       
     
     <a href="https://github.com/kmarchais/mmgpy" target="_blank" rel="noopener" title="github.com" class="md-social__link">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
     </a>
   
     
@@ -2407,7 +2395,7 @@
       
     
     <a href="https://pypi.org/project/mmgpy/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
     </a>
   
 </div>
@@ -2417,7 +2405,7 @@
 </footer>
       
     </div>
-    <div class="md-dialog" data-md-component="dialog">
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
@@ -2425,10 +2413,14 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.select", "content.tabs.link", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.instant.prefetch","navigation.tracking","navigation.tabs","navigation.sections","navigation.expand","navigation.path","navigation.top","search.suggest","search.highlight","content.code.copy","content.code.select","content.tabs.link","content.tooltips"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"latest","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
       
