@@ -51,10 +51,6 @@ updates:
           - "mkdocstrings-python"
           - "ruff"
     ignore:
-      # `build` 1.5+ drops Python 3.9; hold until we drop 3.9 too.
-      - dependency-name: "build"
-        update-types:
-          ["version-update:semver-minor", "version-update:semver-major"]
       # mypy is being replaced by ty — see issue #309.
       - dependency-name: "mypy"
       # Majors need staged migration PRs (see issues #308 / #305).
