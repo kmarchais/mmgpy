@@ -4,6 +4,9 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   conda-build:
     strategy:
@@ -23,6 +26,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set stdlib variant
         id: stdlib
