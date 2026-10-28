@@ -211,11 +211,11 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          uv venv -p 3.13
+          uv venv
           uv pip install scikit-build-core pybind11 numpy
 
       - name: Build source distribution
-        run: uv build --sdist
+        run: uv build --sdist --python .venv/bin/python
 
       - name: Upload sdist as artifact
         uses: actions/upload-artifact@v7
