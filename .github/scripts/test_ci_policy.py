@@ -1,7 +1,7 @@
 """Exercise selective CI and merge-gate failure cases without native dependencies."""
 
 # unittest keeps these checks independent of the native test environment.
-# ruff: noqa: PT009
+# ruff: file-ignore[pytest-unittest-assertion]
 
 import copy
 import unittest

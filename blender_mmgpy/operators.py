@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 try:
     import numpy as np
 
-    from mmgpy._mmgpy import MmgMeshS  # noqa: PLC2701
+    from mmgpy._mmgpy import MmgMeshS  # ruff: ignore[import-private-name]
     from mmgpy.sizing import (
         BoxSize,
         SizingConstraint,

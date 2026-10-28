@@ -112,9 +112,9 @@ CadQuery (CAD) → VTK PolyData → MMGS (surface) → TetGen (tets) → MMG3D (
 
 ```python
 mesh = mmgpy.Mesh.from_cadquery(shape, tolerance=0.1)
-mesh.remesh(hausd=0.01)      # Surface optimization
+mesh.remesh(hausd=0.01)  # Surface optimization
 mesh = mesh.tetrahedralize()  # TetGen
-mesh.remesh(hmax=0.5)         # Volume optimization
+mesh.remesh(hmax=0.5)  # Volume optimization
 ```
 
 **Dependencies:** `pip install mmgpy[cad]` → cadquery, tetgen

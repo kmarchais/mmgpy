@@ -129,8 +129,8 @@ def _is_interactive_terminal() -> bool:  # pragma: no cover
         a TTY; ``True`` otherwise.
 
     """
-    import os  # noqa: PLC0415
-    import sys  # noqa: PLC0415
+    import os  # ruff: ignore[import-outside-top-level]
+    import sys  # ruff: ignore[import-outside-top-level]
 
     # Check for common CI environment variables
     ci_vars = ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS", "CIRCLECI", "JENKINS_URL")
@@ -162,7 +162,7 @@ def _resolve_progress_callback(
         it must be used as a context manager to manage the Rich display.
 
     """
-    from mmgpy._progress import RichProgressReporter  # noqa: PLC0415
+    from mmgpy._progress import RichProgressReporter  # ruff: ignore[import-outside-top-level]
 
     if progress is True:
         # Only show progress bar in interactive terminals
@@ -184,7 +184,7 @@ def _dict_to_remesh_result(stats: dict[str, Any]) -> RemeshResult:
         Dataclass populated from the C++ stats dict.
 
     """
-    from mmgpy._result import RemeshResult as _RemeshResult  # noqa: PLC0415
+    from mmgpy._result import RemeshResult as _RemeshResult  # ruff: ignore[import-outside-top-level]
 
     return _RemeshResult(
         vertices_before=stats["vertices_before"],
@@ -658,7 +658,7 @@ def _normalize_ls_base_references(references: Sequence[int]) -> list[int]:
     for i, raw in enumerate(references):
         try:
             normalized.append(int(raw))
-        except (TypeError, ValueError) as exc:  # noqa: PERF203
+        except (TypeError, ValueError) as exc:
             msg = f"references[{i}] is not an integer: {raw!r}"
             raise ValueError(msg) from exc
     return normalized
@@ -773,7 +773,7 @@ class Mesh:
 
         """
         # Import here to avoid circular imports
-        from mmgpy._io import _read_mesh_internal as _read_mesh  # noqa: PLC0415
+        from mmgpy._io import _read_mesh_internal as _read_mesh  # ruff: ignore[import-outside-top-level]
 
         self._sizing_constraints = []
         self._user_fields = {}
@@ -799,9 +799,9 @@ class Mesh:
                 )
                 raise ValueError(msg)
             result = _read_mesh(source)
-            self._impl = result._impl  # noqa: SLF001
-            self._kind = result._kind  # noqa: SLF001
-            self._lazy_source = result._lazy_source  # noqa: SLF001
+            self._impl = result._impl  # ruff: ignore[private-member-access]
+            self._kind = result._kind  # ruff: ignore[private-member-access]
+            self._lazy_source = result._lazy_source  # ruff: ignore[private-member-access]
             return
 
         # Handle file paths
@@ -813,9 +813,9 @@ class Mesh:
                 )
                 raise ValueError(msg)
             result = _read_mesh(source)
-            self._impl = result._impl  # noqa: SLF001
-            self._kind = result._kind  # noqa: SLF001
-            self._lazy_source = result._lazy_source  # noqa: SLF001
+            self._impl = result._impl  # ruff: ignore[private-member-access]
+            self._kind = result._kind  # ruff: ignore[private-member-access]
+            self._lazy_source = result._lazy_source  # ruff: ignore[private-member-access]
             return
 
         # Handle vertices + cells
@@ -883,7 +883,7 @@ class Mesh:
 
     @property
     def _impl_unwrap(self) -> MmgMesh3D | MmgMesh2D | MmgMeshS:
-        """Get the underlying C++ mesh implementation.
+        """The underlying C++ mesh implementation.
 
         This is intended for internal use by other mmgpy modules
         (e.g., lagrangian) that need the raw binding object.
@@ -892,7 +892,7 @@ class Mesh:
 
     @property
     def kind(self) -> MeshKind:
-        """Get the mesh kind.
+        """The mesh kind.
 
         Returns
         -------
@@ -1407,7 +1407,7 @@ class Mesh:
         self._user_fields[name] = values
         # Explicit set overrides any lazy field with the same name
         if self._lazy_source is not None and self._lazy_source.has_field(name):
-            self._lazy_source._point_data.pop(name, None)  # noqa: SLF001
+            self._lazy_source._point_data.pop(name, None)  # ruff: ignore[private-member-access]
 
     def get_user_field(self, name: str) -> NDArray[np.float64]:
         """Get a user-defined field.
@@ -1782,7 +1782,7 @@ class Mesh:
             Output file path. Format determined by extension.
 
         """
-        from mmgpy._remesh import NATIVE_MESH_EXTENSIONS  # noqa: PLC0415
+        from mmgpy._remesh import NATIVE_MESH_EXTENSIONS  # ruff: ignore[import-outside-top-level]
 
         path = Path(filename)
         if path.suffix.lower() in NATIVE_MESH_EXTENSIONS:
@@ -1819,7 +1819,7 @@ class Mesh:
             preparing the mesh for ``iso=1`` remeshing.
 
         """
-        from mmgpy._remesh import _load_sol  # noqa: PLC0415
+        from mmgpy._remesh import _load_sol  # ruff: ignore[import-outside-top-level]
 
         _load_sol(self, filename, channel=channel)
 
@@ -1835,7 +1835,7 @@ class Mesh:
             Output path for the .sol or .solb file.
 
         """
-        from mmgpy._remesh import _save_sol  # noqa: PLC0415
+        from mmgpy._remesh import _save_sol  # ruff: ignore[import-outside-top-level]
 
         _save_sol(self, filename)
 
@@ -1877,7 +1877,7 @@ class Mesh:
             ``(N, dim*(dim+1)/2)``.
 
         """
-        from pathlib import Path as _Path  # noqa: PLC0415
+        from pathlib import Path as _Path  # ruff: ignore[import-outside-top-level]
 
         if _Path(filename).suffix.lower() == ".solb":
             msg = (
@@ -1933,9 +1933,9 @@ class Mesh:
             a scalar / vector / tensor layout for the mesh dimension.
 
         """
-        from pathlib import Path as _Path  # noqa: PLC0415
+        from pathlib import Path as _Path  # ruff: ignore[import-outside-top-level]
 
-        from mmgpy._sol import infer_sol_type  # noqa: PLC0415
+        from mmgpy._sol import infer_sol_type  # ruff: ignore[import-outside-top-level]
 
         if _Path(filename).suffix.lower() == ".solb":
             msg = (
@@ -2021,7 +2021,7 @@ class Mesh:
         interpolation: str,
     ) -> None:
         """Execute field transfer after remeshing."""
-        from mmgpy._transfer import transfer_fields as _transfer  # noqa: PLC0415
+        from mmgpy._transfer import transfer_fields as _transfer  # ruff: ignore[import-outside-top-level]
 
         new_vertices = self._impl.get_vertices()
         self._user_fields = _transfer(
@@ -2078,7 +2078,7 @@ class Mesh:
         progress: ProgressParam = True,
         transfer_fields: FieldTransferParam = False,
         interpolation: str = "linear",
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,  # ruff: ignore[any-type]
     ) -> RemeshResult:
         """Remesh the mesh in-place.
 
@@ -2157,12 +2157,12 @@ class Mesh:
         >>> mesh.remesh(hmax=0.1, progress=my_callback)
 
         """
-        from mmgpy._options import (  # noqa: PLC0415
+        from mmgpy._options import (  # ruff: ignore[import-outside-top-level]
             Mmg2DOptions,
             Mmg3DOptions,
             MmgSOptions,
         )
-        from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+        from mmgpy._progress import CancellationError, _emit_event  # ruff: ignore[import-outside-top-level]
 
         parameter_file = kwargs.pop("parameter_file", None)
         self._load_remesh_input_solution(input_sol)
@@ -2242,7 +2242,7 @@ class Mesh:
             )
 
             if do_rcm:
-                from mmgpy._reorder import _apply_rcm_to_mesh  # noqa: PLC0415
+                from mmgpy._reorder import _apply_rcm_to_mesh  # ruff: ignore[import-outside-top-level]
 
                 _apply_rcm_to_mesh(self)
 
@@ -2267,7 +2267,7 @@ class Mesh:
         surface_only: bool = False,
         parameter_file: str | Path | None = None,
         progress: ProgressParam = True,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,  # ruff: ignore[any-type]
     ) -> RemeshResult:
         """Remesh with level-set discretization.
 
@@ -2302,7 +2302,7 @@ class Mesh:
             If the progress callback returns False to cancel the operation.
 
         """
-        from mmgpy._progress import CancellationError, _emit_event  # noqa: PLC0415
+        from mmgpy._progress import CancellationError, _emit_event  # ruff: ignore[import-outside-top-level]
 
         do_rcm = _pop_renum_redirect(kwargs)
 
@@ -2337,7 +2337,7 @@ class Mesh:
             final_vertices = len(self._impl.get_vertices())
 
             if do_rcm:
-                from mmgpy._reorder import _apply_rcm_to_mesh  # noqa: PLC0415
+                from mmgpy._reorder import _apply_rcm_to_mesh  # ruff: ignore[import-outside-top-level]
 
                 _apply_rcm_to_mesh(self)
 
@@ -2488,7 +2488,7 @@ class Mesh:
             Target edge size within the sphere.
 
         """
-        from mmgpy.sizing import SphereSize  # noqa: PLC0415
+        from mmgpy.sizing import SphereSize  # ruff: ignore[import-outside-top-level]
 
         center_arr = np.asarray(center, dtype=np.float64)
         self._sizing_constraints.append(SphereSize(center_arr, radius, size))
@@ -2508,7 +2508,7 @@ class Mesh:
             Target edge size within the box.
 
         """
-        from mmgpy.sizing import BoxSize  # noqa: PLC0415
+        from mmgpy.sizing import BoxSize  # ruff: ignore[import-outside-top-level]
 
         bounds_arr = np.asarray(bounds, dtype=np.float64)
         self._sizing_constraints.append(BoxSize(bounds_arr, size))
@@ -2545,7 +2545,7 @@ class Mesh:
             msg = "set_size_cylinder() is not available for TRIANGULAR_2D meshes"
             raise TypeError(msg)
 
-        from mmgpy.sizing import CylinderSize  # noqa: PLC0415
+        from mmgpy.sizing import CylinderSize  # ruff: ignore[import-outside-top-level]
 
         point1_arr = np.asarray(point1, dtype=np.float64)
         point2_arr = np.asarray(point2, dtype=np.float64)
@@ -2574,7 +2574,7 @@ class Mesh:
             Radius of influence.
 
         """
-        from mmgpy.sizing import PointSize  # noqa: PLC0415
+        from mmgpy.sizing import PointSize  # ruff: ignore[import-outside-top-level]
 
         point_arr = np.asarray(point, dtype=np.float64)
         self._sizing_constraints.append(
@@ -2609,7 +2609,7 @@ class Mesh:
         if not self._sizing_constraints:
             return
 
-        from mmgpy.sizing import apply_sizing_constraints  # noqa: PLC0415
+        from mmgpy.sizing import apply_sizing_constraints  # ruff: ignore[import-outside-top-level]
 
         # apply_sizing_constraints expects a mesh object and sets the field directly
         apply_sizing_constraints(self._impl, self._sizing_constraints)
@@ -2745,7 +2745,7 @@ class Mesh:
             PyVista mesh object.
 
         """
-        from mmgpy._pyvista import to_pyvista as _to_pyvista  # noqa: PLC0415
+        from mmgpy._pyvista import to_pyvista as _to_pyvista  # ruff: ignore[import-outside-top-level]
 
         return _to_pyvista(
             self._impl,
@@ -2756,7 +2756,7 @@ class Mesh:
 
     @property
     def vtk(self) -> pv.UnstructuredGrid | pv.PolyData:
-        """Get the PyVista mesh representation.
+        """The PyVista mesh representation.
 
         This property provides direct access to the PyVista mesh for use with
         custom plotters or other PyVista operations.
@@ -2779,7 +2779,7 @@ class Mesh:
         self,
         *,
         show_edges: bool = True,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,  # ruff: ignore[any-type]
     ) -> None:
         """Plot the mesh using PyVista.
 
@@ -2853,7 +2853,7 @@ class Mesh:
         >>> mesh.validate(checks={"geometry"})
 
         """
-        from mmgpy._validation import (  # noqa: PLC0415
+        from mmgpy._validation import (  # ruff: ignore[import-outside-top-level]
             ValidationError,
             validate_mesh_2d,
             validate_mesh_3d,
@@ -2939,11 +2939,11 @@ class Mesh:
         >>> mesh.remesh()  # Uses interactively defined sizing
 
         """
-        from mmgpy.interactive import SizingEditor  # noqa: PLC0415
+        from mmgpy.interactive import SizingEditor  # ruff: ignore[import-outside-top-level]
 
         editor = SizingEditor(self._impl)
-        editor._current_size = default_size  # noqa: SLF001
-        editor._current_radius = default_radius  # noqa: SLF001
+        editor._current_size = default_size  # ruff: ignore[private-member-access]
+        editor._current_radius = default_radius  # ruff: ignore[private-member-access]
 
         mode_map = {
             "sphere": editor.add_sphere_tool,

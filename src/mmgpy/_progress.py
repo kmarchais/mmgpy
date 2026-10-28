@@ -27,15 +27,9 @@ Example with cancellation:
 
 from __future__ import annotations
 
-import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import TYPE_CHECKING, Protocol, Self
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -146,7 +140,7 @@ class ProgressEvent:
 
     @property
     def progress_percent(self) -> float:
-        """Return progress as a percentage (0-100).
+        """Progress as a percentage (0-100).
 
         Returns 0 if progress is None (indeterminate).
         """
@@ -171,7 +165,7 @@ class ProgressReporter(Protocol):
         ...
 
 
-def _emit_event(  # noqa: PLR0913
+def _emit_event(  # ruff: ignore[too-many-arguments]
     callback: ProgressCallback | None,
     phase: str,
     status: str,

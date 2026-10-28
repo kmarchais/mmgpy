@@ -47,7 +47,7 @@ from mmgpy.metrics import compute_hessian, create_metric_from_hessian
 field = ...  # your scalar solution at vertices
 
 hessian = compute_hessian(vertices, triangles, field)
-metric  = create_metric_from_hessian(
+metric = create_metric_from_hessian(
     hessian,
     target_error=5e-3,
     hmin=3e-3,
@@ -56,7 +56,7 @@ metric  = create_metric_from_hessian(
 
 mesh = polydata_from_2d_triangles(vertices, triangles)
 mesh.point_data["solution"] = field
-mesh.point_data["metric"]   = metric
+mesh.point_data["metric"] = metric
 
 adapted = mesh.mmg.remesh(hgrad=2.0)
 ```

@@ -12,10 +12,10 @@ Use `pyvista.read` for everything. With `mmgpy` imported, the same call also rea
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + accessor
 
-mesh = pv.read("input.mesh")    # MMG native (via mmgpy's plugin)
-mesh = pv.read("input.meshb")   # MMG binary
-mesh = pv.read("input.vtu")     # VTK XML
-mesh = pv.read("input.stl")     # STL surface
+mesh = pv.read("input.mesh")  # MMG native (via mmgpy's plugin)
+mesh = pv.read("input.meshb")  # MMG binary
+mesh = pv.read("input.vtu")  # VTK XML
+mesh = pv.read("input.stl")  # STL surface
 ```
 
 The reader plugin auto-detects volumetric vs surface vs 2D meshes from the file's `Dimension` keyword and element population. A sibling `.sol` file (same stem, same directory) is auto-loaded into `point_data` / `cell_data`.
@@ -109,9 +109,9 @@ print(f"Loaded {mesh.mmg.kind} mesh")
 remeshed = mesh.mmg.remesh(hmax=0.1)
 
 # Save to different formats
-remeshed.save("output.mesh")   # MMG native (fast)
-remeshed.save("output.vtk")    # For ParaView
-remeshed.save("output.vtu")    # VTK XML format
+remeshed.save("output.mesh")  # MMG native (fast)
+remeshed.save("output.vtk")  # For ParaView
+remeshed.save("output.vtu")  # VTK XML format
 
 # Or build from a PyVista primitive
 torus = pv.ParametricTorus()
@@ -144,6 +144,15 @@ lines = np.column_stack([np.full(len(edges), 2), edges]).ravel()
 outline = pv.PolyData(verts_3d, lines=lines)
 mesh = outline.mmg.remesh(hmax=0.1)
 ```
+
+## Low-level conversion
+
+Most users can remesh PyVista datasets directly through the `.mmg` accessor.
+These functions provide access to the underlying MMG binding objects.
+
+::: mmgpy.from_pyvista
+
+::: mmgpy.to_pyvista
 
 ## Tips
 

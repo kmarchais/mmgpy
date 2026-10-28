@@ -141,7 +141,7 @@ class RemeshingMixin:
             if boundary_triangles is not None and boundary_refs is not None:
                 try:
                     # Access internal implementation to resize mesh
-                    impl = self._mesh._impl  # noqa: SLF001
+                    impl = self._mesh._impl  # ruff: ignore[private-member-access]
                     vertices = self._mesh.get_vertices()
                     tetrahedra = self._mesh.get_tetrahedra()
                     impl.set_mesh_size(

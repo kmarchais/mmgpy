@@ -61,7 +61,7 @@ def main() -> None:
 
     # Check if trame is available
     try:
-        import trame  # noqa: F401
+        import trame  # ruff: ignore[unused-import]
     except ImportError:
         print("Error: trame is not installed.")
         print("Install with: pip install 'mmgpy[ui]'")

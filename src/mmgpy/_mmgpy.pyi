@@ -28,7 +28,7 @@ class LocalParameter(TypedDict):
 
 MMG_VERSION: str
 
-class mmg3d:  # noqa: N801
+class mmg3d:  # ruff: ignore[invalid-class-name]
     """Static methods for file-based 3D mesh remeshing."""
 
     @staticmethod
@@ -64,7 +64,7 @@ class mmg3d:  # noqa: N801
 
         """
 
-class mmg2d:  # noqa: N801
+class mmg2d:  # ruff: ignore[invalid-class-name]
     """Static methods for file-based 2D mesh remeshing."""
 
     @staticmethod
@@ -100,7 +100,7 @@ class mmg2d:  # noqa: N801
 
         """
 
-class mmgs:  # noqa: N801
+class mmgs:  # ruff: ignore[invalid-class-name]
     """Static methods for file-based surface mesh remeshing."""
 
     @staticmethod

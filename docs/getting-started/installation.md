@@ -2,8 +2,11 @@
 
 ## Requirements
 
-- Python 3.10 or higher
+- Python 3.11–3.14
 - A supported operating system: Windows, macOS, or Linux
+
+Python 3.15 support is pending compatible VTK wheels for PyVista and
+HDF5/Simcoon wheels for the optional FEM integration.
 
 ## Installing from PyPI
 
@@ -114,12 +117,15 @@ import pyvista as pv
 import mmgpy  # noqa: F401  -- registers the .mmg accessor
 
 # Create a simple tetrahedral mesh
-vertices = np.array([
-    [0, 0, 0],
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-], dtype=np.float64)
+vertices = np.array(
+    [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ],
+    dtype=np.float64,
+)
 
 tetrahedra = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
@@ -148,6 +154,7 @@ If you encounter DLL loading errors on Windows:
 
 ```python
 import mmgpy
+
 mmgpy.enable_debug()
 ```
 

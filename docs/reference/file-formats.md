@@ -93,8 +93,8 @@ mesh.save("output.mesh")
 Use VTK formats:
 
 ```python
-mesh.save("output.vtk")   # Legacy
-mesh.save("output.vtu")   # XML (preferred)
+mesh.save("output.vtk")  # Legacy
+mesh.save("output.vtu")  # XML (preferred)
 ```
 
 ### For CAD/3D Printing

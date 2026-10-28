@@ -10,7 +10,7 @@
 #   ./build.sh --install    # Build and install to Blender
 #
 # Requirements:
-#   - Python 3.10+
+#   - Python 3.11+
 #   - pip install blender-extension-builder
 #   - Blender 4.2+ (for --install)
 

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor and Medit reader
 
 INPUT_FILE = Path(__file__).parent.parent.parent / "assets" / "cube.mesh"
 

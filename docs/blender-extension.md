@@ -115,9 +115,9 @@ entry on the `.mmg.remesh` call.
 Behind the scenes each constraint maps to
 
 ```python
-{"shape": "sphere",  "center": [...], "radius": ..., "size": ...}
+{"shape": "sphere", "center": [...], "radius": ..., "size": ...}
 # or
-{"shape": "box",     "bounds":  [...],                 "size": ...}
+{"shape": "box", "bounds": [...], "size": ...}
 ```
 
 in the `local_sizing=[...]` kwarg.

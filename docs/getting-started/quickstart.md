@@ -36,10 +36,10 @@ For more control, use typed options objects with IDE autocomplete:
     mesh = pv.read("volume.mesh")
 
     opts = Mmg3DOptions(
-        hmin=0.01,       # Minimum edge size
-        hmax=0.1,        # Maximum edge size
-        hausd=0.001,     # Geometric approximation tolerance
-        verbose=1,       # Show progress
+        hmin=0.01,  # Minimum edge size
+        hmax=0.1,  # Maximum edge size
+        hausd=0.001,  # Geometric approximation tolerance
+        verbose=1,  # Show progress
     )
 
     remeshed = mesh.mmg.remesh(opts)

@@ -30,7 +30,7 @@ Controls:
 import numpy as np
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 from mmgpy import polydata_from_2d_triangles
 
 # Cache for the uniformly remeshed base disc, keyed by ``hmax``. Sliders

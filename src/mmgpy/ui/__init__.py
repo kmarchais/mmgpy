@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from mmgpy.ui.app import MmgpyApp
 
 
-def run_ui(  # noqa: PLR0913
+def run_ui(  # ruff: ignore[too-many-arguments]
     *,
     mesh: Mesh | None = None,
     port: int = 0,

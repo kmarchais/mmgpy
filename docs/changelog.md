@@ -19,6 +19,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- Python 3.10 support. Python 3.11 is now the minimum supported version.
 - `mmg2d`, `mmg3d`, `mmgs` CLI commands — use the unified `mmg` command instead
 - `mmgpy.Mesh` and `mmgpy.MeshCheckpoint` from the public API (deprecated in 0.12). Use the `.mmg` PyVista accessor on a `pv.UnstructuredGrid` / `pv.PolyData` instead.
 - `Mesh.checkpoint()` (deprecated in 0.12). Snapshot a dataset with `snap = dataset.copy()` and reassign on success.

@@ -36,7 +36,7 @@ def _tet_grid() -> pv.UnstructuredGrid:
 
 def test_accessor_remesh_lagrangian_warns_and_forwards_to_move() -> None:
     """``dataset.mmg.remesh_lagrangian`` emits DeprecationWarning and forwards."""
-    import mmgpy  # noqa: F401  -- registers the .mmg accessor
+    import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 
     grid = _tet_grid()
     displacement = np.zeros((grid.n_points, 3), dtype=np.float64)

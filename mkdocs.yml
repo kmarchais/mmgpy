@@ -110,7 +110,6 @@ nav:
       - Gallery: examples/index.md
   - API Reference:
       - Overview: api/index.md
-      - Mesh Classes: api/mesh-classes.md
       - Options: api/options.md
       - Results & Validation: api/results-validation.md
       - Sizing Constraints: api/sizing.md

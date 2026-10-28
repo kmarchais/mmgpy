@@ -34,7 +34,7 @@ import numpy as np
 from matplotlib.patches import Ellipse
 from matplotlib.tri import Triangulation
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor
 from mmgpy import metrics, polydata_from_2d_triangles
 
 

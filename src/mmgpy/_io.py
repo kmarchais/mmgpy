@@ -368,7 +368,7 @@ def read(
         and use ``dataset.mmg.remesh(...)``.
 
     """
-    import warnings  # noqa: PLC0415
+    import warnings  # ruff: ignore[import-outside-top-level]
 
     warnings.warn(
         "mmgpy.read() is deprecated and will be removed in 0.14. "

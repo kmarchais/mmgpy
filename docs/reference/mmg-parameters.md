@@ -3,6 +3,7 @@
 ```python
 import pyvista as pv
 import mmgpy  # noqa: F401  -- registers reader/writer + .mmg accessor
+
 mesh = pv.read("input.mesh")
 ```
 
@@ -291,9 +292,9 @@ Verbosity level.
 
 ```python
 silent = mesh.mmg.remesh(verbose=-1)  # Silent
-errors = mesh.mmg.remesh(verbose=0)   # Errors only
-info = mesh.mmg.remesh(verbose=1)     # Standard info
-debug = mesh.mmg.remesh(verbose=5)    # Debug output
+errors = mesh.mmg.remesh(verbose=0)  # Errors only
+info = mesh.mmg.remesh(verbose=1)  # Standard info
+debug = mesh.mmg.remesh(verbose=5)  # Debug output
 ```
 
 ---
@@ -334,7 +335,7 @@ uniform = mesh.mmg.remesh_uniform(size=0.05)
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
     hausd=0.0001,  # Tight geometric tolerance
-    hgrad=1.1,     # Smooth size transition
+    hgrad=1.1,  # Smooth size transition
 )
 ```
 
@@ -345,7 +346,7 @@ remeshed = mesh.mmg.remesh(
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
-    ar=20,         # Detect more ridges
+    ar=20,  # Detect more ridges
     hausd=0.001,
 )
 ```
@@ -357,7 +358,7 @@ remeshed = mesh.mmg.remesh(
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.5,
-    hgrad=2.0,     # Allow large size variations
+    hgrad=2.0,  # Allow large size variations
     verbose=-1,
 )
 ```
@@ -369,7 +370,7 @@ remeshed = mesh.mmg.remesh(
 ```python
 remeshed = mesh.mmg.remesh(
     hmax=0.1,
-    nosurf=1,      # Keep surface fixed
+    nosurf=1,  # Keep surface fixed
 )
 ```
 

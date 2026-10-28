@@ -36,6 +36,7 @@ If you need the structured `RemeshResult` (return code, MMG warnings, duration),
 
 ```python
 from mmgpy import mmg3d
+
 result = mmg3d.remesh("input.mesh", "output.mesh", hmax=0.1)
 print(f"Return code: {result.return_code}")
 print(f"Duration:    {result.duration_seconds:.2f}s")

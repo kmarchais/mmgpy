@@ -40,7 +40,7 @@ from pathlib import Path
 import numpy as np
 import pyvista as pv
 
-import mmgpy  # noqa: F401  -- registers the .mmg accessor and Medit reader
+import mmgpy  # ruff: ignore[unused-import]  -- registers the .mmg accessor and Medit reader
 
 _ASSETS = Path(__file__).resolve().parents[1].parent / "assets"
 _LOCKED_REFS = (1, 4, 7)

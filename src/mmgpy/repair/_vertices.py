@@ -99,7 +99,7 @@ def remove_duplicate_vertices(
     >>> print(f"Removed {removed_count} duplicate vertices")
 
     """
-    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # ruff: ignore[import-outside-top-level]
 
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)
@@ -133,7 +133,7 @@ def remove_duplicate_vertices(
         elements = mesh.get_triangles()
         new_elements = final_mapping[elements]
 
-    new_mesh = Mesh._from_arrays(new_vertices, new_elements)  # noqa: SLF001
+    new_mesh = Mesh._from_arrays(new_vertices, new_elements)  # ruff: ignore[private-member-access]
     removed_count = n_vertices - len(new_vertices)
 
     return new_mesh, removed_count
@@ -161,7 +161,7 @@ def remove_orphan_vertices(mesh: Mesh) -> tuple[Mesh, int]:
     >>> print(f"Removed {removed_count} orphan vertices")
 
     """
-    from mmgpy._mesh import Mesh, MeshKind  # noqa: PLC0415
+    from mmgpy._mesh import Mesh, MeshKind  # ruff: ignore[import-outside-top-level]
 
     vertices = mesh.get_vertices()
     n_vertices = len(vertices)
@@ -186,7 +186,7 @@ def remove_orphan_vertices(mesh: Mesh) -> tuple[Mesh, int]:
 
     new_elements = old_to_new[elements]
 
-    new_mesh = Mesh._from_arrays(new_vertices, new_elements)  # noqa: SLF001
+    new_mesh = Mesh._from_arrays(new_vertices, new_elements)  # ruff: ignore[private-member-access]
     removed_count = n_vertices - len(new_vertices)
 
     return new_mesh, removed_count

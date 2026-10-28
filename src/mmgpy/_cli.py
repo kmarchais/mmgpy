@@ -15,7 +15,7 @@ import os
 import shutil
 import site
 import stat
-import subprocess  # noqa: S404  # Native CLI compatibility requires a child process.
+import subprocess  # ruff: ignore[suspicious-subprocess-import]  # Native CLI compatibility requires a child process.
 import sys
 import zipfile
 from dataclasses import dataclass, field
@@ -253,7 +253,7 @@ def _run_native_mmg(base_name: str) -> int:
     if executable is None:
         _get_cli_logger().error("Native %s executable not found", base_name)
         return 127
-    result = subprocess.run(  # noqa: S603  # Resolved native binary; arguments are passed verbatim.
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]  # Resolved native binary; arguments are passed verbatim.
         [executable, *sys.argv[1:]],
         check=False,
     )
@@ -494,12 +494,12 @@ _HELP_TEXT = (
 def _print_version() -> None:  # pragma: no cover
     """Emit ``mmgpy`` and bundled MMG library versions to stdout."""
     try:
-        from . import _version  # type: ignore[attr-defined]  # noqa: PLC0415
+        from . import _version  # type: ignore[attr-defined]  # ruff: ignore[import-outside-top-level]
 
         version = _version.__version__
     except ImportError:
         version = "unknown"
-    from ._mmgpy import MMG_VERSION  # noqa: PLC0415
+    from ._mmgpy import MMG_VERSION  # ruff: ignore[import-outside-top-level]
 
     out = _get_cli_stdout_logger()
     out.info("mmgpy %s", version)
@@ -515,11 +515,11 @@ def _read_input_mesh(input_path: Path) -> Mesh:  # pragma: no cover
         The loaded :class:`mmgpy.Mesh`.
 
     """
-    from ._io import _read_mesh_internal as _read  # noqa: PLC0415
+    from ._io import _read_mesh_internal as _read  # ruff: ignore[import-outside-top-level]
 
     try:
         return _read(str(input_path))
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff: ignore[blind-except]
         _get_cli_logger().exception("Failed to read mesh from '%s'", input_path)
         sys.exit(1)
 
@@ -534,9 +534,9 @@ def _apply_sol_or_met(mesh: Mesh, parsed: _ParsedArgs) -> None:  # pragma: no co
         sys.exit(1)
 
     if parsed.sol_file is not None:
-        mesh._impl.load_sol(str(parsed.sol_file))  # noqa: SLF001
+        mesh._impl.load_sol(str(parsed.sol_file))  # ruff: ignore[private-member-access]
     if parsed.met_file is not None:
-        mesh._impl.load_sol(str(parsed.met_file))  # noqa: SLF001
+        mesh._impl.load_sol(str(parsed.met_file))  # ruff: ignore[private-member-access]
 
 
 def _dispatch_remesh(mesh: Mesh, parsed: _ParsedArgs) -> bool:  # pragma: no cover
@@ -575,7 +575,7 @@ def _dispatch_remesh(mesh: Mesh, parsed: _ParsedArgs) -> bool:  # pragma: no cov
                 "load one with -sol or set it via the Python API",
             )
             sys.exit(1)
-        from mmgpy.lagrangian import move_mesh as _move_mesh  # noqa: PLC0415
+        from mmgpy.lagrangian import move_mesh as _move_mesh  # ruff: ignore[import-outside-top-level]
 
         # `move_mesh` doesn't accept a `progress` kwarg; it doesn't emit
         # progress events either, so passing the standard CLI options
@@ -597,7 +597,7 @@ def _save_output(  # pragma: no cover
 
     try:
         mesh.save(output_path)
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff: ignore[blind-except]
         _get_cli_logger().exception("Failed to save output to '%s'", output_path)
         sys.exit(1)
 
@@ -605,8 +605,8 @@ def _save_output(  # pragma: no cover
         return
     output_sol_path = Path(output_path).with_suffix(".sol")
     try:
-        mesh._impl.save_sol(str(output_sol_path))  # noqa: SLF001
-    except Exception:  # noqa: BLE001
+        mesh._impl.save_sol(str(output_sol_path))  # ruff: ignore[private-member-access]
+    except Exception:  # ruff: ignore[blind-except]
         _get_cli_logger().warning(
             "Failed to save solution to '%s'",
             output_sol_path,
@@ -641,7 +641,7 @@ def _run_mmg() -> None:  # pragma: no cover
 
     mesh = _read_input_mesh(input_path)
 
-    from ._logging import get_logger  # noqa: PLC0415
+    from ._logging import get_logger  # ruff: ignore[import-outside-top-level]
 
     get_logger().info("Detected %s mesh", mesh.kind.value)
 
@@ -649,7 +649,7 @@ def _run_mmg() -> None:  # pragma: no cover
 
     try:
         success = _dispatch_remesh(mesh, parsed)
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff: ignore[blind-except]
         _get_cli_logger().exception("Remeshing failed")
         sys.exit(1)
 
