@@ -140,25 +140,51 @@ jobs:
       contents: read
 
     steps:
-      # Match the verified wheel run's immutable commit. A branch/tag name
-      # could move between validation and checkout.
+      # Run only packaging code from this workflow's immutable commit.
+      # Release source is fetched below as passive package data.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.validate-source.outputs.sha }}
+          ref: ${{ github.workflow_sha }}
           persist-credentials: false
+
+      - name: Fetch release package files as data
+        uses: actions/github-script@v9
+        env:
+          SOURCE_SHA: ${{ needs.validate-source.outputs.sha }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const required = new Set([
+              'pyproject.toml',
+              'blender_mmgpy/blender_manifest.toml',
+              'blender_mmgpy/__init__.py',
+            ]);
+            const paths = [...required, ...[
+              '_register.py', 'operators.py', 'panels.py', 'preferences.py',
+              'properties.py', 'utils.py', 'README.md',
+            ].map(name => `blender_mmgpy/${name}`)];
+            for (const path of paths) {
+              fs.rmSync(path, { force: true });
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  ...context.repo, path, ref: process.env.SOURCE_SHA,
+                });
+                if (data.type !== 'file' || data.encoding !== 'base64') {
+                  throw new Error(`Expected a release file: ${path}`);
+                }
+                fs.writeFileSync(path, Buffer.from(data.content, 'base64'));
+              } catch (error) {
+                if (error.status !== 404 || required.has(path)) throw error;
+              }
+            }
 
       - name: Set up Python ${{ matrix.py }}
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.py }}
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          enable-cache: false
-
       - name: Sync version + dependency pin from pyproject.toml
-        run: uv run --no-project python .github/scripts/sync_versions.py
+        run: python -I .github/scripts/sync_versions.py
 
       - name: Download wheels artifact from build-wheels run
         uses: actions/download-artifact@v8
@@ -218,7 +244,7 @@ jobs:
           # ``_mmgpy.so`` and every Python module in the wheel are left
           # untouched -- this is a METADATA-only strip.
           for wheel in mmgpy-*.whl; do
-            python ../../.github/scripts/strip_blender_wheel_metadata.py "$wheel"
+            python -I ../../.github/scripts/strip_blender_wheel_metadata.py "$wheel"
           done
 
       - name: Verify the stripped METADATA matches the slim contract
@@ -251,7 +277,7 @@ jobs:
         working-directory: blender_mmgpy
         shell: bash
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           from pathlib import Path
 
           manifest = Path("blender_manifest.toml")
@@ -285,7 +311,7 @@ jobs:
         working-directory: blender_mmgpy
         shell: bash
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           import os
           import re
           import zipfile
@@ -338,7 +364,7 @@ jobs:
         env:
           ZIP_PATH: ${{ steps.zip.outputs.path }}
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           import os
           import sys
           import tomllib
@@ -422,11 +448,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.validate-source.outputs.sha }}
-          persist-credentials: false
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -443,7 +464,7 @@ jobs:
         env:
           OS_TAG: ${{ matrix.os }}
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           import os
           import re
           import shutil
@@ -542,7 +563,7 @@ jobs:
           OS_TAG: ${{ matrix.os }}
           ZIP_PATH: ${{ steps.per_os.outputs.path }}
         run: |
-          python - <<'PY'
+          python -I - <<'PY'
           import os
           import sys
           import tomllib
@@ -686,7 +707,7 @@ jobs:
       - name: Read extension id from built packages
         id: ext
         run: |
-          python3 - <<'PY'
+          python3 -I - <<'PY'
           import os
           import re
           import tomllib
