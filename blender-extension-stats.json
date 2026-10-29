@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-28T00:00:00Z",
+  "generated_at": "2026-10-29T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -1586,6 +1586,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
+    },
+    {
+      "date": "2026-10-29",
+      "downloads": 11519,
+      "reviews": 4,
+      "rating": 5.0,
+      "current_version": "0.17.1",
+      "updated_at": "2026-10-08T12:59:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
     }
   ],
   "reviews": [
@@ -1910,6 +1921,46 @@
       "version": "v0.17.1",
       "value": "5",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
+    },
+    {
+      "date": "2026-10-28",
+      "type": "github_docs",
+      "label": "Docs update: Refresh dependencies and require Python 3.11 (#426)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/fa624d3446055138dfdba5154adfccfcb7822165"
+    },
+    {
+      "date": "2026-10-28",
+      "type": "github_docs",
+      "label": "Docs update: Refresh dependencies and require Python 3.11 (#426)",
+      "version": "",
+      "value": "/mkdocs.yml",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/fa624d3446055138dfdba5154adfccfcb7822165"
+    },
+    {
+      "date": "2026-10-28",
+      "type": "github_docs",
+      "label": "Docs update: Refresh dependencies and require Python 3.11 (#426)",
+      "version": "",
+      "value": "/README.md",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/fa624d3446055138dfdba5154adfccfcb7822165"
+    },
+    {
+      "date": "2026-10-28",
+      "type": "github_docs",
+      "label": "Docs update: docs: migrate to Zensical and test documentation examples (#433)",
+      "version": "",
+      "value": "/docs/",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/00433e96acef8560664206128cc26d2e6e46f063"
+    },
+    {
+      "date": "2026-10-28",
+      "type": "github_docs",
+      "label": "Docs update: docs: migrate to Zensical and test documentation examples (#433)",
+      "version": "",
+      "value": "/mkdocs.yml",
+      "source_url": "https://github.com/kmarchais/mmgpy/commit/00433e96acef8560664206128cc26d2e6e46f063"
     }
   ]
 }
