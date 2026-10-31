@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-30T00:00:00Z",
+  "generated_at": "2026-10-31T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -1601,6 +1601,17 @@
     {
       "date": "2026-10-30",
       "downloads": 11597,
+      "reviews": 4,
+      "rating": 5.0,
+      "current_version": "0.17.1",
+      "updated_at": "2026-10-08T12:59:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
+    },
+    {
+      "date": "2026-10-31",
+      "downloads": 11667,
       "reviews": 4,
       "rating": 5.0,
       "current_version": "0.17.1",
