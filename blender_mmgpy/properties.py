@@ -19,6 +19,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 from . import utils
+from .translations import CONTEXT
 
 if TYPE_CHECKING:
     from bpy.types import Context
@@ -86,6 +87,7 @@ class MMGPYSizingConstraint(PropertyGroup):
     """A local sizing constraint (sphere or box refinement zone)."""
 
     constraint_type: EnumProperty(
+        translation_context=CONTEXT,
         name="Type",
         items=[
             ("SPHERE", "Sphere", "Spherical refinement zone"),
@@ -96,6 +98,7 @@ class MMGPYSizingConstraint(PropertyGroup):
 
     # Reference to an Empty object that defines the constraint
     empty_object: PointerProperty(
+        translation_context=CONTEXT,
         name="Empty",
         type=bpy.types.Object,
         description="Empty object defining the constraint location and size",
@@ -103,6 +106,7 @@ class MMGPYSizingConstraint(PropertyGroup):
 
     # Target edge size within the constraint
     target_size: FloatProperty(
+        translation_context=CONTEXT,
         name="Target Size",
         description="Target edge size within this region",
         default=0.01,
@@ -118,6 +122,7 @@ class MMGPYSettings(PropertyGroup):
 
     # Preset selection
     preset: EnumProperty(
+        translation_context=CONTEXT,
         name="Preset",
         description="Quick preset for remeshing settings",
         items=[
@@ -131,11 +136,13 @@ class MMGPYSettings(PropertyGroup):
 
     # Size control parameters
     use_hmin: BoolProperty(
+        translation_context=CONTEXT,
         name="Use Min Size",
         description="Enable minimum edge size constraint",
         default=False,
     )
     hmin: FloatProperty(
+        translation_context=CONTEXT,
         name="Min Size",
         description="Minimum edge size (hmin)",
         default=0.001,
@@ -146,11 +153,13 @@ class MMGPYSettings(PropertyGroup):
     )
 
     use_hmax: BoolProperty(
+        translation_context=CONTEXT,
         name="Use Max Size",
         description="Enable maximum edge size constraint",
         default=True,
     )
     hmax: FloatProperty(
+        translation_context=CONTEXT,
         name="Max Size",
         description="Maximum edge size (hmax)",
         default=0.1,
@@ -161,11 +170,13 @@ class MMGPYSettings(PropertyGroup):
     )
 
     use_hsiz: BoolProperty(
+        translation_context=CONTEXT,
         name="Use Uniform Size",
         description="Use constant edge size (overrides hmin/hmax)",
         default=False,
     )
     hsiz: FloatProperty(
+        translation_context=CONTEXT,
         name="Uniform Size",
         description="Constant edge size (hsiz)",
         default=0.05,
@@ -177,11 +188,13 @@ class MMGPYSettings(PropertyGroup):
 
     # Geometry parameters
     use_hausd: BoolProperty(
+        translation_context=CONTEXT,
         name="Use Hausdorff",
         description="Enable Hausdorff distance constraint for geometry approximation",
         default=True,
     )
     hausd: FloatProperty(
+        translation_context=CONTEXT,
         name="Hausdorff Distance",
         description="Maximum distance between original and remeshed surface",
         default=0.01,
@@ -193,11 +206,13 @@ class MMGPYSettings(PropertyGroup):
 
     # Angle detection
     use_ar: BoolProperty(
+        translation_context=CONTEXT,
         name="Use Angle Detection",
         description="Enable angle-based ridge detection",
         default=False,
     )
     ar: FloatProperty(
+        translation_context=CONTEXT,
         name="Angle",
         description="Angle threshold for ridge detection (degrees)",
         default=45.0,
@@ -209,11 +224,13 @@ class MMGPYSettings(PropertyGroup):
 
     # Gradation
     use_hgrad: BoolProperty(
+        translation_context=CONTEXT,
         name="Use Gradation",
         description="Enable gradation control",
         default=False,
     )
     hgrad: FloatProperty(
+        translation_context=CONTEXT,
         name="Gradation",
         description="Gradation parameter (controls size transition between elements)",
         default=1.3,
@@ -224,6 +241,7 @@ class MMGPYSettings(PropertyGroup):
 
     # Advanced options
     verbose: IntProperty(
+        translation_context=CONTEXT,
         name="Verbosity",
         description="Verbosity level (-1=silent, 0=errors, 1=info)",
         default=-1,
@@ -233,24 +251,28 @@ class MMGPYSettings(PropertyGroup):
 
     # Optimization flags
     optim: BoolProperty(
+        translation_context=CONTEXT,
         name="Optimize Only",
         description="Only optimize mesh quality without changing topology",
         default=False,
     )
 
     noinsert: BoolProperty(
+        translation_context=CONTEXT,
         name="No Insert",
         description="Disable point insertion",
         default=False,
     )
 
     noswap: BoolProperty(
+        translation_context=CONTEXT,
         name="No Swap",
         description="Disable edge/face swapping",
         default=False,
     )
 
     nomove: BoolProperty(
+        translation_context=CONTEXT,
         name="No Move",
         description="Disable point relocation",
         default=False,
@@ -258,17 +280,20 @@ class MMGPYSettings(PropertyGroup):
 
     # Local sizing constraints collection
     sizing_constraints: CollectionProperty(
+        translation_context=CONTEXT,
         type=MMGPYSizingConstraint,
         name="Sizing Constraints",
     )
 
     active_constraint_index: IntProperty(
+        translation_context=CONTEXT,
         name="Active Constraint",
         default=0,
     )
 
     # UI state
     show_advanced: BoolProperty(
+        translation_context=CONTEXT,
         name="Show Advanced",
         description="Show advanced options",
         default=False,
@@ -276,6 +301,7 @@ class MMGPYSettings(PropertyGroup):
 
     # Visualisation toggles (apply to the active mesh object).
     show_wire: BoolProperty(
+        translation_context=CONTEXT,
         name="Wireframe on Surface",
         description=(
             "Overlay the mesh wireframe on top of the shaded surface for "
@@ -286,6 +312,7 @@ class MMGPYSettings(PropertyGroup):
     )
 
     show_quality: BoolProperty(
+        translation_context=CONTEXT,
         name="Color by Quality",
         description=(
             "Compute MMG's in-radius-ratio quality per triangle and apply "
@@ -297,6 +324,7 @@ class MMGPYSettings(PropertyGroup):
     )
 
     quality_colormap_mode: EnumProperty(
+        translation_context=CONTEXT,
         name="Range",
         description="How to map quality values onto the red->yellow->green ramp",
         items=[
@@ -333,6 +361,7 @@ class MMGPYSettings(PropertyGroup):
     )
 
     quality_custom_min: FloatProperty(
+        translation_context=CONTEXT,
         name="Custom Min",
         description="Lower bound for the Custom colormap range (red end)",
         default=0.0,
@@ -343,6 +372,7 @@ class MMGPYSettings(PropertyGroup):
     )
 
     quality_custom_max: FloatProperty(
+        translation_context=CONTEXT,
         name="Custom Max",
         description="Upper bound for the Custom colormap range (green end)",
         default=1.0,

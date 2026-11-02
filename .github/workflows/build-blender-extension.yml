@@ -161,7 +161,8 @@ jobs:
             ]);
             const paths = [...required, ...[
               '_register.py', 'operators.py', 'panels.py', 'preferences.py',
-              'properties.py', 'utils.py', 'README.md',
+              'properties.py', 'utils.py', 'translations.py', 'translations.csv',
+              'README.md',
             ].map(name => `blender_mmgpy/${name}`)];
             for (const path of paths) {
               fs.rmSync(path, { force: true });
@@ -339,6 +340,8 @@ jobs:
               "preferences.py",
               "properties.py",
               "utils.py",
+              "translations.py",
+              "translations.csv",
               "README.md",
           )
 

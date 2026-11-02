@@ -118,6 +118,87 @@ for a fresh remesh output).
 - The estimated-triangle-count confirmation dialog at 1M elements is
   there to save you a Blender freeze (see TODOs below).
 
+## Languages
+
+MMGpy follows Blender's language and translation preferences under
+**Edit > Preferences > Interface > Translation**. It includes French,
+Russian, Spanish, German, Italian, Arabic, Simplified and Traditional Chinese,
+Japanese, Korean, Brazilian and European Portuguese, Polish, Ukrainian, and
+Turkish. English is the fallback for other languages and missing translations.
+
+### Update a translation
+
+For a review interface, run this command from the repository root:
+
+```bash
+uv run --no-project python scripts/translation_editor.py --open
+```
+
+The editor opens with the current catalog embedded. Choose a language, search
+messages, and edit translations beside the English reference. It shows each
+message's UI role, character counts, approximate text widths, and a resizable
+sidebar preview. **Length warnings** flags text that expands substantially or
+may clip in a narrow panel. These warnings guide review and do not block saving.
+Blender's font, UI scale, and text shaping can differ from the preview.
+
+Use **Review & next** to track progress. Drafts stay in the current browser.
+**Export review** creates a portable backup of edits and review markers.
+**Import review** restores that backup. Nothing changes in the project until
+you save a CSV and replace `blender_mmgpy/translations.csv` with it.
+In browsers with native file access, **Open CSV** lets you edit that file directly
+and **Save CSV** writes it back. Other browsers download the updated CSV.
+The editor rejects broken brace placeholders such as `{name}` and `{count:,}`.
+With native file access, it refuses to overwrite a file that changed after
+opening it, including when Save As selects an existing, different catalog.
+The download fallback cannot detect changes to files on disk. Compare the
+download with the current project catalog before replacing it.
+English messages are read-only.
+
+The generated page is `build/translation-editor.html`. It works offline and
+can be shared with reviewers. Regenerate it after the source catalog changes.
+
+Edit [translations.csv](translations.csv). Each row contains one English
+message and its translations, with Blender locale codes as column headings.
+Keep placeholders such as `{count:,}` and `{error}` unchanged. You can move
+them within the translated sentence. Save the file as UTF-8 CSV.
+
+When adding UI text, add a row for every supported locale. Use the `MMGpy`
+translation context for property declarations, panel and operator classes,
+and explicit layout text. For messages containing values, translate the
+template with `iface_` or `rpt_` before calling `.format()`. Keep internal
+identifiers, object names, and exception details unchanged.
+
+From the repository root, check coverage and placeholders with:
+
+```bash
+uv run pytest tests/blender_translations_test.py
+```
+
+To check registration, language switching, and translation preferences in
+Blender, run:
+
+```bash
+blender --background --factory-startup --python-exit-code 1 \
+    --python .github/scripts/check_blender_translations.py
+```
+
+The Blender check needs the native mmgpy package on Blender's Python path.
+You can pass `-- --site-packages PATH` to use an unpacked wheel matching
+Blender's Python version. It runs with factory preferences and does not save
+changes to your preferences. Check wording and layout in Blender before
+releasing translation changes, especially Arabic text direction and long labels.
+
+The editor also has browser checks. After generating it, run:
+
+```bash
+uv run --no-project --with playwright python \
+    .github/scripts/check_translation_editor.py build/translation-editor.html \
+    --artifacts build/translation-editor-check
+```
+
+On Windows, the check uses installed Edge. Elsewhere, install Playwright's
+Chromium first with `uv run --no-project --with playwright playwright install chromium`.
+
 ## Building from source
 
 For most users the released zips are the right path. To build locally
@@ -180,8 +261,8 @@ synchronously and there's no progress reporting yet.
   widget are lost. Predictable beats clever for now — anyone wanting a
   permanent custom palette can fork the `MMGpy_Quality` material.
 
-- **No unit tests for `blender_mmgpy/`.** The bpy-dependent code is
-  hard to test without Blender installed; the pure helpers
+- **Mesh operations lack unit tests for `blender_mmgpy/`.** Translation
+  coverage and Blender translation behavior have dedicated checks. The pure helpers
   (`arrays_to_polydata`, `polydata_to_arrays`, `is_all_triangles`)
   could be split out and tested but haven't been yet.
 
