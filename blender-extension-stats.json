@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T00:00:00Z",
+  "generated_at": "2026-11-02T00:00:00Z",
   "source_url": "https://extensions.blender.org/add-ons/mmgpy/",
   "reviews_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/",
   "daily": [
@@ -1630,6 +1630,17 @@
       "compatibility": "Blender 4.2 LTS and newer",
       "platforms": "Windows; macOS Apple Silicon; Linux",
       "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
+    },
+    {
+      "date": "2026-11-02",
+      "downloads": 11834,
+      "reviews": 5,
+      "rating": 5.0,
+      "current_version": "0.17.1",
+      "updated_at": "2026-10-08T12:59:00Z",
+      "compatibility": "Blender 4.2 LTS and newer",
+      "platforms": "Windows; macOS Apple Silicon; Linux",
+      "package_sizes": "Windows=9.3 MB; macOS Apple Silicon=14.8 MB; Linux=18.5 MB"
     }
   ],
   "reviews": [
@@ -1672,6 +1683,16 @@
       "author": "crwde",
       "body": "it simply works!!",
       "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-9086"
+    },
+    {
+      "review_id": "9282",
+      "date": "2026-11-02",
+      "reviewed_at": "Nov. 2, 2026, 3:45 a.m.",
+      "score": 5,
+      "version": "v0.17.1",
+      "author": "Браво-Мир",
+      "body": "Класс, перевел на русский, стало удобнее",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/#review-9282"
     }
   ],
   "events": [
@@ -1994,6 +2015,22 @@
       "version": "",
       "value": "/mkdocs.yml",
       "source_url": "https://github.com/kmarchais/mmgpy/commit/00433e96acef8560664206128cc26d2e6e46f063"
+    },
+    {
+      "date": "2026-11-02",
+      "type": "github_release",
+      "label": "GitHub release v0.18.0",
+      "version": "v0.18.0",
+      "value": "v0.18.0",
+      "source_url": "https://github.com/kmarchais/mmgpy/releases/tag/v0.18.0"
+    },
+    {
+      "date": "2026-11-02",
+      "type": "review",
+      "label": "5-star review for v0.17.1",
+      "version": "v0.17.1",
+      "value": "5",
+      "source_url": "https://extensions.blender.org/add-ons/mmgpy/reviews/"
     }
   ]
 }
