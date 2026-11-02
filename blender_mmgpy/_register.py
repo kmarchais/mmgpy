@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import bpy
 
-from . import operators, panels, preferences, properties
+from . import operators, panels, preferences, properties, translations
 
 # Property groups must be registered before anything that points at them
 # via ``PointerProperty``.
@@ -38,6 +38,7 @@ classes = (
 
 def register() -> None:
     """Register every add-on class and the scene-level settings pointer."""
+    bpy.app.translations.register(__package__, translations.TRANSLATIONS)
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.Scene.mmgpy = bpy.props.PointerProperty(type=properties.MMGPYSettings)
@@ -48,3 +49,4 @@ def unregister() -> None:
     del bpy.types.Scene.mmgpy
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    bpy.app.translations.unregister(__package__)

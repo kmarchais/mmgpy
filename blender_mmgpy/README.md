@@ -118,6 +118,47 @@ for a fresh remesh output).
 - The estimated-triangle-count confirmation dialog at 1M elements is
   there to save you a Blender freeze (see TODOs below).
 
+## Languages
+
+MMGpy follows Blender's language and translation preferences under
+**Edit > Preferences > Interface > Translation**. It includes French,
+Russian, Spanish, German, Italian, Arabic, Simplified and Traditional Chinese,
+Japanese, Korean, Brazilian and European Portuguese, Polish, Ukrainian, and
+Turkish. English is the fallback for other languages and missing translations.
+
+### Update a translation
+
+Edit [translations.csv](translations.csv). Each row contains one English
+message and its translations, with Blender locale codes as column headings.
+Keep placeholders such as `{count:,}` and `{error}` unchanged. You can move
+them within the translated sentence. Save the file as UTF-8 CSV.
+
+When adding UI text, add a row for every supported locale. Use the `MMGpy`
+translation context for property declarations, panel and operator classes,
+and explicit layout text. For messages containing values, translate the
+template with `iface_` or `rpt_` before calling `.format()`. Keep internal
+identifiers, object names, and exception details unchanged.
+
+From the repository root, check coverage and placeholders with:
+
+```bash
+uv run pytest tests/blender_translations_test.py
+```
+
+To check registration, language switching, and translation preferences in
+Blender, run:
+
+```bash
+blender --background --factory-startup --python-exit-code 1 \
+    --python .github/scripts/check_blender_translations.py
+```
+
+The Blender check needs the native mmgpy package on Blender's Python path.
+You can pass `-- --site-packages PATH` to use an unpacked wheel matching
+Blender's Python version. It runs with factory preferences and does not save
+changes to your preferences. Check wording and layout in Blender before
+releasing translation changes, especially Arabic text direction and long labels.
+
 ## Building from source
 
 For most users the released zips are the right path. To build locally
@@ -180,8 +221,8 @@ synchronously and there's no progress reporting yet.
   widget are lost. Predictable beats clever for now — anyone wanting a
   permanent custom palette can fork the `MMGpy_Quality` material.
 
-- **No unit tests for `blender_mmgpy/`.** The bpy-dependent code is
-  hard to test without Blender installed; the pure helpers
+- **Mesh operations lack unit tests for `blender_mmgpy/`.** Translation
+  coverage and Blender translation behavior have dedicated checks. The pure helpers
   (`arrays_to_polydata`, `polydata_to_arrays`, `is_all_triangles`)
   could be split out and tested but haven't been yet.
 

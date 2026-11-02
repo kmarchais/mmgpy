@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 from bpy.props import BoolProperty
 from bpy.types import AddonPreferences
 
+from .translations import CONTEXT, iface_
+
 if TYPE_CHECKING:
     from bpy.types import Context
 
@@ -28,6 +30,7 @@ class MMGPYPreferences(AddonPreferences):
 
     # Debug mode
     debug_mode: BoolProperty(
+        translation_context=CONTEXT,
         name="Debug Mode",
         description="Enable debug output in console",
         default=False,
@@ -35,6 +38,7 @@ class MMGPYPreferences(AddonPreferences):
 
     # Auto-hide original after remesh
     hide_original: BoolProperty(
+        translation_context=CONTEXT,
         name="Hide Original",
         description="Hide the original mesh after remeshing",
         default=False,
@@ -42,6 +46,7 @@ class MMGPYPreferences(AddonPreferences):
 
     # Delete original after remesh
     delete_original: BoolProperty(
+        translation_context=CONTEXT,
         name="Delete Original",
         description="Delete the original mesh after remeshing (cannot undo)",
         default=False,
@@ -54,19 +59,35 @@ class MMGPYPreferences(AddonPreferences):
         box = layout.box()
         col = box.column(align=True)
         if mmgpy is not None:
-            col.label(text="mmgpy Status:", icon="CHECKMARK")
-            col.label(text=f"  mmgpy version: {mmgpy.__version__}")
-            col.label(text=f"  MMG version: {mmgpy.MMG_VERSION}")
+            col.label(text_ctxt=CONTEXT, text="mmgpy Status:", icon="CHECKMARK")
+            col.label(
+                text=iface_("mmgpy version: {version}").format(
+                    version=mmgpy.__version__
+                ),
+                translate=False,
+            )
+            col.label(
+                text=iface_("MMG version: {version}").format(version=mmgpy.MMG_VERSION),
+                translate=False,
+            )
         else:
-            col.label(text="mmgpy Status:", icon="ERROR")
-            col.label(text=f"  Not installed or import error: {_MMGPY_IMPORT_ERROR}")
+            col.label(text_ctxt=CONTEXT, text="mmgpy Status:", icon="ERROR")
+            col.label(
+                text=iface_("Not installed or import error: {error}").format(
+                    error=_MMGPY_IMPORT_ERROR,
+                ),
+                translate=False,
+            )
             col.separator()
-            col.label(text="Please reinstall the extension with wheels included.")
+            col.label(
+                text_ctxt=CONTEXT,
+                text="Please reinstall the extension with wheels included.",
+            )
 
         layout.separator()
 
         # General preferences
-        layout.label(text="General:", icon="PREFERENCES")
+        layout.label(text_ctxt=CONTEXT, text="General:", icon="PREFERENCES")
         col = layout.column(align=True)
         col.prop(self, "hide_original")
         col.prop(self, "delete_original")
@@ -74,5 +95,5 @@ class MMGPYPreferences(AddonPreferences):
         layout.separator()
 
         # Debug options
-        layout.label(text="Debug:", icon="CONSOLE")
+        layout.label(text_ctxt=CONTEXT, text="Debug:", icon="CONSOLE")
         layout.prop(self, "debug_mode")

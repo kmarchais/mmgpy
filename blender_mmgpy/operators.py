@@ -13,6 +13,7 @@ from bpy.props import FloatProperty, IntProperty
 from bpy.types import Operator
 
 from . import utils
+from .translations import CONTEXT, iface_, rpt_
 
 if TYPE_CHECKING:
     from bpy.types import Context, Event
@@ -52,6 +53,7 @@ class MMGPY_OT_remesh(Operator):
 
     bl_idname = "mmgpy.remesh"
     bl_label = "MMGpy Remesh"
+    bl_translation_context = CONTEXT
     bl_description = "Remesh the selected mesh using MMGpy"
     bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
@@ -125,9 +127,12 @@ class MMGPY_OT_remesh(Operator):
                 event,
                 title="High triangle count",
                 message=(
-                    f"Estimated ~{estimate:,} triangles. This may take a long time."
+                    iface_(
+                        "Estimated ~{count:,} triangles. This may take a long time."
+                    ).format(count=estimate)
                 ),
                 confirm_text="Remesh anyway",
+                text_ctxt=CONTEXT,
             )
         return self.execute(context)
 
@@ -143,7 +148,9 @@ class MMGPY_OT_remesh(Operator):
         if _MMGPY_IMPORT_ERROR is not None:
             self.report(
                 {"ERROR"},
-                f"mmgpy is not installed or failed to import: {_MMGPY_IMPORT_ERROR}",
+                rpt_("mmgpy is not installed or failed to import: {error}").format(
+                    error=_MMGPY_IMPORT_ERROR,
+                ),
             )
             return {"CANCELLED"}
 
@@ -153,7 +160,9 @@ class MMGPY_OT_remesh(Operator):
         try:
             vertices, triangles = utils.blender_to_arrays(obj)
         except _REMESH_EXC_TYPES as e:
-            self.report({"ERROR"}, f"Failed to convert mesh: {e}")
+            self.report(
+                {"ERROR"}, rpt_("Failed to convert mesh: {error}").format(error=e)
+            )
             return {"CANCELLED"}
 
         n_verts_before = len(vertices)
@@ -165,7 +174,9 @@ class MMGPY_OT_remesh(Operator):
                 triangles.astype(np.int32, copy=False),
             )
         except _REMESH_EXC_TYPES as e:
-            self.report({"ERROR"}, f"Failed to build mmgpy mesh: {e}")
+            self.report(
+                {"ERROR"}, rpt_("Failed to build mmgpy mesh: {error}").format(error=e)
+            )
             return {"CANCELLED"}
 
         remesh_kwargs = self._build_remesh_options(settings)
@@ -174,13 +185,16 @@ class MMGPY_OT_remesh(Operator):
             try:
                 apply_sizing_constraints(mesh, constraints)
             except _REMESH_EXC_TYPES as e:
-                self.report({"ERROR"}, f"Failed to apply sizing constraints: {e}")
+                self.report(
+                    {"ERROR"},
+                    rpt_("Failed to apply sizing constraints: {error}").format(error=e),
+                )
                 return {"CANCELLED"}
 
         try:
             mesh.remesh(**remesh_kwargs)
         except _REMESH_EXC_TYPES as e:
-            self.report({"ERROR"}, f"Remeshing failed: {e}")
+            self.report({"ERROR"}, rpt_("Remeshing failed: {error}").format(error=e))
             return {"CANCELLED"}
 
         new_vertices = mesh.get_vertices()
@@ -201,12 +215,22 @@ class MMGPY_OT_remesh(Operator):
             try:
                 utils.apply_quality_visualization(obj)
             except (RuntimeError, ValueError, TypeError) as exc:
-                self.report({"WARNING"}, f"Quality coloring update failed: {exc}")
+                self.report(
+                    {"WARNING"},
+                    rpt_("Quality coloring update failed: {error}").format(error=exc),
+                )
 
         self.report(
             {"INFO"},
-            f"Remeshed: {n_verts_before:,} -> {len(new_vertices):,} vertices, "
-            f"{n_tris_before:,} -> {len(new_triangles):,} elements",
+            rpt_(
+                "Remeshed: {vertices_before:,} -> {vertices_after:,} vertices, "
+                "{elements_before:,} -> {elements_after:,} elements"
+            ).format(
+                vertices_before=n_verts_before,
+                vertices_after=len(new_vertices),
+                elements_before=n_tris_before,
+                elements_after=len(new_triangles),
+            ),
         )
 
         return {"FINISHED"}
@@ -311,6 +335,7 @@ class MMGPY_OT_autofit(Operator):
 
     bl_idname = "mmgpy.autofit"
     bl_label = "Auto-fit to Mesh"
+    bl_translation_context = CONTEXT
     bl_description = "Set sizing parameters based on the active mesh dimensions"
     bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
@@ -358,7 +383,7 @@ class MMGPY_OT_autofit(Operator):
         diagonal = (max_corner - min_corner).length
 
         if diagonal == 0:
-            self.report({"WARNING"}, "Mesh has zero size")
+            self.report({"WARNING"}, rpt_("Mesh has zero size"))
             return {"CANCELLED"}
 
         # Defaults are tuned for a ~1.0 unit mesh; scale by power of 10.
@@ -371,7 +396,10 @@ class MMGPY_OT_autofit(Operator):
 
         self.report(
             {"INFO"},
-            f"Auto-fit: bbox diagonal = {diagonal:.4g}, scale = {scale:g}",
+            rpt_("Auto-fit: bbox diagonal = {diagonal:.4g}, scale = {scale:g}").format(
+                diagonal=diagonal,
+                scale=scale,
+            ),
         )
         return {"FINISHED"}
 
@@ -381,10 +409,12 @@ class MMGPY_OT_add_sizing_sphere(Operator):
 
     bl_idname = "mmgpy.add_sizing_sphere"
     bl_label = "Add Sphere"
+    bl_translation_context = CONTEXT
     bl_description = "Add a spherical local refinement zone"
     bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     radius: FloatProperty(
+        translation_context=CONTEXT,
         name="Radius",
         description="Radius of the refinement sphere",
         default=0.1,
@@ -392,6 +422,7 @@ class MMGPY_OT_add_sizing_sphere(Operator):
     )
 
     target_size: FloatProperty(
+        translation_context=CONTEXT,
         name="Target Size",
         description="Target edge size within the sphere",
         default=0.01,
@@ -426,7 +457,7 @@ class MMGPY_OT_add_sizing_sphere(Operator):
         constraint.empty_object = empty
         constraint.target_size = self.target_size
 
-        self.report({"INFO"}, "Added spherical sizing constraint")
+        self.report({"INFO"}, rpt_("Added spherical sizing constraint"))
         return {"FINISHED"}
 
     def invoke(self, context: Context, _event: Event) -> set[str]:
@@ -446,10 +477,12 @@ class MMGPY_OT_add_sizing_box(Operator):
 
     bl_idname = "mmgpy.add_sizing_box"
     bl_label = "Add Box"
+    bl_translation_context = CONTEXT
     bl_description = "Add a box-shaped local refinement zone"
     bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     size: FloatProperty(
+        translation_context=CONTEXT,
         name="Size",
         description="Size of the refinement box",
         default=0.1,
@@ -457,6 +490,7 @@ class MMGPY_OT_add_sizing_box(Operator):
     )
 
     target_size: FloatProperty(
+        translation_context=CONTEXT,
         name="Target Size",
         description="Target edge size within the box",
         default=0.01,
@@ -491,7 +525,7 @@ class MMGPY_OT_add_sizing_box(Operator):
         constraint.empty_object = empty
         constraint.target_size = self.target_size
 
-        self.report({"INFO"}, "Added box sizing constraint")
+        self.report({"INFO"}, rpt_("Added box sizing constraint"))
         return {"FINISHED"}
 
     def invoke(self, context: Context, _event: Event) -> set[str]:
@@ -511,10 +545,12 @@ class MMGPY_OT_remove_sizing_constraint(Operator):
 
     bl_idname = "mmgpy.remove_sizing_constraint"
     bl_label = "Remove Constraint"
+    bl_translation_context = CONTEXT
     bl_description = "Remove the selected sizing constraint"
     bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
     index: IntProperty(
+        translation_context=CONTEXT,
         name="Index",
         description="Index of constraint to remove",
         default=0,
@@ -558,9 +594,9 @@ class MMGPY_OT_remove_sizing_constraint(Operator):
                     len(settings.sizing_constraints) - 1,
                 )
 
-            self.report({"INFO"}, "Removed sizing constraint")
+            self.report({"INFO"}, rpt_("Removed sizing constraint"))
         else:
-            self.report({"WARNING"}, "Invalid constraint index")
+            self.report({"WARNING"}, rpt_("Invalid constraint index"))
 
         return {"FINISHED"}
 
@@ -570,6 +606,7 @@ class MMGPY_OT_clear_sizing_constraints(Operator):
 
     bl_idname = "mmgpy.clear_sizing_constraints"
     bl_label = "Clear All Constraints"
+    bl_translation_context = CONTEXT
     bl_description = "Remove all sizing constraints"
     bl_options: ClassVar[set[str]] = {"REGISTER", "UNDO"}
 
@@ -604,7 +641,7 @@ class MMGPY_OT_clear_sizing_constraints(Operator):
         settings.sizing_constraints.clear()
         settings.active_constraint_index = 0
 
-        self.report({"INFO"}, "Cleared all sizing constraints")
+        self.report({"INFO"}, rpt_("Cleared all sizing constraints"))
         return {"FINISHED"}
 
     def invoke(self, context: Context, event: Event) -> set[str]:
