@@ -1,0 +1,2839 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python bindings for the MMG remeshing library">
+      
+      
+      
+        <link rel="canonical" href="https://kmarchais.github.io/mmgpy/latest/translations/it_IT/">
+      
+      
+      
+        <link rel="prev" href="../de_DE/">
+      
+      
+        <link rel="next" href="../ar_EG/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.73">
+    
+    
+      
+        <title>Italian - mmgpy</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/classic/main.94dd801d.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/classic/palette.813d4b3f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/css/blender-extension-stats.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="red" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="mmgpy" class="md-header__button md-logo" aria-label="mmgpy" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            mmgpy
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Italian
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="red" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+          <span class="md-visually-hidden">Search</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/kmarchais/mmgpy" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kmarchais/mmgpy
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/basic-remeshing/" class="md-tabs__link">
+          
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../examples/" class="md-tabs__link">
+          
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/" class="md-tabs__link">
+          
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/cli/" class="md-tabs__link">
+          
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../blender-extension/" class="md-tabs__link">
+          
+  
+  Blender Extension
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="mmgpy" class="md-nav__button md-logo" aria-label="mmgpy" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    mmgpy
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kmarchais/mmgpy" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kmarchais/mmgpy
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Getting Started
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Getting Started
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quick Start
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Core Concepts
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tutorials
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Tutorials
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/basic-remeshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Basic Remeshing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/surface-remeshing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Surface Remeshing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/adaptive-sizing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Adaptive Sizing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/hessian-adaptation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hessian-Based Adaptation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/elasticity-propagation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Elasticity Propagation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/pyvista-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  PyVista Integration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/levelset-extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Level-Set Extraction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Examples
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Examples
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Gallery
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API Reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API Reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Options
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/results-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Results & Validation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sizing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sizing Constraints
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Metrics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  I/O Functions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lagrangian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Lagrangian Motion
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI Tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/file-formats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  File Formats
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mmg-parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MMG Parameters
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mmg-api-coverage/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 19H5V5h10V3H5c-1.11 0-2 .89-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8h-2m-11.09-.92L6.5 11.5 11 16 21 6l-1.41-1.42L11 13.17z"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  API Coverage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/benchmarks/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m16 11.78 4.24-7.33 1.73 1-5.23 9.05-6.51-3.75L5.46 19H22v2H2V3h2v14.54L9.5 8z"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Benchmarks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Blender Extension
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Blender Extension
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blender-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Overview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Translation review
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_7_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Translation review
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  All languages
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fr_FR/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  French
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ru_RU/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Russian
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../es/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Spanish
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../de_DE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  German
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Italian
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ar_EG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Arabic
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../zh_HANS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Simplified Chinese
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../zh_HANT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Traditional Chinese
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ja_JP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Japanese
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ko_KR/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Korean
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pt_BR/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Brazilian Portuguese
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pt_PT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  European Portuguese
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pl_PL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Polish
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../uk_UA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Ukrainian
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tr_TR/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Turkish
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.5 8H12v5l4.28 2.54.72-1.21-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7 7 7 0 0 1 7 7 7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9 9 9 0 0 0-9-9"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../../blender-extension/" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Blender Extension
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Translation review
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="italian-italiano">Italian · Italiano<a class="headerlink" href="#italian-italiano" title="Permanent link">&para;</a></h1>
+<p><a href="../">All languages</a></p>
+<p>Locale: <code>it_IT</code>. Generated from <code>blender_mmgpy/translations.csv</code>. Edit the catalog, then run <code>python scripts/translation_review.py</code>.</p>
+<!-- prettier-ignore -->
+<table>
+<thead>
+<tr>
+<th>English</th>
+<th>Translation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MMGpy Remesh</td>
+<td><span lang="it-IT">Rimagliatura MMGpy</span></td>
+</tr>
+<tr>
+<td>Remesh</td>
+<td><span lang="it-IT">Rimaglia</span></td>
+</tr>
+<tr>
+<td>Preset</td>
+<td><span lang="it-IT">Preimpostazione</span></td>
+</tr>
+<tr>
+<td>Custom</td>
+<td><span lang="it-IT">Personalizzato</span></td>
+</tr>
+<tr>
+<td>Fine</td>
+<td><span lang="it-IT">Fine</span></td>
+</tr>
+<tr>
+<td>Medium</td>
+<td><span lang="it-IT">Medio</span></td>
+</tr>
+<tr>
+<td>Coarse</td>
+<td><span lang="it-IT">Grossolano</span></td>
+</tr>
+<tr>
+<td>Size Control</td>
+<td><span lang="it-IT">Controllo dimensioni</span></td>
+</tr>
+<tr>
+<td>Auto-fit to Mesh</td>
+<td><span lang="it-IT">Adatta alla mesh</span></td>
+</tr>
+<tr>
+<td>Uniform Size</td>
+<td><span lang="it-IT">Dimensione uniforme</span></td>
+</tr>
+<tr>
+<td>Min Size</td>
+<td><span lang="it-IT">Dimensione minima</span></td>
+</tr>
+<tr>
+<td>Max Size</td>
+<td><span lang="it-IT">Dimensione massima</span></td>
+</tr>
+<tr>
+<td>Gradation</td>
+<td><span lang="it-IT">Gradazione</span></td>
+</tr>
+<tr>
+<td>Geometry</td>
+<td><span lang="it-IT">Geometria</span></td>
+</tr>
+<tr>
+<td>Hausdorff</td>
+<td><span lang="it-IT">Hausdorff</span></td>
+</tr>
+<tr>
+<td>Hausdorff Distance</td>
+<td><span lang="it-IT">Distanza di Hausdorff</span></td>
+</tr>
+<tr>
+<td>Angle Detection</td>
+<td><span lang="it-IT">Rilevamento angoli</span></td>
+</tr>
+<tr>
+<td>Angle</td>
+<td><span lang="it-IT">Angolo</span></td>
+</tr>
+<tr>
+<td>Advanced Options</td>
+<td><span lang="it-IT">Opzioni avanzate</span></td>
+</tr>
+<tr>
+<td>Optimize Only</td>
+<td><span lang="it-IT">Solo ottimizzazione</span></td>
+</tr>
+<tr>
+<td>No Insert</td>
+<td><span lang="it-IT">Nessun inserimento</span></td>
+</tr>
+<tr>
+<td>No Swap</td>
+<td><span lang="it-IT">Nessuno scambio</span></td>
+</tr>
+<tr>
+<td>No Move</td>
+<td><span lang="it-IT">Nessuno spostamento</span></td>
+</tr>
+<tr>
+<td>Verbosity</td>
+<td><span lang="it-IT">Verbosità</span></td>
+</tr>
+<tr>
+<td>Visualization</td>
+<td><span lang="it-IT">Visualizzazione</span></td>
+</tr>
+<tr>
+<td>Mesh quality</td>
+<td><span lang="it-IT">Qualità della mesh</span></td>
+</tr>
+<tr>
+<td>(MMG in-radius ratio)</td>
+<td><span lang="it-IT">(rapporto del raggio inscritto MMG)</span></td>
+</tr>
+<tr>
+<td>Range</td>
+<td><span lang="it-IT">Intervallo</span></td>
+</tr>
+<tr>
+<td>Min</td>
+<td><span lang="it-IT">Min</span></td>
+</tr>
+<tr>
+<td>Max</td>
+<td><span lang="it-IT">Max</span></td>
+</tr>
+<tr>
+<td>Local Refinement</td>
+<td><span lang="it-IT">Raffinamento locale</span></td>
+</tr>
+<tr>
+<td>Add Sphere</td>
+<td><span lang="it-IT">Aggiungi sfera</span></td>
+</tr>
+<tr>
+<td>Add Box</td>
+<td><span lang="it-IT">Aggiungi parallelepipedo</span></td>
+</tr>
+<tr>
+<td>Size</td>
+<td><span lang="it-IT">Dimensione</span></td>
+</tr>
+<tr>
+<td>Clear All</td>
+<td><span lang="it-IT">Cancella tutto</span></td>
+</tr>
+<tr>
+<td>Clear All Constraints</td>
+<td><span lang="it-IT">Cancella tutti i vincoli</span></td>
+</tr>
+<tr>
+<td>Remove Constraint</td>
+<td><span lang="it-IT">Rimuovi vincolo</span></td>
+</tr>
+<tr>
+<td>No constraints defined</td>
+<td><span lang="it-IT">Nessun vincolo definito</span></td>
+</tr>
+<tr>
+<td>Add a sphere or box.</td>
+<td><span lang="it-IT">Aggiungi una sfera o un parallelepipedo.</span></td>
+</tr>
+<tr>
+<td>It defines a local refinement zone.</td>
+<td><span lang="it-IT">Definisce una zona di raffinamento locale.</span></td>
+</tr>
+<tr>
+<td>Type</td>
+<td><span lang="it-IT">Tipo</span></td>
+</tr>
+<tr>
+<td>Sphere</td>
+<td><span lang="it-IT">Sfera</span></td>
+</tr>
+<tr>
+<td>Box</td>
+<td><span lang="it-IT">Parallelepipedo</span></td>
+</tr>
+<tr>
+<td>Empty</td>
+<td><span lang="it-IT">Vuoto</span></td>
+</tr>
+<tr>
+<td>Target Size</td>
+<td><span lang="it-IT">Dimensione obiettivo</span></td>
+</tr>
+<tr>
+<td>Radius</td>
+<td><span lang="it-IT">Raggio</span></td>
+</tr>
+<tr>
+<td>Index</td>
+<td><span lang="it-IT">Indice</span></td>
+</tr>
+<tr>
+<td>Sizing Constraints</td>
+<td><span lang="it-IT">Vincoli di dimensione</span></td>
+</tr>
+<tr>
+<td>Active Constraint</td>
+<td><span lang="it-IT">Vincolo attivo</span></td>
+</tr>
+<tr>
+<td>Use Min Size</td>
+<td><span lang="it-IT">Usa dimensione minima</span></td>
+</tr>
+<tr>
+<td>Use Max Size</td>
+<td><span lang="it-IT">Usa dimensione massima</span></td>
+</tr>
+<tr>
+<td>Use Uniform Size</td>
+<td><span lang="it-IT">Usa dimensione uniforme</span></td>
+</tr>
+<tr>
+<td>Use Hausdorff</td>
+<td><span lang="it-IT">Usa Hausdorff</span></td>
+</tr>
+<tr>
+<td>Use Angle Detection</td>
+<td><span lang="it-IT">Usa rilevamento angoli</span></td>
+</tr>
+<tr>
+<td>Use Gradation</td>
+<td><span lang="it-IT">Usa gradazione</span></td>
+</tr>
+<tr>
+<td>Show Advanced</td>
+<td><span lang="it-IT">Mostra opzioni avanzate</span></td>
+</tr>
+<tr>
+<td>Show advanced options</td>
+<td><span lang="it-IT">Mostra le opzioni avanzate</span></td>
+</tr>
+<tr>
+<td>Wireframe on Surface</td>
+<td><span lang="it-IT">Reticolo sulla superficie</span></td>
+</tr>
+<tr>
+<td>Color by Quality</td>
+<td><span lang="it-IT">Colora per qualità</span></td>
+</tr>
+<tr>
+<td>Absolute &#91;0, 1&#93;</td>
+<td><span lang="it-IT">Assoluto &#91;0, 1&#93;</span></td>
+</tr>
+<tr>
+<td>Auto &#91;min, max&#93;</td>
+<td><span lang="it-IT">Automatico &#91;min, max&#93;</span></td>
+</tr>
+<tr>
+<td>Custom &#91;min, max&#93;</td>
+<td><span lang="it-IT">Personalizzato &#91;min, max&#93;</span></td>
+</tr>
+<tr>
+<td>Custom Min</td>
+<td><span lang="it-IT">Minimo personalizzato</span></td>
+</tr>
+<tr>
+<td>Custom Max</td>
+<td><span lang="it-IT">Massimo personalizzato</span></td>
+</tr>
+<tr>
+<td>Debug Mode</td>
+<td><span lang="it-IT">Modalità debug</span></td>
+</tr>
+<tr>
+<td>Hide Original</td>
+<td><span lang="it-IT">Nascondi originale</span></td>
+</tr>
+<tr>
+<td>Delete Original</td>
+<td><span lang="it-IT">Elimina originale</span></td>
+</tr>
+<tr>
+<td>mmgpy Status:</td>
+<td><span lang="it-IT">Stato di mmgpy:</span></td>
+</tr>
+<tr>
+<td>General:</td>
+<td><span lang="it-IT">Generale:</span></td>
+</tr>
+<tr>
+<td>Debug:</td>
+<td><span lang="it-IT">Debug:</span></td>
+</tr>
+<tr>
+<td>High triangle count</td>
+<td><span lang="it-IT">Numero elevato di triangoli</span></td>
+</tr>
+<tr>
+<td>Remesh anyway</td>
+<td><span lang="it-IT">Rimaglia comunque</span></td>
+</tr>
+<tr>
+<td>(toggle off/on to compute)</td>
+<td><span lang="it-IT">(disattiva e riattiva per calcolare)</span></td>
+</tr>
+<tr>
+<td>0 — poor</td>
+<td><span lang="it-IT">0 — scarsa</span></td>
+</tr>
+<tr>
+<td>best — 1</td>
+<td><span lang="it-IT">ottima — 1</span></td>
+</tr>
+<tr>
+<td name="name">Object:</td>
+<td><span lang="it-IT">Oggetto: {name}</span></td>
+</tr>
+<tr>
+<td count:_="count:,">Vertices:</td>
+<td><span lang="it-IT">Vertici: {count:,}</span></td>
+</tr>
+<tr>
+<td count:_="count:,">Faces:</td>
+<td><span lang="it-IT">Facce: {count:,}</span></td>
+</tr>
+<tr>
+<td count:_="count:,">Triangles:</td>
+<td><span lang="it-IT">Triangoli: {count:,}</span></td>
+</tr>
+<tr>
+<td value:.3f="value:.3f">min:</td>
+<td><span lang="it-IT">min:  {value:.3f}</span></td>
+</tr>
+<tr>
+<td value:.3f="value:.3f">mean:</td>
+<td><span lang="it-IT">media: {value:.3f}</span></td>
+</tr>
+<tr>
+<td value:.3f="value:.3f">max:</td>
+<td><span lang="it-IT">max:  {value:.3f}</span></td>
+</tr>
+<tr>
+<td>{value:.2f} — poor</td>
+<td><span lang="it-IT">{value:.2f} — scarsa</span></td>
+</tr>
+<tr>
+<td value:.2f="value:.2f">best —</td>
+<td><span lang="it-IT">ottima — {value:.2f}</span></td>
+</tr>
+<tr>
+<td version="version">mmgpy version:</td>
+<td><span lang="it-IT">Versione di mmgpy: {version}</span></td>
+</tr>
+<tr>
+<td version="version">MMG version:</td>
+<td><span lang="it-IT">Versione di MMG: {version}</span></td>
+</tr>
+<tr>
+<td error="error">Not installed or import error:</td>
+<td><span lang="it-IT">Non installato o errore di importazione: {error}</span></td>
+</tr>
+<tr>
+<td>Estimated &#126;{count:,} triangles. This may take a long time.</td>
+<td><span lang="it-IT">Circa {count:,} triangoli stimati. L&#x27;operazione può richiedere molto tempo.</span></td>
+</tr>
+<tr>
+<td error="error">mmgpy is not installed or failed to import:</td>
+<td><span lang="it-IT">mmgpy non è installato o l&#x27;importazione non è riuscita: {error}</span></td>
+</tr>
+<tr>
+<td error="error">Failed to convert mesh:</td>
+<td><span lang="it-IT">Conversione della mesh non riuscita: {error}</span></td>
+</tr>
+<tr>
+<td error="error">Failed to build mmgpy mesh:</td>
+<td><span lang="it-IT">Creazione della mesh mmgpy non riuscita: {error}</span></td>
+</tr>
+<tr>
+<td error="error">Failed to apply sizing constraints:</td>
+<td><span lang="it-IT">Applicazione dei vincoli di dimensione non riuscita: {error}</span></td>
+</tr>
+<tr>
+<td error="error">Remeshing failed:</td>
+<td><span lang="it-IT">Rimagliatura non riuscita: {error}</span></td>
+</tr>
+<tr>
+<td error="error">Quality coloring update failed:</td>
+<td><span lang="it-IT">Aggiornamento della colorazione per qualità non riuscito: {error}</span></td>
+</tr>
+<tr>
+<td>Remeshed: {vertices&#95;before:,} -&gt; {vertices&#95;after:,} vertices, {elements&#95;before:,} -&gt; {elements&#95;after:,} elements</td>
+<td><span lang="it-IT">Rimagliatura: {vertices&#95;before:,} -&gt; {vertices&#95;after:,} vertici, {elements&#95;before:,} -&gt; {elements&#95;after:,} elementi</span></td>
+</tr>
+<tr>
+<td>Auto-fit: bbox diagonal = {diagonal:.4g}, scale = {scale:g}</td>
+<td><span lang="it-IT">Adattamento automatico: diagonale del riquadro = {diagonal:.4g}, scala = {scale:g}</span></td>
+</tr>
+<tr>
+<td>Mesh has zero size</td>
+<td><span lang="it-IT">La mesh ha dimensione nulla</span></td>
+</tr>
+<tr>
+<td>Added spherical sizing constraint</td>
+<td><span lang="it-IT">Vincolo di dimensione sferico aggiunto</span></td>
+</tr>
+<tr>
+<td>Added box sizing constraint</td>
+<td><span lang="it-IT">Vincolo di dimensione a parallelepipedo aggiunto</span></td>
+</tr>
+<tr>
+<td>Removed sizing constraint</td>
+<td><span lang="it-IT">Vincolo di dimensione rimosso</span></td>
+</tr>
+<tr>
+<td>Invalid constraint index</td>
+<td><span lang="it-IT">Indice del vincolo non valido</span></td>
+</tr>
+<tr>
+<td>Cleared all sizing constraints</td>
+<td><span lang="it-IT">Tutti i vincoli di dimensione cancellati</span></td>
+</tr>
+<tr>
+<td>Please reinstall the extension with wheels included.</td>
+<td><span lang="it-IT">Reinstalla l&#x27;estensione con i pacchetti wheel inclusi.</span></td>
+</tr>
+<tr>
+<td>Remesh the selected mesh using MMGpy</td>
+<td><span lang="it-IT">Rimaglia la mesh selezionata con MMGpy</span></td>
+</tr>
+<tr>
+<td>Set sizing parameters based on the active mesh dimensions</td>
+<td><span lang="it-IT">Imposta le dimensioni in base alla mesh attiva</span></td>
+</tr>
+<tr>
+<td>Add a spherical local refinement zone</td>
+<td><span lang="it-IT">Aggiungi una zona sferica di raffinamento locale</span></td>
+</tr>
+<tr>
+<td>Add a box-shaped local refinement zone</td>
+<td><span lang="it-IT">Aggiungi una zona di raffinamento locale a parallelepipedo</span></td>
+</tr>
+<tr>
+<td>Radius of the refinement sphere</td>
+<td><span lang="it-IT">Raggio della sfera di raffinamento</span></td>
+</tr>
+<tr>
+<td>Size of the refinement box</td>
+<td><span lang="it-IT">Dimensione del parallelepipedo di raffinamento</span></td>
+</tr>
+<tr>
+<td>Target edge size within the sphere</td>
+<td><span lang="it-IT">Lunghezza obiettivo degli spigoli nella sfera</span></td>
+</tr>
+<tr>
+<td>Target edge size within the box</td>
+<td><span lang="it-IT">Lunghezza obiettivo degli spigoli nel parallelepipedo</span></td>
+</tr>
+<tr>
+<td>Target edge size within this region</td>
+<td><span lang="it-IT">Lunghezza obiettivo degli spigoli in questa regione</span></td>
+</tr>
+<tr>
+<td>Remove the selected sizing constraint</td>
+<td><span lang="it-IT">Rimuovi il vincolo di dimensione selezionato</span></td>
+</tr>
+<tr>
+<td>Remove all sizing constraints</td>
+<td><span lang="it-IT">Rimuovi tutti i vincoli di dimensione</span></td>
+</tr>
+<tr>
+<td>Index of constraint to remove</td>
+<td><span lang="it-IT">Indice del vincolo da rimuovere</span></td>
+</tr>
+<tr>
+<td>Spherical refinement zone</td>
+<td><span lang="it-IT">Zona sferica di raffinamento</span></td>
+</tr>
+<tr>
+<td>Box-shaped refinement zone</td>
+<td><span lang="it-IT">Zona di raffinamento a parallelepipedo</span></td>
+</tr>
+<tr>
+<td>Empty object defining the constraint location and size</td>
+<td><span lang="it-IT">Oggetto vuoto che definisce posizione e dimensione del vincolo</span></td>
+</tr>
+<tr>
+<td>Quick preset for remeshing settings</td>
+<td><span lang="it-IT">Preimpostazione rapida per la rimagliatura</span></td>
+</tr>
+<tr>
+<td>Manual settings</td>
+<td><span lang="it-IT">Impostazioni manuali</span></td>
+</tr>
+<tr>
+<td>High quality, smaller elements</td>
+<td><span lang="it-IT">Alta qualità, elementi più piccoli</span></td>
+</tr>
+<tr>
+<td>Balanced quality and performance</td>
+<td><span lang="it-IT">Equilibrio tra qualità e prestazioni</span></td>
+</tr>
+<tr>
+<td>Fast remeshing, larger elements</td>
+<td><span lang="it-IT">Rimagliatura rapida, elementi più grandi</span></td>
+</tr>
+<tr>
+<td>Enable minimum edge size constraint</td>
+<td><span lang="it-IT">Abilita il vincolo di lunghezza minima degli spigoli</span></td>
+</tr>
+<tr>
+<td>Enable maximum edge size constraint</td>
+<td><span lang="it-IT">Abilita il vincolo di lunghezza massima degli spigoli</span></td>
+</tr>
+<tr>
+<td>Minimum edge size (hmin)</td>
+<td><span lang="it-IT">Lunghezza minima degli spigoli (hmin)</span></td>
+</tr>
+<tr>
+<td>Maximum edge size (hmax)</td>
+<td><span lang="it-IT">Lunghezza massima degli spigoli (hmax)</span></td>
+</tr>
+<tr>
+<td>Use constant edge size (overrides hmin/hmax)</td>
+<td><span lang="it-IT">Usa lunghezza costante degli spigoli (sostituisce hmin/hmax)</span></td>
+</tr>
+<tr>
+<td>Constant edge size (hsiz)</td>
+<td><span lang="it-IT">Lunghezza costante degli spigoli (hsiz)</span></td>
+</tr>
+<tr>
+<td>Enable Hausdorff distance constraint for geometry approximation</td>
+<td><span lang="it-IT">Abilita il vincolo di distanza di Hausdorff per approssimare la geometria</span></td>
+</tr>
+<tr>
+<td>Maximum distance between original and remeshed surface</td>
+<td><span lang="it-IT">Distanza massima tra superficie originale e rimagliata</span></td>
+</tr>
+<tr>
+<td>Enable angle-based ridge detection</td>
+<td><span lang="it-IT">Abilita il rilevamento degli spigoli vivi in base all&#x27;angolo</span></td>
+</tr>
+<tr>
+<td>Angle threshold for ridge detection (degrees)</td>
+<td><span lang="it-IT">Soglia angolare per rilevare gli spigoli vivi (gradi)</span></td>
+</tr>
+<tr>
+<td>Enable gradation control</td>
+<td><span lang="it-IT">Abilita il controllo della gradazione</span></td>
+</tr>
+<tr>
+<td>Gradation parameter (controls size transition between elements)</td>
+<td><span lang="it-IT">Parametro di gradazione (controlla la variazione di dimensione tra elementi)</span></td>
+</tr>
+<tr>
+<td>Verbosity level (-1=silent, 0=errors, 1=info)</td>
+<td><span lang="it-IT">Livello di verbosità (-1=silenzioso, 0=errori, 1=informazioni)</span></td>
+</tr>
+<tr>
+<td>Only optimize mesh quality without changing topology</td>
+<td><span lang="it-IT">Ottimizza solo la qualità della mesh senza cambiare la topologia</span></td>
+</tr>
+<tr>
+<td>Disable point insertion</td>
+<td><span lang="it-IT">Disabilita l&#x27;inserimento di punti</span></td>
+</tr>
+<tr>
+<td>Disable edge/face swapping</td>
+<td><span lang="it-IT">Disabilita lo scambio di spigoli e facce</span></td>
+</tr>
+<tr>
+<td>Disable point relocation</td>
+<td><span lang="it-IT">Disabilita lo spostamento dei punti</span></td>
+</tr>
+<tr>
+<td>Enable debug output in console</td>
+<td><span lang="it-IT">Abilita i messaggi di debug nella console</span></td>
+</tr>
+<tr>
+<td>Hide the original mesh after remeshing</td>
+<td><span lang="it-IT">Nascondi la mesh originale dopo la rimagliatura</span></td>
+</tr>
+<tr>
+<td>Delete the original mesh after remeshing (cannot undo)</td>
+<td><span lang="it-IT">Elimina la mesh originale dopo la rimagliatura (non annullabile)</span></td>
+</tr>
+<tr>
+<td>Overlay the mesh wireframe on top of the shaded surface for the active object (toggles obj.show&#95;wire / show&#95;all&#95;edges)</td>
+<td><span lang="it-IT">Sovrapponi il reticolo alla superficie ombreggiata dell&#x27;oggetto attivo (attiva obj.show&#95;wire / show&#95;all&#95;edges)</span></td>
+</tr>
+<tr>
+<td>Compute MMG&#x27;s in-radius-ratio quality per triangle and apply a red-&gt;yellow-&gt;green material (red = poor, green = excellent). Requires an all-triangle mesh</td>
+<td><span lang="it-IT">Calcola la qualità MMG tramite il rapporto del raggio inscritto per ogni triangolo e applica un materiale rosso-&gt;giallo-&gt;verde (rosso = scarsa, verde = ottima). Richiede una mesh triangolata</span></td>
+</tr>
+<tr>
+<td>How to map quality values onto the red-&gt;yellow-&gt;green ramp</td>
+<td><span lang="it-IT">Come associare i valori di qualità alla scala rosso-&gt;giallo-&gt;verde</span></td>
+</tr>
+<tr>
+<td>Lower bound for the Custom colormap range (red end)</td>
+<td><span lang="it-IT">Limite inferiore della scala colori personalizzata (estremità rossa)</span></td>
+</tr>
+<tr>
+<td>Upper bound for the Custom colormap range (green end)</td>
+<td><span lang="it-IT">Limite superiore della scala colori personalizzata (estremità verde)</span></td>
+</tr>
+<tr>
+<td>Map 0 -&gt; red and 1 -&gt; green. Absolute reading: a perfect equilateral triangle is solid green; anything below 0.5 is warning territory regardless of the rest of the mesh.</td>
+<td><span lang="it-IT">Associa 0 al rosso e 1 al verde. Scala assoluta: un triangolo equilatero perfetto è verde; valori sotto 0,5 richiedono attenzione, indipendentemente dal resto della mesh.</span></td>
+</tr>
+<tr>
+<td>Stretch the ramp across the current mesh&#x27;s min..max so the variation within this specific mesh is visible even when all triangles cluster near the same quality value.</td>
+<td><span lang="it-IT">Estendi la scala tra minimo e massimo della mesh attuale per mostrare le variazioni anche quando tutti i triangoli hanno qualità simile.</span></td>
+</tr>
+<tr>
+<td>Use the Custom Min / Custom Max sliders below as the ramp endpoints. Useful for comparing several meshes on the same fixed scale.</td>
+<td><span lang="it-IT">Usa i cursori Minimo personalizzato e Massimo personalizzato come estremi della scala. Utile per confrontare più mesh sulla stessa scala fissa.</span></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024-2026 Kevin Marchais
+    </div>
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/kmarchais/mmgpy" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/mmgpy/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.instant.prefetch","navigation.tracking","navigation.tabs","navigation.sections","navigation.expand","navigation.path","navigation.top","search.suggest","search.highlight","content.code.copy","content.code.select","content.tabs.link","content.tooltips"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"latest","provider":"mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+      
+        <script src="../../assets/js/benchmarks.js"></script>
+      
+        <script src="../../assets/js/blender-extension-stats.js"></script>
+      
+    
+  </body>
+</html>
