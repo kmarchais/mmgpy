@@ -298,10 +298,10 @@ The `_O3` suffix variants (`mmg3d_O3`, etc.) are also available for compatibilit
 
 **[kmarchais.github.io/mmgpy](https://kmarchais.github.io/mmgpy)**
 
-- [Quick Start](https://kmarchais.github.io/mmgpy/getting-started/quickstart/)
-- [Tutorials](https://kmarchais.github.io/mmgpy/tutorials/basic-remeshing/)
-- [API Reference](https://kmarchais.github.io/mmgpy/api/)
-- [Examples](https://kmarchais.github.io/mmgpy/examples/)
+- [Quick Start](https://kmarchais.github.io/mmgpy/latest/getting-started/quickstart/)
+- [Tutorials](https://kmarchais.github.io/mmgpy/latest/tutorials/basic-remeshing/)
+- [API Reference](https://kmarchais.github.io/mmgpy/latest/api/)
+- [Examples](https://kmarchais.github.io/mmgpy/latest/examples/)
 
 ## Contributing
 
