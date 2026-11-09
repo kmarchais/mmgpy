@@ -122,7 +122,25 @@ nav:
       - MMG Parameters: reference/mmg-parameters.md
       - API Coverage: reference/mmg-api-coverage.md
       - Benchmarks: reference/benchmarks.md
-  - Blender Extension: blender-extension.md
+  - Blender Extension:
+      - Overview: blender-extension.md
+      - Translation review:
+          - All languages: translations/index.md
+          - French: translations/fr_FR.md
+          - Russian: translations/ru_RU.md
+          - Spanish: translations/es.md
+          - German: translations/de_DE.md
+          - Italian: translations/it_IT.md
+          - Arabic: translations/ar_EG.md
+          - Simplified Chinese: translations/zh_HANS.md
+          - Traditional Chinese: translations/zh_HANT.md
+          - Japanese: translations/ja_JP.md
+          - Korean: translations/ko_KR.md
+          - Brazilian Portuguese: translations/pt_BR.md
+          - European Portuguese: translations/pt_PT.md
+          - Polish: translations/pl_PL.md
+          - Ukrainian: translations/uk_UA.md
+          - Turkish: translations/tr_TR.md
   - Changelog: changelog.md
 
 extra_javascript:

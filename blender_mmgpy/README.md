@@ -128,6 +128,19 @@ Turkish. English is the fallback for other languages and missing translations.
 
 ### Update a translation
 
+For a read-only comparison, open the [translation review pages](../docs/translations/index.md).
+Each language has its own English-to-translation table. Regenerate them after
+editing the catalog:
+
+```bash
+uv run --no-project python scripts/translation_review.py
+```
+
+To generate a PR description with every Russian entry and highlight changes
+against the base branch, add `--base-ref origin/main --pr-body build/translation-pr.md`.
+Use `--locale` to select another language. Changed entries are bold, with the old
+wording struck through underneath.
+
 For a review interface, run this command from the repository root:
 
 ```bash

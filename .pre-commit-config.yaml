@@ -66,6 +66,8 @@ repos:
     hooks:
       - id: codespell
         files: ^.*\.(py|rst|md)$
+        # Generated translations contain valid words outside the English dictionary.
+        exclude: ^docs/translations/(?!index\.md$)
 
   - repo: https://github.com/astral-sh/ty-pre-commit
     rev: "v0.0.93"
