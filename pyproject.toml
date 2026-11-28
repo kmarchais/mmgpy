@@ -137,7 +137,7 @@ docs = [
     # Belt-and-braces: pymdown-extensions 10.21.2 fixed the html.escape(None)
     # crash that previously forced a `pygments<2.20` cap (see git history).
     "pymdown-extensions>=10.21.2",
-    "zensical>=0.0.72,<0.1",
+    "zensical>=0.0.72,<0.2",
 ]
 ui = [
     "pywebview>=6.2.1",
